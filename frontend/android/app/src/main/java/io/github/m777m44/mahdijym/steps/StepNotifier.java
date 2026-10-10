@@ -116,6 +116,27 @@ final class StepNotifier {
         return line.replace("{left}", numbers(s).format(left));
     }
 
+    /**
+     * A bare notification for the brief moment the service must be in the foreground even
+     * though it is about to stop (permission revoked, or the full layout failed to build).
+     */
+    static Notification minimal(Context c) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null && nm.getNotificationChannel(CH_LIVE) == null) {
+                try { nm.createNotificationChannel(new NotificationChannel(CH_LIVE, "Steps", NotificationManager.IMPORTANCE_LOW)); }
+                catch (RuntimeException ignored) { }
+            }
+        }
+        return new NotificationCompat.Builder(c, CH_LIVE)
+            .setSmallIcon(R.drawable.ic_stat_steps)
+            .setContentTitle("MAHDI-JYM")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSilent(true)
+            .setOngoing(true)
+            .build();
+    }
+
     static Notification build(Context c, StepStore s, double speed, boolean moving) {
         int steps = s.total();
         int goal = s.goal();

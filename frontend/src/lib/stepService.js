@@ -13,24 +13,44 @@ import { t, getLang, dateLocale } from './i18n.js'
 import { goalOf, strideMeters, walkPrefs } from './stepMetrics.js'
 import { IRAQ_TZ, clockZoneOf } from './liveClock.js'
 
-let pluginP = null
-async function plugin() {
-  if (!MOBILE) return null
-  if (!pluginP) {
-    pluginP = (async () => {
+// IMPORTANT: a Capacitor plugin proxy answers *every* property — `then` included — so it
+// looks like a promise. Returning it from an async function (or resolving any promise with
+// it) makes JS call `proxy.then(resolve, reject)`, which goes to a native method that doesn't
+// exist and never calls back: every `await` on it hangs forever. (That was the 2.1/2.2 bug
+// behind "Starting…" that never ended and a permission dialog that never closed.) So the
+// proxy only ever travels inside a plain box: `{ P }`.
+let boxP = null
+function box() {
+  if (!MOBILE) return Promise.resolve(null)
+  if (!boxP) {
+    boxP = (async () => {
       try {
         const { registerPlugin, Capacitor } = await import('@capacitor/core')
         if (Capacitor.getPlatform() !== 'android') return null
         if (!Capacitor.isPluginAvailable('StepService')) return null
-        return registerPlugin('StepService')
+        return { P: registerPlugin('StepService') }
       } catch { return null }
     })()
   }
-  return pluginP
+  return boxP
 }
 
+/** Rejects with Error('timeout') when `p` takes longer than `ms`. */
+export function withTimeout(p, ms) {
+  let timer
+  return Promise.race([
+    Promise.resolve(p).finally(() => clearTimeout(timer)),
+    new Promise((_, rej) => { timer = setTimeout(() => { const e = new Error('timeout'); e.code = 'timeout'; rej(e) }, ms) }),
+  ])
+}
+
+// Native calls answer in milliseconds; these limits only matter when something is wrong.
+const QUICK_MS = 8000
+const START_MS = 15000
+const ASK_MS = 120000           // the system permission dialog waits for the user
+
 /** true on the Android app with the native service compiled in. */
-export async function hasStepService() { return !!(await plugin()) }
+export async function hasStepService() { return !!(await box()) }
 
 /** The texts the service shows, in the app's language. {steps} / {left} are filled natively. */
 export function serviceStrings(S) {
@@ -94,28 +114,42 @@ export function serviceConfig(S, weightKg) {
 }
 
 export async function serviceAvailable() {
-  const P = await plugin()
-  if (!P) return { stepCounter: false }
-  try { return await P.isAvailable() } catch { return { stepCounter: false } }
+  const b = await box()
+  if (!b) return { stepCounter: false }
+  try { return await withTimeout(b.P.isAvailable(), QUICK_MS) } catch { return { stepCounter: false } }
 }
 
+const DENIED = { activityRecognition: 'denied', notifications: 'denied' }
+
+/**
+ * Current permission state; with `interactive`, asks for what's missing first ('activity':
+ * only when physical activity is missing — notifications were asked already). Never throws.
+ */
 export async function servicePermissions(interactive) {
-  const P = await plugin()
-  if (!P) return { activityRecognition: 'denied', notifications: 'denied' }
-  let st = await P.getPermissionStatus()
-  if (interactive && (st.activityRecognition !== 'granted' || st.notifications !== 'granted')) st = await P.requestPermissions()
-  return st
+  const b = await box()
+  if (!b) return DENIED
+  let st
+  try { st = await withTimeout(b.P.getPermissionStatus(), QUICK_MS) } catch { st = null }
+  const missing = !st || st.activityRecognition !== 'granted' || (interactive !== 'activity' && st.notifications !== 'granted')
+  if (interactive && missing) {
+    try { st = await withTimeout(b.P.requestPermissions(), ASK_MS) }
+    catch { try { st = await withTimeout(b.P.getPermissionStatus(), QUICK_MS) } catch { /* keep */ } }
+  }
+  return st && typeof st === 'object' ? { ...DENIED, ...st } : DENIED
 }
 
+/** Calls a plugin method. `start` throws (code 'denied' | 'error' | 'timeout'); others return null on failure. */
 export async function call(method, arg) {
-  const P = await plugin()
-  if (!P) return null
-  try { return await P[method](arg || {}) } catch (e) { if (method === 'start') throw e; return null }
+  const b = await box()
+  if (!b) return null
+  try { return await withTimeout(b.P[method](arg || {}), method === 'start' ? START_MS : QUICK_MS) }
+  catch (e) { if (method === 'start') throw e; return null }
 }
 
 export async function onServiceEvent(name, fn) {
-  const P = await plugin()
-  if (!P) return () => {}
-  const h = await P.addListener(name, fn)
-  return () => { try { h.remove() } catch { /* */ } }
+  const b = await box()
+  if (!b) return () => {}
+  let h = null
+  try { h = await withTimeout(b.P.addListener(name, fn), QUICK_MS) } catch { /* no live events; polling covers it */ }
+  return () => { try { h?.remove() } catch { /* */ } }
 }

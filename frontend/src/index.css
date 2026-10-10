@@ -995,6 +995,7 @@ h4.sec{
   background:var(--surface-2);border-radius:12px;padding:10px 11px;margin-bottom:14px}
 .pg-legal .icn{flex:none;font-size:16px;color:var(--yellow);margin-top:1px}
 .pg-go{width:100%}
+.pg-warn{color:var(--red)}
 .pg-later{background:none;border:0;color:var(--label-2);font:inherit;font-size:14px;padding:12px;width:100%;cursor:pointer}
 .pg-apk{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;text-decoration:none}
 

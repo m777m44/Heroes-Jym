@@ -2,11 +2,13 @@ package io.github.m777m44.mahdijym.steps;
 
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.Manifest;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -21,6 +23,8 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.speech.tts.TextToSpeech;
+
+import androidx.core.content.ContextCompat;
 
 import org.json.JSONObject;
 
@@ -70,6 +74,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     private TextToSpeech tts;
     private boolean ttsReady;
     private BroadcastReceiver screenReceiver;
+    private boolean bailed;
 
     private final Runnable notifyRunnable = () -> { notifyQueued = false; publish(true); };
     private final Runnable tick = new Runnable() {
@@ -110,23 +115,59 @@ public class StepCounterService extends Service implements SensorEventListener {
         f.addAction(Intent.ACTION_DATE_CHANGED);
         f.addAction(Intent.ACTION_TIME_CHANGED);
         f.addAction(Intent.ACTION_TIMEZONE_CHANGED);
-        registerReceiver(screenReceiver, f);   // system broadcasts: no export flag needed
+        try {
+            // system broadcasts only; the flag keeps Android 14+'s registerReceiver check happy
+            ContextCompat.registerReceiver(this, screenReceiver, f, ContextCompat.RECEIVER_NOT_EXPORTED);
+        } catch (RuntimeException e) { screenReceiver = null; }
+    }
+
+    /**
+     * true when the step sensors may be read: Android 10+ needs the "Physical activity"
+     * permission, and Android 14+ refuses the "health" foreground service without it.
+     */
+    static boolean canCount(Context c) {
+        return Build.VERSION.SDK_INT < 29
+            || ContextCompat.checkSelfPermission(c, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * The one way the app starts (or sends an action to) the service. Never throws: refuses
+     * when the permission is missing (a start would be stopped at once anyway) and swallows
+     * the OS's background-start refusal. Returns whether the start was handed to the OS.
+     */
+    static boolean send(Context c, String action) {
+        if (!ACTION_STOP.equals(action) && !ACTION_PAUSE.equals(action) && !canCount(c)) return false;
+        try {
+            ContextCompat.startForegroundService(c, new Intent(c, StepCounterService.class).setAction(action));
+            return true;
+        } catch (RuntimeException e) {
+            // ForegroundServiceStartNotAllowedException (Android 12+, started from the
+            // background) or a ROM-specific refusal: the watchdog or opening the app retries.
+            return false;
+        }
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent != null && intent.getAction() != null ? intent.getAction() : ACTION_START;
 
-        // Every start must reach startForeground() quickly, whatever the action.
-        if (!goForeground()) {
-            if (store.running) Watchdog.schedule(this);   // the OS refused for now — retry later
-            stopSelf();
+        // Every start must reach startForeground() quickly, whatever the action — a service
+        // started with startForegroundService() that stops without it crashes the whole app
+        // ("did not then call Service.startForeground"). So even when we can't count we go
+        // foreground for a moment, then stop.
+        if (ACTION_STOP.equals(action)) {
+            if (!goForeground()) briefForeground();
+            shutdown();
+            return START_NOT_STICKY;
+        }
+        if (!canCount(this) || !goForeground()) {
+            // The "Physical activity" permission was revoked (Settings → Apps → Permissions),
+            // or the OS refused. Counting stays switched on, so opening the app again —
+            // after the permission is back — resumes it. No restart loop meanwhile.
+            bail();
             return START_NOT_STICKY;
         }
 
         switch (action) {
-            case ACTION_STOP:
-                shutdown();
-                return START_NOT_STICKY;
             case ACTION_PAUSE:
                 store.paused = true;
                 store.save();
@@ -152,7 +193,9 @@ public class StepCounterService extends Service implements SensorEventListener {
     }
 
     private boolean goForeground() {
-        Notification n = StepNotifier.build(this, store, 0, false);
+        Notification n;
+        try { n = StepNotifier.build(this, store, 0, false); }
+        catch (RuntimeException e) { n = StepNotifier.minimal(this); }
         try {
             if (Build.VERSION.SDK_INT >= 34) {
                 startForeground(StepNotifier.LIVE_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
@@ -166,16 +209,53 @@ public class StepCounterService extends Service implements SensorEventListener {
         }
     }
 
+    /**
+     * Can't count right now: satisfy the startForeground() contract with a type that needs no
+     * permission ("shortService" on Android 14+), then leave quietly.
+     */
+    private void bail() {
+        boolean fg = briefForeground();
+        stopListening();
+        main.removeCallbacksAndMessages(null);
+        bailed = true;                      // onDestroy: no kick — that would only loop
+        // The OS refused for now (not a permission problem): one calm retry in 15 minutes.
+        if (store != null && store.running && canCount(this)) Watchdog.schedule(this);
+        try {
+            if (fg) {
+                if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
+                else stopForeground(true);
+            }
+        } catch (RuntimeException ignored) { }
+        stopSelf();
+    }
+
+    private boolean briefForeground() {
+        try {
+            Notification n = StepNotifier.minimal(this);
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(StepNotifier.LIVE_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE);
+            } else {
+                startForeground(StepNotifier.LIVE_ID, n);
+            }
+            return true;
+        } catch (RuntimeException e) { return false; }
+    }
+
+    /** Android 14+: the "shortService" fallback ran out of time (it never should). */
+    @Override public void onTimeout(int startId) { bail(); }
+
     private void startListening() {
         if (listening || sensors == null) return;
         boolean ok = false;
-        if (counter != null) ok = sensors.registerListener(this, counter, SensorManager.SENSOR_DELAY_UI, 0);
-        if (detector != null) ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_FASTEST, 0);
+        try {
+            if (counter != null) ok = sensors.registerListener(this, counter, SensorManager.SENSOR_DELAY_UI, 0);
+            if (detector != null) ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_FASTEST, 0);
+        } catch (RuntimeException ignored) { /* a sensor HAL hiccup — the next start retries */ }
         listening = ok;
     }
 
     private void stopListening() {
-        if (sensors != null) sensors.unregisterListener(this);
+        try { if (sensors != null) sensors.unregisterListener(this); } catch (RuntimeException ignored) { }
         listening = false;
         samples.clear();
     }
@@ -190,8 +270,10 @@ public class StepCounterService extends Service implements SensorEventListener {
         main.removeCallbacksAndMessages(null);
         emit(0, false);
         StepWidget.updateAll(this);
-        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
-        else stopForeground(true);
+        try {
+            if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
+            else stopForeground(true);
+        } catch (RuntimeException ignored) { }
         stopSelf();
     }
 
@@ -356,12 +438,12 @@ public class StepCounterService extends Service implements SensorEventListener {
     @Override public void onDestroy() {
         stopListening();
         main.removeCallbacksAndMessages(null);
-        try { unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
+        try { if (screenReceiver != null) unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
         if (tts != null) { tts.shutdown(); tts = null; }
         if (instance == this) instance = null;
         // Destroyed while counting is still on (killed by the system or a cleaner, not
         // switched off): come back in a few seconds.
-        if (store != null && store.running) Watchdog.kick(this, 5_000);
+        if (!bailed && store != null && store.running && canCount(this)) Watchdog.kick(this, 5_000);
         super.onDestroy();
     }
 
@@ -369,7 +451,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         // Swiping the app away from recents must not stop the counter. Most phones leave the
         // foreground service alone; some kill the whole process with the task — the kick
         // brings it back.
-        if (store != null && store.running) Watchdog.kick(this, 2_000);
+        if (store != null && store.running && canCount(this)) Watchdog.kick(this, 2_000);
         super.onTaskRemoved(rootIntent);
     }
 

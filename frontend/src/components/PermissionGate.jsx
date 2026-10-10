@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore.js'
 import { usePedometer } from '../store/usePedometer.js'
 import { t, useLang, LANGS } from '../lib/i18n.js'
 import {
-  consentGiven, saveConsent, platform, deviceInfo, requestRuntime, requestBattery, openAutostart, ok,
+  consentGiven, saveConsent, platform, deviceInfo, requestRuntime, requestBattery, openAutostart, openAppSettings, ok,
 } from '../lib/permissions.js'
 import Icon from './Icon.jsx'
 import { Button, Segmented } from './ui.jsx'
@@ -22,10 +22,18 @@ export default function PermissionGate() {
   const [phase, setPhase] = useState('ask')          // ask | run | autostart | done
   const [st, setSt] = useState({})                   // step → 'wait' | 'ok' | 'fail' | 'skip'
   const [dev, setDev] = useState({ autostart: false })
+  const [canSkip, setCanSkip] = useState(false)      // "Skip" shows after a few seconds of setup
+  const [needSettings, setNeedSettings] = useState(false)
   const cancelled = useRef(false)
+  const skipped = useRef(false)
 
-  useEffect(() => { platform().then(setPlat) }, [])
+  useEffect(() => { platform().then(setPlat).catch(() => {}) }, [])
   useEffect(() => () => { cancelled.current = true }, [])
+  useEffect(() => {
+    if (phase !== 'run') return
+    const id = setTimeout(() => setCanSkip(true), 6000)
+    return () => clearTimeout(id)
+  }, [phase])
   if (!open) return null
 
   const android = plat === 'android'
@@ -34,32 +42,54 @@ export default function PermissionGate() {
   // Arabic / English, plus the phone's own language when it's another one (each in its own script).
   const cur = S.lang || 'en'
   const langOpts = [...new Set(['ar', 'en', cur])].map(l => ({ value: l, label: LANGS[l] || l }))
+  const stop = () => cancelled.current || skipped.current
 
+  // Every step is bounded (the bridge times out) and the whole run is in try/finally, so the
+  // dialog always moves on — even if a phone never answers one of the system screens.
   const agree = async () => {
     setPhase('run')
     saveConsent()
-    // 1. system prompts
-    mark('perm', 'wait')
-    const r = await requestRuntime(plat)
-    mark('perm', ok(r.activity) || r.activity === 'unsupported' ? 'ok' : 'fail')
-    mark('notif', ok(r.notifications) ? 'ok' : r.notifications === 'unsupported' ? 'skip' : 'fail')
-    // 2. switch the counter on
-    mark('count', 'wait')
-    let started = false
-    if (ok(r.activity) || (!android && r.activity !== 'denied')) {
-      try { started = await usePedometer.getState().start({ interactive: true }) } catch { started = false }
+    let next = 'done'
+    try {
+      const p = await platform().catch(() => 'web')   // don't trust a not-yet-resolved state
+      setPlat(p)
+      const isAndroid = p === 'android'
+      // 1. system prompts
+      mark('perm', 'wait')
+      const r = await requestRuntime(p)
+      mark('perm', ok(r.activity) || r.activity === 'unsupported' ? 'ok' : 'fail')
+      mark('notif', ok(r.notifications) ? 'ok' : r.notifications === 'unsupported' ? 'skip' : 'fail')
+      if (isAndroid && !ok(r.activity)) setNeedSettings(true)
+      if (stop()) return
+      // 2. switch the counter on
+      mark('count', 'wait')
+      let started = false
+      if (ok(r.activity) || (!isAndroid && r.activity !== 'denied')) {
+        try { started = await usePedometer.getState().start({ interactive: true }) } catch { started = false }
+      }
+      mark('count', started ? 'ok' : 'fail')
+      if (!isAndroid || stop()) return
+      // 3. battery exemption → keeps running without stopping
+      mark('battery', 'wait')
+      const b = await requestBattery({ isCancelled: stop })
+      mark('battery', b ? 'ok' : 'fail')
+      mark('boot', started ? 'ok' : 'fail')
+      if (stop()) return
+      // 4. the maker's own autostart switch
+      const d = await deviceInfo()
+      setDev(d)
+      if (d.autostart) next = 'autostart'
+    } catch {
+      /* never stay on "Setting up…" */
+    } finally {
+      if (!cancelled.current) setPhase(cur => (cur === 'run' ? next : cur))
     }
-    mark('count', started ? 'ok' : 'fail')
-    if (!android) { setPhase('done'); return }
-    // 3. battery exemption → keeps running without stopping
-    mark('battery', 'wait')
-    const b = await requestBattery({ isCancelled: () => cancelled.current })
-    mark('battery', b ? 'ok' : 'fail')
-    mark('boot', started ? 'ok' : 'fail')
-    // 4. the maker's own autostart switch
-    const d = await deviceInfo()
-    setDev(d)
-    setPhase(d.autostart ? 'autostart' : 'done')
+  }
+
+  const skip = () => {
+    skipped.current = true
+    setSt(s => Object.fromEntries(Object.entries(s).map(([k, v]) => [k, v === 'wait' ? 'skip' : v])))
+    setPhase('done')
   }
 
   const close = () => setOpen(false)
@@ -104,6 +134,7 @@ export default function PermissionGate() {
         <h2 id="pg-title">{t('Setting up…')}</h2>
         <p className="pg-lead">{t('Answer “Allow” on each screen that appears.')}</p>
         {items}
+        {canSkip && <button className="pg-later" onClick={skip}>{t('Skip')}</button>}
       </>}
 
       {phase === 'autostart' && <>
@@ -121,6 +152,10 @@ export default function PermissionGate() {
         <p className="pg-lead">{android
           ? t('MAHDI-JYM now counts your steps in the background, also with the screen off and after a restart. You can change this any time under Walking.')
           : t('Browsers can only count while the page is open. For counting in the background, with the screen off and after a restart, install the Android app.')}</p>
+        {android && needSettings && <>
+          <p className="pg-lead pg-warn">{t('Motion access was denied. Allow it in your system settings, then try again.')}</p>
+          <Button className="pg-go" icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button>
+        </>}
         {!android && <a className="btn pg-apk" href={APK} target="_blank" rel="noopener"><Icon name="download" /><span>{t('Download the Android app')}</span></a>}
         <Button variant="primary" className="pg-go" onClick={close}>{t('Start')}</Button>
       </>}

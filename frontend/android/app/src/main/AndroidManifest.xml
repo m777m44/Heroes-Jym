@@ -26,7 +26,7 @@
         <service
             android:name=".steps.StepCounterService"
             android:exported="false"
-            android:foregroundServiceType="health" />
+            android:foregroundServiceType="health|shortService" />
 
         <receiver
             android:name=".steps.BootReceiver"

@@ -28,7 +28,8 @@ export async function platform() {
 }
 
 export async function deviceInfo() {
-  return (await serviceCall('getDeviceInfo')) || { autostart: false }
+  const d = await serviceCall('getDeviceInfo')
+  return d && typeof d === 'object' ? d : { autostart: false }
 }
 
 export async function batteryExempt() {
@@ -36,19 +37,36 @@ export async function batteryExempt() {
   return !!(r && r.ignoring)
 }
 
-/** Ask for the battery exemption and wait (up to `ms`) until it's granted or the user returns. */
-export async function requestBattery({ ms = 45000, poll = 1000, isCancelled = () => false } = {}) {
+/**
+ * Ask for the battery exemption and wait until it's granted — at most `ms`, and no longer
+ * than `afterReturn` once the app is visible again after the system screen was shown (the
+ * user said no, or the phone never showed the dialog).
+ */
+export async function requestBattery({ ms = 30000, poll = 1000, afterReturn = 2500, isCancelled = () => false } = {}) {
   if (await batteryExempt()) return true
+  if (isCancelled()) return false
   await serviceCall('requestBatteryExemption')
   const t0 = Date.now()
+  let wasHidden = false, backAt = 0
   while (Date.now() - t0 < ms && !isCancelled()) {
     await new Promise(r => setTimeout(r, poll))
     if (await batteryExempt()) return true
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden'
+    if (hidden) { wasHidden = true; backAt = 0 } else if (wasHidden && !backAt) backAt = Date.now()
+    if (backAt && Date.now() - backAt >= afterReturn) break
   }
   return batteryExempt()
 }
 
 export const openAutostart = () => serviceCall('openAutostartSettings')
+
+/** The app's page in the system settings (Permissions → Physical activity → Allow). */
+export async function openAppSettings() {
+  const r = await serviceCall('openAppSettings')
+  if (r && r.opened) return true
+  const a = await serviceCall('openAutostartSettings')
+  return !!(a && a.opened)   // falls back to the same page on older builds
+}
 
 /** Runtime permissions (system prompts). → { activity, notifications } as 'granted' | 'denied' | 'prompt' */
 export async function requestRuntime(plat) {

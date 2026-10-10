@@ -21,6 +21,8 @@ const TAG = 'mahdi-jym-steps'
 const fmt = n => Math.round(n).toLocaleString(dateLocale())
 
 let channelsReady = false
+// Returns a plain box, never the plugin itself: a Capacitor plugin proxy is "thenable" (it
+// answers `then`), so resolving a promise with it would hang forever. See stepService.js.
 async function native() {
   const { LocalNotifications } = await import('@capacitor/local-notifications')
   if (!channelsReady) {
@@ -29,7 +31,7 @@ async function native() {
     await LocalNotifications.createChannel({ id: CHANNEL, name: t('Step counter'), description: t('Your steps today, while counting'), importance: 2, visibility: 1, vibration: false }).catch(() => {})
     await LocalNotifications.createChannel({ id: CHANNEL_ALERTS, name: t('Walking milestones'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
   }
-  return LocalNotifications
+  return { LN: LocalNotifications }
 }
 async function swReg() {
   if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return null
@@ -39,7 +41,7 @@ async function swReg() {
 export async function ensurePermission() {
   try {
     if (MOBILE) {
-      const LN = await native()
+      const { LN } = await native()
       let p = await LN.checkPermissions()
       if (p.display !== 'granted') p = await LN.requestPermissions()
       return p.display === 'granted'
@@ -63,7 +65,7 @@ export async function showOngoing(data) {
   const { title, body } = ongoingText(data)
   try {
     if (MOBILE) {
-      const LN = await native()
+      const { LN } = await native()
       await LN.schedule({ notifications: [{ id: ONGOING_ID, title, body, ongoing: true, autoCancel: false, channelId: CHANNEL, extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
       return
     }
@@ -74,7 +76,7 @@ export async function showOngoing(data) {
 
 export async function clearOngoing() {
   try {
-    if (MOBILE) { const LN = await native(); await LN.cancel({ notifications: [{ id: ONGOING_ID }] }); return }
+    if (MOBILE) { const { LN } = await native(); await LN.cancel({ notifications: [{ id: ONGOING_ID }] }); return }
     const reg = await swReg()
     if (reg) (await reg.getNotifications({ tag: TAG })).forEach(n => n.close())
   } catch (e) { /* */ }
@@ -86,7 +88,7 @@ export async function notifyMilestone(steps, kind) {
   const body = kind === 'goal' ? t('{0} steps today — well done.', fmt(steps)) : t('Keep it up — every step counts.')
   try {
     if (MOBILE) {
-      const LN = await native()
+      const { LN } = await native()
       await LN.schedule({ notifications: [{ id: MILESTONE_ID, title, body, channelId: CHANNEL_ALERTS, extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
       return
     }

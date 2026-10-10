@@ -19,7 +19,7 @@
 // Like the rest of the Capacitor code, the plugin is only imported in the mobile build.
 import { MOBILE } from './mobile.js'
 import { StepDetector } from './stepDetection.js'
-import { hasStepService, serviceAvailable, servicePermissions, call, onServiceEvent } from './stepService.js'
+import { hasStepService, serviceAvailable, servicePermissions, call, onServiceEvent, withTimeout } from './stepService.js'
 
 export class PedometerError extends Error {
   constructor(code, msg) { super(msg || code); this.code = code }   // 'unsupported' | 'denied'
@@ -29,11 +29,12 @@ export const preferredSource = () => (MOBILE ? 'native' : 'motion')
 
 async function nativeSource({ onSteps, onTotal }) {
   const { CapacitorPedometer } = await import('@capgo/capacitor-pedometer')
-  const avail = await CapacitorPedometer.isAvailable().catch(() => ({}))
-  if (!avail.stepCounting) throw new PedometerError('unsupported')
-  let perm = await CapacitorPedometer.checkPermissions()
-  if (perm.activityRecognition !== 'granted') perm = await CapacitorPedometer.requestPermissions()
-  if (perm.activityRecognition !== 'granted') throw new PedometerError('denied')
+  // Bounded: a native call that never answers must not leave the counter "Starting…".
+  const avail = await withTimeout(CapacitorPedometer.isAvailable(), 8000).catch(() => ({}))
+  if (!avail || !avail.stepCounting) throw new PedometerError('unsupported')
+  let perm = await withTimeout(CapacitorPedometer.checkPermissions(), 8000).catch(() => ({}))
+  if (perm.activityRecognition !== 'granted') perm = await withTimeout(CapacitorPedometer.requestPermissions(), 120000).catch(() => ({}))
+  if (!perm || perm.activityRecognition !== 'granted') throw new PedometerError('denied')
 
   // numberOfSteps is cumulative since startMeasurementUpdates — emit the difference.
   let last = 0
@@ -45,7 +46,10 @@ async function nativeSource({ onSteps, onTotal }) {
     last = n
     if (d > 0) onSteps(d, { pace: m.currentPace })
   })
-  await CapacitorPedometer.startMeasurementUpdates()
+  try { await withTimeout(CapacitorPedometer.startMeasurementUpdates(), 8000) } catch (e) {
+    try { await handle.remove() } catch { /* */ }
+    throw new PedometerError('error', e && e.message)
+  }
 
   // iOS keeps a week of step history: today's total covers time the app wasn't running.
   let platform = 'web'
@@ -105,13 +109,19 @@ async function motionSource({ onSteps }) {
 async function serviceSource({ onState, config, interactive }) {
   const avail = await serviceAvailable()
   if (!avail.stepCounter && !avail.stepDetector) throw new PedometerError('unsupported')
-  const perm = await servicePermissions(interactive)
+  // From a tap, ask for what's missing; a launch-time reattach only looks.
+  const perm = await servicePermissions(interactive ? 'activity' : false)
   if (perm.activityRecognition !== 'granted') throw new PedometerError('denied')
   const off = await onServiceEvent('steps', st => onState && onState(st))
   let st
   try { st = await call('start', { config: config(), attach: !interactive }) } catch (e) {
-    off()
-    throw new PedometerError(e && e.code === 'denied' ? 'denied' : 'error', e && e.message)
+    // A slow phone may answer late although the service did start: look before giving up.
+    const now = e && e.code === 'timeout' ? await call('getState') : null
+    if (now && now.running) st = now
+    else {
+      off()
+      throw new PedometerError(e && e.code === 'denied' ? 'denied' : 'error', e && e.message)
+    }
   }
   if (st && onState) onState(st)
   return {

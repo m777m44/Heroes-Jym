@@ -46,6 +46,7 @@ import java.util.List;
  *   getLaunchRoute()              → { route } when opened from the notification / widget
  *   getDeviceInfo()               → { manufacturer, model, sdk, autostart, exactAlarms }
  *   openAutostartSettings()       → { opened } — the maker's "autostart" screen (Xiaomi, Huawei…)
+ *   openAppSettings()             → { opened } — the app's page in Settings (permissions)
  * Events: 'steps' (snapshot, up to 4×/s while the app is open), 'open' ({ route }).
  */
 @CapacitorPlugin(
@@ -65,7 +66,8 @@ public class StepServicePlugin extends Plugin {
             try { notifyListeners("steps", JSObject.fromJSONObject(state)); } catch (JSONException ignored) { }
         };
         if (getActivity() != null) launchRoute = routeOf(getActivity().getIntent());
-        Watchdog.ensureRunning(ctx());      // opening the app always revives a killed counter
+        try { Watchdog.ensureRunning(ctx()); }   // opening the app always revives a killed counter
+        catch (RuntimeException ignored) { }
     }
 
     private static String routeOf(Intent i) {
@@ -155,7 +157,7 @@ public class StepServicePlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
-        if (Build.VERSION.SDK_INT >= 29 && getPermissionState("activityRecognition") != PermissionState.GRANTED) {
+        if (!StepCounterService.canCount(ctx())) {
             call.reject("Physical activity permission is required", "denied");
             return;
         }
@@ -167,14 +169,13 @@ public class StepServicePlugin extends Plugin {
         s.running = true;
         if (!attach) s.paused = false;
         s.save();
-        try {
-            ContextCompat.startForegroundService(ctx(), new Intent(ctx(), StepCounterService.class).setAction(StepCounterService.ACTION_START));
-        } catch (RuntimeException e) {
+        if (!StepCounterService.send(ctx(), StepCounterService.ACTION_START)) {
             s.running = false;
             s.save();
-            call.reject("Could not start the step counter: " + e.getMessage(), "error");
+            call.reject("Could not start the step counter", "error");
             return;
         }
+        Watchdog.schedule(ctx());
         call.resolve(snapshot());
     }
 
@@ -187,20 +188,18 @@ public class StepServicePlugin extends Plugin {
         call.resolve(snapshot());
     }
 
-    private void sendAction(String action) {
-        Intent i = new Intent(ctx(), StepCounterService.class).setAction(action);
-        ContextCompat.startForegroundService(ctx(), i);
-    }
-
     @PluginMethod
     public void pause(PluginCall call) {
-        try { if (StepCounterService.instance != null) sendAction(StepCounterService.ACTION_PAUSE); } catch (RuntimeException ignored) { }
+        StepStore s = StepStore.get(ctx());
+        if (s.running) { s.paused = true; s.save(); }
+        if (StepCounterService.instance != null) StepCounterService.send(ctx(), StepCounterService.ACTION_PAUSE);
         call.resolve(snapshot());
     }
 
     @PluginMethod
     public void resume(PluginCall call) {
-        try { sendAction(StepCounterService.ACTION_RESUME); } catch (RuntimeException e) { call.reject(e.getMessage(), "error"); return; }
+        if (!StepCounterService.canCount(ctx())) { call.reject("Physical activity permission is required", "denied"); return; }
+        if (!StepCounterService.send(ctx(), StepCounterService.ACTION_RESUME)) { call.reject("Could not resume the step counter", "error"); return; }
         call.resolve(snapshot());
     }
 
@@ -213,8 +212,11 @@ public class StepServicePlugin extends Plugin {
         s.save();
         StepCounterService svc = StepCounterService.instance;
         if (svc != null) {
-            try { sendAction(StepCounterService.ACTION_STOP); } catch (RuntimeException e) { ctx().stopService(new Intent(ctx(), StepCounterService.class)); }
+            if (!StepCounterService.send(ctx(), StepCounterService.ACTION_STOP)) {
+                try { ctx().stopService(new Intent(ctx(), StepCounterService.class)); } catch (RuntimeException ignored) { }
+            }
         }
+        Watchdog.cancel(ctx());
         NotificationManagerCompat.from(ctx()).cancel(StepNotifier.LIVE_ID);
         StepWidget.updateAll(ctx());
         call.resolve(snapshot());
@@ -344,6 +346,21 @@ public class StepServicePlugin extends Plugin {
                 ctx().startActivity(i);
             } catch (RuntimeException ignored) { }
         }
+        JSObject r = new JSObject();
+        r.put("opened", opened);
+        call.resolve(r);
+    }
+
+    /** The app's page in the system settings — where "Physical activity" can be allowed again. */
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        boolean opened = false;
+        try {
+            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx().getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx().startActivity(i);
+            opened = true;
+        } catch (RuntimeException ignored) { }
         JSObject r = new JSObject();
         r.put("opened", opened);
         call.resolve(r);

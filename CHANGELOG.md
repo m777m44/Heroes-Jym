@@ -3,6 +3,57 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.2.1 — 2026-10-10
+
+**Bug fixes: the step counter counts, the permission dialog moves on, no crash from App info.**
+*إصلاحات: العدّاد يعدّ الخطوات، نافذة الأذونات تتقدّم وتُغلق، ولا انهيار عند فتح معلومات التطبيق.*
+
+### 🐞 Step counter stuck on 0 / "Starting…" forever (Android)
+- **Root cause:** the bridge to the native step service resolved a promise *with the Capacitor
+  plugin object itself*. That object answers every property, `then` included, so JavaScript
+  treated it as a promise and waited for a native `then()` that doesn't exist — every call to
+  the service hung forever. The counter never started (0 steps, "Starting…" for good), and the
+  first-launch dialog waited on it, so it never asked for the activity permission and never
+  closed. The plugin now only travels inside a plain `{ P }` box. Same fix for the
+  notification plugin used by the browser/iPhone counter.
+- Every native call is now **time-limited** (8 s; 15 s for `start`; 2 min for a system
+  permission prompt), and the whole start is capped too: the status can no longer stay on
+  "Starting…" — it ends in *Counting*, *Denied* or *Try again*, and a start that finishes late
+  is still picked up.
+- Overlapping starts (the launch-time reattach and a tap) share one attempt instead of the tap
+  being ignored; a tap after a failed launch-time start gets its own try, with prompts.
+- A slow `start` that times out although the service did start is detected (`getState`).
+- Coming back from the system settings re-checks the permission and starts counting by itself.
+
+### ✅ First-launch dialog always moves on
+- The dialog resolves the platform itself before asking (it no longer falls back to the
+  browser variant), every step is bounded, and the run is wrapped so it always reaches the
+  final screen. A **Skip** link appears after 6 s of setup.
+- The battery-exemption wait is shorter (max 30 s, and 2.5 s after you return from the
+  system screen) and can be skipped.
+- When physical activity ends up denied, the final screen and the Walking screen offer
+  **Open settings** (new native `openAppSettings()` → the app's page → Permissions).
+
+### 💥 No crash from App info → Permissions
+- Android kills an app's process when one of its permissions is switched **off** — that is
+  system behaviour. What crashed was the restart afterwards: the watchdog / sticky restart
+  started the foreground service without the activity permission, Android 14+ refused the
+  "health" service type, and the service stopped without ever calling `startForeground()` —
+  which Android punishes by crashing the app, again on every retry.
+  - One permission-checked way to start the service (`StepCounterService.send`) used by the
+    watchdog, the boot receiver, the plugin and the restart kicks: no permission → no start.
+  - The service always satisfies the `startForeground()` contract, even when it has to stop
+    at once (a permission-free `shortService` fallback on Android 14+), and no longer
+    reschedules itself in a loop after a refused start.
+  - Defensive `try/catch` around sensor registration, the screen receiver
+    (`ContextCompat.registerReceiver`, Android 14+ flag), alarms and boot.
+- Counting stays switched on while the permission is off; allow it again and open the app —
+  counting continues.
+
+### 🧪 Tests
+- New regression tests with a Capacitor-like *thenable* proxy (the exact failure), native call
+  time-outs, and the store's start logic (hung start, late start, overlapping starts). 304 tests.
+
 ## v2.2.0 — 2026-10-10
 
 **Runs nonstop in the background, asks once, speaks Arabic properly.** *يعمل في الخلفية بلا توقف، يطلب الأذونات مرة واحدة، وعربي بالكامل.*

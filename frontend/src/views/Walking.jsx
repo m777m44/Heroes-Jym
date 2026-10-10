@@ -11,6 +11,7 @@ import {
 import { useNow, msToMidnight, stepsPerHourNeeded, motivationTier, fmtDuration, clockZoneOf, IRAQ_TZ } from '../lib/liveClock.js'
 import { MOBILE } from '../lib/mobile.js'
 import { hasStepService, call as serviceCall } from '../lib/stepService.js'
+import { openAppSettings } from '../lib/permissions.js'
 import StepRing from '../components/pedometer/StepRing.jsx'
 import StepChart from '../components/pedometer/StepChart.jsx'
 import HourChart from '../components/pedometer/HourChart.jsx'
@@ -143,6 +144,7 @@ export default function Walking() {
         {tracking
           ? <Button icon={source === 'service' ? 'stop' : 'pause'} onClick={stop}>{t('Stop counting')}</Button>
           : <Button variant="primary" icon="play" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>{paused ? t('Resume counting') : t('Start counting')}</Button>}
+        {status === 'denied' && MOBILE && <Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button>}
       </div>
     </div>
 

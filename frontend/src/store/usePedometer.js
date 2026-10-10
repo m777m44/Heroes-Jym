@@ -28,9 +28,10 @@ import { lastBW } from '../lib/history.js'
 import { milestoneHaptic, goalHaptic } from '../lib/hapticFeedback.js'
 import { celebrate, playCheer } from '../lib/celebrate.js'
 import { ensurePermission, showOngoing, clearOngoing, notifyMilestone } from '../lib/stepNotification.js'
-import { hasStepService, serviceConfig, call as serviceCall } from '../lib/stepService.js'
+import { hasStepService, serviceConfig, servicePermissions, call as serviceCall } from '../lib/stepService.js'
 
 const TRACK_KEY = 'mj_walk_tracking'
+const LATE = Symbol('late')
 const FLUSH_MS = 5000
 const ACTIVE_GAP = 5000      // steps closer than this count as continuous walking time
 
@@ -49,6 +50,11 @@ let prunedOn = null
 let svc = null               // last snapshot from the native service
 let svcSig = ''              // signature of the config last sent to the service
 let historySynced = false
+let startP = null            // the start in progress — concurrent callers share it
+let startInteractive = false
+// Last line of defence for "Starting…": the bridge already times every native call out, this
+// caps the whole start (a tap may wait for permission prompts, a launch-time reattach not).
+const START_LIMIT_MS = { tap: 150000, launch: 30000 }
 
 const today = () => todayISO()
 const visible = () => typeof document === 'undefined' || document.visibilityState === 'visible'
@@ -208,6 +214,59 @@ export const usePedometer = create((set, get) => {
     document.addEventListener('visibilitychange', onShown)
   }
 
+  // A source is ready: wire it up.
+  const attach = async (source, interactive) => {
+    src = source
+    samples = []; cum = 0; pendingMs = 0; pendingH = new Array(24).fill(0); lastStepT = 0; pace = null; lastNote = { t: 0, steps: -1 }
+    set(s => ({
+      status: s.status === 'paused' && src.kind === 'service' ? 'paused' : 'tracking',
+      source: src.kind, sessionSteps: 0, sessionStart: Date.now(), speed: 0,
+    }))
+    localStorage.setItem(TRACK_KEY, '1')
+    startTimers()
+    startGps()
+    if (src.kind === 'service') {
+      svcSig = JSON.stringify(configNow())
+      if (!historySynced) syncHistory()
+      flush()
+    } else if (walkPrefs(S()).notify) {
+      const ok = interactive ? await ensurePermission() : true
+      if (ok) note(total(), true)
+    }
+  }
+
+  const run = async interactive => {
+    set({ status: 'starting' })
+    const p = startSource({ onSteps, onTotal, onState, config: configNow, interactive })
+    let timer
+    const limit = new Promise(r => { timer = setTimeout(() => r(LATE), interactive ? START_LIMIT_MS.tap : START_LIMIT_MS.launch) })
+    let source
+    try {
+      source = await Promise.race([p, limit])
+    } catch (e) {
+      clearTimeout(timer)
+      const status = e && (e.code === 'denied' || e.code === 'unsupported') ? e.code : 'error'
+      if (interactive || status === 'unsupported') localStorage.removeItem(TRACK_KEY)
+      set({ status })
+      return false
+    }
+    clearTimeout(timer)
+    if (source === LATE) {
+      set({ status: 'error' })            // the button works again; a late success still counts
+      p.then(late => {
+        if (src || startP) { try { late.kind === 'service' ? late.detach() : late.stop() } catch { /* */ } return }
+        attach(late, false)
+      }).catch(() => {})
+      return false
+    }
+    if (src) {                            // stopped and restarted meanwhile — keep the newer one
+      try { source.kind === 'service' ? source.detach() : source.stop() } catch { /* */ }
+      return true
+    }
+    await attach(source, interactive)
+    return true
+  }
+
   return {
     status: 'idle',      // idle | starting | tracking | paused | denied | unsupported | error
     source: null,        // 'service' | 'native' | 'motion'
@@ -227,43 +286,28 @@ export const usePedometer = create((set, get) => {
       // Paused from the notification: resume the running service instead of restarting.
       if (serviceMode() && get().status === 'paused') {
         const st = await serviceCall('resume')
-        if (st) onState(st)
-        return true
+        if (st) { onState(st); return true }
+        // Refused: usually "Physical activity" was switched off in the system settings.
+        const p = await servicePermissions(false)
+        if (p.activityRecognition !== 'granted') set({ status: 'denied' })
+        return false
       }
-      if (src || get().status === 'starting') return get().status === 'tracking'
+      if (src) return get().status === 'tracking' || get().status === 'paused'
+      if (startP) {
+        // Another start is running. Share its result — but a tap after a launch-time attempt
+        // that couldn't ask for permissions gets its own try.
+        const ok = await startP
+        if (ok || !interactive || startInteractive || src) return ok || !!src
+      }
       // iOS Safari only grants motion access from a tap; resuming on load has to wait for one.
       if (!interactive && preferredSource() === 'motion' && typeof window !== 'undefined' &&
           window.DeviceMotionEvent && typeof window.DeviceMotionEvent.requestPermission === 'function') {
         set({ status: 'paused' })
         return false
       }
-      set({ status: 'starting' })
-      try {
-        src = await startSource({ onSteps, onTotal, onState, config: configNow, interactive })
-      } catch (e) {
-        src = null
-        const status = e && (e.code === 'denied' || e.code === 'unsupported') ? e.code : 'error'
-        if (interactive || status === 'unsupported') localStorage.removeItem(TRACK_KEY)
-        set({ status })
-        return false
-      }
-      samples = []; cum = 0; pendingMs = 0; pendingH = new Array(24).fill(0); lastStepT = 0; pace = null; lastNote = { t: 0, steps: -1 }
-      set(s => ({
-        status: s.status === 'paused' && src.kind === 'service' ? 'paused' : 'tracking',
-        source: src.kind, sessionSteps: 0, sessionStart: Date.now(), speed: 0,
-      }))
-      localStorage.setItem(TRACK_KEY, '1')
-      startTimers()
-      startGps()
-      if (src.kind === 'service') {
-        svcSig = JSON.stringify(configNow())
-        if (!historySynced) syncHistory()
-        flush()
-      } else if (walkPrefs(S()).notify) {
-        const ok = interactive ? await ensurePermission() : true
-        if (ok) note(total(), true)
-      }
-      return true
+      startInteractive = interactive
+      startP = run(interactive).finally(() => { startP = null })
+      return startP
     },
 
     /** Pause without switching off (service: the notification stays, with a Resume button). */
@@ -293,7 +337,7 @@ export const usePedometer = create((set, get) => {
      * was last closed.
      */
     async resume() {
-      if (src) return
+      if (src || startP) return
       if (await hasStepService()) {
         const st = await serviceCall('getState')
         if (st && st.running) { await get().start({ interactive: false }); return }

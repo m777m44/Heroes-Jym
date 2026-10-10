@@ -8,8 +8,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 
-import androidx.core.content.ContextCompat;
-
 /**
  * Keeps the step counter alive.
  *
@@ -35,22 +33,21 @@ public class Watchdog extends BroadcastReceiver {
     private static final int REQ_PERIODIC = 41, REQ_KICK = 42;
 
     @Override public void onReceive(Context c, Intent intent) {
-        StepStore s = StepStore.get(c);
-        if (!s.running) { cancel(c); return; }
-        ensureRunning(c);
-        schedule(c);                          // keep the chain going
+        try {
+            StepStore s = StepStore.get(c);
+            if (!s.running) { cancel(c); return; }
+            ensureRunning(c);
+            schedule(c);                      // keep the chain going
+        } catch (RuntimeException ignored) { /* never crash from an alarm */ }
     }
 
     /** Starts the service if counting is on and it isn't running. Safe to call any time. */
     static void ensureRunning(Context c) {
         StepStore s = StepStore.get(c);
         if (!s.running || StepCounterService.instance != null) return;
-        try {
-            ContextCompat.startForegroundService(c, new Intent(c, StepCounterService.class).setAction(StepCounterService.ACTION_START));
-        } catch (RuntimeException ignored) {
-            // ForegroundServiceStartNotAllowedException (Android 12+) or a missing permission:
-            // try again at the next check.
-        }
+        // Refuses (without crashing) while "Physical activity" is not allowed, and when
+        // Android 12+ won't let a background app start a foreground service: next check.
+        StepCounterService.send(c, StepCounterService.ACTION_START);
     }
 
     private static PendingIntent pi(Context c, int req) {

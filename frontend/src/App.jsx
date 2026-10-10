@@ -68,6 +68,17 @@ function Shell() {
   const authed = user || isGuest
   // the step counter comes back on by itself if it was on when the app was last closed
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
+  // back from the system settings (e.g. "Physical activity" allowed again): try once more
+  useEffect(() => {
+    if (!ready || !authed) return
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return
+      const st = usePedometer.getState().status
+      if (st === 'denied' || st === 'error') usePedometer.getState().resume()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [ready, authed])
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
