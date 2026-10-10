@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_steps_label">MAHDI-JYM · الخطوات</string>
+    <string name="widget_steps_desc">خطوات اليوم والتقدّم نحو الهدف والمسافة والسعرات مع ساعة حيّة.</string>
+</resources>

@@ -4,4 +4,6 @@
     <string name="title_activity_main">MAHDI-JYM</string>
     <string name="package_name">io.github.m777m44.mahdijym</string>
     <string name="custom_url_scheme">io.github.m777m44.mahdijym</string>
+    <string name="widget_steps_label">MAHDI-JYM · Steps</string>
+    <string name="widget_steps_desc">Today\'s steps, goal progress, distance, calories and a live clock.</string>
 </resources>
