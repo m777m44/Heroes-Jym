@@ -20,7 +20,7 @@ export default function StepChart({ days, goal, today, h = 120 }) {
           return <g key={d.d}>
             <rect x={x} y={top + ih - bh} width={w} height={bh} rx={Math.min(5, w / 2)}
               fill={hit ? 'var(--acc)' : 'var(--surface-3)'} stroke={isToday ? 'var(--label-2)' : 'none'} strokeWidth={isToday ? 1.2 : 0}>
-              <title>{dt.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short' })}: {d.n.toLocaleString(dateLocale())}</title>
+              <title>{`${dt.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short' })}: ${d.n.toLocaleString(dateLocale())}`}</title>
             </rect>
             <text x={x + w / 2} y={h - 5} textAnchor="middle" fontSize="10.5" fill={isToday ? 'var(--label)' : 'var(--label-3)'}>{t(DAYS[dt.getDay()])}</text>
           </g>

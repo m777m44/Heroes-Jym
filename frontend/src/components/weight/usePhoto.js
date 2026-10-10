@@ -6,7 +6,7 @@ import { useStore } from '../../store/useStore.js'
 let version = 0
 const subs = new Set()
 export const photosChanged = () => { version++; subs.forEach(f => f()) }
-export const usePhotoVersion = () => useSyncExternalStore(f => { subs.add(f); return () => subs.delete(f) }, () => version)
+export const usePhotoVersion = () => useSyncExternalStore(f => { subs.add(f); return () => subs.delete(f) }, () => version, () => 0)
 
 /** The profile photos are filed under on this device (signed-in id, or "local"). */
 export const usePhotoProfile = () => useStore(s => s.user?.id || 'local')
