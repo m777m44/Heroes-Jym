@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Collapsed live notification: steps / goal, progress, % and the ticking clock. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/notif_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="7dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="7dp">
+
+    <ImageView
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_stat_steps"
+        android:tint="#FF30D158" />
+
+    <TextView
+        android:id="@+id/n_steps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:fontFeatureSettings="tnum"
+        android:includeFontPadding="false"
+        android:textColor="#FF30D158"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/n_goal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:maxLines="1"
+        android:textColor="#FF8E8E93"
+        android:textSize="12sp" />
+
+    <ProgressBar
+        android:id="@+id/n_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="6dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="1"
+        android:indeterminate="false"
+        android:max="100"
+        android:progressDrawable="@drawable/notif_progress" />
+
+    <TextView
+        android:id="@+id/n_pct"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:fontFeatureSettings="tnum"
+        android:textColor="#FFF2F2F7"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextClock
+        android:id="@+id/n_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFeatureSettings="tnum"
+        android:format12Hour="hh:mm:ss"
+        android:format24Hour="HH:mm:ss"
+        android:textColor="#FFF2F2F7"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:timeZone="Asia/Baghdad" />
+</LinearLayout>

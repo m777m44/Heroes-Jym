@@ -1,0 +1,134 @@
+import { useEffect } from 'react'
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useStore } from './store/useStore.js'
+import { useUI } from './store/useUI.js'
+import { bindUI } from './components/ui.jsx'
+import { ACCENTS } from './lib/format.js'
+import { setLang, useLang, isRTL } from './lib/i18n.js'
+import { setNav, nav } from './lib/nav.js'
+import { onNotificationTap } from './lib/mobile.js'
+import { useWakeLock } from './lib/wakelock.js'
+import { startFlow } from './sheets.jsx'
+import Icon from './components/Icon.jsx'
+import TabBar from './components/TabBar.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
+import Modals from './components/Modals.jsx'
+import Toast from './components/Toast.jsx'
+import RestTimer from './components/RestTimer.jsx'
+import Login from './views/Login.jsx'
+import Home from './views/Home.jsx'
+import Plan from './views/Plan.jsx'
+import RoutineEdit from './views/RoutineEdit.jsx'
+import Workout from './views/Workout.jsx'
+import Stats from './views/Stats.jsx'
+import History from './views/History.jsx'
+import Library from './views/Library.jsx'
+import Settings from './views/Settings.jsx'
+import Admin from './views/Admin.jsx'
+import Coach from './views/Coach.jsx'
+import CoachIntake from './views/CoachIntake.jsx'
+import CoachProposal from './views/CoachProposal.jsx'
+import Walking from './views/Walking.jsx'
+import BodyWeight from './views/BodyWeight.jsx'
+import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
+import PermissionGate from './components/PermissionGate.jsx'
+import { DEMO } from './lib/demo.js'
+import { usePedometer } from './store/usePedometer.js'
+
+bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
+
+function applyPrefs(theme, accent) {
+  const de = document.documentElement
+  de.dataset.theme = theme === 'light' ? 'light' : 'dark'
+  de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+}
+
+function Shell() {
+  const navigate = useNavigate()
+  const loc = useLocation()
+  const { S, user, ready } = useStore()
+  const isGuest = useStore(s => s.isGuest())
+  const langV = useLang()   // re-renders the whole shell when the language (pack) changes
+  useEffect(() => { setNav(navigate) }, [navigate])
+  useEffect(() => { onNotificationTap(to => nav(to)) }, [])
+  useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
+  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
+  useEffect(() => {
+    const de = document.documentElement
+    de.lang = S.lang || 'en'
+    de.dir = isRTL(S.lang) ? 'rtl' : 'ltr'
+  }, [langV, S.lang])
+  // every tab/route change starts at the top of the page
+  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
+  // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
+  useWakeLock(!!S.active && S.keepAwake !== false)
+
+  const authed = user || isGuest
+  // the step counter comes back on by itself if it was on when the app was last closed
+  useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
+  // back from the system settings (e.g. "Physical activity" allowed again): try once more
+  useEffect(() => {
+    if (!ready || !authed) return
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return
+      const st = usePedometer.getState().status
+      if (st === 'denied' || st === 'error') usePedometer.getState().resume()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [ready, authed])
+  if (!ready && !authed) return (
+    <div id="app">
+      <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
+        <Icon name="dumbbell" />
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {/* keyed on the route: a view that throws is contained, and switching tabs
+          re-mounts the boundary, so the tab bar is always a way out */}
+      <div id="app" className="vfade" key={loc.pathname}>
+        <ErrorBoundary>
+          {!authed ? <Login /> : (
+            <Routes>
+              <Route path="/home" element={<Home />} />
+              <Route path="/plan" element={<Plan />} />
+              <Route path="/plan/r/:id" element={<RoutineEdit />} />
+              <Route path="/workout" element={<Workout />} />
+              <Route path="/stats" element={<Stats />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/walk" element={<Walking />} />
+              <Route path="/weight" element={<BodyWeight />} />
+              {/* The Coach screens gate themselves on the instance config; the routes exist
+                  unconditionally so a deep link from a notification lands somewhere sane
+                  rather than on the catch-all. */}
+              <Route path="/coach" element={<Coach />} />
+              <Route path="/coach/intake" element={<CoachIntake />} />
+              <Route path="/coach/proposal" element={<CoachProposal />} />
+              <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+          )}
+        </ErrorBoundary>
+      </div>
+      <TabBar onStart={startFlow} />
+      <RestTimer />
+      <Modals />
+      <Toast />
+      <CelebrationOverlay />
+      {authed && ready && !DEMO && <PermissionGate />}
+    </>
+  )
+}
+
+export default function App() {
+  const boot = useStore(s => s.boot)
+  useEffect(() => { boot() }, [boot])
+  return <HashRouter><Shell /></HashRouter>
+}

@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.m777m44.mahdijym",
+  "appName": "MAHDI-JYM",
+  "webDir": "dist",
+  "backgroundColor": "#0c0e12",
+  "android": {
+    "allowMixedContent": false
+  }
+}

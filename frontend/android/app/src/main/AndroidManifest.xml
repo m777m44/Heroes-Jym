@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- MAHDI-JYM 2.1 — all-day step counter: a foreground service (type "health") that reads
+             the hardware step counter with the phone locked, and keeps the live notification and
+             the home-screen widget current. -->
+        <service
+            android:name=".steps.StepCounterService"
+            android:exported="false"
+            android:foregroundServiceType="health|shortService" />
+
+        <receiver
+            android:name=".steps.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Restarts the counter if the system or a battery "cleaner" killed it (see Watchdog.java). -->
+        <receiver
+            android:name=".steps.Watchdog"
+            android:exported="false" />
+
+        <receiver
+            android:name=".steps.StepWidget"
+            android:exported="true"
+            android:label="@string/widget_steps_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_steps_info" />
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Workout-day reminder: lets the local-notifications plugin fire at the exact minute
+         on Android 12+. Where it isn't granted, scheduling silently falls back to inexact
+         alarms — the reminder still arrives, just not to the minute. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- MAHDI-JYM 2.0 — step counter: reads the hardware step sensor (Android 10+ asks the
+         user at runtime). Declared by the pedometer plugin too; listed here so the app's own
+         manifest says what it uses. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- Ongoing step notification + reminders (Android 13+ asks at runtime). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- All-day step counter service (2.1): runs in the foreground with its live notification;
+         Android 14+ requires the "health" service type and its permission. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <!-- Restart the step counter after a reboot, if it was running. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- "Keep counting in the background": opens the system dialog that exempts the app from
+         battery optimisation, so aggressive OEM battery savers don't kill the counter. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />
+    <!-- Haptic tick every 1,000 steps. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Optional "GPS speed" switch on the walking screen (off by default). Positions are used
+         on the device to compute speed and are never stored or sent anywhere. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+</manifest>

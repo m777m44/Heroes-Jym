@@ -1,0 +1,150 @@
+# Builds the Android app (Capacitor) and, for version tags, publishes it as a GitHub Release.
+#
+#   push to main / PR branch  →  signed APK uploaded as a workflow artifact
+#   push tag v*               →  same APK attached to a GitHub Release as MAHDI-JYM.apk, so
+#                                https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk
+#                                always points at the newest build (the website links there)
+#
+# Signing: if the repository secrets ANDROID_KEYSTORE_BASE64 + ANDROID_KEYSTORE_PASSWORD
+# (optionally ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) exist they are used. Otherwise the
+# committed public keystore in frontend/android/keystore/ signs the build — that keeps the
+# signature identical across builds (so updates install over the old app without losing data)
+# with zero setup. See docs/MOBILE.md → "Signing" before distributing the app widely.
+name: Android APK
+
+on:
+  push:
+    branches: [main, 'arena/**']
+    tags: ['v*']
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Capacitor 7 / AGP 8.7 need JDK 21.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - run: npm ci
+        working-directory: frontend
+
+      # VITE_MOBILE build (exercise media from the pinned jsDelivr dataset, so the APK stays
+      # small) + `cap sync`, which copies dist/ and the native plugins into android/.
+      - run: npm run build:mobile
+        working-directory: frontend
+
+      - name: Select signing key
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PW" ]; then
+            echo "Signing with the private release key from repository secrets"
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            {
+              echo "MJ_KEYSTORE=$RUNNER_TEMP/release.keystore"
+              echo "MJ_KEYSTORE_PASSWORD=$KS_PW"
+              echo "MJ_KEY_ALIAS=${KEY_ALIAS:-mahdi-jym}"
+              echo "MJ_KEY_PASSWORD=${KEY_PW:-$KS_PW}"
+              echo "MJ_KEYSTORE_TYPE=$( [ "${KS_B64:0:4}" = "/u3+" ] && echo jks || echo pkcs12 )"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::notice::No ANDROID_KEYSTORE_* secrets — signing with the committed public keystore"
+            {
+              echo "MJ_KEYSTORE=$GITHUB_WORKSPACE/frontend/android/keystore/mahdi-jym-public.p12"
+              echo "MJ_KEYSTORE_PASSWORD=mahdi-jym-public"
+              echo "MJ_KEY_ALIAS=mahdi-jym"
+            } >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK
+        working-directory: frontend/android
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          if ! ./gradlew --no-daemon assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
+            # Surface compiler / resource errors as annotations — they are readable through the
+            # checks API even where the raw job log isn't.
+            msg=$(grep -E "error:|ERROR:|warning: \[|\.java:[0-9]+|\.xml:[0-9]+|AAPT|What went wrong|Execution failed|^> |^  " "$RUNNER_TEMP/gradle.log" \
+              | grep -v "^> Task" | head -80 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Gradle build failed::$msg"
+            exit 1
+          fi
+
+      - name: Verify signature and name the files
+        id: out
+        run: |
+          VERSION=$(node -p "require('./frontend/package.json').version")
+          SRC=frontend/android/app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$APKSIGNER" verify --verbose --print-certs "$SRC" | tee "$RUNNER_TEMP/sig.txt"
+          mkdir -p out
+          cp "$SRC" out/MAHDI-JYM.apk
+          cp "$SRC" "out/MAHDI-JYM-v$VERSION.apk"
+          (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          SIZE=$(du -m out/MAHDI-JYM.apk | cut -f1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          {
+            echo "### MAHDI-JYM v$VERSION — Android APK (${SIZE} MB)"
+            echo '```'
+            grep -E "Verified using|SHA-256 digest" "$RUNNER_TEMP/sig.txt" || true
+            cat out/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: MAHDI-JYM-v${{ steps.out.outputs.version }}-apk
+          path: out/
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          **MAHDI-JYM ${TAG}** — جسمك، خطتك، إرادتك.
+
+          ### Install on Android (6.0+)
+          1. Download **MAHDI-JYM.apk** below on your phone.
+          2. Open it and allow *Install unknown apps* for your browser / file manager when asked.
+          3. Tap **Install**. Updates install over the old version — your data stays.
+
+          ### التثبيت على أندرويد (6.0 أو أحدث)
+          1. حمّل ملف **MAHDI-JYM.apk** من الأسفل على هاتفك.
+          2. افتحه واسمح بـ «تثبيت التطبيقات غير المعروفة» للمتصفح أو مدير الملفات عند الطلب.
+          3. اضغط **تثبيت**. التحديثات تُثبَّت فوق النسخة القديمة وتبقى بياناتك.
+
+          See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md) for what's new.
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --title "MAHDI-JYM $TAG" --notes-file "$RUNNER_TEMP/notes.md" --latest
+          fi
