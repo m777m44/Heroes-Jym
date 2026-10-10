@@ -8,6 +8,8 @@ MAHDI-JYM ships in two flavors from the same codebase:
 | Accounts | passkey sign-in, one profile per person | none — the phone *is* the account |
 | Data | synced to your server, readable on desktop | stays on the device (file in the app's private storage) |
 | Reminders | Web Push from your server | native local notifications, no server involved |
+| Step counter | accelerometer, while the page is open | hardware step sensor, keeps counting in the background (Android) |
+| Step notification | service-worker notification | ongoing notification (Android), silent replace (iOS) |
 | Exercise media | served by your server (`img/`, `gif/`) | loaded from the jsDelivr CDN |
 
 The mobile flavor never talks to a backend: no sign-in screen, no sync, no telemetry.
@@ -40,6 +42,30 @@ into both native projects — re-run it after every web-code change before build
 
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
 > Run a plain `npm run build` again before deploying `dist` to a server.
+
+## Steps, notifications and permissions (2.0)
+
+| Feature | Plugin | Android permission (asked at runtime) | iOS |
+|---|---|---|---|
+| Step counter | `@capgo/capacitor-pedometer` 7.x | `ACTIVITY_RECOGNITION` — *Physical activity* | `NSMotionUsageDescription` — *Motion & Fitness* |
+| Ongoing step notification, reminders | `@capacitor/local-notifications` | `POST_NOTIFICATIONS` (Android 13+) | notification prompt |
+| 1,000-step haptics | `@capacitor/haptics` | `VIBRATE` (install-time) | — |
+| GPS speed (optional, off by default) | WebView geolocation | `ACCESS_FINE_LOCATION` | `NSLocationWhenInUseUsageDescription` |
+
+Nothing is requested at launch: the first tap on **Start counting** asks for physical
+activity (and notifications if the step notification is on); location is only asked
+while counting with GPS speed switched on. Every step value and position stays on the phone.
+
+- **Android** counts in the step sensor while the app sleeps; the steps arrive the next time
+  MAHDI-JYM reads it. Some vendors (Xiaomi, Huawei, Samsung "deep sleep") kill background
+  apps aggressively — exclude MAHDI-JYM from battery optimisation if counts lag.
+- **iOS** has no ongoing notifications and no background sensor stream for third-party apps;
+  when you open the app, today's total is filled in from the CoreMotion history.
+- **Reminders** are scheduled as dated notifications 14 days ahead and rescheduled whenever
+  the app opens or the plan changes, so open the app at least once every two weeks.
+
+After pulling 2.0 into an existing native project, run `npx cap sync` once so Gradle and
+CocoaPods pick up the two new plugins.
 
 ## App icons & splash screens
 

@@ -1,6 +1,101 @@
 # Changelog
 
-## Unreleased
+All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
+History before 2.0.0 is the upstream openGym project's, kept below unchanged.
+
+## v2.0.0 — 2026-10-10
+
+**openGym becomes MAHDI-JYM** (short name **MH-JYM**) — *جسمك، خطتك، إرادتك.* Same design,
+same colors, same privacy rules, same AGPL-3.0 license; a new name, walking, and verified body
+weight.
+
+### Rebrand
+- Renamed everywhere: app name, PWA manifest, page titles, passkey relying-party name,
+  notifications, print-outs, exports, Docker images (`ghcr.io/m777m44/mahdi-jym-{api,web}`),
+  OCI labels, docs and website. Android/iOS app id `io.github.m777m44.mahdijym`.
+- **Nothing you have breaks:** plan files shared from openGym (`opengym_plan`) still import,
+  and the mobile app picks up its old `opengym-state.json` on first launch.
+- Settings credits openGym; NOTICE.md records both upstream projects.
+
+### 🚶 Pedometer
+- Step counting on the device: the hardware step sensor in the mobile app
+  (`@capgo/capacitor-pedometer`; Android keeps counting while the app sleeps, iOS fills in
+  today from the motion history), an accelerometer step detector in the browser while the page
+  is open (`lib/stepDetection.js` — low-pass magnitude, adaptive threshold, cadence window).
+- **Speed (km/h)**, **distance**, **calories** and **active time**, live. Stride from height
+  (0.415 × height) or entered by hand; calories from your latest weigh-in. Optional **GPS speed**
+  (off by default; positions are never stored or sent).
+- **Customizable daily step goal** with suggestions (fixed steps plus one above your own
+  average). Step ring on Home, new **Walking** screen with a 7-day chart, streak, weekly
+  total/average, goal-met days and best day.
+- Daily totals live in your state (`steps`) and sync like everything else; background writes
+  are throttled so walking doesn't re-upload your state every few seconds.
+
+### 🔔 Ongoing step notification
+- A silent, in-place notification while counting: steps / goal, distance, speed. Android:
+  a true ongoing notification on its own low-importance channel; browser: a service-worker
+  notification with a fixed tag. Tapping it opens the Walking screen.
+
+### 📳 Haptics · 🎉 Celebration
+- A triple haptic tick at every 1,000 steps and a longer pattern at the goal
+  (`@capacitor/haptics`, Vibration API in browsers).
+- A **5-second celebration overlay**: an SVG figure raising its arms, a confetti burst in the
+  palette colors, a short Web Audio chime (no audio files) and a countdown bar. Respects
+  *prefers-reduced-motion*; tap to dismiss. Haptics, celebration and notification each have
+  their own switch.
+
+### ⏰ Smarter daily reminder
+- The workout-day reminder now carries your step goal; optional **walk reminder on rest days**,
+  sent only while the goal isn't met.
+- **Smart time suggestion** from when you usually start training (median start, 30 minutes
+  earlier), one tap to use it.
+- **Follow-up an hour later** if the workout still isn't logged (on by default).
+- Mobile: dated local notifications planned 14 days ahead and refreshed whenever the app opens
+  or the plan changes (`lib/dailyReminder.js`). Web: the server's push loop uses the same rules
+  (`api/reminders.js`). Notification taps deep-link to Today or Walking.
+
+### ⚖️ Verified body weight
+- New **Body weight** screen: current, previous and the difference; change since the first
+  weigh-in; weekly trend over four weeks; estimated date for reaching the goal.
+- **Comparison against the target** with a progress bar from where the goal was set;
+  **BMI** and category once a height is entered.
+- **Verification on entry:** values outside the human range, or jumps too large for the time
+  since the last weigh-in, ask you to double-check before saving.
+- **Scale photo** per weigh-in, stored only on the device that took it (IndexedDB), never
+  uploaded or synced, deleted together with the weigh-in.
+- Chart with 30 d / 90 d / 1 y / all, and the full paged history with per-entry deltas.
+
+### 🌍 Languages
+- **Arabic** — every string translated, with a right-to-left layout (numbers, charts and
+  number fields stay left-to-right; chevrons mirror). 13 languages.
+- All new strings translated into the existing 11 locales.
+
+### Under the hood
+- New pure modules with tests: `stepDetection`, `stepMetrics`, `weightTracker`,
+  `dailyReminder` (frontend) and `reminders` (api), plus a render smoke test for the new
+  screens and a plan-share test for the legacy key.
+- Android: `ACTIVITY_RECOGNITION`, `POST_NOTIFICATIONS`, `VIBRATE`, optional location
+  permissions declared; iOS: motion and when-in-use location usage strings.
+- Fixed an unescaped `&` in `assets/banner.svg` that made it invalid XML.
+
+### Known limitations
+- Browsers only deliver motion data while the page is open and on screen; for all-day counting
+  use the mobile app.
+- iOS has no ongoing notifications — the step notification there is a normal one, replaced
+  silently.
+- Mobile reminders are planned two weeks ahead; open the app at least once every two weeks to
+  keep them coming.
+- Server push reminder texts are in English (as in openGym).
+
+---
+
+# Upstream history (openGym)
+
+The entries below are [openGym](https://github.com/DuarteSantos8/openGym)'s own changelog,
+including the AI Coach fork MAHDI-JYM is built on. "openGym" in them means the project as it
+was then.
+
+## AI Coach fork (alexpcosta/openGym) — merged into MAHDI-JYM 2.0
 
 ### The AI Coach
 
