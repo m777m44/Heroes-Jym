@@ -23,4 +23,8 @@ COPY server.js ./
 COPY coach/ ./coach/
 ENV NODE_ENV=production
 EXPOSE 3000
+LABEL org.opencontainers.image.title="MAHDI-JYM api" \
+      org.opencontainers.image.version="2.0.0" \
+      org.opencontainers.image.source="https://github.com/m777m44/Heroes-Jym" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
 CMD ["node", "server.js"]

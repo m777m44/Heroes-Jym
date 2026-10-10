@@ -1,7 +1,15 @@
 # Third-party notices
 
-openGym — Copyright (C) 2026 Duarte Santos.
-openGym's own code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
+**MAHDI-JYM** is a modified version of **openGym** (<https://github.com/DuarteSantos8/openGym>,
+including the AI Coach fork at <https://github.com/alexpcosta/openGym>), renamed and extended
+with walking/pedometer tracking, celebrations, smarter reminders and a dedicated body-weight
+page. As required by the AGPL v3.0 (section 5), this notice records that the work was modified;
+the list of changes is in [CHANGELOG.md](CHANGELOG.md) under 2.0.0.
+
+- MAHDI-JYM modifications — Copyright (C) 2026 the MAHDI-JYM contributors.
+- openGym — Copyright (C) 2026 Duarte Santos.
+
+Both are licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENSE)).
 
 ## App store exception
 
@@ -12,16 +20,19 @@ with the AGPL, provided the corresponding source code remains available under th
 the project repository. This permission applies to the distribution channel only and does
 not otherwise limit the license.
 
+This permission was granted by the openGym copyright holder for openGym's code and is reproduced
+here unchanged; it covers that code as it appears in MAHDI-JYM.
+
 ## Bundled AI provider CLI
 
 The api image installs the [**Claude Code CLI**](https://github.com/anthropics/claude-code)
 (`@anthropic-ai/claude-code`, pinned in `api/Dockerfile`) so the optional AI Coach works
-without the instance owner installing anything. openGym invokes it as a separate process at
+without the instance owner installing anything. MAHDI-JYM invokes it as a separate process at
 runtime and does not link against it or include its source; this is mere aggregation, and
-openGym's own AGPL v3.0 licensing is unchanged.
+MAHDI-JYM's own AGPL v3.0 licensing is unchanged.
 
 The CLI is distributed under its own terms, and using it requires an account with the
-provider. Both are matters between the instance owner and Anthropic — openGym ships no
+provider. Both are matters between the instance owner and Anthropic — MAHDI-JYM ships no
 credentials and asks its users for none. Instances that would rather not carry it can leave
 the Coach disabled (the default) or set `COACH_DISABLED=1`.
 
@@ -63,7 +74,7 @@ The exercise names, instructions (English in `frontend/src/lib/exercises-data.js
 languages in `frontend/src/instr/`, regenerated via `scripts/build-instructions.mjs`), images
 and animations (fetched into `media/` at build time) come from
 [**hasaneyldrm/exercises-dataset**](https://github.com/hasaneyldrm/exercises-dataset)
-and are **not** covered by openGym's AGPL license — they remain under that dataset's own terms.
+and are **not** covered by MAHDI-JYM's AGPL license — they remain under that dataset's own terms.
 The media files are not distributed in this repository; they are downloaded from the upstream
-source on first run. If you redistribute openGym with the media included, review the upstream
+source on first run. If you redistribute MAHDI-JYM with the media included, review the upstream
 license first.

@@ -91,7 +91,7 @@ provider-agnostic from day one, as ID3 intended.
 ### 2.6 Sixteen pre-existing untranslated strings were picked up
 
 Extracting new keys surfaced ten demo/mobile-only strings (`Demo`, `Reset demo data`,
-`Self-host openGym`…) that were already missing from every locale pack before this work. They
+`Self-host MAHDI-JYM`…) that were already missing from every locale pack before this work. They
 are in the same files, so they were translated too. The locale packs went 613 → 781 keys.
 
 ---

@@ -13,12 +13,16 @@ import { t } from './i18n.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
-const FILE = 'opengym-state.json'
+const FILE = 'mahdi-jym-state.json'
+// Name of the mirror before the MAHDI-JYM rebrand — read once as a fallback so an existing
+// install keeps its log after updating.
+const LEGACY_FILE = 'opengym-state.json'
 
 export async function nativeLoad() {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-    const r = await Filesystem.readFile({ path: FILE, directory: Directory.Data, encoding: Encoding.UTF8 })
+    const read = path => Filesystem.readFile({ path, directory: Directory.Data, encoding: Encoding.UTF8 })
+    const r = await read(FILE).catch(() => read(LEGACY_FILE))
     return JSON.parse(r.data)
   } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
 }
