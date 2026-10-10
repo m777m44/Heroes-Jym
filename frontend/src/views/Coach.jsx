@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStore, DEF } from '../store/useStore.js'
+import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import { fmtDate } from '../lib/format.js'
@@ -8,14 +8,14 @@ import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
 import {
   coachAvailable, hasConsent, CONSENT_VERSION, emptyCoach,
-  canRevert, revertLast, changeTitle, recordDismissal
+  canRevert, revertLast, changeTitle
 } from '../lib/coach.js'
 import {
-  useCoachStatus, requestReview, resolvePending, forgetCoach, disclosure, JOB_ERRORS
+  useCoachStatus, requestReview, forgetCoach, disclosure
 } from '../lib/coach-api.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Button, TextArea, Switch, SelectRow } from '../components/ui.jsx'
+import { Section, Row, Button, TextArea, SelectRow } from '../components/ui.jsx'
 
 /* The Coach's home: what it's doing, what it's proposing, what it has done before, and every
    switch that turns it off. Deliberately one screen — a feature that edits your training plan

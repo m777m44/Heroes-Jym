@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
-import { fmtDate, fmtNum, fmtVol, fmtDur } from '../lib/format.js'
+import { fmtDate, fmtVol, fmtDur } from '../lib/format.js'
 import { workoutVolume, setsDone } from '../lib/history.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -64,7 +64,7 @@ function UserDetail({ id, onChanged, close }) {
   </>
 }
 
-function InvitesCard({ invites, reload }) {
+function InvitesCard({ invites, reload, inviteOnly }) {
   const toast = useUI(s => s.toast)
   const gen = () => api('/api/admin/invites/new', { method: 'POST', body: '{}' })
     .then(({ invite }) => { navigator.clipboard?.writeText(invite.code).catch(() => {}); toast('Code ' + invite.code + ' created & copied'); reload() })
@@ -76,7 +76,9 @@ function InvitesCard({ invites, reload }) {
   return <div className="card">
     <div className="row between"><h2 style={{ margin: 0 }}>Invite codes</h2>
       <Button variant="primary" size="sm" onClick={gen} icon="plus">Generate</Button></div>
-    <div className="small muted" style={{ margin: '6px 0 10px' }}>{open.length} unused · {used.length} redeemed</div>
+    <div className="small muted" style={{ margin: '6px 0 10px' }}>{open.length} unused · {used.length} redeemed · {inviteOnly
+      ? <span style={{ color: 'var(--orange)' }}>sign-up needs an invite (INVITE_ONLY)</span>
+      : <span>sign-up is open to anyone — set INVITE_ONLY=1 to require a code</span>}</div>
     {open.map(i => <div key={i.code} className="row between" style={{ padding: '7px 2px', borderBottom: '1px solid var(--sep)' }}>
       <span style={{ fontFamily: 'ui-monospace,SFMono-Regular,Menlo,monospace', fontWeight: 500, letterSpacing: '.06em' }}
         onClick={() => { navigator.clipboard?.writeText(i.code).catch(() => {}); toast('Copied ' + i.code) }}>{i.code}</span>
@@ -135,7 +137,7 @@ export default function Admin() {
 
     <AdminCoach />
 
-    <InvitesCard invites={invites} reload={loadInvites} />
+    <InvitesCard invites={invites} reload={loadInvites} inviteOnly={inviteOnly} />
 
     <h4 className="sec">Users</h4>
     <div className="list">

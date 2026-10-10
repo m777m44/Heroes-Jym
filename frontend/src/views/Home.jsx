@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
+import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
@@ -16,25 +16,33 @@ import { MOBILE } from '../lib/mobile.js'
 import { usePedometer } from '../store/usePedometer.js'
 import { goalOf, stepsOn, strideMeters, distanceKm } from '../lib/stepMetrics.js'
 import StepRing from '../components/pedometer/StepRing.jsx'
+import LiveClock from '../components/LiveClock.jsx'
+import AnimatedNumber from '../components/AnimatedNumber.jsx'
 
-// Today's steps at a glance; the whole card opens the walking screen.
+// Today's steps at a glance, with the live clock; the whole card opens the walking screen.
 function StepsCard({ nav }) {
   const S = useStore(s => s.S)
   const pending = usePedometer(s => s.pending)
   const status = usePedometer(s => s.status)
   const speed = usePedometer(s => s.speed)
+  const moving = usePedometer(s => s.moving)
   const steps = stepsOn(S, todayISO()) + pending
   const goal = goalOf(S)
   const km = distanceKm(steps, strideMeters(S))
   const tracking = status === 'tracking'
-  return <div className="card tappable steps-card" onClick={() => nav('/walk')}>
-    <StepRing value={steps} goal={goal} size={64} stroke={7}><Icon name="figureWalk" /></StepRing>
-    <div style={{ minWidth: 0, flex: 1 }}>
-      <div className="lbl2 row" style={{ gap: 6 }}>{t('Steps today')}{tracking && <span className="walk-dot live" />}</div>
-      <div className="steps-n">{steps.toLocaleString(dateLocale())} <span className="muted">/ {goal.toLocaleString(dateLocale())}</span></div>
-      <div className="small muted">{tracking ? t('{0} km/h', speed.toFixed(1)) + ' · ' : ''}{km.toFixed(2)} km{!tracking && !steps ? ' · ' + t('tap to start counting') : ''}</div>
+  const pct = Math.min(100, goal ? steps / goal * 100 : 0)
+  return <div className={'card tappable steps-card' + (steps >= goal ? ' done' : '')} onClick={() => nav('/walk')}>
+    <LiveClock compact />
+    <div className="steps-main">
+      <StepRing value={steps} goal={goal} size={78} stroke={8} ticks={false} live={tracking && moving}><Icon name="figureWalk" /></StepRing>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div className="lbl2 row" style={{ gap: 6 }}>{t('Steps today')}{tracking && <span className="walk-dot live" />}{status === 'paused' && <span className="small" style={{ color: 'var(--orange)' }}>{t('Paused')}</span>}</div>
+        <div className="steps-n"><AnimatedNumber value={steps} /> <span className="muted">/ {goal.toLocaleString(dateLocale())}</span></div>
+        <div className="steps-bar" aria-hidden="true"><i style={{ width: pct.toFixed(1) + '%' }} /></div>
+        <div className="small muted">{tracking ? t('{0} km/h', speed.toFixed(1)) + ' · ' : ''}{km.toFixed(2)} km{!tracking && !steps ? ' · ' + t('tap to start counting') : ''}</div>
+      </div>
+      <Icon name="chevronRight" className="chev" />
     </div>
-    <Icon name="chevronRight" className="chev" />
   </div>
 }
 

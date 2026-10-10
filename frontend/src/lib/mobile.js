@@ -9,7 +9,6 @@
 //
 // Like the demo build, MOBILE is replaced at build time, so all of this folds away in
 // web bundles; the Capacitor plugins are only ever imported behind it.
-import { t } from './i18n.js'
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
 
@@ -74,13 +73,18 @@ let tapBound = false
 export async function onNotificationTap(go) {
   if (!MOBILE || tapBound) return
   tapBound = true
+  const open = route => { if (typeof route === 'string' && route.startsWith('/')) go(route) }
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.addListener('localNotificationActionPerformed', ev => {
-      const route = ev?.notification?.extra?.route
-      if (typeof route === 'string' && route.startsWith('/')) go(route)
-    })
+    await LocalNotifications.addListener('localNotificationActionPerformed', ev => open(ev?.notification?.extra?.route))
   } catch { /* plugin unavailable */ }
+  // Android: the native step counter's live notification and home-screen widget.
+  try {
+    const { onServiceEvent, call } = await import('./stepService.js')
+    await onServiceEvent('open', ev => open(ev && ev.route))
+    const r = await call('getLaunchRoute')
+    open(r && r.route)
+  } catch { /* no step service */ }
 }
 
 export async function shareExport(json, filename) {

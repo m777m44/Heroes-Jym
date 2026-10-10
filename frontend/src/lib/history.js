@@ -1,5 +1,5 @@
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
-import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
+import { isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio } from './exercises.js'
 
 // How an exercise is logged (issue #16). This used to be derived from the body part alone,

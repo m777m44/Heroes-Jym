@@ -9,7 +9,7 @@
 // The reference is the union of all locales, not one blessed file: a key added to a
 // single locale then flags the other ten instead of passing unnoticed.
 
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -54,4 +54,30 @@ if (failed) {
   process.exit(1)
 }
 
-console.log(`${locales.size} locales, ${union.length} keys each — in sync.`)
+// Second invariant: every literal key the app passes to t() exists in the locales. A string
+// wrapped in t() but never added to a locale renders in English for every language, silently.
+// Covers t('…'), t("…") and the ternary form t(cond ? '…' : '…'); dynamic keys are skipped.
+const srcDir = join(localesDir, '..')
+const walk = d => readdirSync(d).flatMap(f => {
+  const p = join(d, f)
+  if (statSync(p).isDirectory()) return f === 'locales' ? [] : walk(p)
+  return /\.(jsx?|mjs)$/.test(f) && !/\.test\./.test(f) ? [p] : []
+})
+const unknown = new Map()
+const call = /\bt\((?:[^'"`()]*?\?\s*)?(['"])((?:\\.|(?!\1).)*)\1(?:\s*:\s*(['"])((?:\\.|(?!\3).)*)\3)?/g
+for (const file of walk(srcDir)) {
+  for (const m of readFileSync(file, 'utf8').matchAll(call)) {
+    for (const raw of [m[2], m[4]]) {
+      if (!raw) continue
+      const key = raw.replace(/\\(['"\\])/g, '$1')
+      if (!seen.has(key) && !unknown.has(key)) unknown.set(key, file.slice(srcDir.length + 1))
+    }
+  }
+}
+if (unknown.size) {
+  console.error(`\n${unknown.size} t() key(s) used in src/ but missing from every locale:`)
+  for (const [k, f] of unknown) console.error(`  ${JSON.stringify(k)}  (${f})`)
+  process.exit(1)
+}
+
+console.log(`${locales.size} locales, ${union.length} keys each — in sync, and every t() key in src/ is translated.`)

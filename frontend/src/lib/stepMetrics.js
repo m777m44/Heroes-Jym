@@ -7,6 +7,7 @@
 //   S.stepGoal  — daily target, default 10 000
 //   S.steps     — { 'YYYY-MM-DD': { n: steps, ms: active walking time } }
 //   S.walk      — preferences, see WALK_DEFAULTS
+//   S.steps[d].h — optional steps per hour [24], kept for the last KEEP_HOURLY_DAYS days
 //   S.heightCm  — optional; gives a better stride estimate (and BMI on the weight page)
 import { isoOf } from './format.js'
 
@@ -24,6 +25,8 @@ export const WALK_DEFAULTS = {
   haptics: true,      // vibrate every MILESTONE steps
   celebrate: true,    // the 5-second celebration on milestones and the goal
   gps: false,         // GPS speed (more accurate outdoors) — off: location is opt-in
+  voice: false,       // spoken encouragement every 1,000 steps and at the goal (Android app)
+  alertSound: true,   // milestone alerts make a sound (also needs the app's Sounds switch)
 }
 export const walkPrefs = S => ({ ...WALK_DEFAULTS, ...(S && S.walk) })
 
@@ -118,13 +121,51 @@ export function bestDay(S) {
   return best
 }
 
-/** Add steps (and active time) to a day, in place on a state draft. */
-export function addSteps(s, iso, n, ms = 0) {
+/**
+ * Add steps (and active time) to a day, in place on a state draft. With `hour` (0–23) the steps
+ * are also filed in that hour's bucket (S.steps[iso].h), which the "today by hour" chart reads.
+ */
+export function addSteps(s, iso, n, ms = 0, hour = null) {
   if (!(n > 0) && !(ms > 0)) return
   if (!s.steps || typeof s.steps !== 'object') s.steps = {}
   const day = s.steps[iso] || (s.steps[iso] = { n: 0, ms: 0 })
   day.n = Math.round((day.n || 0) + Math.max(0, n || 0))
   day.ms = Math.round((day.ms || 0) + Math.max(0, ms || 0))
+  if (Number.isInteger(hour) && hour >= 0 && hour < 24 && n > 0) {
+    const h = Array.isArray(day.h) && day.h.length === 24 ? day.h : (day.h = new Array(24).fill(0))
+    h[hour] = Math.round((h[hour] || 0) + n)
+  }
+}
+
+export const hourlyOn = (S, iso) => {
+  const h = S && S.steps && S.steps[iso] && S.steps[iso].h
+  return Array.isArray(h) && h.length === 24 ? h : new Array(24).fill(0)
+}
+
+/**
+ * Merge a whole day as reported by the native step counter ({ n, ms, h[24] }) — raising the
+ * count, the active time and each hour, never lowering anything already recorded (the day may
+ * also hold steps counted elsewhere, e.g. imported or from the browser). Returns the steps added.
+ */
+export function mergeDay(s, iso, rep) {
+  if (!rep || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 0
+  if (!s.steps || typeof s.steps !== 'object') s.steps = {}
+  const n = Math.max(0, Math.round(Number(rep.n ?? rep.steps) || 0))
+  const ms = Math.max(0, Math.round(Number(rep.ms ?? rep.activeMs) || 0))
+  const before = stepsOn(s, iso)
+  if (n > before) addSteps(s, iso, n - before)
+  if (ms > activeMsOn(s, iso)) {
+    if (!s.steps) s.steps = {}
+    const day = s.steps[iso] || (s.steps[iso] = { n: 0, ms: 0 })
+    day.ms = ms
+  }
+  const hr = rep.h || rep.hourly
+  if (Array.isArray(hr) && hr.length === 24 && hr.some(v => v > 0)) {
+    const day = s.steps[iso] || (s.steps[iso] = { n: 0, ms: 0 })
+    const h = Array.isArray(day.h) && day.h.length === 24 ? day.h : (day.h = new Array(24).fill(0))
+    for (let i = 0; i < 24; i++) { const v = Math.round(Number(hr[i]) || 0); if (v > h[i]) h[i] = v }
+  }
+  return Math.max(0, stepsOn(s, iso) - before)
 }
 
 /**
@@ -138,8 +179,14 @@ export function raiseSteps(s, iso, n) {
   return add
 }
 
+export const KEEP_HOURLY_DAYS = 14   // hourly buckets are only kept for the last two weeks
+
 export function pruneSteps(s, today, keep = KEEP_DAYS) {
   if (!s.steps) return
   const cut = daysBack(today, keep)
-  for (const d of Object.keys(s.steps)) if (d < cut) delete s.steps[d]
+  const cutH = daysBack(today, KEEP_HOURLY_DAYS)
+  for (const d of Object.keys(s.steps)) {
+    if (d < cut) delete s.steps[d]
+    else if (d < cutH && s.steps[d] && s.steps[d].h) delete s.steps[d].h
+  }
 }

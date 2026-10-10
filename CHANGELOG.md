@@ -3,6 +3,49 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.1.0 — 2026-10-10
+
+**The step counter goes all-day — on the lock screen.** *عدّاد خطوات يعمل طوال اليوم، حتى والهاتف مقفل.*
+
+### 📱 Live counter on the lock screen (Android)
+- New native **foreground step-counter service**: counts with the app closed, the screen off
+  and the phone locked; restarts itself after a reboot or an update. Uses the hardware step
+  counter (step detector as fallback) — light on battery.
+- **Live notification card**, also on the lock screen: steps / goal with a progress bar, a
+  clock ticking **to the second in Baghdad time**, walking time, distance, calories, speed, the
+  **countdown to midnight** and a motivation line that changes as you go — with **Pause /
+  Resume** and **Open** buttons. A pause set from the notification survives reopening the app.
+- **Home-screen widget** (4×2) with the same live numbers.
+- **Milestones with sound**: every 1,000 steps and at your goal — vibration, a sound on its
+  own channel, and an optional **voice coach** (Android text-to-speech, in the app language).
+- Steps are kept per **hour**; days walked without opening the app are merged in on launch
+  (raise-only — nothing recorded is ever lowered).
+- Walking → *Lock screen & background*: one-tap **battery-optimisation exemption**,
+  notification settings and a widget how-to. Phones without a step sensor fall back to the
+  accelerometer instead of "unsupported".
+
+### 🕰️ Live clock — Iraq time
+- A **live clock** on the Walking screen: hours, minutes and **ticking seconds** in Baghdad
+  time (UTC+3), the weekday, the Gregorian and **Hijri (Umm al-Qura)** dates, a **countdown to
+  midnight** with a day-progress bar, and the steps per hour still needed to reach the goal.
+  A compact version heads the steps card on Home. Settings: Baghdad or the device's zone.
+
+### ✨ A new-look step counter
+- Step ring redrawn: gradient arc with a soft glow, a tick every 1,000 steps, a bright dot
+  riding the arc, a breathing pulse while you walk, gold at the goal.
+- Numbers **roll up** to their new value; a walking figure bobs while steps come in.
+- New **Today by hour** chart; motivation line in five tiers; active time as H:MM:SS;
+  Live / Paused badges; a goal progress bar on the Home card.
+
+### 🐛 Fixes
+- 33 strings that were wrapped for translation but missing from every locale (weight check
+  warnings, "in {0} days", the demo login, the Coach demo, Stats' "Exercise") now translated
+  in all 12 languages; `check-locales.mjs` now also fails on any `t()` key missing from the
+  locales, so this can't silently happen again.
+- Admin: the invite-codes card now says whether sign-up is open or invite-only.
+- Removed unused imports across the app (lint-clean: no undefined names, no hook-rule
+  violations).
+
 ## v2.0.0 — 2026-10-10
 
 **openGym becomes MAHDI-JYM** (short name **MH-JYM**) — *جسمك، خطتك، إرادتك.* Same design,

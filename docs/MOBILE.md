@@ -56,9 +56,9 @@ Nothing is requested at launch: the first tap on **Start counting** asks for phy
 activity (and notifications if the step notification is on); location is only asked
 while counting with GPS speed switched on. Every step value and position stays on the phone.
 
-- **Android** counts in the step sensor while the app sleeps; the steps arrive the next time
-  MAHDI-JYM reads it. Some vendors (Xiaomi, Huawei, Samsung "deep sleep") kill background
-  apps aggressively — exclude MAHDI-JYM from battery optimisation if counts lag.
+- **Android** (2.1+) counts in a native foreground service — see below. Some vendors (Xiaomi,
+  Huawei, Samsung "deep sleep") kill background apps aggressively — exclude MAHDI-JYM from
+  battery optimisation (Walking → *Keep counting in the background*) if counts lag.
 - **iOS** has no ongoing notifications and no background sensor stream for third-party apps;
   when you open the app, today's total is filled in from the CoreMotion history.
 - **Reminders** are scheduled as dated notifications 14 days ahead and rescheduled whenever
@@ -66,6 +66,31 @@ while counting with GPS speed switched on. Every step value and position stays o
 
 After pulling 2.0 into an existing native project, run `npx cap sync` once so Gradle and
 CocoaPods pick up the two new plugins.
+
+## Live step counter on the lock screen (2.1, Android)
+
+The Android app counts steps in its own **foreground service** (`android/app/src/main/java/
+io/github/m777m44/mahdijym/steps/`), so counting goes on with the app closed, the screen off
+and the phone locked, and resumes by itself after a reboot.
+
+| Piece | File | What it does |
+|---|---|---|
+| Service | `StepCounterService.java` | Listens to the hardware step counter (step detector as fallback), files steps per day and per hour, computes speed/active time, fires the 1,000-step and goal alerts (vibration, sound, optional voice via Android TTS) |
+| Notification | `StepNotifier.java`, `res/layout/notif_steps_*.xml` | The live card on the notification shade **and the lock screen**: steps / goal, a progress bar, a clock ticking in Baghdad time (or the device zone) with seconds, walking time, km, kcal, the countdown to midnight and a motivation line; **Pause / Resume** and **Open** buttons |
+| Widget | `StepWidget.java`, `res/xml/widget_steps_info.xml` | Home-screen (and, where the launcher allows, lock-screen) widget with the same live numbers |
+| Storage | `StepStore.java` | Two months of daily totals + hourly buckets in SharedPreferences; the app merges them on launch (raise-only — nothing already recorded is ever lowered) |
+| Bridge | `StepServicePlugin.java` ↔ `frontend/src/lib/stepService.js` | `start / pause / resume / stop / configure / getState / getHistory`, battery-exemption and notification-settings shortcuts; `steps` and `open` events |
+| Boot | `BootReceiver.java` | Restarts the counter after a reboot or an app update if it was on |
+
+Permissions involved: `ACTIVITY_RECOGNITION`, `POST_NOTIFICATIONS` (Android 13+, asked on the
+first **Start counting**), `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_HEALTH`,
+`RECEIVE_BOOT_COMPLETED` and `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (only used when you tap
+*Keep counting in the background*). Texts on the notification come from the app's language
+setting. The service is used only in the Android app; browsers and iOS keep the 2.0 behaviour.
+
+**Lock-screen visibility:** Android shows the card on the lock screen when *Settings →
+Notifications → Notifications on lock screen* allows it ("show all content"). The shortcut
+Walking → *Notification settings* opens the app's page directly.
 
 ## App icons & splash screens
 

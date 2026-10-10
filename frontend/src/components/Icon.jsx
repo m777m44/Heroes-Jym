@@ -49,6 +49,11 @@ const P = {
   starFill: <path d="m12 3.9 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8Z" fill="currentColor" stroke="none" />,
   crown: <path d="M4.2 17.6h15.6M4.2 17.6 3.4 7.2l4.6 3.2L12 4.6l4 5.8 4.6-3.2-.8 10.4Z" />,
   bolt: <path d="M13.4 3.4 5.6 13.6h5.2l-.2 7 7.8-10.2h-5.2Z" />,
+  // 2.1 — background counting, voice coach, home-screen widget
+  stop: <rect x="6.4" y="6.4" width="11.2" height="11.2" rx="2.4" />,
+  battery: <><rect x="3.6" y="7.4" width="14.6" height="9.2" rx="2.2" /><path d="M20.4 10.6v2.8M6.8 10.4v3.2M9.8 10.4v3.2" /></>,
+  speaker: <><path d="M4.6 9.6h3.2l4.6-3.8v12.4l-4.6-3.8H4.6Z" /><path d="M15.6 9.2a4 4 0 0 1 0 5.6M18 6.8a7.4 7.4 0 0 1 0 10.4" /></>,
+  widget: <><rect x="4" y="4" width="7" height="7" rx="1.8" /><rect x="13" y="4" width="7" height="7" rx="1.8" /><rect x="4" y="13" width="16" height="7" rx="1.8" /></>,
   shield: <path d="M12 3.6 5 6.2v5.5c0 4 2.9 7.5 7 8.7 4.1-1.2 7-4.7 7-8.7V6.2Z" />,
   heart: <path d="M12 20c-.4 0-.8-.1-1-.4l-6.2-6a4.6 4.6 0 0 1 0-6.6 4.4 4.4 0 0 1 6.2 0l1 1 1-1a4.4 4.4 0 0 1 6.2 0 4.6 4.6 0 0 1 0 6.6l-6.2 6c-.2.3-.6.4-1 .4Z" />,
   rocket: <><path d="M12 3.6c2.8 2.5 4.2 5.7 4.2 9.1v4.5H7.8v-4.5c0-3.4 1.4-6.6 4.2-9.1Z" /><circle cx="12" cy="10.3" r="1.8" /><path d="M7.8 14 5.2 16.6v3.8l2.6-2M16.2 14l2.6 2.6v3.8l-2.6-2" /></>,

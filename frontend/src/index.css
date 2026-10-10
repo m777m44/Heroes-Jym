@@ -933,7 +933,8 @@ h4.sec{
 .stepring svg{display:block}
 .stepring .arc{transition:stroke-dashoffset .6s var(--ease),stroke .3s}
 .stepring-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.steps-card{display:flex;align-items:center;gap:14px;cursor:pointer}
+.steps-card{display:flex;flex-direction:column;align-items:stretch;gap:10px;cursor:pointer}
+.steps-main{display:flex;align-items:center;gap:14px}
 .steps-card .stepring-in .icn{font-size:24px;color:var(--acc)}
 .steps-card .stepring.done .stepring-in .icn{color:var(--yellow)}
 .steps-n{font-size:22px;font-weight:600;letter-spacing:-.021em;margin:2px 0 1px;font-variant-numeric:tabular-nums}
@@ -959,6 +960,55 @@ h4.sec{
 .walk-week .l{font-size:12px;color:var(--label-3)}
 .walk-week b{font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
 .stepchart svg rect{transition:height .4s var(--ease),y .4s var(--ease)}
+/* ---- 2.1: live clock ---- */
+.lc{position:relative;overflow:hidden}
+.lc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lc-zone{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--label-2);font-weight:500}
+.lc-zone .icn{font-size:15px;color:var(--acc)}
+.lc-off{color:var(--label-3);font-weight:400}
+.lc-time{font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.02em;display:inline-flex;align-items:baseline}
+.lc-time.big{font-size:54px;line-height:1.05;margin:6px 0 2px;letter-spacing:-.035em}
+.lc-time .sec{color:var(--acc)}
+.lc-colon{opacity:.45;margin:0 1px;animation:lcblink 1s steps(1) infinite}
+@keyframes lcblink{50%{opacity:.15}}
+.lc-dg{display:inline-block;animation:lcflip .32s var(--ease)}
+@keyframes lcflip{from{transform:translateY(-28%);opacity:.25}to{transform:none;opacity:1}}
+.lc-date{font-size:15px;font-weight:500}
+.lc-hijri{font-size:13px;color:var(--label-2);margin-top:1px}
+.lc-left{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;font-size:13px;color:var(--label-2)}
+.lc-left b{font-variant-numeric:tabular-nums;color:var(--yellow);font-size:16px;font-weight:600}
+.lc-bar{height:5px;border-radius:3px;background:var(--surface-3);margin-top:6px;overflow:hidden}
+.lc-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--yellow));transition:width 1s linear}
+.lc-compact{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--label-2);min-width:0}
+.lc-compact .icn{font-size:14px;color:var(--acc);flex:none}
+.lc-compact .lc-time{color:var(--label);font-size:14px}
+.lc-compact .lc-date{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.live-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--acc);
+  background:color-mix(in srgb,var(--acc) 14%,transparent);padding:3px 9px;border-radius:999px}
+.live-badge.paused{color:var(--orange);background:color-mix(in srgb,var(--orange) 14%,transparent)}
+
+/* ---- 2.1: step ring & walking hero ---- */
+.stepring .ring-dot{transition:cx .6s var(--ease),cy .6s var(--ease);filter:drop-shadow(0 0 4px rgba(255,255,255,.8))}
+.stepring.live svg{animation:ringbreathe 2.4s ease-in-out infinite}
+@keyframes ringbreathe{50%{transform:scale(1.015)}}
+.walk-hero{background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--acc) 10%,var(--surface)) 0%,var(--surface) 70%)}
+.walk-hero.walking{box-shadow:0 0 0 1px color-mix(in srgb,var(--acc) 35%,transparent)}
+.walk-num{font-size:50px}
+.walk-ic.stepping{animation:stepbob .55s ease-in-out infinite alternate}
+@keyframes stepbob{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-3px) rotate(4deg)}}
+.walk-motto{font-size:17px;font-weight:600;text-align:center;letter-spacing:-.01em}
+.walk-motto.tier5{color:var(--yellow)}
+.walk-motto.tier4,.walk-motto.tier3{color:var(--acc)}
+.walk-need{color:var(--label-2);text-align:center;margin-top:-8px}
+.walk-btns{display:flex;gap:8px;width:100%}
+.walk-btns>*{flex:1}
+.tile .v.mono{font-variant-numeric:tabular-nums;font-size:24px}
+.hourchart svg{width:100%;height:auto;display:block}
+.hourchart rect{transition:height .4s var(--ease),y .4s var(--ease)}
+.steps-bar{height:5px;border-radius:3px;background:var(--surface-3);margin:5px 0 4px;overflow:hidden}
+.steps-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc),#a4f06b);transition:width .6s var(--ease)}
+.steps-card.done .steps-bar i{background:linear-gradient(90deg,var(--yellow),var(--orange))}
+.steps-card .stepring-in .icn{font-size:28px}
 .goalfield{display:flex;align-items:baseline;justify-content:center;gap:8px}
 .goalfield .num{width:170px;font-size:40px;font-weight:600;letter-spacing:-.03em;text-align:center;
   background:var(--surface-2);border:0;border-radius:var(--r);padding:8px 10px;color:var(--label);font-family:inherit}
@@ -1035,6 +1085,7 @@ h4.sec{
    Flex rows, grids and text already follow `direction`; these are the few places
    that were positioned with physical left/right.
    ========================================================================== */
+[dir="rtl"] .walk-status{text-align:right}
 [dir="rtl"] .icn-dir{transform:scaleX(-1)}
 [dir="rtl"] .lrow+.lrow::before,
 [dir="rtl"] .efftbl .r+.r::before{left:0;right:14px}

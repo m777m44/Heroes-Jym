@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useUI } from '../store/useUI.js'
 import { api } from '../lib/api.js'
-import Icon from '../components/Icon.jsx'
 import { Button, Switch, TextField } from '../components/ui.jsx'
 
 /* The operator's side of the Coach: is it on, can it reach a model, and what has it been

@@ -34,7 +34,8 @@ import java.util.List;
  *   isAvailable()                 → { stepCounter, stepDetector }
  *   getPermissionStatus()         → { activityRecognition, notifications }  ('granted' | 'denied' | 'prompt')
  *   requestPermissions()          → same, after asking
- *   start({ config })             starts the foreground service with the given settings
+ *   start({ config, attach })     starts the foreground service with the given settings
+ *                                 (attach: reconnecting on launch — keeps a pause in place)
  *   configure({ config })         updates goal, stride, texts, switches — live
  *   pause() / resume() / stop()
  *   getState()                    → today's snapshot (steps, activeMs, speed, hourly, …)
@@ -157,8 +158,11 @@ public class StepServicePlugin extends Plugin {
         }
         saveConfig(call);
         StepStore s = StepStore.get(ctx());
+        // attach: the app reconnecting on launch — a pause set from the notification stays a
+        // pause. Only a tap on Start (attach false) switches counting back on.
+        boolean attach = Boolean.TRUE.equals(call.getBoolean("attach", false)) && s.running;
         s.running = true;
-        s.paused = false;
+        if (!attach) s.paused = false;
         s.save();
         try {
             ContextCompat.startForegroundService(ctx(), new Intent(ctx(), StepCounterService.class).setAction(StepCounterService.ACTION_START));

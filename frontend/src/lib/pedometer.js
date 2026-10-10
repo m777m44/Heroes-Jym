@@ -1,6 +1,9 @@
 // Step sources — where steps come from on each platform, behind one small interface.
 //
-//   native  Android/iOS app: @capgo/capacitor-pedometer. Android reads TYPE_STEP_COUNTER (a
+//   service Android app (2.1+): the in-app native StepService — a foreground service that
+//           counts all day with the screen off, and draws its own live lock-screen
+//           notification and widget. Reports whole-day snapshots (lib/stepService.js).
+//   native  iOS app (and Android builds without the service): @capgo/capacitor-pedometer. Android reads TYPE_STEP_COUNTER (a
 //           hardware counter that keeps counting while the app sleeps — the steps are picked
 //           up as one delta the next time a reading arrives); iOS reads Core Motion, and can
 //           also report the day's total from the motion coprocessor's history, which backfills
@@ -16,6 +19,7 @@
 // Like the rest of the Capacitor code, the plugin is only imported in the mobile build.
 import { MOBILE } from './mobile.js'
 import { StepDetector } from './stepDetection.js'
+import { hasStepService, serviceAvailable, servicePermissions, call, onServiceEvent } from './stepService.js'
 
 export class PedometerError extends Error {
   constructor(code, msg) { super(msg || code); this.code = code }   // 'unsupported' | 'denied'
@@ -95,7 +99,38 @@ async function motionSource({ onSteps }) {
   }
 }
 
+// Android: the native all-day service. onState(snapshot) gets every update while the app is
+// open; config() supplies the settings and texts. stop() switches counting off for good,
+// detach() only stops listening (the service keeps counting with the app closed).
+async function serviceSource({ onState, config, interactive }) {
+  const avail = await serviceAvailable()
+  if (!avail.stepCounter && !avail.stepDetector) throw new PedometerError('unsupported')
+  const perm = await servicePermissions(interactive)
+  if (perm.activityRecognition !== 'granted') throw new PedometerError('denied')
+  const off = await onServiceEvent('steps', st => onState && onState(st))
+  let st
+  try { st = await call('start', { config: config(), attach: !interactive }) } catch (e) {
+    off()
+    throw new PedometerError(e && e.code === 'denied' ? 'denied' : 'error', e && e.message)
+  }
+  if (st && onState) onState(st)
+  return {
+    kind: 'service',
+    notifications: perm.notifications === 'granted',
+    detach: off,
+    async stop() { off(); await call('stop') },
+  }
+}
+
 export async function startSource(callbacks) {
+  if (preferredSource() === 'native' && await hasStepService()) {
+    try { return await serviceSource(callbacks) } catch (e) {
+      // Phones without a hardware step sensor: count with the accelerometer while the app is
+      // open rather than giving up — better than "unsupported".
+      if (e instanceof PedometerError && e.code === 'unsupported') return motionSource(callbacks)
+      throw e
+    }
+  }
   return preferredSource() === 'native' ? nativeSource(callbacks) : motionSource(callbacks)
 }
 

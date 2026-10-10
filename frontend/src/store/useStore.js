@@ -23,6 +23,8 @@ export const DEF = {
   // heightCm improves the stride estimate and enables BMI; targetFrom is the weight the goal
   // was set at (the start of the goal progress bar, lib/weightTracker.js).
   stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
+  // 2.1 — the live clock's zone: 'iraq' (Asia/Baghdad) or 'device'. See lib/liveClock.js.
+  clockZone: 'iraq',
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.

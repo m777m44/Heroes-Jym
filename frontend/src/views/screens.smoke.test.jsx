@@ -40,6 +40,15 @@ describe('2.0 screens render', () => {
     expect(html).toContain('stepring')
     if (process.env.DUMP) console.log(text(html))
     expect(html).toMatch(/8[,.\u202f\u00a0]?000/)   // the goal, localized
+    // 2.1: live clock (Baghdad by default) with the midnight countdown, hourly chart, mottos
+    expect(html).toContain('lc-time big')
+    expect(html).toContain('Baghdad time')
+    expect(html).toContain('GMT+3')
+    expect(html).toContain('Day ends in')
+    expect(html).toContain('hourchart')
+    expect(html).toContain('walk-motto')
+    expect(html).toContain('Milestone sound')
+    expect(html).not.toContain('Voice coach')       // native TTS — Android app only
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')
@@ -53,6 +62,8 @@ describe('2.0 screens render', () => {
     const html = await render('/home', './Home.jsx')
     expect(html).toContain('steps-card')
     expect(html).toContain('h2link')
+    expect(html).toContain('lc-compact')           // 2.1: the live clock line
+    expect(html).toContain('steps-bar')
   })
   it('Settings (reminder extras + walking section)', async () => {
     const html = await render('/settings', './Settings.jsx')
@@ -76,6 +87,9 @@ describe('2.0 screens render', () => {
       const html = await render('/walk', './Walking.jsx')
       expect(html).toContain('المشي')
       expect(html).toContain('icn-dir')            // the back chevron is the mirrored kind
+      expect(html).toContain('توقيت بغداد')         // 2.1: the clock label, translated
+      expect(html).toContain('ينتهي اليوم بعد')
+      expect(html).toContain('dir="ltr"')          // digits of the clock stay left-to-right
     } finally { await setLang('en') }
   })
 })

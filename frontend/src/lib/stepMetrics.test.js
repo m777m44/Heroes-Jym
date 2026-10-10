@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   clampGoal, goalOf, strideMeters, distanceKm, caloriesFor, speedKmh, paceToKmh,
   crossedMilestone, reachedGoal, lastDays, stepStreak, weekSummary, bestDay,
-  addSteps, raiseSteps, pruneSteps, walkPrefs, DEFAULT_GOAL,
+  addSteps, raiseSteps, pruneSteps, walkPrefs, DEFAULT_GOAL, hourlyOn, mergeDay, KEEP_HOURLY_DAYS,
 } from './stepMetrics.js'
 
 describe('goal', () => {
@@ -126,5 +126,61 @@ describe('writing steps', () => {
   })
   it('fills preference defaults', () => {
     expect(walkPrefs({ walk: { haptics: false } })).toMatchObject({ haptics: false, notify: true, celebrate: true, gps: false })
+  })
+})
+
+describe('hourly buckets and the native day merge (2.1)', () => {
+  it('files steps in their hour when given one', () => {
+    const s = {}
+    addSteps(s, '2026-10-10', 120, 60000, 9)
+    addSteps(s, '2026-10-10', 30, 0, 9)
+    addSteps(s, '2026-10-10', 50, 0, 17)
+    addSteps(s, '2026-10-10', 10)            // no hour: total only
+    expect(s.steps['2026-10-10'].n).toBe(210)
+    const h = hourlyOn(s, '2026-10-10')
+    expect(h).toHaveLength(24)
+    expect(h[9]).toBe(150)
+    expect(h[17]).toBe(50)
+    expect(h.reduce((a, b) => a + b, 0)).toBe(200)
+    expect(hourlyOn(s, '2026-10-09')).toEqual(new Array(24).fill(0))
+    addSteps(s, '2026-10-10', 5, 0, 24)      // out-of-range hour ignored
+    expect(hourlyOn(s, '2026-10-10')[23]).toBe(0)
+  })
+
+  it('merges a native day report, raising and never lowering', () => {
+    const s = {}
+    addSteps(s, '2026-10-10', 1000, 600000, 8)
+    const h = new Array(24).fill(0); h[8] = 900; h[12] = 2100
+    expect(mergeDay(s, '2026-10-10', { steps: 3000, activeMs: 1800000, hourly: h })).toBe(2000)
+    const d = s.steps['2026-10-10']
+    expect(d.n).toBe(3000)
+    expect(d.ms).toBe(1800000)
+    expect(d.h[8]).toBe(1000)                // kept the higher local value
+    expect(d.h[12]).toBe(2100)
+    // an older, smaller report changes nothing
+    expect(mergeDay(s, '2026-10-10', { n: 2500, ms: 100, h: new Array(24).fill(1) })).toBe(0)
+    expect(d.n).toBe(3000)
+    expect(d.ms).toBe(1800000)
+    expect(d.h[8]).toBe(1000)
+    // garbage in, nothing out
+    expect(mergeDay(s, 'not-a-day', { n: 99 })).toBe(0)
+    expect(mergeDay(s, '2026-10-11', null)).toBe(0)
+    expect(mergeDay(s, '2026-10-11', { n: 'x', h: [1, 2] })).toBe(0)
+    expect(s.steps['2026-10-11']).toBeUndefined()
+  })
+
+  it('prunes hourly detail sooner than the daily totals', () => {
+    const s = {}
+    addSteps(s, '2026-10-10', 10, 0, 1)
+    addSteps(s, '2026-09-01', 10, 0, 1)
+    pruneSteps(s, '2026-10-10')
+    expect(KEEP_HOURLY_DAYS).toBe(14)
+    expect(s.steps['2026-10-10'].h).toBeDefined()
+    expect(s.steps['2026-09-01'].n).toBe(10)
+    expect(s.steps['2026-09-01'].h).toBeUndefined()
+  })
+
+  it('defaults the new walking preferences', () => {
+    expect(walkPrefs({})).toMatchObject({ voice: false, alertSound: true })
   })
 })
