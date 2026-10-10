@@ -25,7 +25,7 @@ function StatusLine({ status, source }) {
   const map = {
     tracking: [source === 'native' ? t('Counting with your phone’s step sensor.') : t('Counting with the motion sensor — keep MAHDI-JYM open and on screen.'), 'var(--acc)'],
     starting: [t('Starting…'), 'var(--label-2)'],
-    paused: [t('Paused — tap Start to keep counting.'), 'var(--orange)'],
+    paused: [t('Paused — your steps so far are kept.'), 'var(--orange)'],
     denied: [t('Motion access was denied. Allow it in your system settings, then try again.'), 'var(--red)'],
     unsupported: [t('This device has no step sensor or accelerometer we can read.'), 'var(--red)'],
     error: [t('The step counter could not start. Try again.'), 'var(--red)'],
