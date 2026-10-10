@@ -16,8 +16,28 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Release signing is driven entirely by environment variables, so nothing secret has to
+    // live in this file. CI (.github/workflows/android-apk.yml) exports them from repository
+    // secrets when present, otherwise from the committed public keystore in ../keystore/.
+    // Without MJ_KEYSTORE the release build is left unsigned, exactly as before.
+    signingConfigs {
+        if (System.getenv('MJ_KEYSTORE')) {
+            release {
+                storeFile file(System.getenv('MJ_KEYSTORE'))
+                storePassword System.getenv('MJ_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('MJ_KEY_ALIAS') ?: 'mahdi-jym'
+                keyPassword System.getenv('MJ_KEY_PASSWORD') ?: System.getenv('MJ_KEYSTORE_PASSWORD')
+                storeType System.getenv('MJ_KEYSTORE_TYPE') ?: 'pkcs12'
+                enableV1Signing true
+                enableV2Signing true
+            }
+        }
+    }
     buildTypes {
         release {
+            if (System.getenv('MJ_KEYSTORE')) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
