@@ -216,11 +216,24 @@ export default function Settings() {
         subtitle={t('to install MAHDI-JYM as a full-screen app.') + ' ' + (user ? t('Your data syncs with your profile — sign in anywhere to see it.') : t('Guest data stays on this device — export a backup now and then!'))} />
     </Section>}
 
-    <div className="dim small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 1.6 }}>
-      MAHDI-JYM · {t('free & open source (AGPL v3)')}<br />
-      <a href="https://github.com/m777m44/Heroes-Jym" target="_blank" rel="noopener">source code</a> · based on <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">openGym</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
-    </div>
+    <button className="app-sign" onClick={aboutSheet}>MAHDI-JYM</button>
   </div>
+}
+
+// Just the name under Settings; tapping it shows the licence notices the AGPL asks every
+// interactive version of the app to keep reachable.
+function aboutSheet() {
+  useUI.getState().openSheet(close => <>
+    <h3 style={{ textAlign: 'center' }}>MAHDI-JYM</h3>
+    <div className="small muted" style={{ textAlign: 'center', lineHeight: 1.7, marginBottom: 14 }}>
+      {t('Version {0}', __APP_VERSION__)}<br />
+      {t('Free software under the GNU AGPL v3 — no warranty.')}<br />
+      <a href="https://github.com/m777m44/Heroes-Jym" target="_blank" rel="noopener">{t('Source code')}</a>
+      {' · '}<a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">openGym</a>
+      {' · '}<a href="https://github.com/hasaneyldrm/exercises-dataset" target="_blank" rel="noopener">{t('Exercise data')}</a>
+    </div>
+    <Button onClick={close} style={{ width: '100%' }}>{t('Close')}</Button>
+  </>)
 }
 
 // The whole point is that the two scales are one judgement counted from opposite ends, and a

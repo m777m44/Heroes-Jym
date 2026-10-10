@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { fmtNum, fmtDate } from '../lib/format.js'
-import { t } from '../lib/i18n.js'
+import { t, U } from '../lib/i18n.js'
 import { compareLatest, totalChange, weeklyRate, etaToGoal } from '../lib/weightTracker.js'
 import { bwSheet, goalSheet, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -100,7 +100,7 @@ export default function BodyWeight() {
       <Row icon="ruler" iconTint="var(--teal)" title={t('Height')}>
         <CommitNumber className="rowfield" value={S.heightCm} placeholder="175"
           onCommit={v => update(s => { s.heightCm = v && v >= 100 && v <= 250 ? v : null })} aria-label={t('Height')} />
-        <span className="muted small">cm</span>
+        <span className="muted small">{U('cm')}</span>
       </Row>
     </Section>
 

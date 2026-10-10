@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { usePedometer, weightForCalories } from '../store/usePedometer.js'
 import { todayISO, fmtDate } from '../lib/format.js'
-import { t, dateLocale } from '../lib/i18n.js'
+import { t, dateLocale, U } from '../lib/i18n.js'
 import {
   goalOf, stepsOn, activeMsOn, strideMeters, distanceKm, caloriesFor, walkPrefs,
   weekSummary, stepStreak, bestDay, hourlyOn, DEFAULT_STRIDE_CM,
@@ -147,9 +147,9 @@ export default function Walking() {
     </div>
 
     <div className="tiles">
-      <div className="tile"><div className="l"><Icon name="speedometer" /> {t('Speed')}</div><div className="v">{tracking ? speed.toFixed(1) : '0.0'} <span className="u">km/h</span></div></div>
-      <div className="tile"><div className="l"><Icon name="route" /> {t('Distance')}</div><div className="v">{km.toFixed(2)} <span className="u">km</span></div></div>
-      <div className="tile"><div className="l"><Icon name="flame" /> {t('Calories')}</div><div className="v"><AnimatedNumber value={kcal} /> <span className="u">kcal</span></div></div>
+      <div className="tile"><div className="l"><Icon name="speedometer" /> {t('Speed')}</div><div className="v">{tracking ? speed.toFixed(1) : '0.0'} <span className="u">{U('km/h')}</span></div></div>
+      <div className="tile"><div className="l"><Icon name="route" /> {t('Distance')}</div><div className="v">{km.toFixed(2)} <span className="u">{U('km')}</span></div></div>
+      <div className="tile"><div className="l"><Icon name="flame" /> {t('Calories')}</div><div className="v"><AnimatedNumber value={kcal} /> <span className="u">{U('kcal')}</span></div></div>
       <div className="tile"><div className="l"><Icon name="clock" /> {t('Active time')}</div><div className="v mono" dir="ltr">{fmtDuration(active, { alwaysHours: true })}</div></div>
     </div>
 
@@ -187,7 +187,7 @@ export default function Walking() {
       <Row icon="ruler" iconTint="var(--teal)" title={t('Stride length')} subtitle={prefs.strideCm ? null : t('Estimated: {0} cm', Math.round(stride * 100))}>
         <CommitNumber className="rowfield" value={prefs.strideCm} placeholder={String(Math.round(stride * 100) || DEFAULT_STRIDE_CM)}
           onCommit={v => { update(s => { s.walk = { ...walkPrefs(s), strideCm: v && v >= 30 && v <= 150 ? v : null } }); prefsChanged('stride') }} aria-label={t('Stride length')} />
-        <span className="muted small">cm</span>
+        <span className="muted small">{U('cm')}</span>
       </Row>
       <Row icon="bell" iconTint="var(--red)" title={t('Step notification')} subtitle={t('Stays in your notifications while counting, updated as you walk.')}>
         <Switch checked={prefs.notify} onChange={v => setPref('notify', v)} />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
-import { t, dateLocale } from '../lib/i18n.js'
+import { t, dateLocale, U } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
@@ -39,7 +39,7 @@ function StepsCard({ nav }) {
         <div className="lbl2 row" style={{ gap: 6 }}>{t('Steps today')}{tracking && <span className="walk-dot live" />}{status === 'paused' && <span className="small" style={{ color: 'var(--orange)' }}>{t('Paused')}</span>}</div>
         <div className="steps-n"><AnimatedNumber value={steps} /> <span className="muted">/ {goal.toLocaleString(dateLocale())}</span></div>
         <div className="steps-bar" aria-hidden="true"><i style={{ width: pct.toFixed(1) + '%' }} /></div>
-        <div className="small muted">{tracking ? t('{0} km/h', speed.toFixed(1)) + ' · ' : ''}{km.toFixed(2)} km{!tracking && !steps ? ' · ' + t('tap to start counting') : ''}</div>
+        <div className="small muted">{tracking ? t('{0} km/h', speed.toFixed(1)) + ' · ' : ''}{km.toFixed(2)} {U('km')}{!tracking && !steps ? ' · ' + t('tap to start counting') : ''}</div>
       </div>
       <Icon name="chevronRight" className="chev" />
     </div>
@@ -116,9 +116,9 @@ export default function Home() {
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 8 }}>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week"><Icon name="chevronLeft" /></button>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
         <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week"><Icon name="chevronRight" /></button>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
       </div>
       <div className="week">{strip}</div>
       <div className="today-row" onClick={onToday}>
@@ -167,7 +167,7 @@ export default function Home() {
       </div>
       {bw ? <>
         <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
-          <div className="big">{fmtNum(bw.w)} <span className="muted" style={{ fontSize: '1rem' }}>{S.unit}</span></div>
+          <div className="big">{fmtNum(bw.w)} <span className="muted" style={{ fontSize: '1rem' }}>{U(S.unit)}</span></div>
           {/* only when it actually moved — an unchanged weight used to read as "− 0" */}
           {!!delta && (
             <span className="small row" style={{ gap: 2, fontWeight: 500, color: bwDeltaColor(delta, bw.w) }}>
@@ -180,7 +180,7 @@ export default function Home() {
         {S.targetW && (
           <div className="small row" style={{ color: 'var(--yellow)', marginTop: 4, gap: 5 }}>
             <Icon name="target" style={{ fontSize: 13 }} />
-            <span>{t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</span>
+            <span>{t('Goal')} {fmtNum(S.targetW)} {U(S.unit)} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached!') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + U(S.unit))}</span>
           </div>
         )}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>

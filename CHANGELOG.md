@@ -3,6 +3,51 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.2.0 — 2026-10-10
+
+**Runs nonstop in the background, asks once, speaks Arabic properly.** *يعمل في الخلفية بلا توقف، يطلب الأذونات مرة واحدة، وعربي بالكامل.*
+
+### 🔋 Nonstop in the background (Android)
+- A **watchdog** alarm (every 15 minutes, exact when allowed, and in Doze) checks that the step
+  service is alive and brings it back if the system killed it — also 2 s after the app is
+  swiped away and 5 s after the service is destroyed. Opening the app revives it too.
+- **After a reboot**: boot receiver now also handles HTC/fast-boot phones, re-arms the watchdog
+  and refreshes the widget; the service restarts by itself after an app update as before.
+- New native calls: `getDeviceInfo()` (maker, model, Android version) and
+  `openAutostartSettings()` — opens the **Autostart / "No restrictions"** screen on Xiaomi,
+  Redmi, POCO, Huawei, Honor, Oppo, Realme, Vivo, iQOO, OnePlus, Samsung, Asus and Letv.
+
+### ✅ One permission dialog on first launch
+- A small **centred dialog** says what the app needs and why — physical activity,
+  notifications, running in the background, starting after a restart — with a **your own
+  responsibility / not a medical device** notice. **Agree & allow** then asks every permission in
+  turn (activity, notifications, battery-optimisation exemption), switches the counter on, and
+  on phones that need it opens the maker's autostart screen. Arabic/English toggle in the
+  dialog; *Not now* asks again next launch. Browsers get the same dialog (notifications,
+  iPhone motion) plus a link to the Android app.
+
+### 🌍 Arabic, fully
+- **All 1,324 exercise names in Arabic**, with the original English name in small type under
+  each — in the library, the picker, workouts, routines, history, stats, the coach and shared
+  plans. Search finds an exercise by either name (`سكوات` or `squat`). Generated from a gym
+  glossary by `scripts/build-exercise-names.mjs` (CI checks every word has a translation).
+- **Arabic units**: كغ، رطل، كم، كم/س، سعرة، سم، دقيقة. Coach equipment chips, the "PR" badge and
+  every button label for screen readers are translated (12 languages).
+- **English mode is English only.** A fresh install starts in the phone's language (an Arabic
+  phone opens in Arabic).
+
+### 🧹 Cleaner Settings
+- The footer is just **MAHDI-JYM**. Tapping it opens *About*: version, licence (AGPL v3) and
+  the source / openGym / exercise-data links the licence asks to keep reachable.
+
+### 🐛 Fixes
+- **Passkey sign-up did nothing inside an embedded preview** (the browser blocks passkeys in
+  iframes and reports it like a cancel, which was swallowed). The login screen now detects the
+  frame and offers **Open in a new tab**, and every passkey failure shows a clear message.
+- Self-hosting (`scripts/local-host.mjs`): the API is **restarted automatically** if it crashes
+  (with back-off) instead of taking the site down; `/api` answers 503 *restarting* meanwhile.
+- `useLang()` supplies a server snapshot (server rendering no longer warns).
+
 ## v2.1.0 — 2026-10-10
 
 **The step counter goes all-day — on the lock screen.** *عدّاد خطوات يعمل طوال اليوم، حتى والهاتف مقفل.*

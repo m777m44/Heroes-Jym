@@ -8,6 +8,22 @@ import { useState, useRef, useEffect } from 'react'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 
+// Inside an iframe (an embedded preview) browsers refuse passkeys outright unless the parent
+// page allows it, and the refusal looks exactly like the user pressing Cancel. Detect it and
+// say so, instead of a button that silently does nothing.
+export const embedded = () => { try { return window.self !== window.top } catch { return true } }
+const openOwnTab = () => { try { window.open(location.href, '_blank', 'noopener') } catch { /* popup blocked */ } }
+
+// One message for every way a passkey ceremony can fail.
+function passkeyError(e, fallback) {
+  const name = e && e.name
+  if (embedded() && (name === 'NotAllowedError' || name === 'SecurityError')) return t('Passkeys don’t work inside an embedded preview. Open MAHDI-JYM in its own tab.')
+  if (name === 'NotAllowedError' || name === 'AbortError') return t('The passkey was cancelled or timed out. Try again.')
+  if (name === 'InvalidStateError') return t('This device already has a passkey for MAHDI-JYM — sign in with it instead.')
+  if (name === 'SecurityError') return t('Passkeys need the app to be opened at its own https address.')
+  return (e && e.message) || fallback
+}
+
 function RegisterSheet({ close }) {
   const { setUser, pushState, pullState } = useStore()
   const [name, setName] = useState('')
@@ -25,7 +41,7 @@ function RegisterSheet({ close }) {
       setUser(u); close()
       if (hasData(useStore.getState().S)) { await pushState(); useUI.getState().toast(t('Profile created — data from this device moved into it')) }
       else { await pullState(); useUI.getState().toast(t('Welcome, {0}', u.name)) }
-    } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Registration failed')) }
+    } catch (e) { useUI.getState().toast(passkeyError(e, t('Registration failed'))) }
   }
   return <>
     <h3>{t('Create your profile')}</h3>
@@ -46,7 +62,7 @@ export default function Login() {
   const { setUser, pullState, setGuest } = useStore()
   const signIn = async () => {
     try { const u = await passkeyLogin(); setUser(u); await pullState(); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
-    catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') useUI.getState().toast(e.message || t('Sign-in failed')) }
+    catch (e) { useUI.getState().toast(passkeyError(e, t('Sign-in failed'))) }
   }
   const head = <>
     <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="dumbbell" /></div>
@@ -73,6 +89,10 @@ export default function Login() {
     <div className="narrow" style={wrap}>
       {head}
       <div className="muted" style={{ marginBottom: 34 }}>{t('Your workouts. Your weights. Your profile.')}</div>
+      {embedded() && webauthnOK() && <div className="card small" style={{ textAlign: 'start', marginBottom: 12 }}>
+        <div style={{ marginBottom: 8 }}>{t('This page is shown inside a preview frame, where browsers block passkeys. Open it in its own tab to sign in or create a profile — or continue without an account.')}</div>
+        <Button variant="primary" size="sm" icon="link" onClick={openOwnTab}>{t('Open in a new tab')}</Button>
+      </div>}
       {webauthnOK() ? <>
         <Button variant="primary" icon="person" onClick={signIn}>{t('Sign in with passkey')}</Button>
         <div style={{ height: 10 }} />

@@ -11,7 +11,7 @@
 import { EXIDX } from './exercises.js'
 import { modeOf, fmtSec } from './history.js'
 import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
-import { t } from './i18n.js'
+import { t, exName, U } from './i18n.js'
 
 const PLAN_FMT = 1
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
@@ -142,11 +142,11 @@ function scheme(e, unit) {
   const sets = e.sets || 1
   const mode = modeOf(e)
   if (mode === 'cardio') {
-    const body = `${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h`
+    const body = `${e.min || 20} ${U('min')} @ ${fmtNum(e.speed || 8)} ${U('km/h')}`
     return sets > 1 ? `${sets} × ${body}` : body
   }
   let s = mode === 'time' ? `${sets} × ${fmtSec(e.sec || 45)}` : `${sets} × ${e.reps ?? 10}`
-  if (e.weight) s += ` · ${fmtNum(e.weight)} ${unit}`
+  if (e.weight) s += ` · ${fmtNum(e.weight)} ${U(unit)}`
   return s
 }
 
@@ -165,7 +165,7 @@ function routineHTML(r, unit) {
   const rows = units(r.ex).map(u => {
     const items = u.map(e => {
       const ex = EXIDX[e.id]
-      const name = ex ? ex.n : t('Unknown exercise')
+      const name = ex ? exName(ex) : t('Unknown exercise')
       const part = ex && ex.bp && ex.bp !== 'cardio' ? `<span class="part">${esc(ex.bp)}</span>` : ''
       return `<div class="ex"><div class="ex-n">${esc(name)}${part}</div><div class="ex-s">${esc(scheme(e, unit))}</div></div>`
     }).join('')

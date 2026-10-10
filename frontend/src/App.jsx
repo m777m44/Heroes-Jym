@@ -31,6 +31,8 @@ import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
+import PermissionGate from './components/PermissionGate.jsx'
+import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
@@ -109,6 +111,7 @@ function Shell() {
       <Modals />
       <Toast />
       <CelebrationOverlay />
+      {authed && ready && !DEMO && <PermissionGate />}
     </>
   )
 }

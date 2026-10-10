@@ -49,13 +49,30 @@ if (!fs.existsSync(path.join(ROOT, 'api', 'node_modules'))) {
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
 // ---- API child process ------------------------------------------------------------------
-const api = spawn(process.execPath, ['server.js'], {
-  cwd: path.join(ROOT, 'api'),
-  stdio: 'inherit',
-  env: { ...process.env, PORT: String(API_PORT), DATA_DIR, RP_ID, ORIGIN, RP_NAME: process.env.RP_NAME || 'MAHDI-JYM' }
-})
-api.on('exit', code => { console.error(`API exited (${code}) — stopping`); process.exit(code || 1) })
-for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { api.kill(sig); process.exit(0) })
+// Supervised: if the API dies (an uncaught error, out of memory…) it is started again — with
+// a growing pause if it keeps crashing — instead of taking the whole site down with it. The
+// web side keeps serving the app meanwhile; /api answers 503 until the API is back.
+let api = null
+let stopping = false
+let backoff = 1000
+function startApi () {
+  const startedAt = Date.now()
+  api = spawn(process.execPath, ['server.js'], {
+    cwd: path.join(ROOT, 'api'),
+    stdio: 'inherit',
+    env: { ...process.env, PORT: String(API_PORT), DATA_DIR, RP_ID, ORIGIN, RP_NAME: process.env.RP_NAME || 'MAHDI-JYM' }
+  })
+  api.on('exit', (code, sig) => {
+    api = null
+    if (stopping) return
+    if (Date.now() - startedAt > 60000) backoff = 1000          // it ran fine for a while: reset
+    console.error(`API exited (${sig || code}) — restarting in ${backoff / 1000}s`)
+    setTimeout(startApi, backoff)
+    backoff = Math.min(backoff * 2, 30000)
+  })
+}
+startApi()
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stopping = true; if (api) api.kill(sig); process.exit(0) })
 
 // ---- static + proxy ---------------------------------------------------------------------
 const TYPES = {
@@ -91,7 +108,10 @@ function proxyApi (req, res) {
     host: '127.0.0.1', port: API_PORT, method: req.method, path: req.url,
     headers: { ...req.headers, 'x-forwarded-for': req.socket.remoteAddress || '', 'x-forwarded-proto': new URL(ORIGIN).protocol.slice(0, -1) }
   }, r => { res.writeHead(r.statusCode, r.headers); r.pipe(res) })
-  up.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end('API not reachable') })
+  up.on('error', () => {
+    if (!res.headersSent) res.writeHead(503, { 'Content-Type': 'application/json', 'Retry-After': '2' })
+    res.end(JSON.stringify({ error: 'The server is restarting — try again in a moment.' }))
+  })
   req.pipe(up)
 }
 

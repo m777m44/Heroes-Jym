@@ -92,4 +92,36 @@ describe('2.0 screens render', () => {
       expect(html).toContain('dir="ltr"')          // digits of the clock stay left-to-right
     } finally { await setLang('en') }
   })
+
+  // 2.2: Arabic UI is fully Arabic (exercise names in Arabic with the English one under them,
+  // Arabic units); the English UI has no Arabic text at all.
+  it('exercise names and units follow the language', async () => {
+    const { setLang, exName, exNameEn, exSearch, U } = await import('../lib/i18n.js')
+    const { EXDB } = await import('../lib/exercises-data.js')
+    const bench = EXDB.find(e => e.n === 'barbell bench press')
+    await setLang('ar')
+    try {
+      expect(exName(bench)).toBe('ضغط بنش بالبار')
+      expect(exNameEn(bench)).toBe('barbell bench press')
+      expect(exSearch(bench)).toContain('bench')
+      expect(exSearch(bench)).toContain('ضغط')
+      expect(U('kg')).toBe('كغ')
+      expect(exName({ id: 'c_custom', n: 'My move' })).toBe('My move')      // custom: as typed
+      const html = await render('/library', './Library.jsx')
+      expect(html).toContain('جلوس البطن 3/4')
+      expect(html).toContain('exn-en')
+    } finally { await setLang('en') }
+    expect(exName(bench)).toBe('barbell bench press')
+    expect(exNameEn(bench)).toBe('')
+    expect(U('kg')).toBe('kg')
+    expect(U('mn')).toBe('m')
+    const en = await render('/library', './Library.jsx')
+    expect(en).not.toMatch(/[\u0600-\u06FF]/)
+  })
+  it('Settings ends with just the app name', async () => {
+    const html = await render('/settings', './Settings.jsx')
+    expect(html).toContain('app-sign')
+    expect(html).not.toContain('AGPL')
+    expect(html).not.toContain('exercises-dataset')
+  })
 })

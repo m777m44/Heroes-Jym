@@ -92,6 +92,32 @@ setting. The service is used only in the Android app; browsers and iOS keep the 
 Notifications → Notifications on lock screen* allows it ("show all content"). The shortcut
 Walking → *Notification settings* opens the app's page directly.
 
+## Nonstop in the background & first-launch permissions (2.2, Android)
+
+On first launch a centred dialog lists what the app needs and why, with a
+user-responsibility notice. **Agree & allow** runs, in order:
+
+1. the runtime prompts — *Physical activity* (Android 10+) and *Notifications* (Android 13+);
+2. starts the foreground step service;
+3. the **battery-optimisation exemption** dialog (needed so Android 12+ lets the app start
+   its service from the background, e.g. after a reboot or from the watchdog);
+4. on phones whose maker adds its own background killer — Xiaomi/Redmi/POCO, Huawei/Honor,
+   Oppo/Realme/OnePlus (ColorOS), Vivo/iQOO, Samsung, Asus, Letv — the maker's **Autostart /
+   "No restrictions"** screen (`openAutostartSettings()`; falls back to the app's info page).
+
+What keeps it running:
+
+| Layer | What it does |
+|---|---|
+| Foreground service, `START_STICKY` | the system restarts it if it has to kill it |
+| `Watchdog` alarm, every 15 min | exact/allow-while-idle; restarts the service if it's gone |
+| `onTaskRemoved` / `onDestroy` | re-kick 2 s / 5 s later while counting is on |
+| `BootReceiver` | `BOOT_COMPLETED`, `QUICKBOOT_POWERON` (incl. HTC), `MY_PACKAGE_REPLACED` |
+| App launch | `StepServicePlugin.load()` revives a stopped service |
+
+Turning counting off (Walking → Stop) cancels the watchdog; nothing restarts after that.
+The consent is stored in `localStorage` (`mj_consent_v1`).
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

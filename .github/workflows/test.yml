@@ -49,6 +49,9 @@ jobs:
         working-directory: frontend
       - run: node scripts/check-locales.mjs
         working-directory: frontend
+      # The Arabic exercise-name pack is generated from the dataset + glossary — it must be
+      # current, and every word of every name must have a translation.
+      - run: node scripts/build-exercise-names.mjs --check
 
   api:
     runs-on: ubuntu-latest

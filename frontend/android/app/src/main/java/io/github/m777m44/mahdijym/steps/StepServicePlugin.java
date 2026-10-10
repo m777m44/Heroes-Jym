@@ -44,6 +44,8 @@ import java.util.List;
  *   requestBatteryExemption()     opens the system dialog
  *   openNotificationSettings()
  *   getLaunchRoute()              → { route } when opened from the notification / widget
+ *   getDeviceInfo()               → { manufacturer, model, sdk, autostart, exactAlarms }
+ *   openAutostartSettings()       → { opened } — the maker's "autostart" screen (Xiaomi, Huawei…)
  * Events: 'steps' (snapshot, up to 4×/s while the app is open), 'open' ({ route }).
  */
 @CapacitorPlugin(
@@ -63,6 +65,7 @@ public class StepServicePlugin extends Plugin {
             try { notifyListeners("steps", JSObject.fromJSONObject(state)); } catch (JSONException ignored) { }
         };
         if (getActivity() != null) launchRoute = routeOf(getActivity().getIntent());
+        Watchdog.ensureRunning(ctx());      // opening the app always revives a killed counter
     }
 
     private static String routeOf(Intent i) {
@@ -277,6 +280,73 @@ public class StepServicePlugin extends Plugin {
             ctx().startActivity(i);
         } catch (RuntimeException ignored) { }
         call.resolve();
+    }
+
+    // ---- phone makers' own background limits -------------------------------------------
+
+    // Settings screens where Xiaomi, Huawei, Oppo, Vivo… let the user allow an app to start
+    // by itself / run in the background. Tried in order; the first that opens wins.
+    private static final String[][] AUTOSTART = {
+        { "com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity" },
+        { "com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity" },
+        { "com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity" },
+        { "com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity" },
+        { "com.huawei.systemmanager", "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity" },
+        { "com.hihonor.systemmanager", "com.hihonor.systemmanager.startupmgr.ui.StartupNormalAppListActivity" },
+        { "com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity" },
+        { "com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity" },
+        { "com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity" },
+        { "com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity" },
+        { "com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity" },
+        { "com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager" },
+        { "com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity" },
+        { "com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity" },
+        { "com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity" },
+        { "com.asus.mobilemanager", "com.asus.mobilemanager.autostart.AutoStartActivity" },
+        { "com.asus.mobilemanager", "com.asus.mobilemanager.MainActivity" },
+    };
+    private static final String[] AUTOSTART_MAKERS = { "xiaomi", "redmi", "poco", "letv", "huawei", "honor", "oppo", "realme", "oneplus", "vivo", "iqoo", "samsung", "asus" };
+
+    private static boolean hasAutostartManager() {
+        String m = (Build.MANUFACTURER + " " + Build.BRAND).toLowerCase(java.util.Locale.ROOT);
+        for (String k : AUTOSTART_MAKERS) if (m.contains(k)) return true;
+        return false;
+    }
+
+    @PluginMethod
+    public void getDeviceInfo(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("manufacturer", Build.MANUFACTURER);
+        r.put("model", Build.MODEL);
+        r.put("sdk", Build.VERSION.SDK_INT);
+        r.put("autostart", hasAutostartManager());
+        android.app.AlarmManager am = (android.app.AlarmManager) ctx().getSystemService(Context.ALARM_SERVICE);
+        r.put("exactAlarms", Build.VERSION.SDK_INT < 31 || (am != null && am.canScheduleExactAlarms()));
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void openAutostartSettings(PluginCall call) {
+        boolean opened = false;
+        for (String[] c : AUTOSTART) {
+            try {
+                Intent i = new Intent().setComponent(new android.content.ComponentName(c[0], c[1]));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx().startActivity(i);
+                opened = true;
+                break;
+            } catch (RuntimeException ignored) { /* not this phone */ }
+        }
+        if (!opened) {
+            try {
+                Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx().getPackageName()));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx().startActivity(i);
+            } catch (RuntimeException ignored) { }
+        }
+        JSObject r = new JSObject();
+        r.put("opened", opened);
+        call.resolve(r);
     }
 
     @PluginMethod

@@ -117,7 +117,11 @@ public class StepCounterService extends Service implements SensorEventListener {
         String action = intent != null && intent.getAction() != null ? intent.getAction() : ACTION_START;
 
         // Every start must reach startForeground() quickly, whatever the action.
-        if (!goForeground()) { stopSelf(); return START_NOT_STICKY; }
+        if (!goForeground()) {
+            if (store.running) Watchdog.schedule(this);   // the OS refused for now — retry later
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
         switch (action) {
             case ACTION_STOP:
@@ -143,6 +147,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         main.removeCallbacks(tick);
         main.postDelayed(tick, 30_000);
         publish(true);
+        Watchdog.schedule(this);            // restarts the counter if anything ever kills it
         return START_STICKY;
     }
 
@@ -176,6 +181,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     }
 
     private void shutdown() {
+        Watchdog.cancel(this);
         stopListening();
         store.running = false;
         store.paused = false;
@@ -353,11 +359,17 @@ public class StepCounterService extends Service implements SensorEventListener {
         try { unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
         if (tts != null) { tts.shutdown(); tts = null; }
         if (instance == this) instance = null;
+        // Destroyed while counting is still on (killed by the system or a cleaner, not
+        // switched off): come back in a few seconds.
+        if (store != null && store.running) Watchdog.kick(this, 5_000);
         super.onDestroy();
     }
 
     @Override public void onTaskRemoved(Intent rootIntent) {
-        // Swiping the app away from recents must not stop the counter.
+        // Swiping the app away from recents must not stop the counter. Most phones leave the
+        // foreground service alone; some kill the whole process with the task — the kick
+        // brings it back.
+        if (store != null && store.running) Watchdog.kick(this, 2_000);
         super.onTaskRemoved(rootIntent);
     }
 

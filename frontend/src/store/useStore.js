@@ -4,10 +4,23 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { LANGS } from '../lib/i18n.js'
 
 const KEY = 'gym_state_v1'
+// A fresh install starts in the phone's / browser's language when we have it (an Arabic phone
+// opens in Arabic), else English. Saved profiles keep whatever they chose.
+function deviceLang() {
+  try {
+    for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])) {
+      const k = String(l || '').toLowerCase().split('-')[0]
+      if (LANGS[k]) return k
+    }
+  } catch { /* no navigator (SSR, tests) */ }
+  return 'en'
+}
+
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'en',
+  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: deviceLang(),
   theme: 'dark', accent: 'lime', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
