@@ -36,4 +36,18 @@
          on Android 12+. Where it isn't granted, scheduling silently falls back to inexact
          alarms — the reminder still arrives, just not to the minute. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- MAHDI-JYM 2.0 — step counter: reads the hardware step sensor (Android 10+ asks the
+         user at runtime). Declared by the pedometer plugin too; listed here so the app's own
+         manifest says what it uses. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- Ongoing step notification + reminders (Android 13+ asks at runtime). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Haptic tick every 1,000 steps. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Optional "GPS speed" switch on the walking screen (off by default). Positions are used
+         on the device to compute speed and are never stored or sent anywhere. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

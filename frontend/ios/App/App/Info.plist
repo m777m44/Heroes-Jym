@@ -45,5 +45,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSMotionUsageDescription</key>
+	<string>MAHDI-JYM counts your steps with the motion coprocessor. Your step data stays on this device.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Only if you switch on GPS speed: your position is used on this device to measure walking speed and is never stored or sent.</string>
 </dict>
 </plist>
