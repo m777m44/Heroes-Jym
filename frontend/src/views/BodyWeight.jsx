@@ -24,7 +24,7 @@ export default function BodyWeight() {
   const S = useStore(s => s.S)
   const { update } = useStore()
   const [range, setRange] = useState('90')
-  const u = S.unit
+  const u = U(S.unit)          // label only
   const { current, previous, delta } = compareLatest(S.bodyweight)
   const total = totalChange(S.bodyweight)
   const rate = weeklyRate(S.bodyweight)

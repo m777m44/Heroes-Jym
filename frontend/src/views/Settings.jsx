@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
+import { ACCENTS, todayISO, localTZ, DAYN, WEEK_STARTS, weekStartOf } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t, U, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
@@ -115,22 +115,28 @@ export default function Settings() {
       />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
-          options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
+          options={[{ value: 'kg', label: U('kg') }, { value: 'lb', label: U('lb') }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
+      <SelectRow icon="calendar" iconTint="var(--orange)" title={t('Week starts on')}
+        value={weekStartOf(S)} onChange={v => update(s => { s.weekStart = v })}
+        options={WEEK_STARTS.map(d => ({ value: d, label: t(DAYN[d]) }))} />
     </Section>
 
     {/* ---------- walking + body weight (MAHDI-JYM 2.0) ---------- */}
     <Section title={t('Walking & body')}>
       <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
+      <Row icon="drop" iconTint="var(--blue)" title={t('Water tracker')} subtitle={t('A card on Home to count glasses of water')}>
+        <Switch checked={S.waterOn !== false} onChange={v => update(s => { s.waterOn = v })} />
+      </Row>
     </Section>
 
     {/* ---------- during a workout ---------- */}
     <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
-        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))} />
+        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + ' ' + U('s') }))} />
       {(wakeOK || !MOBILE) && (
         <Row icon="sun" iconTint="var(--yellow)" title={t('Keep screen awake')}
           subtitle={wakeOK ? null : t('Not supported in this browser.')}>
@@ -187,7 +193,7 @@ export default function Settings() {
         <div className="swatches">
           {Object.entries(ACCENTS).map(([k, c]) => (
             <button key={k} className={'swatch' + ((S.accent || 'lime') === k ? ' on' : '')}
-              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={k} />
+              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={t('Accent color') + ' ' + (Object.keys(ACCENTS).indexOf(k) + 1)} />
           ))}
         </div>
       </div>

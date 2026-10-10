@@ -38,6 +38,9 @@ export const DEF = {
   stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
   // 2.1 — the live clock's zone: 'iraq' (Asia/Baghdad) or 'device'. See lib/liveClock.js.
   clockZone: 'iraq',
+  // 2.4 — first day of the week (6 = Saturday, see weekStartOf in lib/format.js) and the water
+  // tracker (lib/water.js): glasses per day, the daily goal, whether the Home card shows.
+  weekStart: 6, water: {}, waterGoal: 8, waterOn: true,
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.

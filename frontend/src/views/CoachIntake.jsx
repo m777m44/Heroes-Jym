@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { DAYN } from '../lib/format.js'
+import { DAYS, weekOrder, weekStartOf } from '../lib/format.js'
 import { EXDB } from '../lib/exercises.js'
 import { emptyCoach, coachAvailable } from '../lib/coach.js'
 import { requestPlan } from '../lib/coach-api.js'
@@ -125,9 +125,9 @@ export default function CoachIntake() {
           value={p.daysPerWeek} onChange={v => set({ daysPerWeek: v })} />
         <div className="muted small" style={{ margin: '14px 0 8px' }}>{t('Which days suit you? (optional)')}</div>
         <div className="week">
-          {[1, 2, 3, 4, 5, 6, 0].map(d => <div key={d} className={'wday' + (p.preferredDays.includes(d) ? ' today' : '')}
+          {weekOrder(weekStartOf(S)).map(d => <div key={d} className={'wday' + (p.preferredDays.includes(d) ? ' today' : '')}
             onClick={() => toggleDay(d)} style={{ cursor: 'pointer' }}>
-            <div className="lbl">{t(DAYN[d]).slice(0, 2)}</div>
+            <div className="lbl">{t(DAYS[d])}</div>
             <div className={'dot' + (p.preferredDays.includes(d) ? ' plan' : '')} />
           </div>)}
         </div>

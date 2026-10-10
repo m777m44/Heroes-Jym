@@ -92,6 +92,8 @@
 :root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d70015; --on-acc:#fff }
 :root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#0071a4; --on-acc:#000 }
 :root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b25000; --on-acc:#000 }
+:root[data-accent="indigo"]{ --acc:var(--indigo); --acc-2:#3634a3; --on-acc:#fff }
+:root[data-accent="mint"]  { --acc:var(--mint);   --acc-2:#0c817b; --on-acc:#000 }
 /* Label colour on a filled accent button is picked per accent by measured contrast,
    not by taste. Button text is 17px/600, so the AA bar is 3:1 (large text). White on
    the light-theme green is 2.22:1 and on teal 2.57:1 — both fail, and green is the
@@ -99,8 +101,10 @@
    9.46 / 8.16 there. Blue, purple, pink and red keep white (3.5–4.1:1), which both
    passes and matches the platform convention. */
 :root[data-theme="light"][data-accent="lime"],
+:root[data-theme="light"][data-accent="mint"],
 :root[data-theme="light"][data-accent="teal"]  { --on-acc:#000 }
 :root[data-theme="light"][data-accent="sky"],
+:root[data-theme="light"][data-accent="indigo"],
 :root[data-theme="light"][data-accent="violet"],
 :root[data-theme="light"][data-accent="pink"],
 :root[data-theme="light"][data-accent="red"]   { --on-acc:#fff }
@@ -1183,3 +1187,39 @@ h3 .exn{align-items:inherit}
 .badge-bar i{display:block;height:100%;background:var(--tint)}
 .offline-bar{height:4px;margin:0 16px 10px;border-radius:2px;background:var(--surface-3);overflow:hidden}
 .offline-bar i{display:block;height:100%;background:var(--blue);transition:width .2s ease-out}
+
+/* ---------------------------------------------------------- 2.4: week plan, routine colours -- */
+.week-plan .wp-day{position:relative;padding-inline-start:20px}
+.week-plan .wp-bar{position:absolute;inset-inline-start:8px;top:12px;bottom:12px;width:4px;border-radius:2px}
+.week-plan .wp-day.is-today{background:color-mix(in srgb,var(--acc) 7%,var(--surface))}
+.week-plan .wp-day.is-today .tt{font-weight:600}
+.wp-today{margin-inline-start:8px;font-size:11px;font-weight:600;color:var(--on-acc);background:var(--acc);border-radius:5px;padding:1px 6px;vertical-align:2px}
+.wp-summary{display:flex;gap:16px;margin:8px 4px 0;font-size:13px;color:var(--label-2)}
+.wp-summary span{display:inline-flex;align-items:center;gap:6px}
+.wp-summary i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.wp-split{margin-top:10px}
+.cal-h.wkend{color:var(--acc)}
+
+/* water card */
+.water-goal{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:500;color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent);border-radius:8px;padding:5px 9px}
+.water-drops{display:flex;flex-wrap:wrap;gap:6px}
+.water-drops .wd{width:34px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--surface-2);color:var(--label-4);transition:background var(--fast),color var(--fast)}
+.water-drops .wd.on{background:color-mix(in srgb,var(--blue) 20%,transparent);color:var(--blue)}
+.water-drops .wd.on .icn path{fill:currentColor}
+.water-drops .wd.extra.on{background:color-mix(in srgb,var(--teal) 20%,transparent);color:var(--teal)}
+.water-week{display:flex;gap:6px;align-items:flex-end}
+.water-week .ww{display:flex;flex-direction:column;align-items:center;gap:3px}
+.water-week .ww-bar{width:9px;height:34px;border-radius:5px;background:var(--surface-2);display:flex;align-items:flex-end;overflow:hidden}
+.water-week .ww-bar i{display:block;width:100%;border-radius:5px}
+.water-week .ww-l{font-size:10px;color:var(--label-3)}
+.water-week .ww.today .ww-l{color:var(--label);font-weight:600}
+.water-plus{background:var(--blue)!important;color:#fff!important}
+.water-tag{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.water-card.done{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 35%,transparent)}
+
+/* routine editor — colour row (2.4) */
+.rt-colors{display:flex;gap:10px;flex-wrap:wrap;margin:-4px 2px 16px}
+.swatch.sm{width:26px;height:26px}
+.swatch.sm.on::after{inset:-3px}
+.iconbtn.rt-glyph{color:var(--tint);background:color-mix(in srgb,var(--tint) 16%,var(--surface-2))}
+.sethead span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

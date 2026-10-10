@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, weekKey } from '../lib/format.js'
+import { fmtNum, fmtDate, todayISO, weekId, weekStartOf } from '../lib/format.js'
 import { t, exName, U } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
@@ -27,7 +27,7 @@ function MuscleBalance({ S }) {
   const now = Date.now()
   const inWin = S.workouts.filter(w =>
     win === 0 ? true
-      : win === 7 ? weekKey(w.d) === weekKey(todayISO())
+      : win === 7 ? weekId(w.d, weekStartOf(S)) === weekId(todayISO(), weekStartOf(S))
         : (w.start || new Date(w.d).getTime()) > now - win * 86400000)
   // Counting only the sets taken near failure turns the map from "where did the volume go"
   // into "where did the stimulus go" — a muscle can lead on sets and still never be trained
@@ -82,7 +82,7 @@ function MuscleBalance({ S }) {
 function EffortCard({ S }) {
   const [win, setWin] = useState(90)
   const kind = displayScale(S)
-  const hd = scaleName(kind)
+  const hd = t(scaleName(kind))
   const sum = effortSummary(S, win)
   const weeks = effortWeeks(S, win)
   const hist = effortHistogram(S, win)
@@ -139,7 +139,7 @@ export default function Stats() {
   const now = Date.now()
   const anyEffort = hasEffort(S)
   const kind = displayScale(S)
-  const hd = scaleName(kind)
+  const hd = t(scaleName(kind))
 
   const bwPts = S.bodyweight.filter(b => range === 0 || (b.t || new Date(b.d).getTime()) > now - range * 86400000)
     .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
@@ -247,7 +247,7 @@ export default function Stats() {
             {onEff ? '' : <> · {t('Best:')}{' '}<b className="accent">{fmtNum(onE1 ? e1Best.est : exBest)} {U(onE1 ? S.unit : exUnit)}</b></>}
           </div>
           {onE1 && <div className="small dim" style={{ marginTop: 4 }}>
-            {t('Best estimate from {0} on {1} — an estimate, not a tested max.', fmtNum(e1Best.w) + ' ' + S.unit + ' × ' + e1Best.r, fmtDate(e1Best.d, true))}
+            {t('Best estimate from {0} on {1} — an estimate, not a tested max.', fmtNum(e1Best.w) + ' ' + U(S.unit) + ' × ' + e1Best.r, fmtDate(e1Best.d, true))}
           </div>}
           {!onEff && !onE1 && showEff && <div className="small dim" style={{ marginTop: 4 }}>
             {t('A fuller dot means less left in the tank — the same weight at a lower {0} is progress the line alone does not show.', hd)}

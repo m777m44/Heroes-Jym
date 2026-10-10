@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore.js'
-import { t, dateLocale } from '../lib/i18n.js'
+import { t, U, dateLocale } from '../lib/i18n.js'
 import {
   useNow, clockZoneOf, timeIn, dateLine, hijriLine, msToMidnight, dayProgress, splitDuration, zoneOffsetLabel, IRAQ_TZ,
 } from '../lib/liveClock.js'
@@ -36,7 +36,7 @@ export default function LiveClock({ compact = false, children }) {
   const hijri = hijriLine(now, zone, loc)
   return <div className="card lc" role="timer" aria-label={label}>
     <div className="lc-top">
-      <span className="lc-zone"><Icon name="clock" /> {label} <span className="lc-off">{zoneOffsetLabel(now, zone)}</span></span>
+      <span className="lc-zone"><Icon name="clock" /> {label} <span className="lc-off" dir="ltr">{zoneOffsetLabel(now, zone).replace('GMT', U('GMT'))}</span></span>
       {children}
     </div>
     <div className="lc-time big" dir="ltr">

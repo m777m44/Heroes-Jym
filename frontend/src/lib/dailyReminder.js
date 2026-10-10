@@ -16,9 +16,10 @@
 // The self-hosted server applies the same rules to Web Push (api/reminders.js); the mobile
 // build feeds this plan to native local notifications (lib/mobile.js).
 import { effectiveRoutineId } from './history.js'
+import { routineLabel } from './routines.js'
 import { isoOf } from './format.js'
 import { goalOf, stepsOn } from './stepMetrics.js'
-import { t, dateLocale } from './i18n.js'
+import { t, dateLocale, getLang } from './i18n.js'
 
 export const PLAN_DAYS = 14
 export const NUDGE_AFTER_MIN = 60
@@ -44,8 +45,8 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
     const rid = effectiveRoutineId(S, iso)
     const routine = rid ? (S.routines || []).find(x => x.id === rid) : null
     if (routine) {
-      out.push({ id: ID_BASE + i * 2, kind: 'workout', iso, at: day, routine: routine.name })
-      if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'nudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), routine: routine.name })
+      out.push({ id: ID_BASE + i * 2, kind: 'workout', iso, at: day, routine: routineLabel(routine.name) })
+      if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'nudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), routine: routineLabel(routine.name) })
     } else if (r.walk) {
       if (i === 0 && stepsOn(S, iso) >= goalOf(S)) continue
       out.push({ id: ID_BASE + i * 2, kind: 'walk', iso, at: day })
@@ -96,7 +97,7 @@ export function suggestedReminderTime(workouts) {
  */
 export function planSignature(S, now = new Date()) {
   return JSON.stringify([
-    reminderPrefs(S), S.week, S.dayPlan, (S.routines || []).map(r => [r.id, r.name]),
+    reminderPrefs(S), S.week, S.dayPlan, (S.routines || []).map(r => [r.id, r.name]), getLang(),   // texts follow the language
     (S.workouts || []).slice(-3).map(w => w.d), goalOf(S), isoOf(now),
     // a rest-day walk reminder disappears once today's goal is met
     reminderPrefs(S).walk && stepsOn(S, isoOf(now)) >= goalOf(S),

@@ -3,6 +3,56 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.4.0 — 2026-10-11
+
+**A Saturday-to-Friday week, routine names in Arabic, colours for every routine, a water
+tracker, and Arabic everywhere.**
+*أسبوع من السبت إلى الجمعة، أسماء الروتينات بالعربية، لون لكل روتين، متابعة شرب الماء، وعربية في كل مكان.*
+
+### 📅 The week runs Saturday → Friday
+- Every week view — the plan's weekly schedule, the week strip on Home, the calendar, the
+  year heatmap, weekly stats, the Coach intake and the printed plan — now starts on
+  **Saturday** and ends on **Friday** (السبت، الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس، الجمعة).
+- **Settings → General → Week starts on:** Saturday (default), Sunday or Monday.
+- Weekly numbers (workouts per week, effort weeks) are grouped by the same week.
+
+### 🏷️ Routine names in Arabic
+- The starter routines and the built-in names are stored once and shown in the app's
+  language: **يوم الدفع · يوم السحب · يوم الأرجل** (Push / Pull / Leg Day), «تمرين حرّ»,
+  «روتين جديد»… Switching language renames them; names you typed stay as typed.
+- Applies everywhere a routine name appears: Home, Plan, Workout, history, toasts, the
+  daily reminder and the printed plan.
+
+### 🎨 Colour
+- Every routine has a colour (Push orange, Pull blue, Legs purple; pick any of ten in the
+  routine editor). Lists, the today card, workout rows and the week schedule use it.
+- **Redesigned weekly schedule:** days in week order, today highlighted, a colour strip per
+  day, a «Rest» tag with a moon on rest days and a training / rest summary.
+- **Six-day split:** Push · Pull · Legs twice a week, Saturday to Thursday, Friday off — the
+  starter plan uses it, and existing starter plans get a one-tap button to switch.
+- Two new accent colours: **indigo** and **mint** (label colours checked for contrast).
+
+### 💧 Water tracker
+- A new Home card: tap to add a glass (250 ml), see today's progress against a daily goal
+  (6–12 glasses), the last seven days and your streak. Fully offline, kept for 400 days.
+- **Settings → Walking & body → Water tracker** hides it.
+
+### 🌐 Arabic everywhere
+- **Exercise instructions in Arabic** for the first time — the dataset has none, so 488 step
+  sentences were translated by hand; 201 exercises (the whole starter plan and the common gym
+  lifts) now read fully in Arabic. The rest keep English steps, marked as such, never half
+  translated.
+- Remaining English in the Arabic UI translated: units (كغ، رطل، مل، ث), RIR / RPE
+  («المتبقّي» / «الجهد»), 1RM («أقصى وزن لتكرار واحد»), GPS, JSON, PDF, Chrome / Safari,
+  GMT (غرينتش), EZ bar, SkiErg, Greyskull LP, the progression hint («2.5 كغ إضافية») and more.
+- A new test renders every screen, the main sheets and a workout in progress in Arabic and
+  fails on any stray English (brand names excepted).
+- 23 new strings in all 12 languages.
+
+### 🐞 Fixes
+- The dataset's broken "sled 45в° leg press" names now read "45°".
+- Coach weekly day picker follows the week order.
+
 ## v2.3.0 — 2026-10-10
 
 **Accurate step counting, a fully offline app, reset the counter, and new walking features.**

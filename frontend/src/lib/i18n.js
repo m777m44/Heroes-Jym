@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from 'react'
 
 // UI languages. de/pt have no instruction pack upstream — instructions fall back to English.
+// Arabic has a hand-written, sentence-keyed pack that covers part of the library (see instr/ar.js).
 export const LANGS = {
   en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
   pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский', zh: '中文',
@@ -14,7 +15,7 @@ export const LANGS = {
 // Languages written right to left — the shell sets <html dir> from this.
 export const RTL_LANGS = ['ar']
 export const isRTL = l => RTL_LANGS.includes(l)
-export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
+export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko', 'ar']
 const DATE_LOCALES = {
   en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT',
   pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN',
@@ -39,7 +40,7 @@ export const dateLocale = () => DATE_LOCALES[lang] || 'en-GB'
 
 // Unit labels. English abbreviations everywhere except Arabic, which has its own (كغ، كم…).
 // 'mn' is the minutes part of "1h 5m" (written 'm' outside Arabic, so it can't clash with metres).
-const UNIT_AR = { kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث' }
+const UNIT_AR = { kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث', ml: 'مل', GMT: 'غرينتش' }
 export const U = u => lang === 'ar' ? (UNIT_AR[u] || u) : (u === 'mn' ? 'm' : u)
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).
@@ -49,7 +50,17 @@ export function t(s, ...args) {
   return v
 }
 // Instructions for an exercise in the current language (English steps as fallback).
-export const instrFor = ex => (instr && instr[ex.id]) || ex.st || []
+// A sentence-keyed pack ({ sentences: { en: translation } }) translates an exercise only when
+// every one of its steps is in it — never a half-English list.
+function packSteps(ex) {
+  if (!instr || !ex) return null
+  if (!instr.sentences) return instr[ex.id] || null
+  const st = ex.st || [], m = instr.sentences
+  return st.length && st.every(s => m[s]) ? st.map(s => m[s]) : null
+}
+export const instrFor = ex => packSteps(ex) || (ex && ex.st) || []
+// True when the steps shown for this exercise are in the current language.
+export const instrTranslated = ex => lang === 'en' || !!packSteps(ex)
 // Exercise name in the current language (the dataset name when there's no translation,
 // e.g. custom exercises). In Arabic the English name is shown under it: exNameEn() gives that
 // second line, or '' when the name isn't translated (English UI shows English only).
