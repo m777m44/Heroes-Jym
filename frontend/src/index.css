@@ -1154,3 +1154,32 @@ h4.sec{
 .exn-en{font-size:.74em;font-weight:400;color:var(--label-2);letter-spacing:0;text-transform:capitalize;margin-top:1px;
   unicode-bidi:isolate;text-align:start}
 h3 .exn{align-items:inherit}
+
+/* ---- 2.3: reset, this walk, achievements ---- */
+.walk-reset{margin-top:10px;background:none;border:0;color:var(--label-2);font:inherit;font-size:13px;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;cursor:pointer}
+.walk-reset:active{background:var(--surface-2)}
+.step-reset{text-align:center}
+.step-reset h3{margin:6px 0}
+.step-reset .btn{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+.step-reset-today{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px;margin:10px 0 4px;border-radius:12px;background:var(--surface-2)}
+.step-reset-today b{font-size:22px;font-variant-numeric:tabular-nums}
+.step-reset-h{margin:18px 0 2px;font-size:15px}
+.step-reset-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:38vh;overflow:auto;text-align:start}
+.step-reset-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2)}
+.step-reset-row b{font-variant-numeric:tabular-nums}
+.step-reset-row .chip{min-width:44px;justify-content:center}
+.chip.danger{background:color-mix(in srgb,var(--red) 18%,transparent);color:var(--red);font-weight:600}
+.walk-session-grid{grid-template-columns:repeat(4,1fr);margin-top:0}
+.walk-session-grid .u{font-size:11px;font-weight:400;color:var(--label-3)}
+@media (max-width:420px){.walk-session-grid{grid-template-columns:1fr 1fr;row-gap:12px}}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.badge{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px 10px;border-radius:14px;background:var(--surface-2);text-align:center;opacity:.62}
+.badge.won{opacity:1;background:color-mix(in srgb,var(--tint) 14%,var(--surface-2));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint) 35%,transparent)}
+.badge-ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--label-3);background:var(--surface-3)}
+.badge.won .badge-ic{color:#fff;background:var(--tint)}
+.badge b{font-size:16px;font-variant-numeric:tabular-nums}
+.badge-l{font-size:11px;line-height:1.25;color:var(--label-2)}
+.badge-bar{width:70%;height:3px;border-radius:2px;background:var(--surface-3);overflow:hidden;margin-top:3px}
+.badge-bar i{display:block;height:100%;background:var(--tint)}
+.offline-bar{height:4px;margin:0 16px 10px;border-radius:2px;background:var(--surface-3);overflow:hidden}
+.offline-bar i{display:block;height:100%;background:var(--blue);transition:width .2s ease-out}

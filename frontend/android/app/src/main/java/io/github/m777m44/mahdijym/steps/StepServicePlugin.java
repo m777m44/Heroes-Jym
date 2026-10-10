@@ -40,6 +40,7 @@ import java.util.List;
  *   pause() / resume() / stop()
  *   getState()                    → today's snapshot (steps, activeMs, speed, hourly, …)
  *   getHistory()                  → { days: { 'YYYY-MM-DD': { n, ms, h[24] } } }
+ *   resetDay({ day })             today (default) back to 0 and counting on from now, or a past day removed
  *   getBatteryStatus()            → { ignoring }   battery-optimisation exemption
  *   requestBatteryExemption()     opens the system dialog
  *   openNotificationSettings()
@@ -167,7 +168,10 @@ public class StepServicePlugin extends Plugin {
         // pause. Only a tap on Start (attach false) switches counting back on.
         boolean attach = Boolean.TRUE.equals(call.getBoolean("attach", false)) && s.running;
         s.running = true;
-        if (!attach) s.paused = false;
+        if (!attach && s.paused) {
+            s.paused = false;
+            s.resetBaseline();             // steps taken while paused are not counted
+        }
         s.save();
         if (!StepCounterService.send(ctx(), StepCounterService.ACTION_START)) {
             s.running = false;
@@ -218,6 +222,17 @@ public class StepServicePlugin extends Plugin {
         }
         Watchdog.cancel(ctx());
         NotificationManagerCompat.from(ctx()).cancel(StepNotifier.LIVE_ID);
+        StepWidget.updateAll(ctx());
+        call.resolve(snapshot());
+    }
+
+    /** "Reset and start again": { day } — today (default) back to 0, or a past day removed. */
+    @PluginMethod
+    public void resetDay(PluginCall call) {
+        String day = call.getString("day", null);
+        StepStore.get(ctx()).resetDay(day);
+        StepCounterService svc = StepCounterService.instance;
+        if (svc != null) svc.afterReset();
         StepWidget.updateAll(ctx());
         call.resolve(snapshot());
     }

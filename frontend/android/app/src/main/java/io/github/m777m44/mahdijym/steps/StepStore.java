@@ -2,6 +2,9 @@ package io.github.m777m44.mahdijym.steps;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.SystemClock;
+import android.provider.Settings;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,11 +30,22 @@ import java.util.TimeZone;
  *
  * Counting model: Android's TYPE_STEP_COUNTER is a cumulative count since boot that keeps
  * running in the sensor hub while the app is asleep. We keep the last value we saw
- * ({@link #lastCounter}); each new reading adds the difference. A reading lower than the
- * baseline means the phone rebooted — then the reading itself is the steps since boot. The
- * baseline survives process death (so steps walked while Android had killed the service are
- * recovered on restart) but is cleared when the user stops counting, so steps walked while
- * the counter was switched off are never added.
+ * ({@link #lastCounter}); each new reading adds the difference. The baseline survives process
+ * death (so steps walked while Android had killed the service are recovered on restart) but
+ * is cleared when the user stops counting, so steps walked while the counter was switched off
+ * are never added.
+ *
+ * 2.3 — the counter's raw value is the steps since the phone was switched on, often tens of
+ * thousands, so a bad baseline turns into a huge jump (seen: 70 → 24,303). Three rules make
+ * that impossible:
+ *   1. A reboot is detected for real (Android's boot counter, and the uptime going backwards)
+ *      — not guessed from "the value went down". After a reboot only steps walked since the
+ *      boot are credited, and only when the boot was today.
+ *   2. A lower value on the same boot (a sensor hiccup: some phones report 0 or a stale value
+ *      when the listener is re-registered) never credits anything; it only moves the baseline.
+ *   3. Every delta must be humanly possible for the time since the previous reading — at most
+ *      {@link StepMath#MAX_STEPS_PER_SEC} steps per second plus a small allowance. Anything above is a
+ *      baseline jump, not walking: the baseline moves, nothing is added.
  */
 final class StepStore {
     static final int HISTORY_DAYS = 62;
@@ -39,6 +53,7 @@ final class StepStore {
     private static StepStore instance;
 
     private final SharedPreferences prefs;
+    private final Context app;
 
     String day;
     int steps;              // confirmed by the step counter
@@ -46,6 +61,9 @@ final class StepStore {
     long activeMs;
     long lastStepAt;        // wall clock of the last step
     float lastCounter = -1f;
+    long lastUp;            // SystemClock.elapsedRealtime() at the last counter reading
+    int lastBoot = -1;      // Settings.Global.BOOT_COUNT at the last reading (-1: unknown)
+    int rejected;           // implausible jumps refused today (diagnostics)
     int[] hourly = new int[24];
     int lastMilestone;      // highest multiple of 1 000 already announced today
     String goalDay = "";    // the day the goal was last celebrated
@@ -60,12 +78,18 @@ final class StepStore {
     }
 
     private StepStore(Context c) {
+        app = c;
         prefs = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         day = prefs.getString("day", today());
         steps = prefs.getInt("steps", 0);
         activeMs = prefs.getLong("activeMs", 0);
         lastStepAt = prefs.getLong("lastStepAt", 0);
         lastCounter = prefs.getFloat("lastCounter", -1f);
+        lastUp = prefs.getLong("lastUp", 0);
+        lastBoot = prefs.getInt("lastBoot", -1);
+        rejected = prefs.getInt("rejected", 0);
+        // Saved by a version without boot tracking: that baseline can't be trusted.
+        if (!prefs.contains("lastUp")) lastCounter = -1f;
         lastMilestone = prefs.getInt("lastMilestone", 0);
         goalDay = prefs.getString("goalDay", "");
         running = prefs.getBoolean("running", false);
@@ -85,6 +109,9 @@ final class StepStore {
             .putLong("activeMs", activeMs)
             .putLong("lastStepAt", lastStepAt)
             .putFloat("lastCounter", lastCounter)
+            .putLong("lastUp", lastUp)
+            .putInt("lastBoot", lastBoot)
+            .putInt("rejected", rejected)
             .putInt("lastMilestone", lastMilestone)
             .putString("goalDay", goalDay)
             .putBoolean("running", running)
@@ -151,6 +178,7 @@ final class StepStore {
         activeMs = 0;
         hourly = new int[24];
         lastMilestone = 0;
+        rejected = 0;
         save();
         return true;
     }
@@ -176,22 +204,76 @@ final class StepStore {
 
     // ---- counting ----------------------------------------------------------------------
 
+    /** Android's boot counter (API 24+), -1 when unknown. */
+    int bootId() {
+        if (Build.VERSION.SDK_INT < 24) return -1;
+        try { return Settings.Global.getInt(app.getContentResolver(), Settings.Global.BOOT_COUNT, -1); }
+        catch (RuntimeException e) { return -1; }
+    }
+
+    /** Start of today (local) in wall-clock milliseconds. */
+    static long startOfToday(long now) {
+        Calendar c = Calendar.getInstance(TimeZone.getDefault());
+        c.setTimeInMillis(now);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
+    }
+
+    // A lower reading on the same boot is either a one-off glitch (the next reading is back above
+    // the baseline) or a real restart of the sensor from 0 (the next one is low again). The
+    // baseline therefore stays put on the first low reading; it is only remembered here. Moving
+    // the baseline down at once would credit the whole counter on the next normal reading after
+    // a long enough pause (70 → 24,303).
+    private float dipCounter = -1f;
+    private long dipUp;
+
+    private void baseline(float value, long up, int boot) {
+        lastCounter = value;
+        lastUp = up;
+        lastBoot = boot;
+    }
+
     /** A TYPE_STEP_COUNTER reading. Returns the number of steps it added. */
     synchronized int onCounter(float value, long now) {
+        return onCounter(value, now, SystemClock.elapsedRealtime(), bootId());
+    }
+
+    /** Same, with the clock and boot id injected. The arithmetic lives in {@link StepMath}. */
+    synchronized int onCounter(float value, long now, long up, int boot) {
         rollIfNeeded();
+        if (Float.isNaN(value) || Float.isInfinite(value) || value < 0) return 0;
+        provisional = 0;
         if (lastCounter < 0) {            // first reading since counting was switched on
-            lastCounter = value;
-            provisional = 0;
+            baseline(value, up, boot);
             save();
             return 0;
         }
-        float d = value - lastCounter;
-        if (d < 0) d = value;             // the phone rebooted: the counter restarted at 0
-        lastCounter = value;
-        int delta = Math.round(d);
-        if (delta > 150000) delta = 0;    // nonsense reading — never invent a marathon
-        provisional = 0;
-        return addSteps(delta, now);
+        float base = lastCounter;
+        long baseUp = lastUp;
+        int baseBoot = lastBoot;
+        if (value < lastCounter && !StepMath.rebooted(up, lastUp, boot, lastBoot)) {
+            if (dipCounter < 0 || value < dipCounter) {   // first low reading: wait and see
+                dipCounter = value;
+                dipUp = up;
+                return 0;
+            }
+            base = dipCounter;                             // low twice: the sensor restarted
+            baseUp = dipUp;
+            baseBoot = boot;
+        }
+        dipCounter = -1f;
+        long d = StepMath.delta(value, base, up, baseUp, boot, baseBoot, now, startOfToday(now), steps);
+        baseline(value, up, boot);
+        if (d == StepMath.REJECT) {
+            rejected++;                    // a baseline jump, not walking
+            save();
+            return 0;
+        }
+        if (d <= 0) { save(); return 0; }
+        return addSteps((int) d, now);
     }
 
     /** A TYPE_STEP_DETECTOR event: shown immediately, confirmed by the next counter reading. */
@@ -227,7 +309,31 @@ final class StepStore {
     /** Forget the counter baseline — used when the user switches counting off. */
     synchronized void resetBaseline() {
         lastCounter = -1f;
+        dipCounter = -1f;
         provisional = 0;
+        save();
+    }
+
+    /**
+     * "Reset and start again": today back to zero (counting continues from this moment — the
+     * next sensor reading becomes the new baseline), or a past day removed from the history.
+     */
+    synchronized void resetDay(String iso) {
+        rollIfNeeded();
+        if (iso == null || iso.isEmpty() || iso.equals(day)) {
+            steps = 0;
+            provisional = 0;
+            activeMs = 0;
+            hourly = new int[24];
+            lastMilestone = 0;
+            lastStepAt = 0;
+            rejected = 0;
+            if (day.equals(goalDay)) goalDay = "";
+            lastCounter = -1f;
+            dipCounter = -1f;
+        } else {
+            history.remove(iso);
+        }
         save();
     }
 
@@ -296,6 +402,7 @@ final class StepStore {
             o.put("goal", goal());
             o.put("km", Math.round(km() * 100) / 100.0);
             o.put("kcal", kcal());
+            o.put("rejected", rejected);
             JSONArray h = new JSONArray();
             for (int v : hourly) h.put(v);
             o.put("hourly", h);

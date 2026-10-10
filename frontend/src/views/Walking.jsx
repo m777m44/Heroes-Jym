@@ -21,6 +21,8 @@ import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Button, Segmented } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
+import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
+import { WalkSession, Achievements } from '../components/pedometer/WalkExtras.jsx'
 
 const fmtInt = n => Math.round(n).toLocaleString(dateLocale())
 
@@ -146,6 +148,7 @@ export default function Walking() {
           : <Button variant="primary" icon="play" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>{paused ? t('Resume counting') : t('Start counting')}</Button>}
         {status === 'denied' && MOBILE && <Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button>}
       </div>
+      <button className="walk-reset" onClick={stepResetSheet}><Icon name="reset" /> {t('Reset step counter')}</button>
     </div>
 
     <div className="tiles">
@@ -154,6 +157,8 @@ export default function Walking() {
       <div className="tile"><div className="l"><Icon name="flame" /> {t('Calories')}</div><div className="v"><AnimatedNumber value={kcal} /> <span className="u">{U('kcal')}</span></div></div>
       <div className="tile"><div className="l"><Icon name="clock" /> {t('Active time')}</div><div className="v mono" dir="ltr">{fmtDuration(active, { alwaysHours: true })}</div></div>
     </div>
+
+    <WalkSession now={now} stride={stride} tracking={tracking} speed={speed} moving={walkingNow} />
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
@@ -178,6 +183,8 @@ export default function Walking() {
       </div>
       {best && <div className="dim small" style={{ marginTop: 8 }}>{t('Best day: {0} steps on {1}', fmtInt(best.n), fmtDate(best.d, true))}</div>}
     </div>
+
+    <Achievements S={S} today={today} />
 
     <Section title={t('Goal & counter')}
       footer={source === 'service' || (MOBILE && status === 'idle')

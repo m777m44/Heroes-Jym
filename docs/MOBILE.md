@@ -10,7 +10,8 @@ MAHDI-JYM ships in two flavors from the same codebase:
 | Reminders | Web Push from your server | native local notifications, no server involved |
 | Step counter | accelerometer, while the page is open | hardware step sensor, keeps counting in the background (Android) |
 | Step notification | service-worker notification | ongoing notification (Android), silent replace (iOS) |
-| Exercise media | served by your server (`img/`, `gif/`) | loaded from the jsDelivr CDN |
+| Exercise media | served by your server (`img/`, `gif/`); *Settings → Offline* saves them in the browser | inside the APK (offline build, the released app) — or the jsDelivr CDN (`build:mobile`) |
+| Without internet | the whole app (service worker precaches every built file) | everything — the app never needs a connection |
 
 The mobile flavor never talks to a backend: no sign-in screen, no sync, no telemetry.
 State is mirrored from `localStorage` into `mahdi-jym-state.json` in the app's private data
@@ -31,7 +32,11 @@ OS share sheet instead of a browser download.
 ```sh
 cd frontend
 npm install
-npm run build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/
+npm run build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/ (media from the CDN)
+
+# or the offline app, exactly like the released APK: every exercise image + animation inside
+(cd .. && scripts/fetch-media.sh)   # → ../media; or point MEDIA_DIR at a dataset checkout
+MEDIA_DIR=../media npm run build:mobile:offline
 
 npx cap open android        # opens Android Studio → run on emulator or device
 npx cap open ios            # opens Xcode (Mac only) → set your signing team, then run
@@ -39,6 +44,12 @@ npx cap open ios            # opens Xcode (Mac only) → set your signing team, 
 
 `npm run build:mobile` bakes the CDN media base into the bundle and copies the web build
 into both native projects — re-run it after every web-code change before building natively.
+
+`npm run build:mobile:offline` keeps the media paths relative and copies all 1,324 JPGs and
+1,324 GIFs (~138 MB) into `dist/img` + `dist/gif` before `cap sync`
+(`scripts/bundle-media.mjs` — it fails if any exercise has no file). The APK grows to about
+140 MB, and the exercise library then works with no connection at all. CI always builds this
+way (`.github/workflows/android-apk.yml` downloads the dataset at the pinned commit and caches it).
 
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
 > Run a plain `npm run build` again before deploying `dist` to a server.
@@ -174,8 +185,8 @@ old key. Export a backup (Settings → *Export backup (JSON)*), uninstall, insta
 To build and sign your own locally:
 
 ```sh
-cd frontend && npm run build:mobile
-cd android && ./gradlew assembleRelease            # → app/build/outputs/apk/release/app-release-unsigned.apk
+cd frontend && MEDIA_DIR=../media npm run build:mobile:offline   # or build:mobile for a small CDN build
+cd android && ./gradlew testReleaseUnitTest assembleRelease            # → app/build/outputs/apk/release/app-release-unsigned.apk
 
 # one-time: create a keystore. KEEP IT — updates must be signed with the same key,
 # or Android refuses to install the new version over the old one.

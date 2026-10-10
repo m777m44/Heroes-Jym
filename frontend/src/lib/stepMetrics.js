@@ -87,7 +87,7 @@ export const reachedGoal = (prev, next, goal) => prev < goal && next >= goal
 export const stepsOn = (S, iso) => (S && S.steps && S.steps[iso] && S.steps[iso].n) || 0
 export const activeMsOn = (S, iso) => (S && S.steps && S.steps[iso] && S.steps[iso].ms) || 0
 
-const daysBack = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - n); return isoOf(d) }
+export const daysBack = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - n); return isoOf(d) }
 
 /** The last `days` days ending on `today`, oldest first: [{ d, n, ms }]. */
 export function lastDays(S, today, days = 7) {

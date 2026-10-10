@@ -15,6 +15,7 @@ import { suggestedReminderTime, reminderPrefs } from '../lib/dailyReminder.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
+import OfflineSection from '../components/OfflineSection.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 
 export default function Settings() {
@@ -191,6 +192,8 @@ export default function Settings() {
         </div>
       </div>
     </Section>
+
+    <OfflineSection />
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>

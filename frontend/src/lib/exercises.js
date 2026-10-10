@@ -34,6 +34,21 @@ const GIF_BASE = import.meta.env.VITE_GIF_BASE || 'gif/'
 export const imgSrc = ex => IMG_BASE + ex.img
 export const gifSrc = ex => GIF_BASE + ex.gif
 
+// The offline Android app ships every image and animation inside the APK (2.3): the library
+// works with no internet at all. Should a file ever fail to load there, fall back once to the
+// same pinned dataset on the CDN (only works online). Web builds never do this — a
+// self-hosted instance serves its own media and makes no third-party requests.
+export const OFFLINE_MEDIA = import.meta.env.VITE_OFFLINE_MEDIA === '1'
+const CDN = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/'
+export function onMediaError(e, ex, kind) {
+  if (!OFFLINE_MEDIA || !ex) return
+  const el = e.currentTarget
+  const name = kind === 'gif' ? ex.gif : ex.img
+  if (!el || !name || el.dataset.fb === kind) return
+  el.dataset.fb = kind
+  el.src = CDN + (kind === 'gif' ? 'videos/' : 'images/') + name
+}
+
 // Cardio exercises log time + speed instead of weight × reps.
 export const isCardio = idOrEx => (typeof idOrEx === 'string' ? EXIDX[idOrEx] : idOrEx)?.bp === 'cardio'
 

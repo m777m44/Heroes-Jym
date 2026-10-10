@@ -277,6 +277,15 @@ public class StepCounterService extends Service implements SensorEventListener {
         stopSelf();
     }
 
+    /** After "reset and start again": drop the speed samples and redraw everything. */
+    void afterReset() {
+        main.post(() -> {
+            samples.clear();
+            main.removeCallbacks(idleCheck);
+            publish(true);
+        });
+    }
+
     void applyConfig() {
         main.post(() -> {
             StepNotifier.createChannels(this, store);

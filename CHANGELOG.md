@@ -3,6 +3,48 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.3.0 — 2026-10-10
+
+**Accurate step counting, a fully offline app, reset the counter, and new walking features.**
+*عدّ خطوات دقيق، تطبيق يعمل بالكامل دون إنترنت، تصفير العدّاد، وميزات مشي جديدة.*
+
+### 🐞 Steps jumping from 70 to 24,303 (Android)
+- **Root cause:** Android's step sensor reports the steps since the phone was switched on.
+  The counter treated any *lower* reading as a reboot and re-based on it; a single stray low
+  value (a sensor hiccup) therefore made the next normal reading count in full — tens of
+  thousands of steps at once. Nothing capped it.
+- Reboots are now detected for real (Android's boot counter, uptime going backwards), never
+  guessed. A low reading on the same boot is first treated as a glitch: the baseline stays,
+  so the count simply continues when the sensor recovers; only two low readings in a row mean
+  the sensor really restarted.
+- Every increase must be humanly possible in the time since the previous reading (≤ 4 steps/s
+  plus a small allowance) and a day can't exceed 150,000 steps; anything else is refused.
+- The same rules protect the plugin path (iPhone, Android without the native service) and the
+  browser counter. The arithmetic is unit-tested (JVM `StepMathTest`, run by CI before every
+  APK build, plus vitest).
+- Counting itself never needed the internet: it runs on the phone's sensor, and Settings now
+  says so.
+
+### 🔄 Reset the step counter
+- **Walking → Reset step counter:** put today back to 0 and count on from now (two-tap
+  confirm), or clear a wrong earlier day. The native service, the widget and the lock-screen
+  notification follow at once.
+- **This walk:** steps, time, distance and cadence (steps/min) of the current walk, with a
+  **New walk** button that starts it again without touching the day.
+
+### 🏅 Achievements
+- Badges for big days (5k → 30k), lifetime steps (10k → 1M) and goal streaks (3 → 30 days),
+  with progress — computed from your history, nothing extra stored or sent.
+
+### 📴 Works fully offline
+- **Android app:** all 1,324 exercise images and 1,324 animations (GIFs) now ship *inside*
+  the APK — the exercise library works with no connection. (The APK grows to ~140 MB.)
+- **Web / installed app:** the service worker precaches every file of the build at install,
+  so every screen opens offline, not only the ones visited before; updates copy unchanged
+  files instead of downloading them again. **Settings → Offline → Save for offline use**
+  stores the exercise media in the browser (with progress, and *Free up space*).
+- If a bundled image is ever missing, the app falls back to the pinned CDN copy once.
+
 ## v2.2.1 — 2026-10-10
 
 **Bug fixes: the step counter counts, the permission dialog moves on, no crash from App info.**
