@@ -8,7 +8,7 @@ This guide takes you from "just cloned it" to "using it from my phone over the i
 Requirements: [Docker](https://docs.docker.com/get-docker/) with the Compose plugin.
 
 ```bash
-git clone https://github.com/DuarteSantos8/gym-app mahdi-jym
+git clone https://github.com/m777m44/Heroes-Jym mahdi-jym
 cd mahdi-jym
 cp .env.example .env
 docker compose pull   # prebuilt images from ghcr.io (amd64 + arm64) — or skip and build from source
@@ -28,6 +28,26 @@ curl http://localhost:8080/api/health      # {"ok":true,...}
 ```
 
 Logs: `docker compose logs -f`. Stop: `docker compose down`.
+
+### Without Docker (any PC, Raspberry Pi or Termux with Node 22)
+
+`scripts/local-host.mjs` does what the two containers do — starts the API and serves the built
+app with the same `/api` proxy and SPA fallback as `web/nginx.conf` — with no dependencies
+beyond the API's own:
+
+```bash
+git clone https://github.com/m777m44/Heroes-Jym mahdi-jym && cd mahdi-jym
+(cd frontend && npm ci && npm run build)
+(cd api && npm ci --omit=dev)
+node scripts/local-host.mjs                 # → http://localhost:8080
+```
+
+- Data goes to `./data` (override with `DATA_DIR`) — the same folder layout as the Docker setup.
+- Exercise media is served from `./media` if you ran `scripts/fetch-media.sh`; otherwise it is
+  redirected to the pinned dataset on jsDelivr, so it works right away.
+- Behind HTTPS on your own domain, pass the public URL:
+  `ORIGIN=https://app.heroes-jym.com node scripts/local-host.mjs` (`RP_ID` is derived from it).
+- Other knobs: `WEB_PORT` (8080), `HOST` (0.0.0.0), `API_PORT` (3000).
 
 ## 2. Understand the passkey requirement (important)
 

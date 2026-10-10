@@ -1,13 +1,22 @@
-# github.com/m777m44/Heroes-Jym
+# heroes-jym.com
 
-Source of the project website — plain hand-written HTML/CSS/JS, no build step,
-served by nginx.
+Source of the project website — plain hand-written HTML/CSS/JS, no build step.
+Deployed to GitHub Pages by `../.github/workflows/pages.yml`; `CNAME` sets the custom
+domain **heroes-jym.com**.
+
+| Path | What |
+| --- | --- |
+| `index.html` | English landing page (features, screenshots, live demo, download) |
+| `ar.html` | Arabic landing page (RTL) with step-by-step APK install help |
+| `docs.html`, `about.html` | Docs & story |
+| `site.js` | Live GitHub numbers + latest release version/size (fails silently) |
 
 Not in this folder (added at deploy time):
 
 - `img/` — the five screenshots from `../assets/screenshots/` plus `banner.png`
-- `icon-180.png` / `icon-512.png` — copied from `../frontend/public/` (the same
-  icons the PWA uses, so the browser tab, home screen and app all match)
-- `MAHDI-JYM.apk` — the signed release build (see `../docs/MOBILE.md`)
+- `icon-180.png` / `icon-512.png` — copied from `../frontend/public/`
+- `demo/` — the browser-only demo build of the app (`VITE_DEMO=1`)
+- `MAHDI-JYM.apk` — copy of the newest GitHub Release APK
+  (the download buttons link to `releases/latest/download/MAHDI-JYM.apk` directly)
 
-`site.js` fetches the star/fork counts from the public GitHub API at view time.
+Preview locally: `bash scripts/build-site.sh && python3 -m http.server -d _site 8080`

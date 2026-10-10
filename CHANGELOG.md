@@ -78,6 +78,24 @@ weight.
   permissions declared; iOS: motion and when-in-use location usage strings.
 - Fixed an unescaped `&` in `assets/banner.svg` that made it invalid XML.
 
+### 🌐 Website, Android APK & hosting
+- **heroes-jym.com** — the project site rebuilt along the lines of opengym.ch: big feature
+  blocks for the 2.0 additions, "and the rest of it", screenshots, the live demo embedded
+  (served at `/demo/`), the two flavors, open-source stats. Plus a full **Arabic page**
+  (`ar.html`, RTL) with step-by-step APK install help. Deployed by `pages.yml` with
+  `website/CNAME`; `scripts/build-site.sh` assembles the same site locally.
+- **APK built in CI** — `android-apk.yml` runs `build:mobile` + `assembleRelease` on JDK 21,
+  verifies the signature with `apksigner`, uploads it on every push and publishes
+  `MAHDI-JYM.apk` to a GitHub Release for every `v*` tag
+  (`releases/latest/download/MAHDI-JYM.apk` is what the site links to). Release signing comes
+  from `MJ_KEYSTORE*` env vars — repository secrets when set, otherwise a committed public
+  keystore so all builds share one signature (see docs/MOBILE.md → *Signing*).
+- **Self-host without Docker** — `scripts/local-host.mjs` starts the API and serves the built
+  app with the nginx container's `/api` proxy and SPA fallback; media from `./media` or, if not
+  downloaded, the pinned CDN dataset.
+- CI: the Tests workflow now installs the API's dependencies (the coach/config/jobs tests
+  import the provider adapters — this failed upstream too).
+
 ### Known limitations
 - Browsers only deliver motion data while the page is open and on screen; for all-day counting
   use the mobile app.

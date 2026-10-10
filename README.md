@@ -54,7 +54,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 
 <div align="center">
 
-### [▶ Try the live demo](https://m777m44.github.io/Heroes-Jym/)
+### [▶ Try the live demo](https://heroes-jym.com/demo/) · [📱 Download the Android APK](https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk) · [🌐 heroes-jym.com](https://heroes-jym.com)
 
 No signup, nothing to install — it runs entirely in your browser on example data.<br>
 <sub>There's no server behind the demo, so passkey sign-in, sync across devices and the

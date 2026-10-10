@@ -1,16 +1,27 @@
-# Publishes the browser-only demo to GitHub Pages: https://m777m44.github.io/Heroes-Jym/
+# Publishes https://heroes-jym.com (GitHub Pages, custom domain via website/CNAME):
 #
-# Pages serves static files only, so this build has no backend — VITE_DEMO=1 makes the app
+#   /             the project website (website/ — plain HTML, no build step)
+#   /ar.html      the same site in Arabic
+#   /demo/        the browser-only demo of the app
+#   /MAHDI-JYM.apk  copy of the newest release APK (when a release exists)
+#
+# Pages serves static files only, so the demo has no backend — VITE_DEMO=1 makes the app
 # boot straight into guest mode with a seeded example history (see frontend/src/lib/demo.js).
 # The exercise images/GIFs (~140 MB) are never committed here; the demo build points at the
 # upstream dataset on jsDelivr instead, pinned to a commit so the CDN can cache it forever.
-name: Deploy demo to GitHub Pages
+#
+# One-time setup: Settings → Pages → Source "GitHub Actions", custom domain heroes-jym.com
+# (DNS: four A records 185.199.108-111.153 for the apex, CNAME www → m777m44.github.io).
+name: Deploy website & demo to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'website/**'
+      - 'assets/**'
+      - 'scripts/build-site.sh'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -38,16 +49,15 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
-      - run: npm run build
-        working-directory: frontend
+      # demo build (VITE_DEMO=1, media from the pinned dataset) + website/ + screenshots +
+      # icons + the newest release APK, all assembled into _site/
+      - run: bash scripts/build-site.sh _site
         env:
-          VITE_DEMO: '1'
-          VITE_IMG_BASE: ${{ env.DATASET }}/images/
-          VITE_GIF_BASE: ${{ env.DATASET }}/videos/
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: frontend/dist
+          path: _site
 
   deploy:
     needs: build

@@ -64,3 +64,26 @@
     }
   } catch (e) { /* fallback entries stay */ }
 })()
+
+// Download cards: show the real version + size of the newest GitHub release next to the
+// button. The button itself always points at releases/latest/download/MAHDI-JYM.apk, so it
+// works even when this request fails.
+;(async () => {
+  const lines = document.querySelectorAll('[data-rel="line"]')
+  if (!lines.length) return
+  try {
+    let rel = null
+    const cached = sessionStorage.getItem('gh_latest')
+    if (cached) rel = JSON.parse(cached)
+    else {
+      const r = await fetch('https://api.github.com/repos/m777m44/Heroes-Jym/releases/latest')
+      if (!r.ok) return
+      const d = await r.json()
+      const apk = (d.assets || []).find(a => a.name === 'MAHDI-JYM.apk')
+      rel = { tag: d.tag_name, size: apk ? apk.size : 0 }
+      sessionStorage.setItem('gh_latest', JSON.stringify(rel))
+    }
+    const mb = rel.size ? ' · ' + (rel.size / 1048576).toFixed(1) + ' MB' : ''
+    lines.forEach(el => { el.textContent = rel.tag + mb + ' · Android 6.0+' })
+  } catch (e) { /* keep the static line */ }
+})()

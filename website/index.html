@@ -3,26 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAHDI-JYM — free, open-source gym &amp; body-weight tracker</title>
-<meta name="description" content="MAHDI-JYM is a free, open-source gym & body-weight tracker. Download the Android app or self-host it with Docker — no account, no cloud, no telemetry.">
+<title>MAHDI-JYM — free, open-source gym, steps &amp; body-weight tracker</title>
+<meta name="description" content="MAHDI-JYM is a free, open-source gym tracker with a pedometer, daily step goal, smart reminders and body-weight check-ins. Android app or self-hosted with Docker — no account, no cloud, no telemetry.">
 <meta name="theme-color" content="#0c0e12">
-<meta property="og:title" content="MAHDI-JYM — your workouts, your weights, your data">
-<meta property="og:description" content="Free, open-source gym & body-weight tracker. Android APK or self-hosted with Docker. No account, no cloud, no telemetry.">
-<meta property="og:image" content="https://raw.githubusercontent.com/m777m44/Heroes-Jym/main/assets/banner.svg">
-<meta property="og:url" content="https://m777m44.github.io/Heroes-Jym/">
+<link rel="canonical" href="https://heroes-jym.com/">
+<link rel="alternate" hreflang="en" href="https://heroes-jym.com/">
+<link rel="alternate" hreflang="ar" href="https://heroes-jym.com/ar.html">
+<meta property="og:title" content="MAHDI-JYM — Your body. Your plan. Your will.">
+<meta property="og:description" content="Free, open-source gym, steps &amp; body-weight tracker. Android APK or self-hosted with Docker. No account, no cloud, no telemetry.">
+<meta property="og:image" content="https://heroes-jym.com/img/banner.png">
+<meta property="og:url" content="https://heroes-jym.com/">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="styles.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MAHDI-JYM",
- "operatingSystem":"Android, Web","applicationCategory":"HealthApplication",
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MAHDI-JYM","alternateName":"MH-JYM",
+ "operatingSystem":"Android, Web","applicationCategory":"HealthApplication","softwareVersion":"2.0.0",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
  "license":"https://www.gnu.org/licenses/agpl-3.0.html",
- "url":"https://m777m44.github.io/Heroes-Jym/",
- "downloadUrl":"https://github.com/m777m44/Heroes-Jym/releases/latest",
- "author":{"@type":"Person","name":"Duarte Santos","url":"https://duarte-santos.ch"}}
+ "url":"https://heroes-jym.com/",
+ "downloadUrl":"https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk",
+ "isBasedOn":"https://github.com/DuarteSantos8/openGym"}
 </script>
 </head>
 <body>
@@ -38,7 +42,8 @@
     <a href="#demo" class="hide-s">Demo</a>
     <a href="docs.html">Docs</a>
     <a href="about.html" class="hide-s">About</a>
-    <a href="https://github.com/m777m44/Heroes-Jym" rel="noopener"><span data-gh="stars">GitHub</span></a>
+    <a href="ar.html" lang="ar" hreflang="ar">العربية</a>
+    <a href="https://github.com/m777m44/Heroes-Jym" rel="noopener" class="hide-s"><span data-gh="stars">GitHub</span></a>
     <a class="cta" href="#download">Download</a>
   </div>
 </div></nav>
@@ -48,51 +53,172 @@
     <img src="icon-512.png" alt="MAHDI-JYM icon" width="108" height="108" style="border-radius:26px">
   </div>
   <h1>MAHDI-JYM</h1>
-  <p class="tag">Your workouts. Your weights. Your data.</p>
-  <p class="sub">A free, open-source gym &amp; body-weight tracker.
+  <p class="tag">Your body. Your plan. Your will. — <span lang="ar" dir="rtl">جسمك، خطتك، إرادتك.</span></p>
+  <p class="sub">A free, open-source tracker for the gym, your daily steps and your body weight.
      No subscription, no account required, no telemetry — ever.</p>
   <div class="hero-btns">
-    <a class="btn" href="#download">Get MAHDI-JYM</a>
-    <a class="btn ghost" href="#demo">Try the live demo</a>
+    <a class="btn" href="https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk" data-apk>Download for Android</a>
+    <a class="btn ghost" href="/demo/">Try the live demo</a>
     <a class="btn ghost" href="https://github.com/m777m44/Heroes-Jym" rel="noopener">GitHub <span class="ct" data-gh="stars">★</span></a>
   </div>
 </div></header>
 
 <section id="features"><div class="wrap">
-  <p class="kicker">Everything a training log needs</p>
-  <h2>Built in the gym, not in a boardroom</h2>
-  <p class="lead">Every feature exists because it was needed on the gym floor — nothing is
-     there to sell you anything.</p>
-  <div class="grid">
-    <div class="feat"><div class="ic">▶️</div><h3>Guided workouts</h3><p>Knows what day it is, starts today's session, pre-fills your weights from last time, times your rest, spots PRs.</p></div>
-    <div class="feat"><div class="ic">🏋️</div><h3>1,324 exercises</h3><p>Searchable library with animated demos, filterable by body part and the equipment you actually own — plus your own custom exercises.</p></div>
-    <div class="feat"><div class="ic">🗓️</div><h3>Weekly plan</h3><p>A routine per weekday, and any day can be rescheduled when life happens — without touching the plan.</p></div>
-    <div class="feat"><div class="ic">⚖️</div><h3>Body weight &amp; goal</h3><p>Interactive chart with your goal line; every change is colored by whether it moves toward it.</p></div>
-    <div class="feat"><div class="ic">💪</div><h3>Muscle map</h3><p>A body diagram shaded by how much work each muscle got — and which ones got nothing.</p></div>
-    <div class="feat"><div class="ic">🟩</div><h3>Activity heatmap</h3><p>A GitHub-style year view of your training time. Streaks included.</p></div>
-    <div class="feat"><div class="ic">📈</div><h3>Progression that follows a rule</h3><p>Linear, Greyskull LP, double progression or added time — per routine, overridable per exercise. Your weights are already right when the session opens, and every target tells you why.</p></div>
-    <div class="feat"><div class="ic">⏱️</div><h3>Timed sets</h3><p>Planks, hangs and carries are logged by time, with a timer for the set itself. Stop early and it logs what you actually held.</p></div>
-    <div class="feat"><div class="ic">🧮</div><h3>Estimated 1RM</h3><p>Per exercise, from your best eligible set — and it names which one. Won't guess above 12 reps.</p></div>
-    <div class="feat"><div class="ic">🔗</div><h3>Supersets &amp; cardio</h3><p>Pair exercises back-to-back with one rest, and log time + speed where weight × reps makes no sense.</p></div>
-    <div class="feat"><div class="ic">📤</div><h3>Share a plan</h3><p>Send someone your routines as a small file — no workouts, no weigh-ins — or print it as a clean PDF. Importing merges, never overwrites.</p></div>
-    <div class="feat"><div class="ic">🎯</div><h3>Effort per set</h3><p>Rate a set as RIR or RPE — whichever scale you already think in. Optional, and every set keeps the scale it was logged with.</p></div>
-    <div class="feat"><div class="ic">☀️</div><h3>Screen stays awake</h3><p>No unlocking the phone between sets. The screen stays lit while a workout runs, and lets go the moment you finish.</p></div>
-    <div class="feat"><div class="ic">📥</div><h3>Bring your history</h3><p>Import from FitNotes, Strong, Hevy — including the RPE they recorded — or body weight straight out of an Apple Health export.</p></div>
-    <div class="feat"><div class="ic">🌍</div><h3>12 languages</h3><p>Full UI translation, exercise instructions in 10 languages, loaded on demand.</p></div>
-    <div class="feat"><div class="ic">🔑</div><h3>Passkeys, not passwords</h3><p>Self-hosted profiles sign in with Face ID / fingerprint. Each person's data stays their own.</p></div>
-    <div class="feat"><div class="ic">🎨</div><h3>Designed, not assembled</h3><p>Light &amp; dark themes, 8 accent colors, a hand-drawn icon set. Looks the same on every phone.</p></div>
-    <div class="feat"><div class="ic">📦</div><h3>Yours to keep</h3><p>One-tap JSON export and import. Your training log is a file you own, not a row in someone's cloud.</p></div>
+  <p class="kicker">Features</p>
+  <h2>Built on the gym floor — and the walk home</h2>
+  <p class="lead">Every feature exists because it was needed while training. Nothing in here
+     is there to sell you anything.</p>
+
+  <div class="big">
+    <div class="txt">
+      <span class="badge">New in 2.0</span>
+      <h3>A pedometer that counts what matters</h3>
+      <p>Steps from the phone's own motion sensor, turned into the numbers you actually care
+         about — and a daily goal that's yours to set.</p>
+      <ul>
+        <li>Live speed (km/h), distance, calories and active time</li>
+        <li>Daily step goal with suggestions from 5,000 to 20,000</li>
+        <li>An ongoing notification with today's count, and a buzz every 1,000 steps</li>
+        <li>Stride length worked out from your height — no calibration walk</li>
+      </ul>
+    </div>
+    <div class="vis">
+      <div class="mock" aria-label="Pedometer mock-up: 7,412 of 10,000 steps">
+        <div class="ring" style="--p:74"><div><b>7,412</b><span>of 10,000 steps</span></div></div>
+        <div class="mstats">
+          <div><b>5.1</b><span>km/h</span></div>
+          <div><b>5.3</b><span>km</span></div>
+          <div><b>286</b><span>kcal</span></div>
+          <div><b>1:02</b><span>active</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="big rev">
+    <div class="txt">
+      <span class="badge">New in 2.0</span>
+      <h3>Hit the goal, get the moment</h3>
+      <p>Reach your daily step goal and MAHDI-JYM celebrates with you: five seconds of a
+         figure throwing its arms up, a short fanfare and a buzz. Then it gets out of your way.</p>
+      <ul>
+        <li>Once per day — never nagging</li>
+        <li>Respects "reduce motion" and your sound settings</li>
+      </ul>
+    </div>
+    <div class="vis">
+      <div class="mock" aria-hidden="true">
+        <svg viewBox="0 0 120 120" width="150" height="150" style="display:block;margin:0 auto 10px">
+          <circle cx="60" cy="60" r="56" fill="rgba(48,209,88,.12)"/>
+          <g fill="none" stroke="#30d158" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="60" cy="30" r="9" fill="#30d158" stroke="none"/>
+            <path d="M60 42v32M60 74l-14 24M60 74l14 24M60 50L38 26M60 50l22-24"/>
+          </g>
+        </svg>
+        <b style="font-size:20px">Goal reached! 🎉</b>
+        <p style="color:var(--faint);font-size:13px;margin-top:4px">10,000 steps today</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="big">
+    <div class="txt">
+      <span class="badge">New in 2.0</span>
+      <h3>Body-weight check-ins with proof</h3>
+      <p>Each weigh-in shows your current weight, the previous one and the difference,
+         coloured by whether it moves you toward your goal, on an interactive chart with
+         your target line.</p>
+      <ul>
+        <li>Attach a progress photo, kept only on your device and never synced</li>
+        <li>Distance to target at a glance</li>
+        <li>Import body weight from Apple Health exports</li>
+      </ul>
+    </div>
+    <div class="vis">
+      <div class="mock" aria-label="Weight check-in mock-up">
+        <div class="wrow"><span>Current</span><b>82.4 kg</b></div>
+        <div class="wrow"><span>Previous</span><b>83.1 kg</b></div>
+        <div class="wrow"><span>Change</span><b class="good">−0.7 kg</b></div>
+        <div class="wrow"><span>To target (78)</span><b>4.4 kg</b></div>
+        <svg class="spark" viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1="58" x2="200" y2="58" stroke="#30d158" stroke-dasharray="4 4" opacity=".6"/>
+          <polyline fill="none" stroke="#f2f2f7" stroke-width="2.5" points="0,10 25,14 50,12 75,20 100,22 125,27 150,26 175,32 200,35"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="big rev">
+    <div class="txt">
+      <span class="badge">New in 2.0</span>
+      <h3>One daily reminder that knows you</h3>
+      <p>Workout and walking reminders are merged into one daily nudge. Pick a fixed time, or
+         let <b>smart time</b> learn it: half an hour before you usually start training.</p>
+      <ul>
+        <li>A gentle follow-up an hour later if you haven't trained or walked yet</li>
+        <li>Native notifications on Android, web push when self-hosted</li>
+      </ul>
+    </div>
+    <div class="vis"><img src="img/plan.png" alt="Weekly plan screen with routines per weekday" loading="lazy" width="1170" height="2532"></div>
+  </div>
+
+  <div class="big">
+    <div class="txt">
+      <h3>Guided workouts with real progression rules</h3>
+      <p>MAHDI-JYM knows what day it is, opens today's session and pre-fills your weights. It
+         follows a progression rule (linear, Greyskull LP, double progression or added time),
+         set per routine and overridable per exercise, so the weights are already right and
+         every target tells you why.</p>
+      <ul>
+        <li>Rest timer, PR detection, supersets, timed sets and cardio</li>
+        <li>Effort per set as RIR or RPE, and the screen stays awake while you train</li>
+      </ul>
+    </div>
+    <div class="vis"><img src="img/workout.png" alt="Guided workout screen with sets, rest timer and pre-filled weights" loading="lazy" width="1170" height="2532"></div>
+  </div>
+
+  <div class="big rev">
+    <div class="txt">
+      <h3>See every muscle, every week, every year</h3>
+      <p>A body map shaded by how much work each muscle got (and which ones got nothing), plus
+         a GitHub-style heatmap of your whole year of training and estimated 1RM per exercise.</p>
+      <ul>
+        <li>1,324 exercises with animated demos, filterable by the equipment you own</li>
+        <li>Optional self-hosted AI coach, off unless you turn it on</li>
+      </ul>
+    </div>
+    <div class="vis"><img src="img/stats.png" alt="Stats screen with activity heatmap and charts" loading="lazy" width="1170" height="2532"></div>
+  </div>
+
+  <h3 style="font-size:20px;margin:34px 0 6px">And the rest of it</h3>
+  <div class="rest">
+    <div><b>13 languages</b>, including full right-to-left Arabic</div>
+    <div><b>Weekly plan</b>: reschedule any day without touching the plan</div>
+    <div><b>Custom exercises</b> next to the 1,324 built-in ones</div>
+    <div><b>Share a plan</b> as a small file or a clean PDF</div>
+    <div><b>Import</b> from FitNotes, Strong and Hevy</div>
+    <div><b>Passkeys</b>: sign in with fingerprint or Face ID</div>
+    <div><b>Multiple profiles</b> on one self-hosted server</div>
+    <div><b>Offline first</b>, so the gym basement is fine</div>
+    <div><b>Light &amp; dark</b> themes and 8 accent colours</div>
+    <div><b>One-tap JSON export</b>: your log is a file you own</div>
+    <div><b>Estimated 1RM</b>, and it names the set it came from</div>
+    <div><b>Streaks</b> and a weekly overview on the home screen</div>
+    <div><b>Plate-friendly</b> kg / lb units</div>
+    <div><b>No ads, no tracking</b>, no analytics SDKs</div>
+    <div><b>Home-screen web app</b> on iPhone (self-hosted)</div>
+    <div><b>AGPL-3.0</b>: every fork stays open</div>
   </div>
 </div></section>
 
 <section id="screens"><div class="wrap">
   <p class="kicker">Screenshots</p>
-  <h2>Five screens, zero clutter</h2>
+  <h2>Five screens, and that's the app</h2>
   <div class="shots">
-    <figure><img src="img/home.png" alt="MAHDI-JYM home screen with weekly overview and body-weight chart" loading="lazy" width="1170" height="2532"><figcaption>Home</figcaption></figure>
-    <figure><img src="img/workout.png" alt="Guided workout screen with sets, rest timer and pre-filled weights" loading="lazy" width="1170" height="2532"><figcaption>Workout</figcaption></figure>
-    <figure><img src="img/stats.png" alt="Stats screen with activity heatmap and charts" loading="lazy" width="1170" height="2532"><figcaption>Stats</figcaption></figure>
-    <figure><img src="img/plan.png" alt="Weekly plan screen with routines per weekday" loading="lazy" width="1170" height="2532"><figcaption>Plan</figcaption></figure>
+    <figure><img src="img/home.png" alt="Home screen with weekly overview and body-weight chart" loading="lazy" width="1170" height="2532"><figcaption>Home</figcaption></figure>
+    <figure><img src="img/workout.png" alt="Guided workout screen" loading="lazy" width="1170" height="2532"><figcaption>Workout</figcaption></figure>
+    <figure><img src="img/stats.png" alt="Stats screen with activity heatmap" loading="lazy" width="1170" height="2532"><figcaption>Stats</figcaption></figure>
+    <figure><img src="img/plan.png" alt="Weekly plan screen" loading="lazy" width="1170" height="2532"><figcaption>Plan</figcaption></figure>
     <figure><img src="img/library.png" alt="Exercise library with search and filters" loading="lazy" width="1170" height="2532"><figcaption>Library</figcaption></figure>
   </div>
 </div></section>
@@ -100,13 +226,13 @@
 <section id="demo"><div class="wrap">
   <p class="kicker">Live demo</p>
   <h2>Try it right here</h2>
-  <p class="lead">This is the real app with seeded example data, running in your browser —
-     poke around, start a workout, change anything.</p>
+  <p class="lead">This is the real app with seeded example data, running entirely in your
+     browser. Poke around, start a workout, change anything.</p>
   <div class="demo-wrap">
-    <div class="phone"><iframe src="https://m777m44.github.io/Heroes-Jym/" title="MAHDI-JYM live demo" loading="lazy"></iframe></div>
+    <div class="phone"><iframe src="/demo/" title="MAHDI-JYM live demo" loading="lazy"></iframe></div>
   </div>
-  <p class="demo-note">Demo data lives only in this browser tab-family and can be reset in its
-     Settings. Prefer a full window? <a href="https://m777m44.github.io/Heroes-Jym/" rel="noopener">Open the demo full-screen →</a></p>
+  <p class="demo-note">Demo data lives only in this browser and can be reset in its Settings.
+     Prefer a full window? <a href="/demo/">Open the demo full-screen →</a></p>
 </div></section>
 
 <section id="download"><div class="wrap">
@@ -117,22 +243,25 @@
   <div class="duo">
     <div class="card hl">
       <h3>📱 Mobile app</h3>
-      <p class="for">For anyone — install and you're done.</p>
+      <p class="for">For anyone: install it and you're done.</p>
       <ul>
         <li>Everything stays on your phone</li>
+        <li>Pedometer, step notification &amp; native reminders</li>
         <li>No account, no server, no setup</li>
-        <li>Native workout-day reminders</li>
         <li>Backups via the share sheet</li>
         <li class="no">No cross-device sync</li>
       </ul>
-      <a class="btn" href="MAHDI-JYM.apk" download>Download for Android</a>
-      <p class="meta">v1.2.3 · 4.3 MB · Android 6.0+ · signed APK, sideload (your browser will ask — that's normal outside the Play Store)</p>
-      <p class="meta"><b>iPhone?</b> Apple doesn't allow installs outside the App Store — use the
+      <a class="btn" href="https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk" data-apk download>Download for Android</a>
+      <p class="meta"><span data-rel="line">v2.0.0 · Android 6.0+</span> · signed APK on
+         <a href="https://github.com/m777m44/Heroes-Jym/releases/latest" rel="noopener">GitHub Releases</a>.
+         Your browser will ask before installing; that's normal outside the Play Store.
+         <a href="docs.html#android">Install help →</a></p>
+      <p class="meta"><b>iPhone?</b> Apple doesn't allow installs outside the App Store. Use the
          self-hosted version as a home-screen app instead, or see <a href="docs.html#iphone">the docs</a>.</p>
     </div>
     <div class="card">
       <h3>🖥️ Self-hosted</h3>
-      <p class="for">For homelabbers — and their friends &amp; family.</p>
+      <p class="for">For homelabbers, and their friends &amp; family.</p>
       <ul>
         <li>Sync across all your devices</li>
         <li>Passkey profiles for multiple people</li>
@@ -148,11 +277,12 @@
 
 <section id="story"><div class="wrap">
   <div class="story">
-    <p class="kicker">Why MAHDI-JYM exists</p>
-    <blockquote>MAHDI-JYM started as <strong>a tiny app I built for myself</strong> — I just wanted to
-      log my workouts and weight without a subscription app claiming my training data.
-      Then friends wanted in, then it grew a mind of its own.</blockquote>
-    <p class="who">— Duarte Santos · <a href="about.html">read the whole story →</a></p>
+    <p class="kicker">The story</p>
+    <blockquote>MAHDI-JYM grew out of <strong>openGym</strong>, a tiny app Duarte Santos built so he
+      could log workouts and weight without a subscription app claiming his training data.
+      MAHDI-JYM keeps that promise and adds <strong>the steps between sessions</strong>:
+      a pedometer, a daily goal, smarter reminders and honest weigh-ins.</blockquote>
+    <p class="who">— <span lang="ar" dir="rtl">جسمك، خطتك، إرادتك.</span> · <a href="about.html">read more →</a></p>
   </div>
 </div></section>
 
@@ -160,29 +290,35 @@
   <p class="kicker">Open source</p>
   <h2>AGPL-licensed, forever</h2>
   <p class="lead">The code is public, the license keeps every fork open, and there is no
-     commercial version waiting behind a curtain. If MAHDI-JYM is useful to you,
-     a ⭐ on GitHub helps more people find it.</p>
+     commercial version waiting behind a curtain.</p>
   <div class="os">
     <div class="stat"><b data-gh="stars-n">–</b><span>GitHub stars</span></div>
     <div class="stat"><b data-gh="forks-n">–</b><span>forks</span></div>
     <div class="stat"><b data-gh="issues-n">–</b><span>open issues</span></div>
     <div class="stat"><b>1,324</b><span>exercises</span></div>
-    <div class="stat"><b>12</b><span>languages</span></div>
+    <div class="stat"><b>13</b><span>languages</span></div>
   </div>
-  <div class="hero-btns" style="justify-content:flex-start;margin-top:24px">
-    <a class="btn ghost" href="https://github.com/m777m44/Heroes-Jym" rel="noopener">MAHDI-JYM on GitHub</a>
-    <a class="btn ghost" href="https://github.com/m777m44/Heroes-Jym/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
-    <a class="btn ghost" href="https://github.com/m777m44/Heroes-Jym/blob/main/CHANGELOG.md" rel="noopener">Changelog</a>
+</div></section>
+
+<section id="lives"><div class="wrap">
+  <p class="kicker">Where it lives</p>
+  <h2>Code, releases &amp; help</h2>
+  <div class="lives">
+    <a href="https://github.com/m777m44/Heroes-Jym" rel="noopener"><b>GitHub</b><span>Source code, stars and pull requests</span></a>
+    <a href="https://github.com/m777m44/Heroes-Jym/releases" rel="noopener"><b>Releases</b><span>Every signed APK, with checksums</span></a>
+    <a href="https://github.com/m777m44/Heroes-Jym/issues" rel="noopener"><b>Issues</b><span>Bugs, ideas and questions</span></a>
+    <a href="https://github.com/m777m44/Heroes-Jym/blob/main/CHANGELOG.md" rel="noopener"><b>Changelog</b><span>What changed in each version</span></a>
   </div>
 </div></section>
 
 <footer><div class="wrap foot">
-  <span>MAHDI-JYM · AGPL-3.0 · © 2026 <a href="https://duarte-santos.ch" rel="noopener">Duarte Santos</a></span>
+  <span>MAHDI-JYM · AGPL-3.0 · based on <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> by Duarte Santos</span>
   <div class="links">
     <a href="docs.html">Docs</a>
     <a href="about.html" class="hide-s">About</a>
+    <a href="ar.html" lang="ar">العربية</a>
     <a href="https://github.com/m777m44/Heroes-Jym" rel="noopener">GitHub</a>
-    <a href="https://m777m44.github.io/Heroes-Jym/" rel="noopener">Live demo</a>
+    <a href="/demo/">Live demo</a>
   </div>
 </div></footer>
 

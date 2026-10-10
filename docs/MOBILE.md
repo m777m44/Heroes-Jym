@@ -87,11 +87,40 @@ accounts, no store rules, no yearly fees between you and an open-source app.
 
 ### Android — sideload the APK
 
-The official signed APK is at **[GitHub Releases](https://github.com/m777m44/Heroes-Jym/releases)**.
-Android asks you to allow installs from the browser the first time — that's standard for any
-app outside the Play Store.
+The official signed APK is at **[GitHub Releases](https://github.com/m777m44/Heroes-Jym/releases)**
+— direct link: <https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk>,
+also offered on **[heroes-jym.com](https://heroes-jym.com)**. Android asks you to allow installs
+from the browser the first time — that's standard for any app outside the Play Store.
 
-To build and sign your own:
+#### Built by CI
+
+`.github/workflows/android-apk.yml` builds the APK on every push that touches `frontend/`
+(download it from the run's *Artifacts*) and, for every `v*` tag, publishes it to a GitHub
+Release as `MAHDI-JYM.apk` + `MAHDI-JYM-vX.Y.Z.apk` + `SHA256SUMS.txt`:
+
+```sh
+git tag v2.0.1 && git push origin v2.0.1     # → release with the signed APK a few minutes later
+```
+
+#### Signing
+
+`app/build.gradle` signs the release build from environment variables (`MJ_KEYSTORE`,
+`MJ_KEYSTORE_PASSWORD`, `MJ_KEY_ALIAS`, `MJ_KEY_PASSWORD`, `MJ_KEYSTORE_TYPE`); without them
+the release APK is left unsigned, as before. In CI:
+
+- **Repository secrets present** → `ANDROID_KEYSTORE_BASE64` (base64 of a `.jks`/`.p12`),
+  `ANDROID_KEYSTORE_PASSWORD`, optional `ANDROID_KEY_ALIAS` (default `mahdi-jym`) and
+  `ANDROID_KEY_PASSWORD` sign the build with your **private** key.
+- **No secrets** → the committed public keystore `android/keystore/mahdi-jym-public.p12`
+  signs it. Every build then shares one signature, so updates install over the old app, but
+  since the key is public anyone could produce an APK Android would accept as an update.
+  Fine for yourself and people who only install from the official release; switch to a
+  private key before distributing widely.
+
+Switching keys changes the signature: Android will refuse to update an app installed with the
+old key. Export a backup (Settings → *Export backup (JSON)*), uninstall, install the new APK, import.
+
+To build and sign your own locally:
 
 ```sh
 cd frontend && npm run build:mobile
