@@ -20,6 +20,10 @@ import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-sha
 import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
 import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
+import { validateWeighIn } from './lib/weightTracker.js'
+import { attachPhoto } from './components/weight/WeightPhotoUpload.jsx'
+import { deletePhoto } from './lib/photoStore.js'
+import { photosChanged, photoProfile } from './components/weight/usePhoto.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -89,24 +93,53 @@ function BwSheet({ required, onDone, close }) {
   const unit = st.unit
   const bw = lastBW(st)
   const [v, setV] = useState(bw ? bw.w : 70)
-  const save = () => {
-    const n = Math.round((v || 0) * 10) / 10
-    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+  const [photo, setPhoto] = useState(null)     // a picked scale photo, saved with the weigh-in
+  const photoRef = useRef(null)
+  const commit = n => {
+    const iso = todayISO()
     update(s => {
-      const iso = todayISO()
       const ex = s.bodyweight.find(b => b.d === iso)
       if (ex) { ex.w = n; ex.t = Date.now() } else s.bodyweight.push({ d: iso, w: n, t: Date.now() })
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
+    if (photo) attachPhoto(iso, photo).catch(() => toast(t('Could not save the photo')))
     close()
-    if (onDone) onDone(n); else toast(t('Weight saved'))
+    if (onDone) onDone(n); else toast(photo ? t('Photo saved — weigh-in verified') : t('Weight saved'))
+  }
+  // Verification: a jump that real weight can't make in that time (or a number outside any
+  // human range) is far more likely a typo or the wrong unit — ask before saving it.
+  const save = () => {
+    const n = Math.round((v || 0) * 10) / 10
+    if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
+    const iso = todayISO()
+    const warn = validateWeighIn(st.bodyweight.filter(b => b.d !== iso), n, iso, unit)
+    if (!warn) { commit(n); return }
+    confirmSheet({
+      title: t('Double-check this weight'),
+      message: warn.kind === 'range'
+        ? t('{0} is outside the usual range for a body weight — a typo, or the wrong unit?', fmtNum(n) + ' ' + unit)
+        : t(warn.delta > 0 ? 'That’s {0} more than {1} ago — real weight rarely moves that fast. Save it anyway?' : 'That’s {0} less than {1} ago — real weight rarely moves that fast. Save it anyway?',
+          fmtNum(Math.abs(warn.delta)) + ' ' + unit, t(warn.days === 1 ? '{0} day' : '{0} days', warn.days)),
+      confirmText: t('Save anyway'), cancelText: t('Fix it'),
+      onConfirm: () => commit(n),
+    })
   }
   const recent = [...st.bodyweight].reverse().slice(0, 3)
-  const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
+  const delEntry = d => {
+    update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
+    deletePhoto(photoProfile(), d).then(photosChanged)
+  }
   return <>
     <h3>{required ? t('Quick check-in') : t('Log body weight')}</h3>
     <div className="muted small">{required ? t('Slide or tap to set your weight — tracked before every workout so your curve stays honest.') : t('Today') + ', ' + fmtDate(todayISO(), true)}</div>
     <WeightInput value={v} setValue={setV} unit={unit} />
+    <div className="chips" style={{ justifyContent: 'center', margin: '2px 0 0' }}>
+      <button className={'chip' + (photo ? ' on' : '')} onClick={() => photoRef.current && photoRef.current.click()}>
+        <Icon name={photo ? 'checkCircle' : 'camera'} /> {photo ? t('Photo attached') : t('Add photo of the scale')}
+      </button>
+    </div>
+    <input ref={photoRef} type="file" accept="image/*" capture="environment" hidden
+      onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) setPhoto(f) }} />
     <div style={{ height: 14 }} />
     <Button variant="primary" onClick={save}>{required ? t('Save & start workout') : t('Save')}</Button>
     {required && <>
@@ -243,10 +276,11 @@ function GoalSheet({ close }) {
     <Button variant="primary" onClick={() => {
       const n = Math.round((v || 0) * 10) / 10
       if (!n || n <= 0) { toast(t('Enter a valid weight')); return }
-      update(s => { s.targetW = n }); close()
+      // remember where this goal journey starts — the weight page measures progress from it
+      update(s => { if (s.targetW !== n) s.targetFrom = lastBW(s) ? lastBW(s).w : null; s.targetW = n }); close()
       const b = lastBW(S()); toast(t('Goal set: {0}', fmtNum(n) + ' ' + st.unit) + (b ? ' (' + t('{0} to go', fmtNum(Math.abs(n - b.w))) + ')' : ''))
     }}>{t('Save goal')}</Button>
-    {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
+    {st.targetW && <><div style={{ height: 8 }} /><Button variant="danger" onClick={() => { update(s => { s.targetW = null; s.targetFrom = null }); close(); toast(t('Goal removed')) }}>{t('Remove goal')}</Button></>}
   </>
 }
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)

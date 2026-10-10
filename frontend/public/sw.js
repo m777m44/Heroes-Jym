@@ -15,14 +15,18 @@ self.addEventListener('push', e => {
     icon: 'icon-512.png',
     badge: 'icon-180.png',
     tag: data.tag || 'mahdi-jym',
-    renotify: true
+    renotify: true,
+    data: { url: data.url || './' }
   }))
 })
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
+  // deep link: reminders open Today, the step notification opens the walking screen
+  const target = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
     const c = clients.find(c => 'focus' in c)
-    return c ? c.focus() : self.clients.openWindow('./')
+    if (!c) return self.clients.openWindow(target)
+    return ('navigate' in c && c.url !== target ? c.navigate(target).catch(() => c) : Promise.resolve(c)).then(w => (w || c).focus())
   }))
 })
 

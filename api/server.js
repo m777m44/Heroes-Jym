@@ -13,6 +13,7 @@ import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { startCadence } from './coach/cadence.js';
+import { dueReminder } from './reminders.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -107,15 +108,9 @@ function cancelRestTimer(userId) {
   if (t) { clearTimeout(t); restTimers.delete(userId); }
 }
 
-// "Workout planned today" reminder — one per user per day, at their chosen time.
-// Duplicated (not imported) from frontend/src/lib/history.js effectiveRoutineId — tiny pure helper, not worth sharing across the two runtimes.
-function effectiveRoutineId(S, iso) {
-  const ov = S.dayPlan?.[iso];
-  if (ov === 'rest') return null;
-  if (ov && S.routines?.some(r => r.id === ov)) return ov;
-  const wd = new Date(iso + 'T12:00:00').getDay();
-  return S.week?.[wd] || null;
-}
+// Daily reminders — workout day, an hour-later follow-up, and rest-day walking — one of each per
+// user per day at their chosen time. The rules (what is due when) live in reminders.js, pure and
+// tested; this loop only supplies "now" in each user's timezone and records what was sent.
 // Computes "now" in an arbitrary IANA zone (e.g. "Europe/Lisbon") instead of the server's own —
 // each user's reminder fires by their own clock, wherever they and their phone actually are.
 function userNow(tz) {
@@ -137,23 +132,16 @@ setInterval(() => {
     const S = readState(user.id);
     if (!S?.reminder?.on) continue;
     const now = userNow(S.reminder.tz || 'UTC');
-    if (!now || S.reminder.time !== now.hhmm) continue;
-    if (user.lastReminder === now.date) continue;
-    if ((S.workouts || []).some(w => w.d === now.date)) continue;
-    const rid = effectiveRoutineId(S, now.date);
-    if (!rid) continue; // rest day — nothing planned
-    const routine = (S.routines || []).find(r => r.id === rid);
-    console.log('reminder firing', user.id, rid);
-    user.lastReminder = now.date;
+    const due = dueReminder(S, now, user);
+    if (!due) continue;
+    console.log('reminder firing', user.id, due.kind);
+    user[due.flag] = now.date;
     saveDb();
-    sendPush(user.id, {
-      title: routine ? `${routine.emoji || '🏋️'} ${routine.name} today` : 'Workout planned today',
-      body: "It's on your plan — let's go 💪",
-      tag: 'day-reminder'
-    });
+    sendPush(user.id, due.payload);
   }
-// Checked every 10s (not 60s) — ticks aren't aligned to the top of the minute, so a 60s
-// interval could sit on your target minute for up to 59s before noticing. 10s caps that at ~9s.
+// Checked every 10s (not 60s) — ticks aren't aligned to the top of the minute. A reminder also
+// stays due for a few minutes (reminders.js WINDOW), so a restart around the target minute
+// doesn't lose the day's reminder; the per-day flags keep it from firing twice.
 }, 10000).unref();
 
 /* ---------- sessions (signed cookie) ---------- */

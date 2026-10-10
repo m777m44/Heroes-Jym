@@ -11,6 +11,7 @@ import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
+import { suggestedReminderTime, reminderPrefs } from '../lib/dailyReminder.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
@@ -116,6 +117,12 @@ export default function Settings() {
           options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
+    </Section>
+
+    {/* ---------- walking + body weight (MAHDI-JYM 2.0) ---------- */}
+    <Section title={t('Walking & body')}>
+      <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
+      <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
     </Section>
 
     {/* ---------- during a workout ---------- */}
@@ -252,6 +259,30 @@ function effortHelpSheet() {
   </>)
 }
 
+// Rows shared by both reminder cards (native and push) once the daily reminder is on: the
+// time, a smart suggestion from when you actually train, the follow-up and rest-day walks.
+function ReminderExtras({ S, setReminder }) {
+  const r = reminderPrefs(S)
+  const sug = suggestedReminderTime(S.workouts)
+  return <>
+    <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
+      <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
+        onChange={e => setReminder({ time: e.target.value })} />
+    </Row>
+    {sug && sug.remind !== r.time && (
+      <Row icon="lightbulb" iconTint="var(--yellow)" title={t('Use {0}', sug.remind)}
+        subtitle={t('You usually start training around {0} — remind you half an hour before.', sug.usual)}
+        accessory="chevron" onClick={() => setReminder({ time: sug.remind })} />
+    )}
+    <Row icon="reset" iconTint="var(--orange)" title={t('Follow-up reminder')} subtitle={t('Once more an hour later if the workout still isn’t logged.')}>
+      <Switch checked={r.nudge} onChange={v => setReminder({ nudge: v })} />
+    </Row>
+    <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking reminder on rest days')} subtitle={t('Only while today’s step goal isn’t met yet.')}>
+      <Switch checked={r.walk} onChange={v => setReminder({ walk: v })} />
+    </Row>
+  </>
+}
+
 function NotificationsCard({ S, update, toast }) {
   if (MOBILE) return <MobileReminderCard S={S} update={update} toast={toast} />
   return <PushCard S={S} update={update} toast={toast} />
@@ -272,16 +303,11 @@ function MobileReminderCard({ S, update, toast }) {
   }
   return (
     <Section title={t('Notifications')}
-      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned.') : null}>
+      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned and not yet trained — with your step goal in the same notification.') : null}>
       <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
         <Switch checked={!!S.reminder?.on} onChange={toggle} />
       </Row>
-      {S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => setReminder({ time: e.target.value })} />
-        </Row>
-      )}
+      {S.reminder?.on && <ReminderExtras S={S} setReminder={setReminder} />}
     </Section>
   )
 }
@@ -331,12 +357,7 @@ function PushCard({ S, update, toast }) {
           <Switch checked={!!S.reminder?.on} onChange={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on, tz: localTZ() } })} />
         </Row>
       )}
-      {on && S.reminder?.on && (
-        <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
-          <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value, tz: localTZ() } })} />
-        </Row>
-      )}
+      {on && S.reminder?.on && <ReminderExtras S={S} setReminder={patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })} />}
     </Section>
     {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" onClick={test}>{t('Send test notification')}</Button></div>}
   </>

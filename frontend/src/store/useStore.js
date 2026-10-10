@@ -15,7 +15,14 @@ export const DEF = {
   // that a profile which never chose (loaded state is overlaid on DEF, on every path: local,
   // server pull, backup import) still falls back to the `showRir` boolean this replaced and
   // keeps the column it had. See effortOf.
-  reminder: { on: false, time: '08:00', tz: null }, effort: null,
+  // nudge: a follow-up an hour later if the workout still isn't logged; walk: remind to walk on
+  // rest days. Both read through reminderPrefs() (lib/dailyReminder.js), so older saved
+  // reminder objects without them get the defaults.
+  reminder: { on: false, time: '08:00', tz: null, nudge: true, walk: false }, effort: null,
+  // MAHDI-JYM 2.0 — walking + body weight. stepGoal / steps / walk: see lib/stepMetrics.js.
+  // heightCm improves the stride estimate and enables BMI; targetFrom is the weight the goal
+  // was set at (the start of the goal progress bar, lib/weightTracker.js).
+  stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.
@@ -50,7 +57,15 @@ export const useStore = create((set, get) => {
     localStorage.setItem(KEY, JSON.stringify(S))
     set({ S })
     if (MOBILE) nativePersist()
-    if (push && get().user) {
+    if (push === 'lazy') {
+      // Background writes (steps while walking land every few seconds): sync at most once a
+      // minute instead of re-uploading the whole state on every flush. Leaving the app still
+      // flushes it at once (visibilitychange below), and any normal edit syncs as before.
+      if (get().user && !pushTm) {
+        localStorage.setItem('gym_dirty', '1')
+        pushTm = setTimeout(() => get().pushState(), 60000)
+      }
+    } else if (push && get().user) {
       clearTimeout(pushTm)
       pushTm = setTimeout(() => get().pushState(), 1500)
     }
@@ -99,6 +114,13 @@ export const useStore = create((set, get) => {
       persist(S, push)
     },
     replaceState(S, push = false) { persist(clone(S), push) },
+    // Same as update(), for frequent background writes (step counts): saved locally at once,
+    // synced lazily.
+    updateQuiet(mut) {
+      const S = clone(get().S)
+      mut(S)
+      persist(S, 'lazy')
+    },
 
     isGuest: () => localStorage.getItem('gym_guest') === '1',
     setGuest(v) { if (v) localStorage.setItem('gym_guest', '1'); else localStorage.removeItem('gym_guest'); set({}) },
@@ -112,6 +134,7 @@ export const useStore = create((set, get) => {
     async pushState() {
       if (!get().user) return
       clearTimeout(pushTm)
+      pushTm = null
       try { await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: get().S }) }); localStorage.removeItem('gym_dirty') }
       catch (e) { localStorage.setItem('gym_dirty', '1') }
     },

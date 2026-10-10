@@ -13,6 +13,30 @@ import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { useCoachStatus } from '../lib/coach-api.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
+import { usePedometer } from '../store/usePedometer.js'
+import { goalOf, stepsOn, strideMeters, distanceKm } from '../lib/stepMetrics.js'
+import StepRing from '../components/pedometer/StepRing.jsx'
+
+// Today's steps at a glance; the whole card opens the walking screen.
+function StepsCard({ nav }) {
+  const S = useStore(s => s.S)
+  const pending = usePedometer(s => s.pending)
+  const status = usePedometer(s => s.status)
+  const speed = usePedometer(s => s.speed)
+  const steps = stepsOn(S, todayISO()) + pending
+  const goal = goalOf(S)
+  const km = distanceKm(steps, strideMeters(S))
+  const tracking = status === 'tracking'
+  return <div className="card tappable steps-card" onClick={() => nav('/walk')}>
+    <StepRing value={steps} goal={goal} size={64} stroke={7}><Icon name="figureWalk" /></StepRing>
+    <div style={{ minWidth: 0, flex: 1 }}>
+      <div className="lbl2 row" style={{ gap: 6 }}>{t('Steps today')}{tracking && <span className="walk-dot live" />}</div>
+      <div className="steps-n">{steps.toLocaleString(dateLocale())} <span className="muted">/ {goal.toLocaleString(dateLocale())}</span></div>
+      <div className="small muted">{tracking ? t('{0} km/h', speed.toFixed(1)) + ' · ' : ''}{km.toFixed(2)} km{!tracking && !steps ? ' · ' + t('tap to start counting') : ''}</div>
+    </div>
+    <Icon name="chevronRight" className="chev" />
+  </div>
+}
 
 // A job in flight or a proposal waiting is the only reason the Coach interrupts Home. When it
 // has nothing to say it renders nothing at all — and it only polls while Home is on screen.
@@ -123,9 +147,11 @@ export default function Home() {
       </div>
     )}
 
+    <StepsCard nav={nav} />
+
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
-        <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
+        <button className="h2link" onClick={() => nav('/weight')}><h2 style={{ margin: 0 }}>{t('Body weight')}</h2><Icon name="chevronRight" /></button>
         <div className="row" style={{ gap: 8 }}>
           <Button size="sm" icon="target" style={S.targetW ? { color: 'var(--yellow)' } : undefined} onClick={goalSheet}>{S.targetW ? fmtNum(S.targetW) : t('Goal')}</Button>
           <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>

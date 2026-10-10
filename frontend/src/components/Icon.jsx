@@ -32,6 +32,15 @@ const P = {
   timer: <><circle cx="12" cy="13.4" r="7.2" /><path d="M12 9.6v3.8h2.8M9.6 3.4h4.8" /></>,
   clock: <><circle cx="12" cy="12" r="8.2" /><path d="M12 7.4V12l3.1 1.9" /></>,
 
+  /* ---- walking + body (MAHDI-JYM 2.0) — same grid, stroke and caps as the set above ---- */
+  figureWalk: <><circle cx="12.6" cy="4.7" r="1.8" /><path d="m11.6 8.6-1.6 5.6 2.9 2.4.9 4M10 14.2l-2.3 6.2M11.6 8.6l3.1 2.6 2.4.6M11.6 8.6 8.4 10.3l-.9 2.6" /></>,
+  speedometer: <><path d="M4.2 16.4a8.2 8.2 0 1 1 15.6 0" /><path d="m12 13.4 3.4-4.2" /><circle cx="12" cy="13.6" r="1.3" /><path d="M6.9 16.4h10.2" /></>,
+  route: <><circle cx="6.4" cy="17.6" r="2" /><circle cx="17.6" cy="6.4" r="2" /><path d="M8.4 17.6h6.8a2.6 2.6 0 0 0 0-5.2H8.8a2.6 2.6 0 0 1 0-5.2h6.8" /></>,
+  ruler: <><rect x="3.2" y="8.4" width="17.6" height="7.2" rx="1.6" /><path d="M7.2 8.4v3M10.4 8.4v2M13.6 8.4v3M16.8 8.4v2" /></>,
+  vibrate: <><rect x="8.2" y="4.4" width="7.6" height="15.2" rx="1.9" /><path d="M5 9v6M19 9v6M2.8 10.6v2.8M21.2 10.6v2.8" /></>,
+  location: <><path d="M12 20.6s6-5.4 6-10.4a6 6 0 0 0-12 0c0 5 6 10.4 6 10.4Z" /><circle cx="12" cy="10.2" r="2.2" /></>,
+  camera: <><path d="M4.4 8.6a1.8 1.8 0 0 1 1.8-1.8h2l1.4-2h4.8l1.4 2h2a1.8 1.8 0 0 1 1.8 1.8v8.8a1.8 1.8 0 0 1-1.8 1.8H6.2a1.8 1.8 0 0 1-1.8-1.8Z" /><circle cx="12" cy="12.8" r="3.2" /></>,
+
   /* ---- status / achievement ---- */
   trophy: <><path d="M7.6 4h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z" /><path d="M7.6 5.6H4.9v1.5a3 3 0 0 0 2.9 3M16.4 5.6h2.7v1.5a3 3 0 0 1-2.9 3M12 13v3.4M8.6 20.4h6.8l-.7-4H9.3Z" /></>,
   medal: <><circle cx="12" cy="14.8" r="5.2" /><circle cx="12" cy="14.8" r="1.9" /><path d="M9.1 9.9 6.4 3.6M14.9 9.9l2.7-6.3" /></>,

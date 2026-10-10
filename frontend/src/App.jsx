@@ -5,7 +5,8 @@ import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
 import { setLang, useLang } from './lib/i18n.js'
-import { setNav } from './lib/nav.js'
+import { setNav, nav } from './lib/nav.js'
+import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
@@ -27,6 +28,10 @@ import Admin from './views/Admin.jsx'
 import Coach from './views/Coach.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
 import CoachProposal from './views/CoachProposal.jsx'
+import Walking from './views/Walking.jsx'
+import BodyWeight from './views/BodyWeight.jsx'
+import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
+import { usePedometer } from './store/usePedometer.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -45,6 +50,7 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
+  useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
   useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
@@ -54,6 +60,8 @@ function Shell() {
   useWakeLock(!!S.active && S.keepAwake !== false)
 
   const authed = user || isGuest
+  // the step counter comes back on by itself if it was on when the app was last closed
+  useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
   if (!ready && !authed) return (
     <div id="app">
       <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
@@ -78,6 +86,8 @@ function Shell() {
               <Route path="/history" element={<History />} />
               <Route path="/library" element={<Library />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/walk" element={<Walking />} />
+              <Route path="/weight" element={<BodyWeight />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}
@@ -94,6 +104,7 @@ function Shell() {
       <RestTimer />
       <Modals />
       <Toast />
+      <CelebrationOverlay />
     </>
   )
 }

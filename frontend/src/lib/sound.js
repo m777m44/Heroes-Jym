@@ -1,9 +1,15 @@
 // WebAudio beeps + haptics (ported from the vanilla app). `enabled` gates sound.
 let audioCtx = null
+// One shared AudioContext for the whole app (beeps here, the celebration in celebrate.js).
+export function audioContext() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {})
+  return audioCtx
+}
 export function beep(enabled, freq, dur, when) {
   if (!enabled) return
   try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()
+    audioContext()
     const o = audioCtx.createOscillator(), g = audioCtx.createGain()
     o.connect(g); g.connect(audioCtx.destination)
     o.frequency.value = freq || 880; o.type = 'sine'
