@@ -1029,3 +1029,31 @@ h4.sec{
 .wh-x{text-align:right;font-variant-numeric:tabular-nums}
 .wh-del{width:32px;height:30px;border-radius:8px;font-size:15px;color:var(--red)}
 .chip .icn{font-size:14px;vertical-align:-2px}
+
+/* ==========================================================================
+   Right-to-left (Arabic). <html dir="rtl"> is set by the shell from the language.
+   Flex rows, grids and text already follow `direction`; these are the few places
+   that were positioned with physical left/right.
+   ========================================================================== */
+[dir="rtl"] .icn-dir{transform:scaleX(-1)}
+[dir="rtl"] .lrow+.lrow::before,
+[dir="rtl"] .efftbl .r+.r::before{left:0;right:14px}
+[dir="rtl"] .lrow:has(.lrow-i)+.lrow:has(.lrow-i)::before{left:0;right:55px}
+[dir="rtl"] .setrow+.setrow::before{left:0;right:32px}
+[dir="rtl"] .searchf .lead,[dir="rtl"] .search>svg{left:auto;right:11px}
+[dir="rtl"] .searchf .clear{right:auto;left:8px}
+[dir="rtl"] .searchf .field{padding-left:36px;padding-right:35px}
+[dir="rtl"] .search .input{padding-left:12px;padding-right:35px}
+[dir="rtl"] #timer.rest .acts .skip{margin-left:0;margin-right:auto}
+[dir="rtl"] .cal-legend i{margin-right:0;margin-left:5px}
+[dir="rtl"] .seg-sel{left:auto;right:2px;transform:translateX(calc(-100% * var(--i)))}
+[dir="rtl"] .exmedia .gifhint{right:auto;left:9px}
+[dir="rtl"] .exmedia .giftoggle{left:auto;right:9px}
+[dir="rtl"] .mrow .v,[dir="rtl"] .wcmp-row .v,[dir="rtl"] .wh-x{text-align:left}
+[dir="rtl"] .walk-status{text-align:right}
+/* Numbers, weights, charts and time axes stay left-to-right, as on any Arabic phone. */
+[dir="rtl"] .chart,[dir="rtl"] .chart-i,[dir="rtl"] .hm-wrap,[dir="rtl"] .bwin,
+[dir="rtl"] input.num,[dir="rtl"] .rowfield,[dir="rtl"] .goalfield{direction:ltr}
+[dir="rtl"] .rowfield.num{text-align:left}
+/* inline "margin-left:10px" title wrappers in view headers */
+[dir="rtl"] .hdr>div[style*="margin-left"]{margin-left:0 !important;margin-right:10px}

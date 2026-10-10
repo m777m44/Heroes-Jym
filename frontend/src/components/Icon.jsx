@@ -137,13 +137,16 @@ export const ICON_NAMES = Object.keys(P)
  * <Icon name="flame" />           — inherits font-size via `1em` sizing
  * <Icon name="flame" size={28} /> — explicit pixel size
  */
+// Glyphs that point along the reading direction — mirrored in right-to-left languages (index.css).
+const DIRECTIONAL = new Set(['chevronLeft', 'chevronRight'])
+
 export default function Icon({ name, size, className = '', style, ...rest }) {
   const d = P[name]
   if (!d) return null
   const s = size ? { width: size, height: size } : null
   return (
     <svg
-      className={'icn ' + className}
+      className={'icn ' + (DIRECTIONAL.has(name) ? 'icn-dir ' : '') + className}
       viewBox="0 0 24 24"
       aria-hidden="true"
       focusable="false"

@@ -9,12 +9,16 @@ import { useSyncExternalStore } from 'react'
 export const LANGS = {
   en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
   pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский', zh: '中文',
-  ko: '한국어', hi: 'हिन्दी'
+  ko: '한국어', hi: 'हिन्दी', ar: 'العربية'
 }
+// Languages written right to left — the shell sets <html dir> from this.
+export const RTL_LANGS = ['ar']
+export const isRTL = l => RTL_LANGS.includes(l)
 export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko']
 const DATE_LOCALES = {
   en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
+  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN',
+  ar: 'ar-u-nu-latn'   // Arabic text, Western digits — the number fields take 0-9, so both read alike
 }
 
 const localePacks = import.meta.glob('../locales/*.js')

@@ -67,4 +67,15 @@ describe('2.0 screens render', () => {
     expect(html).toContain('celebrate goal')
     expect(html).toContain('cheer-arm-l')
   })
+  it('Walking in Arabic (RTL language, translated)', async () => {
+    const { setLang, isRTL, dateLocale } = await import('../lib/i18n.js')
+    await setLang('ar')
+    try {
+      expect(isRTL('ar')).toBe(true)
+      expect((12345).toLocaleString(dateLocale())).toBe('12,345')   // Western digits, like the inputs
+      const html = await render('/walk', './Walking.jsx')
+      expect(html).toContain('المشي')
+      expect(html).toContain('icn-dir')            // the back chevron is the mirrored kind
+    } finally { await setLang('en') }
+  })
 })

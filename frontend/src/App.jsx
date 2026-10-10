@@ -4,7 +4,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang } from './lib/i18n.js'
+import { setLang, useLang, isRTL } from './lib/i18n.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -53,7 +53,11 @@ function Shell() {
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
-  useEffect(() => { document.documentElement.lang = S.lang || 'en' }, [langV, S.lang])
+  useEffect(() => {
+    const de = document.documentElement
+    de.lang = S.lang || 'en'
+    de.dir = isRTL(S.lang) ? 'rtl' : 'ltr'
+  }, [langV, S.lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
