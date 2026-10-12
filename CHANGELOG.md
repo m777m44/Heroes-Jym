@@ -3,6 +3,32 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.8.0 — 2026-10-13
+
+**Sign in with Google now always works: no more "isn't set up for this version", and your data
+is saved to your Google account straight away.**
+*تسجيل الدخول بحساب Google يعمل دائمًا الآن: لا مزيد من رسالة «غير مُعدّ لهذه النسخة»، وتُحفظ بياناتك في حساب Google مباشرةً.*
+
+### 🔐 Google account: works on every phone, no setup
+- **Fixed:** picking an account showed *"Google sign-in isn't set up for this version of the
+  app yet. Your data stays on this phone for now."* Signing in now uses **Android's own
+  account chooser** (the Google accounts already on the phone, no password), which needs no
+  Google Cloud setup.
+- **Saved to your Google account at once through Android Backup.** Android uploads it in the
+  background and **puts it back by itself** when you install MAHDI-JYM again or on a new
+  phone: you open the app and you're welcomed back with everything in place.
+- **Google Drive** (sync within seconds) switches on **by itself** once the app's one-time Google
+  Cloud setup is done. It is retried quietly every few hours, or right away from
+  *Settings → Google account → Use Google Drive*.
+- Settings shows **where your data is saved** (Android Backup or Google Drive), with
+  *last saved*. Your name and photo appear once Drive is connected.
+
+### 🛠 Fixes and polish
+- **Fixed:** after signing out and back in, automatic saving could stop until the app was
+  restarted.
+- Duplicate translations removed in 11 languages. Code clean-ups.
+- 7 new tests for the account (376 in total).
+
 ## v2.7.0 — 2026-10-13
 
 **One elegant notification for everything, Back pressed twice to leave, and Google sign-in

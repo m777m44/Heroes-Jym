@@ -19,7 +19,7 @@ export function GoogleG({ size = 20 }) {
 
 /** A sentence for a sign-in failure reason (lib/cloud.js reasonOf). */
 export function accountError(reason) {
-  if (reason === 'setup') return t('Google sign-in isn’t set up for this version of the app yet. Your data stays on this phone for now.')
+  if (reason === 'setup') return t('Google Drive isn’t set up for this version of the app yet — your data is still saved to your Google account through Android Backup.')
   if (reason === 'network') return t('No connection to Google. Check the internet and try again.')
   if (reason === 'consent') return t('Google Drive access wasn’t allowed, so nothing can be saved to the account.')
   if (reason === 'unavailable') return t('Google Play services aren’t available on this phone.')
@@ -55,7 +55,7 @@ export default function AccountGate({ onDone }) {
       const a = await signInGoogle()
       if (my !== run.current) return
       setAccount(a)
-      const r = await firstSync(useStore).catch(e => { if (e && e.reason === 'setup') throw e; return 'later' })
+      const r = await firstSync(useStore).catch(e => { if (e && e.reason === 'cancelled') throw e; return 'later' })
       if (my !== run.current) return
       if (r === 'choose') { setPhase('choose'); return }
       setResult(r)
@@ -95,7 +95,7 @@ export default function AccountGate({ onDone }) {
           <Icon name="chevronRight" className="icn-dir acc-chev" />
         </button>
         <button className="pg-later" onClick={() => phone(true)}>{t('Skip')}</button>
-        <div className="acc-fine"><Icon name="shield" /> {t('Saved in a private app folder in your Google Drive that only MAHDI-JYM can see. Sign out anytime in Settings.')}</div>
+        <div className="acc-fine"><Icon name="shield" /> {t('Saved privately to your Google account — only MAHDI-JYM can read it. Sign out anytime in Settings.')}</div>
       </>}
       {phase === 'busy' && <>
         <div className="acc-hero" aria-hidden="true"><span className="acc-orb spin"><GoogleG size={28} /></span></div>
@@ -123,6 +123,7 @@ export default function AccountGate({ onDone }) {
         <p className="pg-lead"><b>{account && account.name}</b><br />{account && account.email}</p>
         <p className="pg-lead">{result === 'restored' ? t('Your data was restored from the account.')
           : result === 'later' ? t('Signed in — the first save happens as soon as there’s a connection.')
+          : result === 'backup' ? t('Everything is saved to your Google account automatically through Android Backup, and comes back when you install MAHDI-JYM again.')
           : t('Everything is saved to your account from now on, automatically.')}</p>
         <Button variant="primary" className="pg-go" onClick={() => onDone && onDone()}>{t('Continue')}</Button>
       </>}

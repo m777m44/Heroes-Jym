@@ -13,7 +13,12 @@ const plug = {
   signOut: vi.fn(async () => ({})),
   disconnect: vi.fn(async () => ({})),
   getToken: vi.fn(async () => ({ token: 'tok-1' })),
+  // the Android Backup copy (files/mj-backup.json)
+  saveBackup: vi.fn(async ({ data }) => { backupFile = data; return { savedAt: Date.now() } }),
+  readBackup: vi.fn(async () => ({ data: backupFile, savedAt: 1234 })),
+  clearBackup: vi.fn(async () => { backupFile = null }),
 }
+let backupFile = null
 vi.mock('./mobile.js', () => ({ MOBILE: true }))
 // Like Capacitor's real plugin proxy: EVERY property is a native call — `then` too, which
 // never calls back. Awaiting the proxy itself therefore hangs (the 2.6.0 sign-in bug).
@@ -38,6 +43,7 @@ globalThis.fetch = vi.fn(async (url, opts = {}) => {
     return ok({ id: file.id })
   }
   if (url.includes('alt=media')) return ok(file.body)
+  if (url.includes('/about?')) return ok({ user: { displayName: 'Mahdi M.', photoLink: 'https://lh3/p.jpg', emailAddress: 'mahdi@gmail.com' } })
   if (url.includes('/files?')) return ok({ files: file ? [{ id: file.id, modifiedTime: new Date(file.ts).toISOString(), appProperties: { ts: String(file.ts) } }] : [] })
   return { ok: false, status: 404, json: async () => ({}) }
 })
@@ -51,7 +57,7 @@ function fakeStore(S) {
 }
 const data = (n, ts) => ({ _ts: ts, workouts: Array.from({ length: n }, (_, i) => ({ d: '2026-10-0' + (i + 1) })) })
 
-beforeEach(() => { mem.clear(); file = null; expired = false })
+beforeEach(() => { mem.clear(); file = null; expired = false; backupFile = null })
 
 describe('cloud — where your data is kept', () => {
   it('asks once: phone, skip or Google', async () => {
@@ -142,15 +148,112 @@ describe('cloud — keeping the account in step', () => {
     plug.getToken.mockResolvedValueOnce({ token: 'tok-2' })
     store.getState().S = data(2, 200)
     expect(await cloud.syncNow(store)).toBe('uploaded')
-    expect(plug.getToken).toHaveBeenLastCalledWith({ stale: 'tok-1' })
+    expect(plug.getToken).toHaveBeenLastCalledWith(expect.objectContaining({ stale: 'tok-1', ask: false, email: 'mahdi@gmail.com' }))
   })
   it('records the reason when a round fails, and does nothing signed out', async () => {
     await cloud.signInGoogle()
+    await cloud.firstSync(fakeStore(data(1, 1)))
     fetch.mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) })
     await expect(cloud.syncNow(fakeStore(data(1, 1)))).rejects.toMatchObject({ reason: 'network' })
     expect(cloud.cloudMeta().error).toBe('network')
     await cloud.signOutGoogle()
     expect(await cloud.syncNow(fakeStore(data(1, 1)))).toBe('off')
     expect(cloud.cloudMeta()).toMatchObject({ mode: 'phone', account: null })
+  })
+})
+
+describe('cloud — signing in works without any Google Cloud setup (2.8)', () => {
+  const unregistered = () => plug.getToken.mockRejectedValue({ code: '10', message: 'UNREGISTERED_ON_API_CONSOLE' })
+  const registered = () => plug.getToken.mockResolvedValue({ token: 'tok-1' })
+
+  it('Drive not set up: still signed in, saved through Android Backup — no error', async () => {
+    unregistered()
+    await cloud.signInGoogle()
+    const store = fakeStore(data(2, 100))
+    expect(await cloud.firstSync(store)).toBe('backup')
+    expect(cloud.signedInGoogle()).toBe(true)
+    expect(cloud.cloudMeta()).toMatchObject({ backend: 'backup', driveWhy: 'setup', backupTs: 100 })
+    const b = JSON.parse(backupFile)
+    expect(b).toMatchObject({ app: 'MAHDI-JYM', v: 1, meta: { mode: 'google', account: { email: 'mahdi@gmail.com' } } })
+    expect(b.S.workouts).toHaveLength(2)
+    expect(cloud.lastSavedAt()).toBeGreaterThan(0)
+    expect(file).toBe(null)                                  // nothing went to Drive
+    registered()
+  })
+  it('backup rounds: only when something changed; Drive retried quietly after a few hours', async () => {
+    unregistered()
+    await cloud.signInGoogle()
+    const store = fakeStore(data(1, 100))
+    await cloud.firstSync(store)
+    plug.getToken.mockClear(); plug.saveBackup.mockClear()
+    expect(await cloud.syncNow(store)).toBe('idle')
+    store.getState().S = data(3, 200)
+    expect(await cloud.syncNow(store)).toBe('uploaded')
+    expect(JSON.parse(backupFile).S.workouts).toHaveLength(3)
+    expect(plug.getToken).not.toHaveBeenCalled()             // not yet: tried < 6 h ago
+    // hours later, and meanwhile the app owner finished the Cloud setup
+    registered()
+    localStorage.setItem('mj_cloud', JSON.stringify({ ...cloud.cloudMeta(), driveAt: Date.now() - cloud.DRIVE_RETRY_MS - 1 }))
+    expect(await cloud.syncNow(store)).toBe('uploaded')
+    expect(cloud.cloudMeta().backend).toBe('drive')
+    expect(file.body.S.workouts).toHaveLength(3)
+    expect(plug.getToken).toHaveBeenCalledWith(expect.objectContaining({ ask: false }))   // never a screen in the background
+    expect(cloud.cloudMeta().account).toMatchObject({ name: 'Mahdi M.', photo: 'https://lh3/p.jpg' })
+  })
+  it('Drive access declined: not asked again by itself; Settings → Use Google Drive asks', async () => {
+    plug.getToken.mockRejectedValue({ code: 'CONSENT' })
+    await cloud.signInGoogle()
+    const store = fakeStore(data(1, 100))
+    expect(await cloud.firstSync(store)).toBe('backup')
+    expect(plug.getToken).toHaveBeenLastCalledWith(expect.objectContaining({ ask: true }))   // sign-in may show it
+    localStorage.setItem('mj_cloud', JSON.stringify({ ...cloud.cloudMeta(), driveAt: 1 }))
+    plug.getToken.mockClear()
+    await cloud.syncNow(store)
+    expect(plug.getToken).not.toHaveBeenCalled()
+    registered()
+    expect(await cloud.upgradeToDrive(store, true)).toBe('uploaded')
+    expect(plug.getToken).toHaveBeenLastCalledWith(expect.objectContaining({ ask: true }))
+    expect(cloud.onDrive()).toBe(true)
+  })
+  it('Drive stops working later (e.g. key changed): falls back to Android Backup', async () => {
+    await cloud.signInGoogle()
+    const store = fakeStore(data(1, 100))
+    expect(await cloud.firstSync(store)).toBe('uploaded')
+    expect(cloud.onDrive()).toBe(true)
+    expired = true
+    unregistered()
+    store.getState().S = data(2, 200)
+    expect(await cloud.syncNow(store)).toBe('uploaded')
+    expect(cloud.cloudMeta()).toMatchObject({ backend: 'backup', driveWhy: 'setup' })
+    expect(JSON.parse(backupFile).S.workouts).toHaveLength(2)
+    registered()
+  })
+  it('installed again: the restored backup comes back by itself, signed in as before', async () => {
+    backupFile = JSON.stringify({ app: 'MAHDI-JYM', v: 1, meta: { mode: 'google', account: { email: 'mahdi@gmail.com', name: 'Mahdi' }, auto: true }, S: data(5, 700) })
+    const store = fakeStore({ _ts: 1, workouts: [] })
+    expect(await cloud.restoreFromBackup(store)).toBe(true)
+    expect(store.getState().S.workouts).toHaveLength(5)
+    expect(cloud.storageChosen()).toBe(true)
+    expect(cloud.signedInGoogle()).toBe(true)
+    expect(cloud.cloudMeta()).toMatchObject({ backend: 'backup', driveAt: 0 })   // Drive is tried on the first round
+  })
+  it('never restores over existing data, or once the question was answered', async () => {
+    backupFile = JSON.stringify({ app: 'MAHDI-JYM', v: 1, meta: {}, S: data(5, 700) })
+    expect(await cloud.restoreFromBackup(fakeStore(data(1, 5)))).toBe(false)
+    cloud.choosePhone()
+    expect(await cloud.restoreFromBackup(fakeStore({ _ts: 1, workouts: [] }))).toBe(false)
+    backupFile = '{broken'
+    mem.clear()
+    expect(await cloud.restoreFromBackup(fakeStore({ _ts: 1, workouts: [] }))).toBe(false)
+  })
+  it('signing out removes the backup copy and forgets the token', async () => {
+    unregistered()
+    await cloud.signInGoogle()
+    await cloud.firstSync(fakeStore(data(1, 100)))
+    expect(backupFile).not.toBe(null)
+    await cloud.signOutGoogle()
+    expect(backupFile).toBe(null)
+    expect(cloud.cloudMeta()).toMatchObject({ mode: 'phone', backend: null })
+    registered()
   })
 })

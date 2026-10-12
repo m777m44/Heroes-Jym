@@ -1,17 +1,46 @@
-# Sign in with Google: saving to the account (2.6)
+# Sign in with Google: saving to the account (2.6, reworked in 2.8)
 
 *تسجيل الدخول بحساب Google وحفظ كل البيانات في الحساب. خطوات الإعداد بالعربية في آخر الصفحة.*
 
-From 2.6 the Android app can keep a copy of **everything** (workouts, plan, routines, steps,
-water, body weight and settings) in the user's Google account. Progress photos stay on the
-phone.
+The Android app can keep a copy of **everything** (workouts, plan, routines, steps, water,
+body weight and settings) in the user's Google account. Progress photos stay on the phone.
+
+> **2.8: signing in needs no setup any more.** The account chooser is Android's own, and saving
+> works straight away through **Android Backup**. The Google Cloud setup below is optional: it
+> switches saving to **Google Drive** (faster, within seconds), and the app picks this up by itself.
+> Before 2.8, a missing setup showed *"Google sign-in isn't set up for this version of the app
+> yet"* (error 10). That message no longer appears.
+
+## Two ways of saving
+
+| | **Android Backup** (always works) | **Google Drive** (after the setup below) |
+|---|---|---|
+| Setup | none | one Android OAuth client in Google Cloud |
+| Where | Android's backup in the phone's Google account | hidden app-data folder in the account's Drive |
+| When | Android uploads in the background, usually within a few hours | ~90 s after each change, and when the app goes to the background |
+| Comes back | when MAHDI-JYM is installed again, or on a new phone with the same account (automatically, before the first screen) | on signing in on any phone |
+
+- **How Android Backup works here:** `MjBackupAgent` is a key/value backup agent. It backs up
+  one file, `files/mj-backup.json`, which the app rewrites after changes while signed in.
+  - The phone needs *Backup by Google One* turned on (it is on by default on most phones).
+  - Up to 5 MB, free.
+  - On a fresh install, the app finds the restored file and takes it back before the
+    first-launch question, signed in as before.
+- **Choosing Drive or backup:** signing in tries Drive first.
+  - If Google answers that the app isn't registered (error 10 / `UNREGISTERED_ON_API_CONSOLE`),
+    or the user declines Drive access, saving goes through Android Backup.
+  - Drive is retried quietly every 6 hours, never showing a screen. Once it works, the app
+    switches to Drive by itself.
+  - *Settings → Google account → Use Google Drive* retries right away.
+- **While signed in,** the backup copy is kept up to date in both modes, as a second safety net.
 
 ## How it works for the user
 
 1. **First launch** (before the permissions dialog), *Keep your progress safe* offers three
    choices:
-   - **Continue with Google**: Google's own account chooser opens and lists **the Google
-     accounts already on the phone**. Pick one and you're signed in. No password, no typing.
+   - **Continue with Google**: Android's account chooser opens and lists **the Google
+     accounts already on the phone**. Pick one and you're signed in. No password, no typing,
+     and no setup needed.
    - **Save on this phone**: nothing leaves the phone.
    - **Skip**: same as "on this phone"; you can sign in later.
 2. If the account already has MAHDI-JYM data **and** the phone has some too, the app asks
@@ -97,6 +126,11 @@ access token); no other dependencies. The web/self-hosted build keeps its own ac
 ---
 
 ## الإعداد بالعربية (مرة واحدة، لصاحب التطبيق)
+
+> **منذ 2.8 هذا الإعداد اختياري.** تسجيل الدخول يعمل دون أي إعداد عبر نافذة حسابات أندرويد نفسها،
+> والحفظ يتم مباشرةً عبر **النسخ الاحتياطي لأندرويد** في حساب Google. هذا الإعداد يضيف فقط الحفظ
+> في **Google Drive** (أسرع، خلال ثوانٍ)، والتطبيق ينتقل إليه تلقائيًا بعد إتمامه.
+
 
 1. افتح <https://console.cloud.google.com/> وأنشئ مشروعًا باسم **MAHDI-JYM**.
 2. **APIs & Services → Library → Google Drive API → Enable** (فعّل Google Drive API).

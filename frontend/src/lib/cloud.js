@@ -1,15 +1,27 @@
-// Where your data is kept (2.6): this phone only, or this phone + your Google account.
+// Where your data is kept: this phone only, or this phone + your Google account.
 //
-// Sign in with Google uses Google's own account chooser (the accounts already on the phone —
-// no password) through the native GoogleAccount plugin. Everything is then kept in step with
-// one file in that account's Google Drive, in the private app-data folder that only this app
-// can read (scope drive.appdata — your own Drive files are never visible to it).
+// Signing in (2.8) uses Android's own account chooser — the Google accounts already on the
+// phone, no password — so it works on every install. Saving then goes one of two ways
+// (meta.backend):
+//
+//   'drive'   one file in the account's Google Drive, in the private app-data folder only
+//             this app can read (drive.appdata). Needs the app's signing key registered in a
+//             Google Cloud project (docs/GOOGLE_SIGN_IN.md). Synced within seconds.
+//   'backup'  Android Backup: a copy on the phone (files/mj-backup.json) that Android's backup
+//             service saves to the phone's Google account and restores when the app is
+//             installed again / on a new phone. Needs no setup at all. Used while Drive isn't
+//             available; Drive is retried quietly every few hours and takes over by itself.
+//
+// While signed in, the backup copy is written in both cases, as a second safety net.
 //
 //   meta (localStorage 'mj_cloud') = {
 //     mode: 'google' | 'phone' | 'skip',  chosen on first launch (AccountGate) or in Settings
 //     account: { email, name, photo },
 //     auto: true,                          save changes automatically
-//     fileId, syncedTs, remoteTs, at       the last sync: local S._ts, the file's ts, when
+//     backend: 'drive' | 'backup',
+//     fileId, syncedTs, remoteTs, at       the last Drive sync: local S._ts, the file's ts, when
+//     backupTs, backupAt                   the last backup copy: local S._ts, when
+//     driveWhy, driveAt                    why Drive last failed ('setup' | 'consent' | …), when
 //   }
 //
 // Sync rules: only this phone changed → upload; only the account changed → download; both →
@@ -25,6 +37,7 @@ const FILE = 'mahdi-jym-data.json'
 const DRIVE = 'https://www.googleapis.com/drive/v3'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3'
 export const THROTTLE_MS = 90 * 1000
+export const DRIVE_RETRY_MS = 6 * 3600 * 1000
 
 // ---- meta ---------------------------------------------------------------------------------
 
@@ -43,6 +56,10 @@ export function onCloudChange(f) { listeners.add(f); return () => listeners.dele
 /** The storage choice has been made (or skipped) — the first-launch question is answered. */
 export const storageChosen = () => !!cloudMeta().mode
 export const signedInGoogle = () => cloudMeta().mode === 'google' && !!(cloudMeta().account || {}).email
+/** Saving to Google Drive (true) or through Android Backup (false). */
+export const onDrive = () => cloudMeta().backend === 'drive'
+/** When the account copy was last saved, whichever way. */
+export const lastSavedAt = (m = cloudMeta()) => (m.backend === 'drive' ? m.at : Math.max(m.backupAt || 0, m.at || 0)) || 0
 export function choosePhone(skip = false) { setMeta({ mode: skip ? 'skip' : 'phone' }) }
 export function setAutoSave(v) { setMeta({ auto: !!v }) }
 export const autoSaveOn = () => cloudMeta().auto !== false
@@ -93,6 +110,7 @@ export function reasonOf(e) {
   if (code === '7' || code === '8' || /network|connection/i.test(String(e && e.message))) return 'network'
   if (code === 'CONSENT') return 'consent'
   if (code === 'UNAVAILABLE') return 'unavailable'
+  if (code === 'SIGNED_OUT') return 'signedout'
   return 'failed'
 }
 
@@ -103,27 +121,34 @@ export async function signInGoogle() {
   let a
   try { a = await h.p.signIn() } catch (e) { throw Object.assign(new Error(e && e.message), { reason: reasonOf(e) }) }
   if (!a || !a.signedIn) throw Object.assign(new Error('cancelled'), { reason: 'cancelled' })
+  token = null                           // a token belongs to the account it was issued for
   const account = { email: a.email, name: a.name || a.givenName || a.email, photo: a.photo || null }
   const prev = cloudMeta()
   // Another account than before: forget what we knew about the old account's file.
   const same = prev.account && prev.account.email === account.email
-  setMeta({ mode: 'google', account, auto: prev.auto !== false, ...(same ? {} : { fileId: null, syncedTs: 0, remoteTs: 0, at: 0 }) })
+  setMeta({ mode: 'google', account, auto: prev.auto !== false, ...(same ? {} : { backend: null, fileId: null, syncedTs: 0, remoteTs: 0, at: 0, backupTs: 0, backupAt: 0, driveWhy: null, driveAt: 0 }) })
   return account
 }
 
 export async function signOutGoogle(revoke = false) {
   const h = await holder()
+  token = null
   try { if (h) await withTimeout(revoke ? h.p.disconnect() : h.p.signOut(), 10000) } catch { /* */ }
-  setMeta({ mode: 'phone', account: null, fileId: null, syncedTs: 0, remoteTs: 0, at: 0 })
+  // No longer saved to the account: the Android Backup copy goes too (a Drive copy stays).
+  try { if (h) await withTimeout(h.p.clearBackup(), 10000) } catch { /* */ }
+  setMeta({ mode: 'phone', account: null, backend: null, fileId: null, syncedTs: 0, remoteTs: 0, at: 0, backupTs: 0, backupAt: 0, driveWhy: null, driveAt: 0 })
 }
 
 let token = null
+let interactive = false          // may Google show its "allow Drive access" screen right now?
 async function getToken(stale) {
   const h = await holder()
   if (!h) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
   try {
-    // generous: the first time, Google may show its "allow Drive access" screen
-    const r = await withTimeout(h.p.getToken(stale ? { stale } : {}), 120000)
+    const opts = { ask: interactive, email: (cloudMeta().account || {}).email || undefined }
+    if (stale) opts.stale = stale
+    // generous when it may ask: the consent screen waits for the user
+    const r = await withTimeout(h.p.getToken(opts), interactive ? 120000 : 20000)
     token = r && r.token
     if (!token) throw new Error('no token')
     return token
@@ -180,27 +205,130 @@ export async function upload(S, id) {
   return { id: j.id || id, ts }
 }
 
-// ---- sync ---------------------------------------------------------------------------------
-
 const hasData = S => !!S && !!(((S.workouts || []).length) || ((S.routines || []).length) || ((S.bodyweight || []).length) ||
   Object.keys(S.steps || {}).length || Object.keys(S.waterMl || {}).length)
 
-/** What signing in found: 'uploaded' | 'restored' | 'choose' (both sides have data). */
-export async function firstSync(store) {
-  const remote = await findFile()
+// ---- Android Backup copy --------------------------------------------------------------------
+
+function backupBody(S) {
+  const m = cloudMeta()
+  return JSON.stringify({
+    app: 'MAHDI-JYM', v: 1, savedAt: new Date().toISOString(),
+    version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
+    meta: { mode: m.mode, account: m.account || null, auto: m.auto !== false },
+    S,
+  })
+}
+
+/** Write the backup copy (Android saves it to the Google account in the background). */
+export async function saveBackup(store) {
+  const h = await holder()
+  if (!h) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
   const S = store.getState().S
-  if (!remote) { await push(store, null); return 'uploaded' }
-  if (!hasData(S)) { await pull(store, remote); return 'restored' }
-  setMeta({ fileId: remote.id })
-  return 'choose'
+  try { await withTimeout(h.p.saveBackup({ data: backupBody(S) }), 15000, 'failed') }
+  catch (e) { throw Object.assign(new Error(e && e.message), { reason: (e && e.reason) || 'failed' }) }
+  setMeta({ backupTs: Number(S._ts) || 0, backupAt: Date.now() })
+}
+const backupIfChanged = async store => {
+  if ((Number(store.getState().S._ts) || 0) !== (cloudMeta().backupTs || 0) || !cloudMeta().backupAt) await saveBackup(store)
+}
+
+/** The backup copy on this phone — e.g. just restored by Android on a new phone — or null. */
+export async function readBackup() {
+  const h = await holder()
+  if (!h) return null
+  try {
+    const r = await withTimeout(h.p.readBackup(), 8000)
+    const j = r && r.data ? JSON.parse(r.data) : null
+    return j && j.S && typeof j.S === 'object' ? { ...j, savedAt: Number(r.savedAt) || 0 } : null
+  } catch { return null }
+}
+
+/**
+ * First launch after installing (again): Android put the backup copy back — take it, signed in
+ * as before, so nothing has to be chosen. Only into an empty app. Resolves true when restored.
+ */
+export async function restoreFromBackup(store) {
+  if (!MOBILE || storageChosen() || hasData(store.getState().S)) return false
+  const b = await readBackup()
+  if (!b || !hasData(b.S)) return false
+  store.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), b.S), false)
+  const S = store.getState().S
+  const m = b.meta || {}
+  const google = !!(m.account && m.account.email)
+  setMeta({ mode: google ? 'google' : 'phone', account: google ? m.account : null, auto: m.auto !== false,
+    backend: 'backup', backupTs: Number(S._ts) || 0, backupAt: b.savedAt || Date.now(), driveAt: 0, driveWhy: null, restoredAt: Date.now() })
+  return true
+}
+
+// ---- sync ---------------------------------------------------------------------------------
+
+/** Drive didn't work (yet): remember why, keep saving through Android Backup. */
+function toBackup(e) {
+  setMeta({ backend: 'backup', driveWhy: (e && e.reason) || 'failed', driveAt: Date.now() })
+}
+
+/** What signing in found: 'uploaded' | 'restored' | 'choose' (both sides have data) | 'backup'. */
+export async function firstSync(store) {
+  let remote
+  interactive = true
+  try { remote = await findFile() }
+  catch (e) {
+    if (e && e.reason === 'cancelled') throw e
+    toBackup(e)
+    await saveBackup(store)
+    return 'backup'
+  } finally { interactive = false }
+  setMeta({ backend: 'drive', driveWhy: null, driveAt: Date.now() })
+  fetchProfile().catch(() => {})
+  const S = store.getState().S
+  let r
+  if (!remote) { await push(store, null); r = 'uploaded' }
+  else if (!hasData(S)) { await pull(store, remote); r = 'restored' }
+  else { setMeta({ fileId: remote.id }); return 'choose' }
+  backupIfChanged(store).catch(() => {})
+  return r
 }
 
 /** Resolve the first-sign-in choice: 'account' takes the account's copy, 'phone' uploads this one. */
 export async function resolveChoice(store, which) {
   const remote = await findFile()
-  if (which === 'account' && remote) { await pull(store, remote); return 'restored' }
-  await push(store, remote && remote.id)
-  return 'uploaded'
+  let r = 'uploaded'
+  if (which === 'account' && remote) { await pull(store, remote); r = 'restored' }
+  else await push(store, remote && remote.id)
+  backupIfChanged(store).catch(() => {})
+  return r
+}
+
+/** Name and photo from Google Drive (best effort; the account chooser only gives the email). */
+async function fetchProfile() {
+  const res = await drive(`${DRIVE}/about?fields=user(displayName,photoLink,emailAddress)`)
+  const u = ((await res.json()) || {}).user || {}
+  const a = cloudMeta().account
+  if (!a || (u.emailAddress && u.emailAddress !== a.email)) return
+  setMeta({ account: { ...a, name: u.displayName || a.name, photo: u.photoLink || a.photo || null } })
+}
+
+/**
+ * Switch from Android Backup to Drive once Drive works. `ask` lets Google show its consent
+ * screen (Settings → Use Google Drive); in the background it never does. If both sides hold
+ * data the newer one wins — the replaced copy can be put back (restorePrevious()).
+ */
+export async function upgradeToDrive(store, ask = false) {
+  let remote
+  interactive = ask
+  try { remote = await findFile() }
+  catch (e) { if (!e || e.reason !== 'cancelled') toBackup(e); throw e }
+  finally { interactive = false }
+  setMeta({ backend: 'drive', driveWhy: null, driveAt: Date.now(), syncedTs: 0, remoteTs: 0 })
+  fetchProfile().catch(() => {})
+  const S = store.getState().S
+  let r
+  if (!remote) { await push(store, null); r = 'uploaded' }
+  else if (!hasData(S) || remote.ts > (Number(S._ts) || 0)) { await pull(store, remote); r = 'restored' }
+  else { await push(store, remote.id); r = 'uploaded' }
+  backupIfChanged(store).catch(() => {})
+  return r
 }
 
 async function push(store, id) {
@@ -218,23 +346,50 @@ async function pull(store, remote) {
   setMeta({ fileId: remote.id, syncedTs: Number(S._ts) || 0, remoteTs: remote.ts, at: Date.now(), error: null })
 }
 
+async function driveRound(store) {
+  const m = cloudMeta()
+  const S = store.getState().S
+  const remote = await findFile()
+  if (!remote) { await push(store, null); return 'uploaded' }
+  const localChanged = (Number(S._ts) || 0) > (m.syncedTs || 0)
+  const remoteChanged = remote.ts > (m.remoteTs || 0)
+  if (remoteChanged && (!localChanged || remote.ts > (Number(S._ts) || 0))) { await pull(store, remote); return 'restored' }
+  if (localChanged) { await push(store, remote.id); return 'uploaded' }
+  setMeta({ at: Date.now(), error: null })
+  return 'idle'
+}
+
+async function backupRound(store) {
+  const before = cloudMeta().backupTs || 0
+  await backupIfChanged(store)
+  setMeta({ error: null })
+  return (Number(store.getState().S._ts) || 0) !== before ? 'uploaded' : 'idle'
+}
+
 let running = null
 /** One sync round (see the rules at the top). Resolves 'idle' | 'uploaded' | 'restored' | 'off'. */
 export function syncNow(store) {
   if (running) return running
+  if (!signedInGoogle()) return Promise.resolve('off')   // (outside: a stuck `running` would block every later round)
   running = (async () => {
-    if (!signedInGoogle()) return 'off'
     try {
       const m = cloudMeta()
-      const S = store.getState().S
-      const remote = await findFile()
-      if (!remote) { await push(store, null); return 'uploaded' }
-      const localChanged = (Number(S._ts) || 0) > (m.syncedTs || 0)
-      const remoteChanged = remote.ts > (m.remoteTs || 0)
-      if (remoteChanged && (!localChanged || remote.ts > (Number(S._ts) || 0))) { await pull(store, remote); return 'restored' }
-      if (localChanged) { await push(store, remote.id); return 'uploaded' }
-      setMeta({ at: Date.now(), error: null })
-      return 'idle'
+      if (m.backend !== 'drive') {
+        // Drive now and then (never pops a screen; a declined consent waits for Settings).
+        if (m.driveWhy !== 'consent' && Date.now() - (m.driveAt || 0) > DRIVE_RETRY_MS) {
+          try { return await upgradeToDrive(store, false) } catch { /* still Android Backup */ }
+        }
+        return await backupRound(store)
+      }
+      try {
+        const r = await driveRound(store)
+        backupIfChanged(store).catch(() => {})
+        return r
+      } catch (e) {
+        const why = e && e.reason
+        if (why === 'setup' || why === 'consent' || why === 'signedout') { toBackup(e); return await backupRound(store) }
+        throw e
+      }
     } catch (e) {
       setMeta({ error: (e && e.reason) || 'failed' })
       throw e
@@ -271,7 +426,8 @@ export function startCloudSync(store) {
     const wait = Math.max(5000, THROTTLE_MS - (Date.now() - last))
     tm = setTimeout(() => { tm = null; last = Date.now(); quiet() }, wait)
   }
-  const unsub = store.subscribe((st, prev) => { if (st.S !== prev.S && st.S._ts !== cloudMeta().syncedTs) schedule() })
+  const savedTs = () => (onDrive() ? cloudMeta().syncedTs : cloudMeta().backupTs)
+  const unsub = store.subscribe((st, prev) => { if (st.S !== prev.S && st.S._ts !== savedTs()) schedule() })
   const onVis = () => {
     if (document.visibilityState === 'hidden') { clearTimeout(tm); tm = null; last = Date.now(); quiet() }
     else if (Date.now() - last > 60000) { last = Date.now(); quiet() }

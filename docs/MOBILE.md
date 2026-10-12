@@ -195,6 +195,17 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
   sign-out of a cached account stalls, and backing out of it counts as a cancel.
   Error **10** still means the Google Cloud setup in [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md) isn't finished.
 
+## Google account without setup (2.8, Android)
+
+- **Signing in** uses `AccountManager.newChooseAccountIntent`, Android's own chooser of the Google
+  accounts on the phone. It needs no Google Cloud project, so it can't fail with error 10.
+- **Saving** works straight away through **Android Backup**: `MjBackupAgent`, a key/value
+  agent, backs up only `files/mj-backup.json`, with `restoreAnyVersion`. A fresh install takes
+  the restored copy back before the first-launch question.
+- **Google Drive** is used when the app's signing key is registered
+  ([GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md)). It is retried quietly every 6 h and takes over by itself.
+- `getToken({ ask: false })` never shows a screen in the background.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

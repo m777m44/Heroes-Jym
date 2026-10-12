@@ -4,7 +4,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { ACCENTS } from './lib/format.js'
-import { setLang, useLang, isRTL } from './lib/i18n.js'
+import { setLang, useLang, isRTL, t } from './lib/i18n.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -34,7 +34,7 @@ import Water from './views/Water.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
-import { storageChosen, startCloudSync } from './lib/cloud.js'
+import { storageChosen, startCloudSync, restoreFromBackup } from './lib/cloud.js'
 import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
@@ -81,6 +81,18 @@ function Shell() {
   useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
   // first launch on the phone: where should the data live? (then the permissions dialog)
   const [chosen, setChosen] = useState(() => !MOBILE || storageChosen())
+  // 2.8: installed again / a new phone — Android may have put the account's backup copy back.
+  // Checked before the first-launch question, which is then not needed.
+  const [checked, setChecked] = useState(chosen)
+  useEffect(() => {
+    if (!ready || !authed || checked) return
+    let live = true
+    restoreFromBackup(useStore)
+      .then(ok => { if (live && ok) { setChosen(true); useUI.getState().toast(t('Welcome back — your data was restored from your Google account')) } })
+      .catch(() => {})
+      .finally(() => { if (live) setChecked(true) })
+    return () => { live = false }
+  }, [ready, authed, checked])
   // back from the system settings (e.g. "Physical activity" allowed again): try once more
   useEffect(() => {
     if (!ready || !authed) return
@@ -136,7 +148,7 @@ function Shell() {
       <Modals />
       <Toast />
       <CelebrationOverlay />
-      {authed && ready && !DEMO && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
+      {authed && ready && !DEMO && checked && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
     </>
   )
 }

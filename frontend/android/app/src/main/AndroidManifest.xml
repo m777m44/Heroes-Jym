@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 2.8 — Android Backup (key/value): MjBackupAgent backs up only the data copy that the
+         app writes while you're signed in with Google, to the phone's Google account, and it
+         comes back when the app is installed again or on a new phone. No key is needed any
+         more; the placeholder below is for older devices that still look for one. -->
     <application
         android:allowBackup="true"
+        android:backupAgent=".account.MjBackupAgent"
+        android:restoreAnyVersion="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <meta-data android:name="com.google.android.backup.api_key" android:value="unused" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
             android:name=".MainActivity"

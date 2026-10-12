@@ -4,7 +4,7 @@ import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import {
   cloudMeta, onCloudChange, signedInGoogle, googleAvailable, signInGoogle, signOutGoogle, syncNow, firstSync,
-  resolveChoice, setAutoSave, autoSaveOn, previousCopy, restorePrevious,
+  resolveChoice, setAutoSave, autoSaveOn, previousCopy, restorePrevious, upgradeToDrive, lastSavedAt,
 } from '../lib/cloud.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from './Icon.jsx'
@@ -79,9 +79,12 @@ export default function AccountSection() {
     return r
   }, r => r === 'choose' ? null : r === 'restored' ? t('Your data was restored from the account.') : t('Signed in'))
 
+  const switchToDrive = () => run(() => upgradeToDrive(useStore, true), r => r === 'restored' ? t('Your data was restored from the account.') : t('Now saved to Google Drive'))
+
   const signOut = () => confirmSheet({
     title: t('Sign out of Google?'),
-    message: t('Your data stays on this phone and in your Google account. Changes are no longer saved to the account.'),
+    message: meta.backend === 'drive' ? t('Your data stays on this phone and in your Google account. Changes are no longer saved to the account.')
+      : t('Your data stays on this phone. Changes are no longer saved to your Google account.'),
     confirmText: t('Sign out'), danger: true,
     onConfirm: () => run(async () => { await syncNow(useStore).catch(() => {}); await signOutGoogle(false) }, t('Signed out')),
   })
@@ -92,7 +95,7 @@ export default function AccountSection() {
     : <span className="acc-badge"><Icon name="cloudCheck" /> {t('Saved')}</span>
 
   if (!signed) return (
-    <Section title={t('Your data')} footer={t('Sign in with a Google account that’s already on this phone — no password. Everything is saved to a private app folder in its Google Drive.')}>
+    <Section title={t('Your data')} footer={t('Sign in with a Google account that’s already on this phone — no password. Everything is then saved to that account automatically.')}>
       <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this phone')} subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
       <div style={{ padding: '4px 14px 14px' }}>
         <button className="acc-google" onClick={busy ? undefined : signIn} disabled={g === false || busy}>
@@ -106,13 +109,20 @@ export default function AccountSection() {
   )
 
   return (
-    <Section title={t('Google account')} footer={t('Workouts, plan, steps, water, body weight and settings are saved to a private app folder in your Google Drive. Progress photos stay on this phone.')}>
+    <Section title={t('Google account')} footer={meta.backend === 'drive'
+      ? t('Workouts, plan, steps, water, body weight and settings are saved to a private app folder in your Google Drive. Progress photos stay on this phone.')
+      : t('Workouts, plan, steps, water, body weight and settings are saved through Android Backup to your Google account. Android uploads it in the background, usually within a few hours, and puts it back when you install MAHDI-JYM again or on a new phone. Progress photos stay on this phone.')}>
       <div className="acc-row">
         <Avatar account={account} />
         <div className="who"><b>{account.name || account.email}</b><span>{account.email}</span></div>
         {status}
       </div>
-      <Row icon="cloud" iconTint="var(--blue)" title={t('Save now')} subtitle={t('Last saved {0}', agoLabel(meta.at))}
+      <div className={'acc-where' + (meta.backend === 'drive' ? ' drive' : '')}>
+        <Icon name={meta.backend === 'drive' ? 'cloudCheck' : 'shield'} />
+        <span><b>{meta.backend === 'drive' ? t('Google Drive') : t('Android Backup')}</b>
+          {meta.backend === 'drive' ? t('Private app folder · synced within seconds') : t('Through your Google account · no setup needed')}</span>
+      </div>
+      <Row icon="cloud" iconTint="var(--blue)" title={t('Save now')} subtitle={t('Last saved {0}', agoLabel(lastSavedAt(meta)))}
         accessory="chevron" onClick={busy ? undefined : () => run(() => syncNow(useStore), resultMsg)} />
       <Row icon="reset" iconTint="var(--teal)" title={t('Save automatically')} subtitle={t('Every change, a moment after you make it')}>
         <Switch checked={autoSaveOn()} onChange={v => { setAutoSave(v); if (v) syncNow(useStore).catch(() => {}) }} />
@@ -121,6 +131,9 @@ export default function AccountSection() {
         subtitle={t('Puts back the data this phone had before {0}', agoLabel(prev.at))} accessory="chevron"
         onClick={() => confirmSheet({ title: t('Undo the last restore?'), message: t('This phone goes back to the data it had before the account’s copy replaced it.'), confirmText: t('Undo'),
           onConfirm: () => { if (restorePrevious(useStore)) toast(t('Previous data restored')) } })} />}
+      {meta.backend !== 'drive' && <Row icon="cloud" iconTint="var(--indigo, var(--blue))" title={t('Use Google Drive')}
+        subtitle={meta.driveWhy === 'setup' ? t('Needs the one-time Google Cloud setup — tried automatically every few hours') : t('Faster sync between phones')}
+        accessory="chevron" onClick={busy ? undefined : switchToDrive} />}
       <Row icon="personCircle" iconTint="var(--purple)" title={t('Switch account')} accessory="chevron" onClick={busy ? undefined : signIn} />
       <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={signOut} />
     </Section>

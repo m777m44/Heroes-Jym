@@ -1360,3 +1360,12 @@ h3 .exn{align-items:inherit}
   color:var(--tint);background:color-mix(in srgb,var(--tint) 15%,transparent);font-variant-numeric:tabular-nums;animation:accIn .4s ease both}
 .acc-spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--label-4);border-top-color:var(--blue);animation:pgspin .8s linear infinite}
 .acc-slow{color:var(--orange)}
+
+/* 2.8 — where the account copy lives: Android Backup (no setup) or Google Drive */
+.acc-where{display:flex;align-items:center;gap:10px;margin:0 14px 10px;padding:9px 12px;border-radius:12px;
+  background:color-mix(in srgb,var(--teal) 12%,transparent);color:var(--label-2);font-size:12.5px;line-height:1.3}
+.acc-where .icn{flex:none;font-size:18px;color:var(--teal)}
+.acc-where span{display:flex;flex-direction:column;min-width:0}
+.acc-where b{color:var(--label);font-size:13.5px}
+.acc-where.drive{background:color-mix(in srgb,var(--blue) 12%,transparent)}
+.acc-where.drive .icn{color:var(--blue)}
