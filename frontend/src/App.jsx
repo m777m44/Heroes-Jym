@@ -39,6 +39,7 @@ import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
+import { installBackButton } from './lib/backButton.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -57,6 +58,7 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
+  useEffect(() => installBackButton(), [])
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
   useEffect(() => { setLang(S.lang || 'en') }, [S.lang])

@@ -15,9 +15,14 @@ const plug = {
   getToken: vi.fn(async () => ({ token: 'tok-1' })),
 }
 vi.mock('./mobile.js', () => ({ MOBILE: true }))
+// Like Capacitor's real plugin proxy: EVERY property is a native call — `then` too, which
+// never calls back. Awaiting the proxy itself therefore hangs (the 2.6.0 sign-in bug).
+const capacitorProxy = impl => new Proxy({}, {
+  get: (_, prop) => (prop in impl ? impl[prop] : () => new Promise(() => {})),
+})
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => 'android', isPluginAvailable: () => true },
-  registerPlugin: () => plug,
+  registerPlugin: () => capacitorProxy(plug),
 }))
 
 let file = null        // { id, ts, body }
@@ -75,6 +80,16 @@ describe('cloud — where your data is kept', () => {
     plug.signIn.mockRejectedValueOnce({ code: '12501', message: 'cancelled' })
     await expect(cloud.signInGoogle()).rejects.toMatchObject({ reason: 'cancelled' })
     expect(cloud.storageChosen()).toBe(false)
+  })
+})
+
+describe('cloud — the plugin proxy is never awaited (2.6.0 hang)', () => {
+  it('answers availability and opens the chooser even though proxy.then never resolves', async () => {
+    const quick = p => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('hung')), 1000))])
+    expect(await quick(cloud.googleAvailable())).toBe(true)
+    plug.signIn.mockClear()
+    await quick(cloud.signInGoogle())
+    expect(plug.signIn).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -3,6 +3,44 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.7.0 — 2026-10-13
+
+**One elegant notification for everything, Back pressed twice to leave, and Google sign-in
+that no longer hangs.**
+*إشعار واحد أنيق لكل شيء، الخروج بضغطتين على زر الرجوع، وتسجيل دخول Google لم يعد يتجمّد.*
+
+### 🔔 One notification instead of two
+- The step counter and the water panel are now **one bar**, divided into clear sections:
+  - **Header:** today's date, status (Live / Walking / Paused), a clock and a **⏸ / ▶** button.
+  - **Two cards side by side:** green **Steps** (count / goal, %, bar, "2,350 steps to go")
+    and blue **Water** (ml / goal, %, bar, "750 ml to go"). Both turn into a ✓ at the goal.
+  - **Stats:** km · kcal · km/h · walking time.
+  - **Containers:** glass / كلاص · cup / كوب · can / علبة · bottle / قنينة. One tap adds a drink.
+    Undo and Edit sit beside them.
+  - **Footer:** the motto and the countdown to midnight.
+- **Collapsed**, it shows steps and water side by side, plus a "+" for your usual container.
+- Everything works with the app closed, and the bar updates the moment you drink or walk.
+- **Water reminders still pop up** for a moment so you notice them. They go away by themselves
+  when you drink, tap *In 15 min*, or after 15 minutes.
+- With the step counter off, the water keeps its own panel as before. With water in the
+  notifications off, the steps card fills the bar.
+- The water screen's preview shows the new bar.
+
+### ↩️ Back button: press twice to exit
+- Back closes an open sheet first, then goes back a screen (or Home from a tab).
+- On Home, the first press shows **"Press back again to exit"**. Only a second press within
+  2 seconds leaves the app, and the step counter keeps counting in the background.
+
+### 🔐 Google sign-in no longer hangs
+- **Fixed:** sign-in could stay frozen on *"Connecting your account… choose an account in
+  the window that appears"*, and no account list ever opened. The cause was a JavaScript
+  promise that never settled, so the native chooser was never asked to open. It now opens
+  straight away.
+- Every step has a time limit, a hint appears if it's slow, and **Cancel** is always there,
+  both on the first-launch screen and in Settings → Google account.
+- If the chooser opens and then shows **error 10**, the one-time Google Cloud setup isn't done
+  yet (see [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
+
 ## v2.6.0 — 2026-10-13
 
 **Water right in the notifications, a water goal that adapts to your day, workout reminders

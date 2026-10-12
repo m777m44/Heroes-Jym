@@ -1180,4 +1180,10 @@ export default {
   'Training': 'Training',
   '{0} min today': '{0} Min. heute',
   'Today’s goal': 'Heutiges Ziel',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'Das dauert länger als sonst. Prüfe das Internet oder brich ab und versuche es erneut.',
+  'Press back again to exit': 'Zum Beenden erneut Zurück drücken',
+  'Steps': 'Schritte',
+  '{0} steps to go': 'noch {0} Schritte',
+  'In one bar with the step counter — tidy and always at hand': 'In einer Leiste mit dem Schrittzähler – aufgeräumt und immer zur Hand',
 }

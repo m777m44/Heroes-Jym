@@ -34,6 +34,11 @@ import io.github.m777m44.mahdijym.R;
  *  UNDO             takes the last drink of today back
  *  SNOOZE           asks again in 15 minutes
  *
+ * 2.7.0 — one bar: while the step counter runs, the panel is part of the step notification
+ * (StepNotifier.fillLive) and is not posted on its own. A reminder still has to be heard, so
+ * it pops up separately for a moment — and goes away by itself when you drink, tap
+ * "In 15 min", or after 15 minutes.
+ *
  * Reminders only fire inside the active hours and are skipped once the goal is reached.
  * Re-armed after a reboot (BootReceiver) and whenever the settings change (configureWater).
  */
@@ -57,6 +62,27 @@ public class WaterReminder extends BroadcastReceiver {
 
     /** What the panel last showed — it is only re-posted when this changes. */
     private static volatile String panelSig = null;
+    /** While a reminder is up next to the step notification (merged mode), until when. */
+    private static volatile long alertUntil = 0;
+    private static final long MERGED_ALERT_MS = 15 * 60_000L;
+
+    /** The step notification is up and carries the water too (one bar instead of two). */
+    static boolean merged() {
+        StepCounterService svc = StepCounterService.instance;
+        return svc != null && svc.live();
+    }
+
+    private static boolean alertUp() { return System.currentTimeMillis() < alertUntil; }
+
+    /** The step service went live: the water now shows in its notification — drop the panel. */
+    static void mergeIntoLive(Context c) {
+        if (!alertUp()) cancel(c, NOTIF_ID);
+    }
+
+    static int shapeOf(String key) {
+        for (int i = 0; i < 4; i++) if (KEYS[i].equals(key)) return SHAPE[i];
+        return SHAPE[1];
+    }
 
     @Override public void onReceive(Context ctx, Intent intent) {
         String a = intent == null ? null : intent.getAction();
@@ -120,7 +146,8 @@ public class WaterReminder extends BroadcastReceiver {
         StepCounterService svc = StepCounterService.instance;
         if (svc != null) svc.refreshNotification();
         try { StepWidget.updateAll(c); } catch (RuntimeException ignored) { }
-        if (w.panelOn()) refreshPanel(c, true);
+        if (merged()) { alertUntil = 0; cancel(c, NOTIF_ID); }   // drank → the reminder has done its job
+        else if (w.panelOn()) refreshPanel(c, true);
         else cancel(c, NOTIF_ID);
     }
 
@@ -129,7 +156,8 @@ public class WaterReminder extends BroadcastReceiver {
         w.snoozedAt = System.currentTimeMillis();
         w.save();
         arm(c, System.currentTimeMillis() + 15 * 60_000L);
-        if (w.panelOn()) refreshPanel(c, true);
+        if (merged()) { alertUntil = 0; cancel(c, NOTIF_ID); }
+        else if (w.panelOn()) refreshPanel(c, true);
         else cancel(c, NOTIF_ID);
     }
 
@@ -152,6 +180,8 @@ public class WaterReminder extends BroadcastReceiver {
 
     /** The "+ water" button on the live step notification. */
     static PendingIntent liveDrink(Context c) { return action(c, ACTION_DRINK, REQ_LIVE_DRINK); }
+    static PendingIntent undoIntent(Context c) { return action(c, ACTION_UNDO, REQ_UNDO); }
+    static PendingIntent editIntent(Context c) { return Celebration.openApp(c, REQ_EDIT, "/water"); }
 
     /** Arm the next reminder (or clear it when reminders are off). */
     static void schedule(Context c) {
@@ -235,6 +265,10 @@ public class WaterReminder extends BroadcastReceiver {
     static void refreshPanel(Context c, boolean force) {
         WaterStore w = WaterStore.get(c);
         if (!w.panelOn()) return;
+        if (merged()) {                       // the step notification shows the water
+            if (!alertUp() && panelSig != null) cancel(c, NOTIF_ID);
+            return;
+        }
         String sig = signature(w);
         if (!force && sig.equals(panelSig)) return;
         show(c, false, false);
@@ -266,6 +300,12 @@ public class WaterReminder extends BroadcastReceiver {
      * "In 15 min"); otherwise the quiet panel.
      */
     static void show(Context c, boolean alert, boolean test) {
+        boolean inLive = merged();
+        if (!alert && inLive) {               // one bar: refresh the step notification instead
+            StepCounterService svc = StepCounterService.instance;
+            if (svc != null) svc.refreshNotification();
+            return;
+        }
         WaterStore w = WaterStore.get(c);
         StepStore s = StepStore.get(c);
         s.rollIfNeeded();
@@ -276,7 +316,7 @@ public class WaterReminder extends BroadcastReceiver {
         int ml = w.todayMl(), goal = w.goal();
         int pct = (int) Math.min(999, (long) ml * 100 / Math.max(1, goal));
         NumberFormat nf = w.numbers();
-        boolean panel = w.panelOn();
+        boolean panel = w.panelOn() && !inLive;   // a standalone panel stays after the reminder
         String move = alert ? moveLine(w, s, now) : null;
         String amountTxt = amount(w, nf, ml, goal);
         String sub = subLine(w, nf, ml, goal);
@@ -316,7 +356,8 @@ public class WaterReminder extends BroadcastReceiver {
                 .setOngoing(false)
                 .addAction(0, w.str("drink", "Drank it"), action(c, ACTION_DRINK, REQ_DRINK))
                 .addAction(0, w.str("snooze", "In 15 min"), action(c, ACTION_SNOOZE, REQ_SNOOZE));
-            if (!panel) b.setTimeoutAfter(Math.max(15, w.every() - 5) * 60_000L);
+            if (inLive) b.setTimeoutAfter(MERGED_ALERT_MS);
+            else if (!panel) b.setTimeoutAfter(Math.max(15, w.every() - 5) * 60_000L);
             if (!sound) b.setSilent(true);
         } else {
             b.setCategory(NotificationCompat.CATEGORY_STATUS)
@@ -329,6 +370,7 @@ public class WaterReminder extends BroadcastReceiver {
         try {
             nm.notify(NOTIF_ID, b.build());
             panelSig = signature(w);
+            if (alert && inLive) alertUntil = now + MERGED_ALERT_MS;
         } catch (RuntimeException ignored) { /* notifications off, or a layout the system refused */ }
     }
 
@@ -346,15 +388,7 @@ public class WaterReminder extends BroadcastReceiver {
         } else {
             v.setViewVisibility(R.id.w_move, View.GONE);
         }
-        String unit = w.unitKey();
-        for (int i = 0; i < 4; i++) {
-            int cml = w.containerMl(i);
-            v.setImageViewResource(CHIP_ICON[i], SHAPE[i]);
-            v.setTextViewText(CHIP_NAME[i], w.containerName(i));
-            v.setTextViewText(CHIP_ML[i], "+" + nf.format(cml));
-            v.setInt(CHIP[i], "setBackgroundResource", KEYS[i].equals(unit) ? R.drawable.notif_chip_sel : R.drawable.notif_chip);
-            v.setOnClickPendingIntent(CHIP[i], addIntent(c, cml, REQ_ADD0 + i));
-        }
+        fillChips(c, w, v, nf);
         v.setTextViewText(R.id.w_undo_t, w.str("undo", "Undo"));
         v.setOnClickPendingIntent(R.id.w_undo, action(c, ACTION_UNDO, REQ_UNDO));
         // Only setters RemoteViews is known to allow: a dimmed label when there is nothing to undo.
@@ -367,6 +401,19 @@ public class WaterReminder extends BroadcastReceiver {
             v.setOnClickPendingIntent(R.id.w_snooze, action(c, ACTION_SNOOZE, REQ_SNOOZE));
         } else {
             v.setViewVisibility(R.id.w_snooze, View.GONE);
+        }
+    }
+
+    /** The four containers (shape, name, +ml; your usual one outlined), each adding itself. */
+    static void fillChips(Context c, WaterStore w, RemoteViews v, NumberFormat nf) {
+        String unit = w.unitKey();
+        for (int i = 0; i < 4; i++) {
+            int cml = w.containerMl(i);
+            v.setImageViewResource(CHIP_ICON[i], SHAPE[i]);
+            v.setTextViewText(CHIP_NAME[i], w.containerName(i));
+            v.setTextViewText(CHIP_ML[i], "+" + nf.format(cml));
+            v.setInt(CHIP[i], "setBackgroundResource", KEYS[i].equals(unit) ? R.drawable.notif_chip_sel : R.drawable.notif_chip);
+            v.setOnClickPendingIntent(CHIP[i], addIntent(c, cml, REQ_ADD0 + i));
         }
     }
 

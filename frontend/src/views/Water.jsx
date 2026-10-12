@@ -11,6 +11,7 @@ import {
   ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE,
 } from '../lib/water.js'
 import { bodyKg, testWaterReminder } from '../lib/waterSync.js'
+import { goalOf, stepsOn } from '../lib/stepMetrics.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Button } from '../components/ui.jsx'
 import { ContainerIcon, Vessel, drink, undoLast, useWaterUndo, fmtMl } from '../components/water/WaterParts.jsx'
@@ -112,10 +113,10 @@ export default function Water() {
 
     {MOBILE && <Section title={t('Water in the notifications')}
       footer={t('Tap a glass, cup, can or bottle in the notification to add it, Undo to take the last one back, Edit to open this screen — all with the app closed.')}>
-      <Row icon="bell" iconTint="var(--blue)" title={t('Water panel in the notifications')} subtitle={t('Today’s water, the goal and the containers')}>
+      <Row icon="bell" iconTint="var(--blue)" title={t('Water panel in the notifications')} subtitle={t('In one bar with the step counter — tidy and always at hand')}>
         <Switch checked={waterPanelOn(S)} onChange={v => update(s => { s.waterPanel = v })} />
       </Row>
-      <NotifPreview S={S} ml={ml} goal={goal} unit={unit} parts={parts} />
+      <NotifPreview S={S} ml={ml} goal={goal} unit={unit} />
     </Section>}
 
     <Section title={t('Reminders')}
@@ -197,16 +198,33 @@ function GoalBreakdown({ parts, kg, unit }) {
 
 // What the notification looks like — the same panel as WaterReminder.java draws, so the
 // buttons are recognisable when they show up in the shade.
-function NotifPreview({ ml, goal, unit, parts }) {
-  const pct = Math.min(999, Math.round(ml / Math.max(1, goal) * 100))
+// A faithful little copy of THE notification (2.7.0): steps and water in one bar.
+function NotifPreview({ S, ml, goal, unit }) {
+  const iso = todayISO()
+  const steps = stepsOn(S, iso)
+  const sg = goalOf(S)
+  const wp = Math.min(999, Math.round(ml / Math.max(1, goal) * 100))
+  const sp = Math.min(999, Math.round(steps / Math.max(1, sg) * 100))
+  const n = v => Number(v).toLocaleString(dateLocale())
+  const date = new Date().toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
   return <div className="wnotif" aria-hidden="true">
-    <div className="wnotif-h"><Icon name="drop" /><b>{fmtMl(ml)} / {fmtMl(goal)} {t('ml')}</b><span>{pct}%</span></div>
-    <div className="wnotif-bar"><i style={{ width: Math.min(100, pct) + '%' }} /></div>
-    <div className="wnotif-sub">{ml >= goal ? t('Goal reached — well done!') : t('{0} ml to go', fmtMl(goal - ml))}
-      {parts.auto ? ' · ' + t('Auto goal: {0} + {1} walking + {2} training', fmtMl(parts.base), fmtMl(parts.stepMl), fmtMl(parts.workoutMl)) : ''}</div>
-    <div className="wnotif-chips">
-      {CONTAINERS.map(c => <span key={c.key} className={c.key === unit.key ? 'sel' : ''}><ContainerIcon kind={c.key} /><b>{t(CONTAINER_NAME[c.key])}</b><small>+{fmtMl(c.ml)}</small></span>)}
+    <div className="wnotif-top"><b>{date}</b><span className="wnotif-live">{t('Live')}</span><span className="wnotif-pause"><Icon name="pause" /></span></div>
+    <div className="wnotif-cards">
+      <div className="wnotif-card steps">
+        <div className="wnotif-ct"><Icon name="figureWalk" /><span>{t('Steps')}</span><b>{sp}%</b></div>
+        <div className="wnotif-big"><b>{n(steps)}</b><small>/ {n(sg)}</small></div>
+        <div className="wnotif-bar"><i style={{ width: Math.min(100, sp) + '%' }} /></div>
+      </div>
+      <div className="wnotif-card water">
+        <div className="wnotif-ct"><Icon name="drop" /><span>{t('Water')}</span><b>{wp}%</b></div>
+        <div className="wnotif-big"><b>{fmtMl(ml)}</b><small>/ {fmtMl(goal)} {t('ml')}</small></div>
+        <div className="wnotif-bar"><i style={{ width: Math.min(100, wp) + '%' }} /></div>
+      </div>
     </div>
-    <div className="wnotif-acts"><span><Icon name="reset" /> {t('Undo')}</span><span><Icon name="pencil" /> {t('Edit')}</span></div>
+    <div className="wnotif-chips">
+      {CONTAINERS.map(c => <span key={c.key} className={c.key === unit.key ? 'sel' : ''}><ContainerIcon kind={c.key} /><span><b>{t(CONTAINER_NAME[c.key])}</b><small>+{fmtMl(c.ml)}</small></span></span>)}
+      <span className="sq"><Icon name="reset" /></span>
+      <span className="sq"><Icon name="pencil" /></span>
+    </div>
   </div>
 }

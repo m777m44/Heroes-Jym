@@ -62,6 +62,10 @@ export function serviceStrings(S) {
     channelAlertDesc: t('Every 1,000 steps and your daily goal, with a sound.'),
     channelAlertQuiet: t('Walking milestones (silent)'),
     todayTitle: t('Steps today'),
+    // 2.7.0 — steps and water in one notification
+    stepsLabel: t('Steps'),
+    stepsLeft: t('{0} steps to go', '{left}'),
+    stepsDone: t('Goal reached!'),
     live: t('Live'),
     walking: t('Walking'),
     paused: t('Paused'),

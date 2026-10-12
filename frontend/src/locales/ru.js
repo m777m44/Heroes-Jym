@@ -1162,4 +1162,10 @@ export default {
   'Training': 'Тренировка',
   '{0} min today': '{0} мин сегодня',
   'Today’s goal': 'Цель на сегодня',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'Это занимает больше времени, чем обычно. Проверьте интернет или отмените и попробуйте снова.',
+  'Press back again to exit': 'Нажмите «Назад» ещё раз, чтобы выйти',
+  'Steps': 'Шаги',
+  '{0} steps to go': 'осталось {0} шагов',
+  'In one bar with the step counter — tidy and always at hand': 'В одной панели со счётчиком шагов — аккуратно и всегда под рукой',
 }

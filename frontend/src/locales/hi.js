@@ -1162,4 +1162,10 @@ export default {
   'Training': 'ट्रेनिंग',
   '{0} min today': 'आज {0} मिनट',
   'Today’s goal': 'आज का लक्ष्य',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'इसमें सामान्य से ज़्यादा समय लग रहा है। इंटरनेट जाँचें, या रद्द करके फिर कोशिश करें।',
+  'Press back again to exit': 'बाहर निकलने के लिए फिर से वापस दबाएँ',
+  'Steps': 'कदम',
+  '{0} steps to go': '{0} कदम बाकी',
+  'In one bar with the step counter — tidy and always at hand': 'कदम काउंटर के साथ एक ही पट्टी में — साफ़-सुथरा और हमेशा पास',
 }

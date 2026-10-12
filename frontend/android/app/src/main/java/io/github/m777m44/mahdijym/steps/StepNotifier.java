@@ -137,6 +137,14 @@ final class StepNotifier {
             .build();
     }
 
+    /**
+     * 2.7.0 — the ONE notification: steps and water together (the separate water panel only
+     * shows while the step counter is off). Collapsed: steps | water side by side and "+" your
+     * usual container. Expanded: date · status · clock · pause, the steps and water cards,
+     * km · kcal · km/h · walking time, the four containers with Undo and Edit, the motto and
+     * the countdown to midnight. Water is left out when the tracker or "Water in the
+     * notifications" is off — the steps card then spans the width.
+     */
     static Notification build(Context c, StepStore s, double speed, boolean moving) {
         int steps = s.total();
         int goal = s.goal();
@@ -145,30 +153,24 @@ final class StepNotifier {
         String stepsTxt = nf.format(steps);
         String goalTxt = "/ " + nf.format(goal);
         String zone = s.clockZone();
+        WaterStore w = WaterStore.get(c);
+        boolean water = w.panelOn();
 
-        // ---- collapsed: one line ----
-        RemoteViews small = new RemoteViews(c.getPackageName(), R.layout.notif_steps_small);
-        small.setTextViewText(R.id.n_steps, stepsTxt);
-        small.setTextViewText(R.id.n_goal, goalTxt);
-        small.setTextViewText(R.id.n_pct, pct + "%");
-        small.setProgressBar(R.id.n_progress, Math.max(1, goal), Math.min(steps, goal), false);
-        small.setString(R.id.n_clock, "setTimeZone", zone);
-
-        // ---- expanded: the mini screen ----
-        RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_steps_big);
-        fillBig(c, big, s, speed, moving, nf, steps, goal, pct, zone);
+        RemoteViews small = new RemoteViews(c.getPackageName(), R.layout.notif_live_small);
+        fillLiveSmall(c, small, s, w, water, nf, steps, goal, pct, zone);
+        RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_live_big);
+        fillLive(c, big, s, w, water, speed, moving, nf, steps, goal, pct, zone);
 
         String title = s.str("todayTitle", "Steps today") + " · " + stepsTxt + " " + goalTxt;
         String text = twoDecimals(s, s.km()) + " " + s.str("km", "km") + " · " + nf.format(s.kcal()) + " " + s.str("kcal", "kcal")
             + " · " + oneDecimal(s, speed) + " " + s.str("kmh", "km/h");
-        String water = waterLine(c);
-        if (water != null) text = text + " · " + water;
+        String wl = waterLine(c);
+        if (wl != null) text = text + " · " + wl;
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_LIVE)
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle(title)
             .setContentText(text)
-            .setSubText(pct + "%")
             .setCustomContentView(small)
             .setCustomBigContentView(big)
             .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
@@ -183,17 +185,109 @@ final class StepNotifier {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE);
-
-        if (s.paused) {
-            b.addAction(android.R.drawable.ic_media_play, s.str("resume", "Resume"), serviceAction(c, StepCounterService.ACTION_RESUME, 11));
-        } else {
-            b.addAction(android.R.drawable.ic_media_pause, s.str("pause", "Pause"), serviceAction(c, StepCounterService.ACTION_PAUSE, 12));
-        }
-        b.addAction(android.R.drawable.ic_menu_view, s.str("open", "Open"), openApp(c, 13));
-        // 2.5: "+ cup" — log a drink straight from the step notification.
-        WaterStore w = WaterStore.get(c);
-        if (w.trackerOn()) b.addAction(android.R.drawable.ic_input_add, w.str("liveAdd", "+ water"), WaterReminder.liveDrink(c));
+        // Pause / Resume, the containers, Undo and Edit live inside the layout; no action row,
+        // which would cost the expanded view ~48dp.
         return b.build();
+    }
+
+    /** Collapsed: steps | water, "+" the usual container (or the clock when water is off). */
+    static void fillLiveSmall(Context c, RemoteViews v, StepStore s, WaterStore w, boolean water,
+                              NumberFormat nf, int steps, int goal, int pct, String zone) {
+        v.setTextViewText(R.id.n_steps, nf.format(steps));
+        v.setTextColor(R.id.n_steps, steps >= goal ? 0xFFFFD60A : 0xFF30D158);
+        v.setTextViewText(R.id.n_pct, s.paused ? s.str("paused", "Paused") : "/ " + nf.format(goal) + " · " + pct + "%");
+        v.setTextColor(R.id.n_pct, s.paused ? 0xFFFF9F0A : 0xFF8E8E93);
+        v.setProgressBar(R.id.n_progress, Math.max(1, goal), Math.min(steps, goal), false);
+        v.setString(R.id.n_clock, "setTimeZone", zone);
+        if (water) {
+            int ml = w.todayMl(), wg = w.goal();
+            int wp = (int) Math.min(999, (long) ml * 100 / Math.max(1, wg));
+            v.setViewVisibility(R.id.ws_box, View.VISIBLE);
+            v.setViewVisibility(R.id.ws_add, View.VISIBLE);
+            v.setViewVisibility(R.id.n_clock, View.GONE);
+            v.setTextViewText(R.id.ws_ml, nf.format(ml));
+            v.setTextColor(R.id.ws_ml, ml >= wg ? 0xFF30D158 : 0xFF64D2FF);
+            v.setTextViewText(R.id.ws_pct, "/ " + nf.format(wg) + " · " + wp + "%");
+            v.setProgressBar(R.id.ws_bar, Math.max(1, wg), Math.min(ml, wg), false);
+            v.setImageViewResource(R.id.ws_icon, WaterReminder.shapeOf(w.unitKey()));
+            v.setOnClickPendingIntent(R.id.ws_add, WaterReminder.liveDrink(c));
+        } else {
+            v.setViewVisibility(R.id.ws_box, View.GONE);
+            v.setViewVisibility(R.id.ws_add, View.GONE);
+            v.setViewVisibility(R.id.n_clock, View.VISIBLE);
+        }
+    }
+
+    /** Expanded: the whole dashboard. */
+    static void fillLive(Context c, RemoteViews v, StepStore s, WaterStore w, boolean water, double speed, boolean moving,
+                         NumberFormat nf, int steps, int goal, int pct, String zone) {
+        // header
+        v.setString(R.id.n_date, "setTimeZone", zone);
+        v.setString(R.id.n_clock, "setTimeZone", zone);
+        String zl = s.str("zoneLabel", "");
+        v.setTextViewText(R.id.n_status, (s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live"))
+            + (zl.isEmpty() ? "" : " · " + zl));
+        v.setTextColor(R.id.n_status, s.paused ? 0xFFFF9F0A : moving ? 0xFF30D158 : 0xFF8E8E93);
+        v.setImageViewResource(R.id.n_pause_i, s.paused ? R.drawable.ic_n_play : R.drawable.ic_n_pause);
+        v.setOnClickPendingIntent(R.id.n_pause, s.paused
+            ? serviceAction(c, StepCounterService.ACTION_RESUME, 11)
+            : serviceAction(c, StepCounterService.ACTION_PAUSE, 12));
+
+        // steps card
+        v.setTextViewText(R.id.n_label, s.str("stepsLabel", "Steps"));
+        v.setTextViewText(R.id.n_pct, pct + "%");
+        v.setTextViewText(R.id.n_steps, nf.format(steps));
+        v.setTextColor(R.id.n_steps, steps >= goal ? 0xFFFFD60A : 0xFF30D158);
+        v.setTextViewText(R.id.n_goal, "/ " + nf.format(goal));
+        v.setProgressBar(R.id.n_progress, Math.max(1, goal), Math.min(steps, goal), false);
+        v.setTextViewText(R.id.n_togo, steps >= goal ? "\u2713 " + s.str("stepsDone", "Goal reached!")
+            : s.str("stepsLeft", "{left} steps to go").replace("{left}", nf.format(goal - steps)));
+        v.setTextColor(R.id.n_togo, steps >= goal ? 0xFFFFD60A : 0xFFC7C7CC);
+
+        // water card + containers
+        if (water) {
+            int ml = w.todayMl(), wg = w.goal();
+            int wp = (int) Math.min(999, (long) ml * 100 / Math.max(1, wg));
+            v.setViewVisibility(R.id.w_card, View.VISIBLE);
+            v.setViewVisibility(R.id.w_row, View.VISIBLE);
+            v.setTextViewText(R.id.w_label, w.str("label", "Water"));
+            v.setTextViewText(R.id.w_pct, wp + "%");
+            v.setTextViewText(R.id.w_ml, nf.format(ml));
+            v.setTextColor(R.id.w_ml, ml >= wg ? 0xFF30D158 : 0xFF64D2FF);
+            v.setTextViewText(R.id.w_goal, "/ " + nf.format(wg) + " " + w.str("mlUnit", "ml"));
+            v.setProgressBar(R.id.w_bar, Math.max(1, wg), Math.min(ml, wg), false);
+            v.setTextViewText(R.id.w_togo, ml >= wg ? "\u2713 " + w.str("panelDone", "Goal reached — well done!")
+                : w.fill(w.str("panelLeft", "{left} ml to go"), ml));
+            v.setTextColor(R.id.w_togo, ml >= wg ? 0xFF30D158 : 0xFFC7C7CC);
+            WaterReminder.fillChips(c, w, v, nf);
+            v.setImageViewResource(R.id.w_undo_i, w.canUndo() ? R.drawable.ic_w_undo : R.drawable.ic_w_undo_off);
+            v.setOnClickPendingIntent(R.id.w_undo, WaterReminder.undoIntent(c));
+            v.setOnClickPendingIntent(R.id.w_edit, WaterReminder.editIntent(c));
+        } else {
+            v.setViewVisibility(R.id.w_card, View.GONE);
+            v.setViewVisibility(R.id.w_row, View.GONE);
+        }
+
+        // stats
+        v.setTextViewText(R.id.n_km, twoDecimals(s, s.km()));
+        v.setTextViewText(R.id.n_kcal, nf.format(s.kcal()));
+        v.setTextViewText(R.id.n_speed, oneDecimal(s, moving ? speed : 0));
+        v.setTextViewText(R.id.l_km, s.str("km", "km"));
+        v.setTextViewText(R.id.l_kcal, s.str("kcal", "kcal"));
+        v.setTextViewText(R.id.l_speed, s.str("kmh", "km/h"));
+        v.setTextViewText(R.id.l_active, s.str("active", "active"));
+        v.setChronometer(R.id.n_active, SystemClock.elapsedRealtime() - s.activeMs, null, moving && !s.paused);
+
+        // footer
+        v.setTextViewText(R.id.n_motto, motto(s, steps, goal));
+        if (Build.VERSION.SDK_INT >= 24) {
+            v.setViewVisibility(R.id.n_left_box, View.VISIBLE);
+            v.setTextViewText(R.id.l_left, s.str("dayLeft", "Day ends in"));
+            v.setChronometer(R.id.n_left, SystemClock.elapsedRealtime() + StepStore.msToMidnight(), null, true);
+            v.setChronometerCountDown(R.id.n_left, true);
+        } else {
+            v.setViewVisibility(R.id.n_left_box, View.GONE);
+        }
     }
 
     /** "💧 1,250 / 2,000 ml" — null when the water tracker is off. */

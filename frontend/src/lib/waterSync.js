@@ -48,6 +48,7 @@ export function waterStrings(S) {
     tapClose: t('Tap anywhere to close'),
     // 2.6 — the water panel in the notifications
     panelTitle: t('Water today'),
+    label: t('Water'),
     panelLeft: t('{0} ml to go', '{left}'),
     panelDone: t('Goal reached — well done!'),
     panelAuto: t('Auto goal: {0} + {1} walking + {2} training', '{base}', '{walk}', '{train}'),

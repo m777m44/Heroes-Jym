@@ -1237,4 +1237,10 @@ export default {
   'Training': 'التمرين',
   '{0} min today': '{0} دقيقة اليوم',
   'Today’s goal': 'هدف اليوم',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'يستغرق هذا وقتًا أطول من المعتاد. تحقّق من الإنترنت، أو ألغِ وحاول مرة أخرى.',
+  'Press back again to exit': 'اضغط رجوع مرة أخرى للخروج',
+  'Steps': 'الخطوات',
+  '{0} steps to go': 'بقي {0} خطوة',
+  'In one bar with the step counter — tidy and always at hand': 'في شريط واحد مع عدّاد الخطوات — مرتّب وفي متناول يدك دائمًا',
 }

@@ -49,8 +49,12 @@ export const autoSaveOn = () => cloudMeta().auto !== false
 
 // ---- the native plugin --------------------------------------------------------------------
 
+// Capacitor plugin proxies answer EVERY property — `then` included — with a native call. So
+// a proxy must never be the value of a promise: `await` would call proxy.then(resolve, …),
+// which goes to Android as an unknown method and never resolves (2.6.0's "Connecting your
+// account…" that hung forever). It stays inside { p } and is unwrapped only synchronously.
 let pluginP = null
-async function plugin() {
+function holder() {
   if (!MOBILE) return null
   if (!pluginP) {
     pluginP = (async () => {
@@ -62,15 +66,23 @@ async function plugin() {
       } catch { return null }
     })()
   }
-  const h = await pluginP
-  return h ? h.p : null
+  return pluginP                         // resolves { p } | null — never the proxy itself
 }
 
 /** Google sign-in is offered on this device (the Android app with Google Play services). */
 export async function googleAvailable() {
-  const p = await plugin()
-  if (!p) return false
-  try { const r = await p.isAvailable(); return !!(r && r.available) } catch { return false }
+  const h = await holder()
+  if (!h) return false
+  try { const r = await withTimeout(h.p.isAvailable(), 8000); return !!(r && r.available) } catch { return false }
+}
+
+/** Rejects with { reason: 'network' } when `promise` takes longer than `ms`. */
+function withTimeout(promise, ms, reason = 'network') {
+  let tm
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => { tm = setTimeout(() => rej(Object.assign(new Error('timeout'), { reason })), ms) }),
+  ]).finally(() => clearTimeout(tm))
 }
 
 /** An error from the plugin → a short reason key (see accountError() in the UI). */
@@ -86,10 +98,10 @@ export function reasonOf(e) {
 
 /** The account chooser. Resolves with the account; throws { reason }. */
 export async function signInGoogle() {
-  const p = await plugin()
-  if (!p) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
+  const h = await holder()
+  if (!h) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
   let a
-  try { a = await p.signIn() } catch (e) { throw Object.assign(new Error(e && e.message), { reason: reasonOf(e) }) }
+  try { a = await h.p.signIn() } catch (e) { throw Object.assign(new Error(e && e.message), { reason: reasonOf(e) }) }
   if (!a || !a.signedIn) throw Object.assign(new Error('cancelled'), { reason: 'cancelled' })
   const account = { email: a.email, name: a.name || a.givenName || a.email, photo: a.photo || null }
   const prev = cloudMeta()
@@ -100,28 +112,36 @@ export async function signInGoogle() {
 }
 
 export async function signOutGoogle(revoke = false) {
-  const p = await plugin()
-  try { if (p) await (revoke ? p.disconnect() : p.signOut()) } catch { /* */ }
+  const h = await holder()
+  try { if (h) await withTimeout(revoke ? h.p.disconnect() : h.p.signOut(), 10000) } catch { /* */ }
   setMeta({ mode: 'phone', account: null, fileId: null, syncedTs: 0, remoteTs: 0, at: 0 })
 }
 
 let token = null
 async function getToken(stale) {
-  const p = await plugin()
-  if (!p) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
+  const h = await holder()
+  if (!h) throw Object.assign(new Error('unavailable'), { reason: 'unavailable' })
   try {
-    const r = await p.getToken(stale ? { stale } : {})
+    // generous: the first time, Google may show its "allow Drive access" screen
+    const r = await withTimeout(h.p.getToken(stale ? { stale } : {}), 120000)
     token = r && r.token
     if (!token) throw new Error('no token')
     return token
-  } catch (e) { throw Object.assign(new Error(e && e.message), { reason: reasonOf(e) }) }
+  } catch (e) { throw Object.assign(new Error(e && e.message), { reason: (e && e.reason) || reasonOf(e) }) }
 }
 
 // ---- Google Drive (app-data folder) -------------------------------------------------------
 
 async function drive(url, opts = {}, retried = false) {
   const tok = token || await getToken()
-  const res = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + tok } })
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const tm = ctl && setTimeout(() => ctl.abort(), 30000)
+  let res
+  try {
+    res = await fetch(url, { ...opts, signal: ctl ? ctl.signal : undefined, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + tok } })
+  } catch (e) {
+    throw Object.assign(new Error((e && e.message) || 'network'), { reason: 'network' })
+  } finally { clearTimeout(tm) }
   if (res.status === 401 && !retried) { await getToken(tok); return drive(url, opts, true) }
   if (!res.ok) throw Object.assign(new Error('Drive ' + res.status), { reason: res.status >= 500 ? 'network' : 'failed', status: res.status })
   return res

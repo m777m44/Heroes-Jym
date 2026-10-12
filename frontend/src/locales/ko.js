@@ -1162,4 +1162,10 @@ export default {
   'Training': '운동',
   '{0} min today': '오늘 {0}분',
   'Today’s goal': '오늘의 목표',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': '평소보다 오래 걸리고 있습니다. 인터넷을 확인하거나 취소 후 다시 시도하세요.',
+  'Press back again to exit': '한 번 더 누르면 종료됩니다',
+  'Steps': '걸음',
+  '{0} steps to go': '{0}걸음 남음',
+  'In one bar with the step counter — tidy and always at hand': '걸음 수와 함께 하나의 알림에 — 깔끔하고 언제나 가까이',
 }

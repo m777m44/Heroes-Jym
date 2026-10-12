@@ -166,6 +166,35 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 - **Sign in with Google**: see [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md). The first launch asks
   Google / this phone / skip, then shows the permissions dialog.
 
+## One notification, Back twice to exit & a sign-in fix (2.7, Android)
+
+- **One bar instead of two.** While the step counter runs, its notification (id 7001,
+  `notif_live_small` / `notif_live_big`, `DecoratedCustomViewStyle`, no action row) carries the water too:
+  - *Collapsed*: steps | water side by side, each with its own bar, plus a **"+"** for your usual container.
+  - *Expanded*: date · status · clock · ⏸ / ▶; a green **Steps** card and a blue **Water** card
+    (amount / goal, %, bar, "… to go"); km · kcal · km/h · walking time; the four containers
+    with **Undo** and **Edit**; the motto and the countdown to midnight.
+  - With the water tracker or *Water in the notifications* off, the steps card fills the width.
+  - The separate water panel (id 7101) is now only posted while the step counter is off.
+    `WaterReminder.merged()` decides this, and switching between the two needs no restart.
+  - A **water reminder** still pops up on its own so it can be heard (channel *Water
+    reminders*). It disappears when you drink (from any button), tap *In 15 min*, or after 15 minutes.
+- **Back button**: `MainActivity` registers an `OnBackPressedCallback` and asks
+  `window.mjBack()` (`lib/backButton.js`) what to do:
+  - close the open sheet;
+  - from Plan / Stats / Exercises, go Home;
+  - from a deeper screen, go back one screen;
+  - on Home, the first press shows *Press back again to exit* and a second press within
+    2 s leaves the app. The step counter keeps running.
+  - If the page doesn't answer, the same rule runs natively with an Android toast.
+- **Google sign-in no longer hangs** on "Connecting your account…". Capacitor plugin
+  objects are *thenables* (`then` is forwarded to native and never answers), so returning
+  one from an `async` function waited forever. `cloud.js` now keeps the plugin in a `{ p }`
+  holder (like `stepService.js`), gives every call a time limit, and the screens have a
+  **Cancel** button. Natively, the chooser opens after at most 1.5 s even if the
+  sign-out of a cached account stalls, and backing out of it counts as a cancel.
+  Error **10** still means the Google Cloud setup in [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md) isn't finished.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

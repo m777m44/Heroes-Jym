@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -45,16 +45,20 @@ export default function AccountSection() {
   const signed = signedInGoogle()
   const account = meta.account || {}
 
+  const rid = useRef(0)                       // bumps on Cancel: a late answer is ignored
   const run = async (fn, okMsg) => {
+    const my = ++rid.current
     setBusy(true)
     try {
       const r = await fn()
+      if (my !== rid.current) return
       const msg = typeof okMsg === 'function' ? okMsg(r) : okMsg
       if (msg) toast(msg)
     }
-    catch (e) { if (!e || e.reason !== 'cancelled') toast(accountError(e && e.reason)) }
-    setBusy(false)
+    catch (e) { if (my === rid.current && (!e || e.reason !== 'cancelled')) toast(accountError(e && e.reason)) }
+    if (my === rid.current) setBusy(false)
   }
+  const cancel = () => { rid.current++; setBusy(false) }
   const resultMsg = r => r === 'restored' ? t('Your data was restored from the account.') : r === 'uploaded' ? t('Saved to your Google account') : t('Everything is up to date')
 
   const signIn = () => run(async () => {
@@ -93,8 +97,10 @@ export default function AccountSection() {
       <div style={{ padding: '4px 14px 14px' }}>
         <button className="acc-google" onClick={busy ? undefined : signIn} disabled={g === false || busy}>
           <span className="acc-g"><GoogleG /></span>
-          <span className="acc-gt"><b>{t('Sign in with Google')}</b><small>{g === false ? t('Google Play services aren’t available on this phone.') : t('Choose one of the accounts on this phone')}</small></span>
+          <span className="acc-gt"><b>{t('Sign in with Google')}</b><small>{g === false ? t('Google Play services aren’t available on this phone.') : busy ? t('Connecting your account…') : t('Choose one of the accounts on this phone')}</small></span>
+          {busy && <span className="acc-spin" aria-hidden="true" />}
         </button>
+        {busy && <button className="pg-later" onClick={cancel}>{t('Cancel')}</button>}
       </div>
     </Section>
   )

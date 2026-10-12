@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { t, useLang } from '../lib/i18n.js'
 import { googleAvailable, signInGoogle, firstSync, resolveChoice, choosePhone } from '../lib/cloud.js'
@@ -36,24 +36,38 @@ export default function AccountGate({ onDone }) {
   const [account, setAccount] = useState(null)
   const [result, setResult] = useState(null)
 
+  const [slow, setSlow] = useState(false)       // still busy after a while → say so
+  const run = useRef(0)                          // bumps on Cancel: a late answer is ignored
+
   useEffect(() => { googleAvailable().then(setG).catch(() => setG(false)) }, [])
+  useEffect(() => {
+    if (phase !== 'busy') { setSlow(false); return }
+    const tm = setTimeout(() => setSlow(true), 15000)
+    return () => clearTimeout(tm)
+  }, [phase])
 
   const google = async () => {
+    const my = ++run.current
     setErr(null)
+    setAccount(null)
     setPhase('busy')
     try {
       const a = await signInGoogle()
+      if (my !== run.current) return
       setAccount(a)
       const r = await firstSync(useStore).catch(e => { if (e && e.reason === 'setup') throw e; return 'later' })
+      if (my !== run.current) return
       if (r === 'choose') { setPhase('choose'); return }
       setResult(r)
       setPhase('done')
     } catch (e) {
+      if (my !== run.current) return
       setPhase('ask')
       if (e && e.reason === 'cancelled') return
       setErr(accountError(e && e.reason))
     }
   }
+  const cancel = () => { run.current++; setPhase('ask') }
   const pick = async which => {
     setPhase('busy')
     try { setResult(await resolveChoice(useStore, which)) } catch { setResult('later') }
@@ -87,6 +101,8 @@ export default function AccountGate({ onDone }) {
         <div className="acc-hero" aria-hidden="true"><span className="acc-orb spin"><GoogleG size={28} /></span></div>
         <h2 id="ag-title">{t('Connecting your account…')}</h2>
         <p className="pg-lead">{account ? account.email : t('Choose an account in the window that appears.')}</p>
+        {slow && <p className="pg-lead acc-slow">{t('This is taking longer than usual. Check the internet, or cancel and try again.')}</p>}
+        <button className="pg-later" onClick={cancel}>{t('Cancel')}</button>
       </>}
       {phase === 'choose' && <>
         <div className="acc-hero" aria-hidden="true"><span className="acc-orb"><Icon name="shuffle" /></span></div>

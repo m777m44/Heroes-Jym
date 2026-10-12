@@ -1162,4 +1162,10 @@ export default {
   'Training': '训练',
   '{0} min today': '今日 {0} 分钟',
   'Today’s goal': '今日目标',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': '这比平时花的时间更长。请检查网络，或取消后重试。',
+  'Press back again to exit': '再按一次返回键退出',
+  'Steps': '步数',
+  '{0} steps to go': '还差 {0} 步',
+  'In one bar with the step counter — tidy and always at hand': '与计步器合在同一条通知中——整洁且随手可用',
 }

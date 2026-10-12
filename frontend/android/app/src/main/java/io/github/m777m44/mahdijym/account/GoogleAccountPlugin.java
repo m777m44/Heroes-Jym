@@ -4,6 +4,8 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.activity.result.ActivityResult;
 
@@ -26,6 +28,7 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Scope;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -100,11 +103,18 @@ public class GoogleAccountPlugin extends Plugin {
         final GoogleSignInClient c;
         try { c = client(); }
         catch (RuntimeException e) { call.reject("Google Play services unavailable", "UNAVAILABLE"); return; }
-        // Sign out of a cached account first, so the chooser always shows every account.
-        c.signOut().addOnCompleteListener(t -> {
+        // Sign out of a cached account first, so the chooser always shows every account —
+        // but never wait on it for long: the chooser opens after 1.5 s whatever happens.
+        final AtomicBoolean opened = new AtomicBoolean(false);
+        final Runnable open = () -> {
+            if (!opened.compareAndSet(false, true)) return;
             try { startActivityForResult(call, c.getSignInIntent(), "onSignIn"); }
             catch (RuntimeException e) { call.reject("Could not open the account chooser", "UNAVAILABLE"); }
-        });
+        };
+        final Handler main = new Handler(Looper.getMainLooper());
+        main.postDelayed(open, 1500);
+        try { c.signOut().addOnCompleteListener(t -> main.post(open)); }
+        catch (RuntimeException e) { main.post(open); }
     }
 
     @ActivityCallback
@@ -112,6 +122,8 @@ public class GoogleAccountPlugin extends Plugin {
         if (call == null) return;
         try {
             Intent data = result.getData();
+            // Back pressed in the chooser without an answer from Google: a plain cancel.
+            if (data == null && result.getResultCode() != Activity.RESULT_OK) { call.reject("Sign-in cancelled", "12501"); return; }
             GoogleSignInAccount a = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
             call.resolve(accountJson(a));
         } catch (ApiException e) {

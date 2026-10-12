@@ -187,6 +187,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         }
         main.removeCallbacks(tick);
         main.postDelayed(tick, 30_000);
+        // 2.7.0 — one bar: the water joins the step notification, so its own panel goes.
+        try { WaterReminder.mergeIntoLive(this); } catch (RuntimeException ignored) { }
         publish(true);
         Watchdog.schedule(this);            // restarts the counter if anything ever kills it
         return START_STICKY;
@@ -274,6 +276,9 @@ public class StepCounterService extends Service implements SensorEventListener {
             if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
             else stopForeground(true);
         } catch (RuntimeException ignored) { }
+        // Counting switched off: the water goes back to its own panel (store.running is false
+        // now, so it is no longer merged).
+        try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { }
         stopSelf();
     }
 
@@ -285,6 +290,9 @@ public class StepCounterService extends Service implements SensorEventListener {
             publish(true);
         });
     }
+
+    /** Counting (or paused) with the live notification up — it then carries the water too. */
+    boolean live() { return !bailed && store != null && store.running; }
 
     /** Redraw the live notification now (water added from a notification button). */
     void refreshNotification() { main.post(() -> publish(true)); }
@@ -465,6 +473,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         // Destroyed while counting is still on (killed by the system or a cleaner, not
         // switched off): come back in a few seconds.
         if (!bailed && store != null && store.running && canCount(this)) Watchdog.kick(this, 5_000);
+        // Not coming back: the water returns to its own panel (no longer merged — instance is gone).
+        else { try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { } }
         super.onDestroy();
     }
 

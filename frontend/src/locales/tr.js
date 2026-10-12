@@ -1162,4 +1162,10 @@ export default {
   'Training': 'Antrenman',
   '{0} min today': 'Bugün {0} dk',
   'Today’s goal': 'Bugünkü hedef',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'Bu her zamankinden uzun sürüyor. İnterneti kontrol et ya da iptal edip tekrar dene.',
+  'Press back again to exit': 'Çıkmak için tekrar geri tuşuna bas',
+  'Steps': 'Adım',
+  '{0} steps to go': '{0} adım kaldı',
+  'In one bar with the step counter — tidy and always at hand': 'Adım sayacıyla tek çubukta — düzenli ve her zaman elinin altında',
 }

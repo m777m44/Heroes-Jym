@@ -1162,4 +1162,10 @@ export default {
   'Training': 'Entraînement',
   '{0} min today': '{0} min aujourd’hui',
   'Today’s goal': 'Objectif du jour',
+  // 2.7.0 — back button, one notification, sign-in
+  'This is taking longer than usual. Check the internet, or cancel and try again.': 'Cela prend plus de temps que d’habitude. Vérifiez Internet, ou annulez et réessayez.',
+  'Press back again to exit': 'Appuyez encore sur Retour pour quitter',
+  'Steps': 'Pas',
+  '{0} steps to go': 'encore {0} pas',
+  'In one bar with the step counter — tidy and always at hand': 'Dans une seule barre avec le podomètre — net et toujours à portée de main',
 }

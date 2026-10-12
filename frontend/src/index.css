@@ -1327,23 +1327,36 @@ h3 .exn{align-items:inherit}
 .wgoal-t b{font-size:14.5px;font-weight:600}
 .wgoal-t span{font-size:12px;color:var(--label-2)}
 .wgoal-v{font-variant-numeric:tabular-nums;font-size:14.5px;white-space:nowrap}
-.wnotif{margin:4px 12px 14px;padding:11px 12px;border-radius:18px;color:#f2f2f7;
-  background:linear-gradient(315deg,#0b2238,#0a0f1a);border:1px solid #64d2ff40;font-size:13px}
-.wnotif-h{display:flex;align-items:center;gap:7px}
-.wnotif-h .icn{color:#64d2ff}
-.wnotif-h b{flex:1;font-size:16px;font-variant-numeric:tabular-nums}
-.wnotif-h span{color:#64d2ff;font-weight:700}
-.wnotif-bar{height:7px;border-radius:4px;background:#2c2c2e;margin:7px 0 6px;overflow:hidden}
-.wnotif-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#0a84ff,#64d2ff);transition:width .6s ease}
-.wnotif-sub{font-size:11.5px;color:#9fb7d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wnotif-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
-.wnotif-chips span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px 5px;border-radius:12px;background:#ffffff1f}
-.wnotif-chips span.sel{background:#0a84ff33;box-shadow:inset 0 0 0 1.5px #64d2ff}
-.wnotif-chips .cicon{width:24px;height:24px;color:#64d2ff}
-.wnotif-chips b{font-size:11px}
-.wnotif-chips small{font-size:10px;color:#64d2ff}
-.wnotif-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.wnotif{margin:4px 12px 14px;padding:10px 11px 11px;border-radius:18px;color:#f2f2f7;font-size:13px;
+  background:linear-gradient(315deg,#0b1824,#0e1517 50%,#0b0e12);border:1px solid #ffffff29}
+.wnotif-top{display:flex;align-items:center;gap:8px;font-size:12px}
+.wnotif-top b{flex:1;color:#c7c7cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wnotif-live{color:#8e8e93;font-weight:700;font-size:11px}
+.wnotif-pause{display:flex;align-items:center;justify-content:center;width:26px;height:22px;border-radius:9px;background:#ffffff24;font-size:12px}
+.wnotif-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+.wnotif-card{padding:7px 10px 8px;border-radius:14px;min-width:0}
+.wnotif-card.steps{--c:#30d158;--c2:#a4f06b;background:linear-gradient(#30d15826,#30d1580f);border:1px solid #30d15840}
+.wnotif-card.water{--c:#64d2ff;--c2:#9fd8ff;background:linear-gradient(#0a84ff2e,#0a84ff12);border:1px solid #64d2ff4d}
+.wnotif-ct{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--c2)}
+.wnotif-ct .icn{color:var(--c);font-size:13px}
+.wnotif-ct span{flex:1}
+.wnotif-ct b{color:#f2f2f7;font-size:11px}
+.wnotif-big{display:flex;align-items:baseline;gap:4px;margin-top:2px;min-width:0}
+.wnotif-big b{font-size:21px;color:var(--c);font-variant-numeric:tabular-nums}
+.wnotif-big small{font-size:10.5px;color:#8e8e93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wnotif-bar{height:6px;border-radius:4px;background:#2c2c2e;margin-top:5px;overflow:hidden}
+.wnotif-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--c),var(--c2));transition:width .6s ease}
+.wnotif-chips{display:flex;gap:5px;margin-top:7px}
+.wnotif-chips>span{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:3px;height:36px;padding:0 4px;border-radius:12px;background:#ffffff1f}
+.wnotif-chips>span.sel{background:#0a84ff33;box-shadow:inset 0 0 0 1.5px #64d2ff}
+.wnotif-chips>span.sq{flex:none;width:34px;background:#ffffff24;font-size:16px}
+.wnotif-chips .cicon{flex:none;width:20px;height:20px;color:#64d2ff}
+.wnotif-chips>span>span{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+.wnotif-chips b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wnotif-chips small{font-size:9.5px;color:#64d2ff}
 .wnotif-acts span{display:flex;align-items:center;justify-content:center;gap:5px;height:32px;border-radius:12px;background:#ffffff1f;font-weight:600;font-size:12px}
 .water-auto{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .water-auto span{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;
   color:var(--tint);background:color-mix(in srgb,var(--tint) 15%,transparent);font-variant-numeric:tabular-nums;animation:accIn .4s ease both}
+.acc-spin{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--label-4);border-top-color:var(--blue);animation:pgspin .8s linear infinite}
+.acc-slow{color:var(--orange)}
