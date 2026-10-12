@@ -11,6 +11,7 @@
 // today's live numbers; the slot and "what to do with it" rules below are mirrored there
 // (WaterMath.java, unit-tested on both sides).
 import { isoOf } from './format.js'
+import { stepsOn } from './stepMetrics.js'
 
 export const CONTAINERS = [
   { key: 'glass', ml: 200, icon: 'drop' },
@@ -36,13 +37,72 @@ export function recommendedMl(kg) {
   return Math.max(1500, Math.min(4000, Math.round(w * 33 / 250) * 250))
 }
 
-export function waterGoalMlOf(S) {
+/** The fixed goal chosen on the Water screen (what "automatic" falls back to when switched off). */
+export function fixedGoalMlOf(S) {
   const g = Number(S && S.waterGoalMl)
   if (Number.isFinite(g) && g >= 500 && g <= 6000) return Math.round(g)
   const old = Number(S && S.waterGoal)                 // 2.4: glasses
   if ([6, 8, 10, 12].includes(old)) return old * LEGACY_GLASS_ML
   return DEFAULT_GOAL_ML
 }
+
+// ---- the automatic goal (2.6) ------------------------------------------------------------
+//
+// base      ≈ 33 ml per kg of body weight (2,000 ml without a weigh-in) — a normal day
+// + walking 70 ml per 1,000 steps beyond the first 3,000 (everyday moving is in the base),
+//           at most 1,200 ml
+// + training 10 ml per minute of today's workouts (≈ 600 ml an hour), at most 1,500 ml
+// Each part steps in 50 ml, so the goal grows in calm steps while you walk. 500–6,000 ml.
+// Mirrored in WaterMath.autoGoal (Java) — the notification computes it with live steps.
+export const STEP_FREE = 3000
+export const ML_PER_1000_STEPS = 70
+export const ML_PER_WORKOUT_MIN = 10
+const step50 = v => Math.floor(v / 50) * 50
+export const stepBonusMl = steps => Math.min(1200, step50(Math.max(0, (Number(steps) || 0) - STEP_FREE) * ML_PER_1000_STEPS / 1000))
+export const workoutBonusMl = min => Math.min(1500, step50(Math.max(0, Number(min) || 0) * ML_PER_WORKOUT_MIN))
+export const autoGoalMl = (base, steps, workoutMin) =>
+  Math.max(500, Math.min(6000, Math.round(base) + stepBonusMl(steps) + workoutBonusMl(workoutMin)))
+
+export const waterAutoOn = S => !(S && S.waterAuto === false)
+/** The water panel in the notifications (Android): add / undo / edit with the app closed. */
+export const waterPanelOn = S => !(S && S.waterPanel === false) && !(S && S.waterOn === false)
+
+/** Body weight in kg from the log (null when none). */
+export function bodyKg(S) {
+  const bw = S && Array.isArray(S.bodyweight) && S.bodyweight.length ? S.bodyweight[S.bodyweight.length - 1] : null
+  if (!bw || !(bw.w > 0)) return null
+  return S.unit === 'lb' ? bw.w * 0.45359237 : bw.w
+}
+
+/** Minutes trained on `iso`: finished workouts, plus the one running now (each capped at 4 h). */
+export function workoutMinutesOn(S, iso, now = Date.now()) {
+  let ms = 0
+  for (const w of (S && S.workouts) || []) {
+    if (w && w.d === iso && Number.isFinite(w.start)) ms += Math.min(4 * 3600000, Math.max(0, (w.end || w.start) - w.start))
+  }
+  const a = S && S.active
+  if (a && a.d === iso && Number.isFinite(a.start)) ms += Math.min(4 * 3600000, Math.max(0, now - a.start))
+  return Math.round(ms / 60000)
+}
+
+/** The goal of a day and where it comes from: { auto, base, steps, stepMl, workoutMin, workoutMl, total }. */
+export function waterGoalParts(S, iso, now = Date.now()) {
+  const day = iso || isoOf(new Date(now))
+  if (!waterAutoOn(S)) {
+    const g = fixedGoalMlOf(S)
+    return { auto: false, base: g, steps: 0, stepMl: 0, workoutMin: 0, workoutMl: 0, total: g }
+  }
+  const base = recommendedMl(bodyKg(S))
+  const steps = stepsOn(S, day)
+  const workoutMin = workoutMinutesOn(S, day, now)
+  return {
+    auto: true, base, steps, stepMl: stepBonusMl(steps), workoutMin, workoutMl: workoutBonusMl(workoutMin),
+    total: autoGoalMl(base, steps, workoutMin),
+  }
+}
+
+/** The day's goal in ml (today when no day is given). */
+export const waterGoalMlOf = (S, iso) => waterGoalParts(S, iso).total
 
 export function mlOn(S, iso) {
   const v = S && S.waterMl && S.waterMl[iso]
@@ -97,11 +157,10 @@ export function waterDays(S, today, n = 7) {
 
 /** Days in a row (ending today, or yesterday while today isn't done yet) that met the goal. */
 export function waterStreak(S, today) {
-  const goal = waterGoalMlOf(S)
   const d = new Date(today + 'T12:00:00')
-  if (mlOn(S, today) < goal) d.setDate(d.getDate() - 1)
+  if (mlOn(S, today) < waterGoalMlOf(S, today)) d.setDate(d.getDate() - 1)
   let n = 0
-  while (n < 1000 && mlOn(S, isoOf(d)) >= goal) { n++; d.setDate(d.getDate() - 1) }
+  while (n < 1000 && mlOn(S, isoOf(d)) >= waterGoalMlOf(S, isoOf(d))) { n++; d.setDate(d.getDate() - 1) }
   return n
 }
 

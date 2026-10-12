@@ -404,6 +404,8 @@ public class StepServicePlugin extends Plugin {
         if (cfg != null) w.setConfig(cfg);
         try { WaterReminder.createChannels(ctx(), w); } catch (RuntimeException ignored) { }
         WaterReminder.schedule(ctx());
+        if (w.panelOn()) WaterReminder.refreshPanel(ctx(), false);
+        else if (!w.remindOn()) NotificationManagerCompat.from(ctx()).cancel(WaterReminder.NOTIF_ID);
         StepCounterService svc = StepCounterService.instance;
         if (svc != null) svc.refreshNotification();
         StepWidget.updateAll(ctx());
@@ -435,8 +437,9 @@ public class StepServicePlugin extends Plugin {
             StepCounterService svc = StepCounterService.instance;
             if (svc != null) svc.refreshNotification();
             StepWidget.updateAll(ctx());
-            // the goal was met in the app → no reminder for the rest of the day
-            if (StepStore.today().equals(day) && w.ml(day) >= w.goal()) {
+            // the panel shows the new total; without it, a goal met in the app ends the reminder
+            if (w.panelOn()) WaterReminder.refreshPanel(ctx(), false);
+            else if (StepStore.today().equals(day) && w.ml(day) >= w.goal()) {
                 NotificationManagerCompat.from(ctx()).cancel(WaterReminder.NOTIF_ID);
             }
         }

@@ -81,6 +81,22 @@ final class WaterMath {
         return new int[] { MOVE, i, 0 };
     }
 
+    // ---- the automatic goal (2.6) — mirrors autoGoalMl() in lib/water.js -----------------
+
+    static final int STEP_FREE = 3000, ML_PER_1000_STEPS = 70;
+
+    /** 70 ml per 1,000 steps beyond the first 3,000, in 50 ml steps, at most 1,200 ml. */
+    static int stepBonus(int steps) {
+        long extra = Math.max(0, (long) steps - STEP_FREE) * ML_PER_1000_STEPS / 1000;
+        return (int) Math.min(1200, extra / 50 * 50);
+    }
+
+    /** base + the walking part + the training part (already in ml, ≤ 1,500), 500…6,000 ml. */
+    static int autoGoal(int baseMl, int steps, int workoutMl) {
+        long g = (long) baseMl + stepBonus(steps) + Math.max(0, Math.min(1500, workoutMl));
+        return (int) Math.max(500, Math.min(6000, g));
+    }
+
     /** `v` clamped to 0…max (an int for progress bars). */
     static int clampMl(long v, int max) { return (int) Math.max(0, Math.min(max, v)); }
 }

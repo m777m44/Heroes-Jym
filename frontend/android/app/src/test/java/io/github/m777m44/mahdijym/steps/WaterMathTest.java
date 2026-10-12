@@ -74,4 +74,17 @@ public class WaterMathTest {
         assertEquals(WaterMath.MOVE, done[0]);   // goal met → no walking nag
         assertEquals(2, done[1]);
     }
+
+    @Test public void autoGoalGrowsWithStepsAndTraining() {
+        assertEquals(0, WaterMath.stepBonus(0));
+        assertEquals(0, WaterMath.stepBonus(3000));
+        assertEquals(0, WaterMath.stepBonus(3700));          // 49 ml → still 0
+        assertEquals(450, WaterMath.stepBonus(10000));       // 490 → 450
+        assertEquals(1200, WaterMath.stepBonus(60000));      // capped
+        assertEquals(2000, WaterMath.autoGoal(2000, 0, 0));
+        assertEquals(2750, WaterMath.autoGoal(2000, 10000, 300));
+        assertEquals(3500, WaterMath.autoGoal(2000, 0, 9999)); // training capped at 1,500
+        assertEquals(6000, WaterMath.autoGoal(5000, 60000, 1500));
+        assertEquals(500, WaterMath.autoGoal(0, 0, 0));
+    }
 }

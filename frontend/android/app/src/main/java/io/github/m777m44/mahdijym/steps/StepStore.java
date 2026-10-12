@@ -306,6 +306,9 @@ final class StepStore {
 
     synchronized int total() { return steps + provisional; }
 
+    /** Steps of `iso` when it is the day being counted, else 0 (a day not rolled over yet). */
+    synchronized int totalOn(String iso) { return iso != null && iso.equals(day) ? steps + provisional : 0; }
+
     /** Forget the counter baseline — used when the user switches counting off. */
     synchronized void resetBaseline() {
         lastCounter = -1f;

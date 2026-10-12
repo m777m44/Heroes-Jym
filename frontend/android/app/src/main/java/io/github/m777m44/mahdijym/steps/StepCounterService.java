@@ -444,6 +444,9 @@ public class StepCounterService extends Service implements SensorEventListener {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try { nm.notify(StepNotifier.LIVE_ID, StepNotifier.build(this, store, sp, mv)); } catch (RuntimeException ignored) { }
+        // 2.6: the water panel follows live steps (the automatic goal grows as you walk) and
+        // the day rolling over — re-posted only when what it shows changed.
+        try { WaterReminder.refreshPanel(this, false); } catch (RuntimeException ignored) { }
     }
 
     private void emit(double sp, boolean mv) {

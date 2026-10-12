@@ -12,21 +12,16 @@ import { t, getLang, dateLocale } from './i18n.js'
 import { todayISO } from './format.js'
 import { walkPrefs } from './stepMetrics.js'
 import {
-  CONTAINER_NAME, MOVES, containerOf, waterGoalMlOf, waterRemindPrefs, mlOn, changedAt, mergeNative,
-  nextReminder, reminderSlots, suggestMove,
+  CONTAINERS, CONTAINER_NAME, MOVES, containerOf, waterGoalMlOf, waterGoalParts, waterRemindPrefs, mlOn, changedAt,
+  mergeNative, nextReminder, reminderSlots, suggestMove, bodyKg, waterPanelOn,
 } from './water.js'
+
+export { bodyKg }
 
 const fmt = n => Math.round(n).toLocaleString(dateLocale())
 
 /** "Cup (250 ml)" */
 export const containerPhrase = c => `${t(CONTAINER_NAME[c.key])} (${fmt(c.ml)} ${t('ml')})`
-
-/** Body weight in kg from the log (null when none). */
-export function bodyKg(S) {
-  const bw = S && Array.isArray(S.bodyweight) && S.bodyweight.length ? S.bodyweight[S.bodyweight.length - 1] : null
-  if (!bw || !(bw.w > 0)) return null
-  return S.unit === 'lb' ? bw.w * 0.45359237 : bw.w
-}
 
 /** Every text the native reminder shows; {ml} {goal} {unit} {steps} {n} {min} {move} are filled natively. */
 export function waterStrings(S) {
@@ -51,15 +46,32 @@ export function waterStrings(S) {
     channelCelebrate: t('Celebrations'),
     open: t('Open app'),
     tapClose: t('Tap anywhere to close'),
+    // 2.6 — the water panel in the notifications
+    panelTitle: t('Water today'),
+    panelLeft: t('{0} ml to go', '{left}'),
+    panelDone: t('Goal reached — well done!'),
+    panelAuto: t('Auto goal: {0} + {1} walking + {2} training', '{base}', '{walk}', '{train}'),
+    undo: t('Undo'),
+    edit: t('Edit'),
+    channelPanel: t('Water in the notifications'),
   }
 }
 
 export function waterConfig(S) {
   const c = containerOf(S)
   const wp = walkPrefs(S)
+  const day = todayISO()
+  const parts = waterGoalParts(S, day)
   return {
     on: S.waterOn !== false,
-    goalMl: waterGoalMlOf(S),
+    goalMl: parts.total,
+    // 2.6 — the automatic goal: the native side adds the walking part itself from live steps
+    auto: parts.auto,
+    baseMl: parts.base,
+    workoutDay: day,
+    workoutMl: parts.workoutMl,
+    panel: waterPanelOn(S),
+    containers: CONTAINERS.map(x => ({ key: x.key, ml: x.ml, name: t(CONTAINER_NAME[x.key]) })),
     unitMl: c.ml,
     unit: c.key,
     remind: waterRemindPrefs(S),

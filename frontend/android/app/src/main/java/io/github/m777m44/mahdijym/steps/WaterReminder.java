@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import androidx.core.app.NotificationCompat;
 
@@ -18,15 +20,19 @@ import java.util.TimeZone;
 import io.github.m777m44.mahdijym.R;
 
 /**
- * Water reminders that work with the app closed (2.5).
+ * Water in the notifications — reminders and the water panel, all working with the app closed.
  *
- *  REMIND  (alarm)                 posts the reminder — today's water against the goal with a
- *                                  progress bar, today's steps, and a short exercise picked from
- *                                  the day so far (a walk after sitting still or when behind the
- *                                  step pace, else a rotating mini-workout) — then arms the next
- *  DRINK   ("Drank it" / "+ cup")  adds one container natively, refreshes the live step
- *                                  notification and the widget, celebrates when the goal is hit
- *  SNOOZE  ("In 15 min")           asks again in 15 minutes
+ *  The panel (2.6)  one notification with today's water against the goal, a bar, where the
+ *                   goal comes from (automatic: base + walking + training), the four
+ *                   containers — glass, cup, can, bottle, each with its own shape — that add
+ *                   themselves when tapped, Undo and Edit. Kept up to date quietly; the step
+ *                   service refreshes it when the numbers change (live steps move the goal).
+ *  REMIND (alarm)   the same notification posted loudly, with the exercise line — a walk
+ *                   after sitting still / when behind the step pace, else a mini-workout — and
+ *                   "In 15 min"; then the next alarm is armed
+ *  ADD              adds the tapped container (DRINK: the usual one — "Drank it", "+ water")
+ *  UNDO             takes the last drink of today back
+ *  SNOOZE           asks again in 15 minutes
  *
  * Reminders only fire inside the active hours and are skipped once the goal is reached.
  * Re-armed after a reboot (BootReceiver) and whenever the settings change (configureWater).
@@ -34,10 +40,23 @@ import io.github.m777m44.mahdijym.R;
 public class WaterReminder extends BroadcastReceiver {
     static final String ACTION_REMIND = "io.github.m777m44.mahdijym.water.REMIND";
     static final String ACTION_DRINK = "io.github.m777m44.mahdijym.water.DRINK";
+    static final String ACTION_ADD = "io.github.m777m44.mahdijym.water.ADD";
+    static final String ACTION_UNDO = "io.github.m777m44.mahdijym.water.UNDO";
     static final String ACTION_SNOOZE = "io.github.m777m44.mahdijym.water.SNOOZE";
     static final int NOTIF_ID = 7101, ADDED_ID = 7102;
-    static final String CH = "mj_water", CH_QUIET = "mj_water_quiet";
+    static final String CH = "mj_water", CH_QUIET = "mj_water_quiet", CH_PANEL = "mj_water_panel";
     private static final int REQ_ALARM = 51, REQ_DRINK = 52, REQ_SNOOZE = 53, REQ_OPEN = 54, REQ_LIVE_DRINK = 55;
+    private static final int REQ_ADD0 = 60, REQ_UNDO = 64, REQ_EDIT = 65, REQ_SMALL_ADD = 66, REQ_SMALL_UNDO = 67;
+
+    private static final int[] CHIP = { R.id.w_c0, R.id.w_c1, R.id.w_c2, R.id.w_c3 };
+    private static final int[] CHIP_ICON = { R.id.w_i0, R.id.w_i1, R.id.w_i2, R.id.w_i3 };
+    private static final int[] CHIP_NAME = { R.id.w_n0, R.id.w_n1, R.id.w_n2, R.id.w_n3 };
+    private static final int[] CHIP_ML = { R.id.w_m0, R.id.w_m1, R.id.w_m2, R.id.w_m3 };
+    private static final int[] SHAPE = { R.drawable.ic_w_glass, R.drawable.ic_w_cup, R.drawable.ic_w_can, R.drawable.ic_w_bottle };
+    private static final String[] KEYS = { "glass", "cup", "can", "bottle" };
+
+    /** What the panel last showed — it is only re-posted when this changes. */
+    private static volatile String panelSig = null;
 
     @Override public void onReceive(Context ctx, Intent intent) {
         String a = intent == null ? null : intent.getAction();
@@ -46,6 +65,8 @@ public class WaterReminder extends BroadcastReceiver {
         try {
             if (ACTION_REMIND.equals(a)) remind(c);
             else if (ACTION_DRINK.equals(a)) drink(c);
+            else if (ACTION_ADD.equals(a)) add(c, intent.getIntExtra("ml", 0));
+            else if (ACTION_UNDO.equals(a)) undo(c);
             else if (ACTION_SNOOZE.equals(a)) snooze(c);
         } catch (RuntimeException ignored) { /* a receiver must never crash */ }
     }
@@ -57,39 +78,59 @@ public class WaterReminder extends BroadcastReceiver {
         long now = System.currentTimeMillis();
         if (w.remindOn() && w.todayMl() < w.goal()
                 && WaterMath.withinHours(now, w.fromMin(), w.toMin(), TimeZone.getDefault())) {
-            post(c, false);
+            show(c, true, false);
+        } else {
+            refreshPanel(c, true);           // a new day, or a goal that moved — keep the panel true
         }
         schedule(c);
     }
 
-    static void drink(Context c) {
+    /** One of the usual container ("Drank it", "+ water"). */
+    static void drink(Context c) { add(c, WaterStore.get(c).unitMl()); }
+
+    static void add(Context c, int ml) {
         WaterStore w = WaterStore.get(c);
-        int goal = w.goal();
+        if (ml < 50 || ml > 2000) ml = w.unitMl();
         int before = w.todayMl();
-        int after = w.add(w.unitMl());
-        cancel(c, NOTIF_ID);
+        int goalBefore = w.goal();
+        int after = w.add(ml);
+        afterChange(c, w);
+
+        String today = StepStore.today();
+        if (before < goalBefore && after >= w.goal() && !today.equals(w.celebratedDay)) {
+            w.celebratedDay = today;
+            w.save();
+            if (!StepCounterService.appVisible) Celebration.water(c, w, after);
+        } else if (!w.panelOn() && StepCounterService.instance == null) {
+            // No panel and no live notification to show the new total — a brief confirmation.
+            confirm(c, w, after, "+" + w.numbers().format(ml));
+        }
+    }
+
+    static void undo(Context c) {
+        WaterStore w = WaterStore.get(c);
+        int removed = w.undoLast();
+        afterChange(c, w);
+        if (removed > 0 && !w.panelOn()) confirm(c, w, w.todayMl(), "\u2212" + w.numbers().format(removed));
+    }
+
+    /** Tell the app, refresh the live step notification, the widget and the panel. */
+    private static void afterChange(Context c, WaterStore w) {
         w.emit();
         StepCounterService svc = StepCounterService.instance;
         if (svc != null) svc.refreshNotification();
         try { StepWidget.updateAll(c); } catch (RuntimeException ignored) { }
-
-        String today = StepStore.today();
-        if (before < goal && after >= goal && !today.equals(w.celebratedDay)) {
-            w.celebratedDay = today;
-            w.save();
-            if (!StepCounterService.appVisible) Celebration.water(c, w, after);
-        } else if (svc == null) {
-            // No live notification to show the new total — a brief confirmation instead.
-            confirm(c, w, after);
-        }
+        if (w.panelOn()) refreshPanel(c, true);
+        else cancel(c, NOTIF_ID);
     }
 
     private static void snooze(Context c) {
-        cancel(c, NOTIF_ID);
         WaterStore w = WaterStore.get(c);
         w.snoozedAt = System.currentTimeMillis();
         w.save();
         arm(c, System.currentTimeMillis() + 15 * 60_000L);
+        if (w.panelOn()) refreshPanel(c, true);
+        else cancel(c, NOTIF_ID);
     }
 
     // ---- scheduling ----------------------------------------------------------------------
@@ -104,13 +145,22 @@ public class WaterReminder extends BroadcastReceiver {
         return PendingIntent.getBroadcast(c, req, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    /** The "+ cup" button on the live step notification. */
+    private static PendingIntent addIntent(Context c, int ml, int req) {
+        Intent i = new Intent(c, WaterReminder.class).setAction(ACTION_ADD).putExtra("ml", ml);
+        return PendingIntent.getBroadcast(c, req, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    /** The "+ water" button on the live step notification. */
     static PendingIntent liveDrink(Context c) { return action(c, ACTION_DRINK, REQ_LIVE_DRINK); }
 
     /** Arm the next reminder (or clear it when reminders are off). */
     static void schedule(Context c) {
         WaterStore w = WaterStore.get(c);
-        if (!w.remindOn()) { disarm(c); cancel(c, NOTIF_ID); return; }
+        if (!w.remindOn()) {
+            disarm(c);
+            if (w.panelOn()) refreshPanel(c, false); else cancel(c, NOTIF_ID);
+            return;
+        }
         arm(c, WaterMath.nextSlot(System.currentTimeMillis(), w.fromMin(), w.toMin(), w.every(), TimeZone.getDefault()));
     }
 
@@ -137,6 +187,7 @@ public class WaterReminder extends BroadcastReceiver {
     private static void cancel(Context c, int id) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(id);
+        if (id == NOTIF_ID) panelSig = null;
     }
 
     // ---- the notification ----------------------------------------------------------------
@@ -154,6 +205,13 @@ public class WaterReminder extends BroadcastReceiver {
         q.enableVibration(false);
         q.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(q);
+        // The quiet panel: no sound, no pop-up, still on the lock screen.
+        NotificationChannel p = new NotificationChannel(CH_PANEL, w.str("channelPanel", "Water in the notifications"), NotificationManager.IMPORTANCE_LOW);
+        p.setSound(null, null);
+        p.enableVibration(false);
+        p.setShowBadge(false);
+        p.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        nm.createNotificationChannel(p);
     }
 
     /** The exercise line: a walk when sitting still / behind on steps, else a mini-workout. */
@@ -171,7 +229,43 @@ public class WaterReminder extends BroadcastReceiver {
     }
 
     /** Post the reminder now (`test`: from the settings screen, even outside the hours). */
-    static void post(Context c, boolean test) {
+    static void post(Context c, boolean test) { show(c, true, test); }
+
+    /** Re-post the quiet panel when what it shows has changed (or `force`). */
+    static void refreshPanel(Context c, boolean force) {
+        WaterStore w = WaterStore.get(c);
+        if (!w.panelOn()) return;
+        String sig = signature(w);
+        if (!force && sig.equals(panelSig)) return;
+        show(c, false, false);
+    }
+
+    private static String signature(WaterStore w) {
+        return StepStore.today() + "|" + w.todayMl() + "|" + w.goal() + "|" + w.canUndo() + "|" + w.unitMl() + "|" + w.locale();
+    }
+
+    /** "1,250 / 2,650 ml" */
+    private static String amount(WaterStore w, NumberFormat nf, int ml, int goal) {
+        return nf.format(ml) + " / " + nf.format(goal) + " " + w.str("mlUnit", "ml");
+    }
+
+    /** "1,400 ml to go · Auto goal: 2,000 + 350 walking + 300 training" */
+    private static String subLine(WaterStore w, NumberFormat nf, int ml, int goal) {
+        String head = ml >= goal ? w.str("panelDone", "Goal reached — well done!")
+            : w.fill(w.str("panelLeft", "{left} ml to go"), ml);
+        if (!w.autoGoal()) return head;
+        String auto = w.str("panelAuto", "Auto goal: {base} + {walk} walking + {train} training")
+            .replace("{base}", nf.format(w.baseMl()))
+            .replace("{walk}", nf.format(w.walkMl()))
+            .replace("{train}", nf.format(w.workoutMl()));
+        return head + " · " + auto;
+    }
+
+    /**
+     * The water notification. `alert`: a reminder (heads-up, sound per settings, exercise line,
+     * "In 15 min"); otherwise the quiet panel.
+     */
+    static void show(Context c, boolean alert, boolean test) {
         WaterStore w = WaterStore.get(c);
         StepStore s = StepStore.get(c);
         s.rollIfNeeded();
@@ -180,47 +274,129 @@ public class WaterReminder extends BroadcastReceiver {
         try { createChannels(c, w); } catch (RuntimeException ignored) { }
         long now = System.currentTimeMillis();
         int ml = w.todayMl(), goal = w.goal();
+        int pct = (int) Math.min(999, (long) ml * 100 / Math.max(1, goal));
         NumberFormat nf = w.numbers();
+        boolean panel = w.panelOn();
+        String move = alert ? moveLine(w, s, now) : null;
+        String amountTxt = amount(w, nf, ml, goal);
+        String sub = subLine(w, nf, ml, goal);
 
-        String title = w.str("title", "\uD83D\uDCA7 Time for water");
-        String line1 = w.fill(w.str("body", "{ml} / {goal} ml today"), ml)
-            + " · " + w.str("stepsLine", "{steps} steps").replace("{steps}", nf.format(s.total()));
-        String move = moveLine(w, s, now);
-        String big = move == null ? line1 : line1 + "\n" + move;
+        RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_water);
+        fill(c, w, big, nf, amountTxt, pct, ml, goal, sub, move, alert);
+        RemoteViews small = new RemoteViews(c.getPackageName(), R.layout.notif_water_small);
+        fillSmall(c, w, small, nf, amountTxt, pct, ml, goal);
+
+        String title = alert ? w.str("title", "\uD83D\uDCA7 Time for water")
+            : "\uD83D\uDCA7 " + w.str("panelTitle", "Water today") + " · " + amountTxt;
+        String text = alert
+            ? (move == null ? amountTxt : move)
+            : sub;
 
         boolean sound = w.pref("sound", true);
-        NotificationCompat.Builder b = new NotificationCompat.Builder(c, sound ? CH : CH_QUIET)
+        String channel = alert ? (sound ? CH : CH_QUIET) : CH_PANEL;
+        NotificationCompat.Builder b = new NotificationCompat.Builder(c, channel)
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle(title)
-            .setContentText(move == null ? line1 : move)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(big))
-            .setProgress(Math.max(1, goal), Math.min(ml, goal), false)
-            .setSubText(Math.min(999, ml * 100 / Math.max(1, goal)) + "%")
+            .setContentText(text)
+            .setSubText(pct + "%")
+            .setCustomContentView(small)
+            .setCustomBigContentView(big)
+            .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
             .setColor(0xFF0A84FF)
-            .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
             .setContentIntent(Celebration.openApp(c, REQ_OPEN, "/water"))
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setTimeoutAfter(Math.max(15, w.every() - 5) * 60_000L)
-            .addAction(0, w.str("drink", "Drank it"), action(c, ACTION_DRINK, REQ_DRINK))
-            .addAction(0, w.str("snooze", "In 15 min"), action(c, ACTION_SNOOZE, REQ_SNOOZE));
-        if (!sound) b.setSilent(true);
-        if (test) b.setWhen(now);
-        try { nm.notify(NOTIF_ID, b.build()); } catch (SecurityException ignored) { /* notifications off */ }
+            .setLocalOnly(true);
+        if (alert) {
+            b.setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOnlyAlertOnce(false)
+                .setShowWhen(true)
+                .setWhen(now)
+                .setAutoCancel(!panel)
+                .setOngoing(false)
+                .addAction(0, w.str("drink", "Drank it"), action(c, ACTION_DRINK, REQ_DRINK))
+                .addAction(0, w.str("snooze", "In 15 min"), action(c, ACTION_SNOOZE, REQ_SNOOZE));
+            if (!panel) b.setTimeoutAfter(Math.max(15, w.every() - 5) * 60_000L);
+            if (!sound) b.setSilent(true);
+        } else {
+            b.setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setShowWhen(false)
+                .setOngoing(true);
+        }
+        try {
+            nm.notify(NOTIF_ID, b.build());
+            panelSig = signature(w);
+        } catch (RuntimeException ignored) { /* notifications off, or a layout the system refused */ }
     }
 
-    /** "+250 ml · 1,250 / 2,000 ml" for a few seconds. */
-    private static void confirm(Context c, WaterStore w, int ml) {
+    /** The expanded panel: amounts, bar, where the goal comes from, the containers, actions. */
+    private static void fill(Context c, WaterStore w, RemoteViews v, NumberFormat nf, String amountTxt, int pct,
+                             int ml, int goal, String sub, String move, boolean alert) {
+        v.setTextViewText(R.id.w_amount, amountTxt);
+        v.setTextViewText(R.id.w_pct, pct + "%");
+        v.setTextColor(R.id.w_pct, ml >= goal ? 0xFF30D158 : 0xFF64D2FF);
+        v.setProgressBar(R.id.w_bar, Math.max(1, goal), Math.min(ml, goal), false);
+        v.setTextViewText(R.id.w_sub, sub);
+        if (move != null) {
+            v.setViewVisibility(R.id.w_move, View.VISIBLE);
+            v.setTextViewText(R.id.w_move, move);
+        } else {
+            v.setViewVisibility(R.id.w_move, View.GONE);
+        }
+        String unit = w.unitKey();
+        for (int i = 0; i < 4; i++) {
+            int cml = w.containerMl(i);
+            v.setImageViewResource(CHIP_ICON[i], SHAPE[i]);
+            v.setTextViewText(CHIP_NAME[i], w.containerName(i));
+            v.setTextViewText(CHIP_ML[i], "+" + nf.format(cml));
+            v.setInt(CHIP[i], "setBackgroundResource", KEYS[i].equals(unit) ? R.drawable.notif_chip_sel : R.drawable.notif_chip);
+            v.setOnClickPendingIntent(CHIP[i], addIntent(c, cml, REQ_ADD0 + i));
+        }
+        v.setTextViewText(R.id.w_undo_t, w.str("undo", "Undo"));
+        v.setOnClickPendingIntent(R.id.w_undo, action(c, ACTION_UNDO, REQ_UNDO));
+        // Only setters RemoteViews is known to allow: a dimmed label when there is nothing to undo.
+        v.setTextColor(R.id.w_undo_t, w.canUndo() ? 0xFFF2F2F7 : 0x66F2F2F7);
+        v.setTextViewText(R.id.w_edit_t, w.str("edit", "Edit"));
+        v.setOnClickPendingIntent(R.id.w_edit, Celebration.openApp(c, REQ_EDIT, "/water"));
+        if (alert) {
+            v.setViewVisibility(R.id.w_snooze, View.VISIBLE);
+            v.setTextViewText(R.id.w_snooze_t, w.str("snooze", "In 15 min"));
+            v.setOnClickPendingIntent(R.id.w_snooze, action(c, ACTION_SNOOZE, REQ_SNOOZE));
+        } else {
+            v.setViewVisibility(R.id.w_snooze, View.GONE);
+        }
+    }
+
+    /** The collapsed row: amount + bar, "+" the usual container, Undo. */
+    private static void fillSmall(Context c, WaterStore w, RemoteViews v, NumberFormat nf, String amountTxt, int pct,
+                                  int ml, int goal) {
+        v.setTextViewText(R.id.ws_amount, amountTxt + " · " + pct + "%");
+        v.setProgressBar(R.id.ws_bar, Math.max(1, goal), Math.min(ml, goal), false);
+        String unit = w.unitKey();
+        int idx = 1;
+        for (int i = 0; i < 4; i++) if (KEYS[i].equals(unit)) idx = i;
+        v.setImageViewResource(R.id.ws_icon, SHAPE[idx]);
+        v.setTextViewText(R.id.ws_add_t, "+" + nf.format(w.unitMl()));
+        v.setOnClickPendingIntent(R.id.ws_add, addIntent(c, w.unitMl(), REQ_SMALL_ADD));
+        v.setOnClickPendingIntent(R.id.ws_undo, action(c, ACTION_UNDO, REQ_SMALL_UNDO));
+        v.setViewVisibility(R.id.ws_undo, w.canUndo() ? View.VISIBLE : View.GONE);
+    }
+
+    /** "+250 ml · 1,250 / 2,000 ml" for a few seconds (when the panel is switched off). */
+    private static void confirm(Context c, WaterStore w, int ml, String delta) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try { createChannels(c, w); } catch (RuntimeException ignored) { }
-        String text = w.fill(w.str("added", "+{unit} ml · {ml} / {goal} ml"), ml);
+        int goal = w.goal();
+        NumberFormat nf = w.numbers();
+        String text = delta + " " + w.str("mlUnit", "ml") + " · " + amount(w, nf, ml, goal);
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_QUIET)
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle("\uD83D\uDCA7 " + text)
-            .setProgress(Math.max(1, w.goal()), Math.min(ml, w.goal()), false)
+            .setProgress(Math.max(1, goal), Math.min(ml, goal), false)
             .setColor(0xFF0A84FF)
             .setSilent(true)
             .setAutoCancel(true)

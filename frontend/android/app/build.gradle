@@ -56,6 +56,9 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // 2.6 — Sign in with Google (account chooser) + an access token for the app's private
+    // Google Drive folder. See GoogleAccountPlugin.java and docs/GOOGLE_SIGN_IN.md.
+    implementation "com.google.android.gms:play-services-auth:$playServicesAuthVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
