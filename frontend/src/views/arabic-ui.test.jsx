@@ -63,6 +63,23 @@ it('the Arabic UI has no stray English', async () => {
     const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/workout'] }, React.createElement(mod.default)))
     for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('activeWorkout')
   }
+  // the Google account screens (2.6): the first-launch choice and the Settings card, signed out and in
+  {
+    const scan = (html, where) => {
+      for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) {
+        const rest = line.replace(/\S+@\S+/g, '').replace(/\b(Google|Drive|Play)\b/g, '')
+        if (/[A-Za-z]{2,}/.test(rest)) (found[line] = found[line] || new Set()).add(where)
+      }
+    }
+    const gate = await import('../components/AccountGate.jsx')
+    const card = await import('../components/AccountSection.jsx')
+    scan(renderToString(React.createElement(gate.default, { onDone: () => {} })), 'AccountGate')
+    for (const [k] of ['setup', 'network', 'consent', 'unavailable', 'failed'].map(r => [r])) scan(gate.accountError(k) || '', 'accountError')
+    scan(renderToString(React.createElement(card.default)), 'AccountSection')
+    localStorage.setItem('mj_cloud', JSON.stringify({ mode: 'google', account: { email: 'mahdi@gmail.com', name: 'مهدي' }, auto: true, at: Date.now() - 5 * 60000, syncedTs: 1 }))
+    scan(renderToString(React.createElement(card.default)), 'AccountSection:in')
+    localStorage.removeItem('mj_cloud')
+  }
   const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/]
   const stray = Object.entries(found).filter(([l]) => !ALLOWED.some(r => r.test(l))).map(([l, s]) => `${[...s].join(',')}\t${l}`).sort()
   expect(stray).toEqual([])

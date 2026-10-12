@@ -2,20 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ, DAYN, WEEK_STARTS, weekStartOf } from '../lib/format.js'
+import { ACCENTS, todayISO, localTZ, DAYN, weekOrder } from '../lib/format.js'
 import { effortOf } from '../lib/history.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, U, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t, U, LANGS, INSTR_LANGS, dateLocale } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
-import { suggestedReminderTime, reminderPrefs } from '../lib/dailyReminder.js'
+import { suggestedReminderTime, reminderPrefs, timeFor, routineSummary } from '../lib/dailyReminder.js'
+import { routineLabel, routineColor, colorVar } from '../lib/routines.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
 import OfflineSection from '../components/OfflineSection.jsx'
+import AccountSection from '../components/AccountSection.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
 
 export default function Settings() {
@@ -78,12 +80,9 @@ export default function Settings() {
     </div>
 
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
-    <Section title={MOBILE ? t('Your data') : DEMO ? t('Demo') : t('Account')}>
-      {MOBILE ? <>
-        <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this phone')} subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
-        <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host MAHDI-JYM')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
-          onClick={() => window.open(REPO, '_blank', 'noopener')} />
-      </> : DEMO ? <>
+    {MOBILE && <AccountSection />}
+    {!MOBILE && <Section title={DEMO ? t('Demo') : t('Account')}>
+      {MOBILE ? null : DEMO ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
           onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
@@ -100,7 +99,7 @@ export default function Settings() {
       </> : (
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
-    </Section>
+    </Section>}
     {!user && !DEMO && !MOBILE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
@@ -118,9 +117,6 @@ export default function Settings() {
           options={[{ value: 'kg', label: U('kg') }, { value: 'lb', label: U('lb') }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
-      <SelectRow icon="calendar" iconTint="var(--orange)" title={t('Week starts on')}
-        value={weekStartOf(S)} onChange={v => update(s => { s.weekStart = v })}
-        options={WEEK_STARTS.map(d => ({ value: d, label: t(DAYN[d]) }))} />
     </Section>
 
     {/* ---------- walking + body weight (MAHDI-JYM 2.0) ---------- */}
@@ -280,16 +276,47 @@ function effortHelpSheet() {
   </>)
 }
 
+// 2.6: each training day of the week (Saturday → Friday) with its routine — how many
+// exercises, about how long — and its own reminder time (blank = the time for every day).
+function ReminderWeek({ S, setReminder }) {
+  const r = reminderPrefs(S)
+  const rows = weekOrder(6).map(d => {
+    const routine = (S.routines || []).find(x => x.id === (S.week || {})[d])
+    return routine ? { d, routine, sum: routineSummary(routine, S.restSec) } : null
+  }).filter(Boolean)
+  if (!rows.length) return <Row icon="calendar" iconTint="var(--grey)" title={t('No routines on your week yet')} subtitle={t('Put routines on days in Plan — each one gets its reminder.')} />
+  const setDay = (d, v) => {
+    const days = { ...r.days }
+    if (!v || v === r.time) delete days[d]; else days[d] = v
+    setReminder({ days })
+  }
+  return <div className="rweek">
+    {rows.map(({ d, routine, sum }) => {
+      const own = !!r.days[d]
+      return <div key={d} className="rweek-row" style={{ '--rc': colorVar(routineColor(routine)) }}>
+        <span className="rweek-dot" aria-hidden="true" />
+        <div className="rweek-t">
+          <b>{t(DAYN[d])} · {routineLabel(routine.name)}</b>
+          <span>{t('{0} exercises · about {1} min', sum.n.toLocaleString(dateLocale()), sum.min.toLocaleString(dateLocale()))}</span>
+        </div>
+        <input type="time" className={'timef' + (own ? ' own' : '')} value={timeFor(r, d)} aria-label={t(DAYN[d])}
+          onChange={e => setDay(d, e.target.value)} />
+      </div>
+    })}
+  </div>
+}
+
 // Rows shared by both reminder cards (native and push) once the daily reminder is on: the
 // time, a smart suggestion from when you actually train, the follow-up and rest-day walks.
 function ReminderExtras({ S, setReminder }) {
   const r = reminderPrefs(S)
   const sug = suggestedReminderTime(S.workouts)
   return <>
-    <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
+    <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')} subtitle={t('For every day — or set a time per day below')}>
       <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-        onChange={e => setReminder({ time: e.target.value })} />
+        onChange={e => e.target.value && setReminder({ time: e.target.value })} />
     </Row>
+    <ReminderWeek S={S} setReminder={setReminder} />
     {sug && sug.remind !== r.time && (
       <Row icon="lightbulb" iconTint="var(--yellow)" title={t('Use {0}', sug.remind)}
         subtitle={t('You usually start training around {0} — remind you half an hour before.', sug.usual)}
@@ -313,22 +340,23 @@ function NotificationsCard({ S, update, toast }) {
 // no push server involved. The schedule itself is (re)synced by the store on every persist;
 // this card only owns the OS permission prompt when the switch turns on.
 function MobileReminderCard({ S, update, toast }) {
-  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
+  const isOn = reminderPrefs(S).on
+  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: reminderPrefs(s).on, v2: true, ...patch, tz: localTZ() } })
   const toggle = async () => {
-    const on = !S.reminder?.on
+    const on = !isOn
     if (on) {
-      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true } }, true)
+      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true, v2: true } }, true)
       if (!ok) { toast(t('Could not change notification settings')); return }
     }
     setReminder({ on })
   }
   return (
     <Section title={t('Notifications')}
-      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned and not yet trained — with your step goal in the same notification.') : null}>
+      footer={isOn ? t('Reminds you on days that have a routine planned and not yet trained — with the exercises, about how long it takes and your step goal in the same notification.') : null}>
       <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-        <Switch checked={!!S.reminder?.on} onChange={toggle} />
+        <Switch checked={isOn} onChange={toggle} />
       </Row>
-      {S.reminder?.on && <ReminderExtras S={S} setReminder={setReminder} />}
+      {isOn && <ReminderExtras S={S} setReminder={setReminder} />}
     </Section>
   )
 }

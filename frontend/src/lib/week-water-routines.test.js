@@ -12,8 +12,8 @@ describe('week order', () => {
   it('starts on Saturday unless Sunday or Monday was picked', () => {
     expect(weekStartOf({})).toBe(6)
     expect(weekStartOf(null)).toBe(6)
-    expect(weekStartOf({ weekStart: 0 })).toBe(0)
-    expect(weekStartOf({ weekStart: 1 })).toBe(1)
+    expect(weekStartOf({ weekStart: 0 })).toBe(6)      // 2.6: always Saturday
+    expect(weekStartOf({ weekStart: 1 })).toBe(6)
     expect(weekStartOf({ weekStart: 3 })).toBe(6)
   })
   it('lists Saturday → Friday', () => {

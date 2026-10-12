@@ -1261,3 +1261,89 @@ h3 .exn{align-items:inherit}
 .swatch.sm.on::after{inset:-3px}
 .iconbtn.rt-glyph{color:var(--tint);background:color-mix(in srgb,var(--tint) 16%,var(--surface-2))}
 .sethead span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- 2.6: where your data lives (AccountGate, Settings → Account) ---------- */
+.acc-card{text-align:center}
+.acc-hero{position:relative;height:84px;display:flex;align-items:center;justify-content:center;margin:2px 0 4px}
+.acc-orb{width:66px;height:66px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;
+  background:linear-gradient(140deg,var(--blue),var(--indigo,#5e5ce6));box-shadow:0 10px 30px -10px color-mix(in srgb,var(--blue) 70%,transparent);
+  animation:accIn .5s cubic-bezier(.2,.8,.2,1) both}
+.acc-orb.sm{position:absolute;width:30px;height:30px;border-radius:10px;font-size:16px;transform:translate(30px,24px);
+  background:linear-gradient(140deg,var(--green),var(--teal));animation-delay:.12s;border:3px solid var(--surface)}
+.acc-orb.ok{background:linear-gradient(140deg,var(--green),var(--teal))}
+.acc-orb.spin{background:var(--surface-2);box-shadow:none;position:relative}
+.acc-orb.spin::after{content:"";position:absolute;inset:-5px;border-radius:26px;border:2.5px solid transparent;border-top-color:var(--blue);
+  border-right-color:var(--green);animation:pgspin 1s linear infinite}
+@keyframes accIn{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+.acc-orb.sm{animation-name:accInSm}
+@keyframes accInSm{from{opacity:0;transform:translate(30px,32px) scale(.8)}to{opacity:1;transform:translate(30px,24px)}}
+.acc-google{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;margin:4px 0 8px;border-radius:16px;cursor:pointer;
+  background:#fff;color:#1f1f1f;border:1px solid #dadce0;font:inherit;text-align:start;transition:transform .15s ease,box-shadow .2s ease}
+.acc-google:active{transform:scale(.985)}
+.acc-google:disabled{opacity:.55;cursor:default}
+.acc-g{flex:none;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1f3f4}
+.acc-gt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.acc-gt b{font-size:15.5px;font-weight:600}
+.acc-gt small{font-size:12.5px;color:#5f6368}
+.acc-opt{display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px;border-radius:16px;cursor:pointer;font:inherit;text-align:start;
+  background:var(--surface-2);color:var(--label);border:0}
+.acc-chev{color:var(--label-3);flex:none}
+.acc-fine{display:flex;gap:6px;align-items:flex-start;justify-content:center;font-size:11.5px;line-height:1.45;color:var(--label-3);margin-top:4px}
+.acc-fine .icn{flex:none;margin-top:1px}
+.acc-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-3)}
+.acc-avatar.lg{width:72px;height:72px;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--green);animation:accIn .5s cubic-bezier(.2,.8,.2,1) both}
+.acc-ini{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff;
+  background:linear-gradient(140deg,var(--blue),var(--purple))}
+.acc-row{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.acc-row .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.acc-row .who b{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-row .who span{font-size:13px;color:var(--label-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;
+  color:var(--green);background:color-mix(in srgb,var(--green) 16%,transparent)}
+.acc-badge.err{color:var(--orange);background:color-mix(in srgb,var(--orange) 16%,transparent)}
+.acc-badge.busy .icn{animation:pgspin 1s linear infinite}
+
+/* ---------- 2.6: workout reminder per day (Settings → Notifications) ---------- */
+.rweek{display:flex;flex-direction:column;padding:2px 0 4px}
+.rweek-row{display:flex;align-items:center;gap:11px;padding:9px 14px}
+.rweek-row+.rweek-row{border-top:var(--hair) solid var(--sep)}
+.rweek-dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 4px color-mix(in srgb,var(--rc) 22%,transparent)}
+.rweek-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rweek-t b{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rweek-t span{font-size:12px;color:var(--label-2)}
+.rweek-row .timef{opacity:.7}
+.rweek-row .timef.own{opacity:1;color:var(--acc);font-weight:600}
+
+/* ---------- 2.6: automatic water goal + the notification panel preview ---------- */
+.wgoal{padding:10px 14px 12px}
+.wgoal-bar{display:flex;gap:3px;height:10px;border-radius:6px;overflow:hidden;background:var(--surface-3);margin:2px 0 10px}
+.wgoal-bar i{display:block;min-width:0;flex-basis:0;border-radius:6px;transition:flex-grow .8s cubic-bezier(.2,.8,.2,1)}
+.wgoal-row{display:flex;align-items:center;gap:11px;padding:7px 0}
+.wgoal-row+.wgoal-row{border-top:var(--hair) solid var(--sep)}
+.wgoal-row.total .wgoal-v{color:var(--blue);font-size:16px}
+.wgoal-ic{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  color:var(--tint);background:color-mix(in srgb,var(--tint) 16%,transparent)}
+.wgoal-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.wgoal-t b{font-size:14.5px;font-weight:600}
+.wgoal-t span{font-size:12px;color:var(--label-2)}
+.wgoal-v{font-variant-numeric:tabular-nums;font-size:14.5px;white-space:nowrap}
+.wnotif{margin:4px 12px 14px;padding:11px 12px;border-radius:18px;color:#f2f2f7;
+  background:linear-gradient(315deg,#0b2238,#0a0f1a);border:1px solid #64d2ff40;font-size:13px}
+.wnotif-h{display:flex;align-items:center;gap:7px}
+.wnotif-h .icn{color:#64d2ff}
+.wnotif-h b{flex:1;font-size:16px;font-variant-numeric:tabular-nums}
+.wnotif-h span{color:#64d2ff;font-weight:700}
+.wnotif-bar{height:7px;border-radius:4px;background:#2c2c2e;margin:7px 0 6px;overflow:hidden}
+.wnotif-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#0a84ff,#64d2ff);transition:width .6s ease}
+.wnotif-sub{font-size:11.5px;color:#9fb7d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wnotif-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
+.wnotif-chips span{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px 5px;border-radius:12px;background:#ffffff1f}
+.wnotif-chips span.sel{background:#0a84ff33;box-shadow:inset 0 0 0 1.5px #64d2ff}
+.wnotif-chips .cicon{width:24px;height:24px;color:#64d2ff}
+.wnotif-chips b{font-size:11px}
+.wnotif-chips small{font-size:10px;color:#64d2ff}
+.wnotif-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.wnotif-acts span{display:flex;align-items:center;justify-content:center;gap:5px;height:32px;border-radius:12px;background:#ffffff1f;font-weight:600;font-size:12px}
+.water-auto{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.water-auto span{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;
+  color:var(--tint);background:color-mix(in srgb,var(--tint) 15%,transparent);font-variant-numeric:tabular-nums;animation:accIn .4s ease both}

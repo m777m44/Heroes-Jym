@@ -147,6 +147,25 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 - iPhone schedules the next day of water reminders as local notifications; there is no
   full-screen celebration outside the app on iOS.
 
+## Water panel, automatic goal, workout reminders & Google account (2.6, Android)
+
+- **Water panel in the notifications** (channel *Water in the notifications*, id 7101,
+  low importance, silent): today's ml against the goal with a bar, the automatic-goal
+  breakdown, and **four container buttons (glass / cup / can / bottle) plus Undo and Edit**.
+  Tapping a container adds it, Undo takes the last one back, and Edit opens the Water screen. All of
+  this works with the app closed. The step notification keeps its small "+" and Undo.
+  Turn it off under Water → *Water panel in the notifications*. The reminder uses the same id,
+  so a reminder and the panel never show twice.
+- **Automatic water goal**: body weight × 33 ml (2,000 ml without a weigh-in), **+70 ml per
+  1,000 steps after the first 3,000** (at most +1,200), and **+10 ml per training minute** (at most +1,500).
+  The same rule runs natively (`WaterMath.autoGoal`, steps from `StepStore`), so the
+  notification goal grows during a walk with the app closed. A fixed goal is still available.
+- **Workout reminders at each day's own time**: Settings → Daily reminder → a time for every
+  weekday that has a routine. The notification names the routine, how many exercises, the
+  first three exercises and about how long it takes (sets × (40 s + rest)).
+- **Sign in with Google**: see [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md). The first launch asks
+  Google / this phone / skip, then shows the permissions dialog.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

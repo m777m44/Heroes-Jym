@@ -3,6 +3,64 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.6.0 — 2026-10-13
+
+**Water right in the notifications, a water goal that adapts to your day, workout reminders
+at each day's own time, and sign in with Google to save everything to your account.**
+*الماء داخل الإشعارات، هدف ماء يتكيّف مع يومك، تذكير بالتمارين في وقت كل يوم، وتسجيل الدخول بحساب Google لحفظ كل شيء في حسابك.*
+
+### 🔐 Sign in with Google: everything saved to your account
+- **First launch** asks where your data should live: **Continue with Google** (Google's
+  own chooser lists **the accounts already on the phone**; pick one, no password),
+  **Save on this phone**, or **Skip**.
+- Workouts, plan, routines, steps, water, body weight and settings go into a **private
+  app folder in your Google Drive** that only MAHDI-JYM can see (`drive.appdata`, so your own
+  files are never visible to the app). There is no MAHDI-JYM server in between.
+- **Saved automatically**: a moment after each change, and right away when the app goes to
+  the background. If both the account and this phone hold data on first sign-in, you choose
+  which copy to keep. A new phone signed in to the same account gets everything back.
+- **Settings → Google account**: your photo, name and email; *last saved …*; **Save now**;
+  **Save automatically** on/off; **Undo the last restore**; **Switch account**; **Sign out**.
+- One-time Google Cloud setup for the app owner: [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md).
+
+### 💧 Water in the notifications
+- A new **water panel** in the notifications: today's ml and the goal with a bar, plus
+  buttons for **glass / كلاص · cup / كوب · can / علبة · bottle / قنينة**, **Undo** and
+  **Edit**. It all works with the app closed and updates instantly. Each container has its own
+  shape. Your usual one is highlighted.
+- Water → *Water panel in the notifications* switches it on or off, with a live preview of
+  the notification.
+
+### 🎯 An automatic water goal
+- The daily goal now **adapts to your day**: body weight × 33 ml, **+70 ml per 1,000 steps**
+  after the first 3,000, and **+10 ml per minute of training** (including a workout in
+  progress).
+- The Water screen explains it with a coloured breakdown (base · walking · training →
+  today's goal). The Home card shows chips like 🚶 +450 · 🏋️ +300.
+- The goal also grows in the notification during a walk with the app closed: the same rule
+  runs natively. Each past day is judged against its own goal (streak, 14-day chart).
+- Prefer a fixed goal? Switch *Automatic goal* off.
+
+### 🏋️ Workout reminders at the workout's time
+- **A time for each weekday** (Settings → Daily reminder → your week): every day with a
+  routine shows its colour, its name and its own time. The others follow the shared time.
+- The reminder now names **the routine, how many exercises, the first three, and about how
+  long it takes**, e.g. «🏋️ يوم الدفع اليوم — 6 تمارين · حوالي 45 دقيقة — …».
+- On Android the daily reminder is **on by default**.
+
+### ✨ Design & polish
+- New account screens with Google's colours, the account avatar and a live sync status.
+- Smooth fills for the water bars and the goal breakdown (no bouncing).
+- **Removed "Week starts on"** from Settings: the week always runs **Saturday → Friday**.
+
+### Under the hood
+- `lib/cloud.js` (Drive app-data sync, tested against a fake Drive: first sign-in, choose,
+  newer-wins, token refresh, errors), native `GoogleAccount` plugin (`play-services-auth`),
+  `WaterMath.autoGoal` (+ JVM tests), water panel actions (request codes 60–67).
+- 71 new strings, translated into all 12 languages (1,226 keys each). The Arabic-UI guard now
+  also covers the account screens.
+- 365 frontend tests, 64 API tests.
+
 ## v2.5.0 — 2026-10-12
 
 **Water reminders with an exercise, by glass, cup or can — and a full-screen celebration that

@@ -3,7 +3,7 @@ import { todayISO, DAYS } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import {
-  CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, containerOf, waterGoalMlOf, mlOn, waterDays, waterStreak, countIn,
+  CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, containerOf, waterGoalParts, mlOn, waterDays, waterStreak, countIn,
   waterRemindPrefs, nextReminder,
 } from '../lib/water.js'
 import Icon from './Icon.jsx'
@@ -16,7 +16,9 @@ export default function WaterCard() {
   const S = useStore(s => s.S)
   const canUndo = useWaterUndo(s => s.stack.length > 0)
   const iso = todayISO()
-  const goal = waterGoalMlOf(S)
+  const parts = waterGoalParts(S, iso)
+  const goal = parts.total
+  const extra = parts.stepMl + parts.workoutMl
   const ml = mlOn(S, iso)
   const unit = containerOf(S)
   const days = waterDays(S, iso, 7)
@@ -35,7 +37,7 @@ export default function WaterCard() {
         <h2 style={{ margin: 0 }}>{t('Water')}</h2>
       </div>
       <button className="water-goal" onClick={() => nav('/water')}>
-        <Icon name={rp.on ? 'bell' : 'target'} />{fmtMl(goal)} {t('ml')}<Icon name="chevronRight" className="icn-dir" />
+        <Icon name={parts.auto ? 'sparkles' : rp.on ? 'bell' : 'target'} />{fmtMl(goal)} {t('ml')}<Icon name="chevronRight" className="icn-dir" />
       </button>
     </div>
 
@@ -47,6 +49,10 @@ export default function WaterCard() {
           {t(CONTAINER_COUNT[unit.key], countIn(ml, unit).toLocaleString(dateLocale()))} · {Math.min(999, Math.round(pct * 100))}%
         </div>
         <div className="water-bar"><i style={{ width: Math.min(100, pct * 100) + '%' }} /></div>
+        {parts.auto && extra > 0 && <div className="water-auto">
+          {parts.stepMl > 0 && <span style={{ '--tint': 'var(--green)' }}><Icon name="figureWalk" />+{fmtMl(parts.stepMl)}</span>}
+          {parts.workoutMl > 0 && <span style={{ '--tint': 'var(--orange)' }}><Icon name="figureStrength" />+{fmtMl(parts.workoutMl)}</span>}
+        </div>}
         <div className="small" style={{ marginTop: 4 }}>
           {done ? <span className="water-ok"><Icon name="checkCircle" /> {t('Goal reached!')}</span>
             : next ? <span className="muted"><Icon name="bell" /> {t('Next reminder {0}', time(next))}</span>
@@ -69,7 +75,7 @@ export default function WaterCard() {
     <div className="row between" style={{ marginTop: 12 }}>
       <div className="water-week" aria-hidden="true">
         {days.map(d => <div key={d.iso} className={'ww' + (d.iso === iso ? ' today' : '')}>
-          <span className="ww-bar"><i style={{ height: Math.round(d.ml / max * 100) + '%', background: d.ml >= goal ? 'var(--blue)' : 'color-mix(in srgb,var(--blue) 45%,transparent)' }} /></span>
+          <span className="ww-bar"><i style={{ height: Math.round(d.ml / max * 100) + '%', background: d.ml >= waterGoalParts(S, d.iso).total ? 'var(--blue)' : 'color-mix(in srgb,var(--blue) 45%,transparent)' }} /></span>
           <span className="ww-l">{t(DAYS[d.dow])}</span>
         </div>)}
       </div>

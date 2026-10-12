@@ -90,7 +90,7 @@ describe('2.0 screens render', () => {
   })
   it('Water (2.5: containers, goal, reminders, history)', async () => {
     const st = useStore.getInitialState().S
-    Object.assign(st, { waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 90, from: '08:00', to: '22:00' } })
+    Object.assign(st, { waterAuto: false, waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 90, from: '08:00', to: '22:00' } })
     const html = await render('/water', './Water.jsx')
     expect(html).toContain('vessel')
     expect(html).toContain('wcont')

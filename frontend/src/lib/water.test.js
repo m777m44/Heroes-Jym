@@ -2,6 +2,7 @@ import { describe, it, expect, afterAll } from 'vitest'
 import {
   CONTAINERS, containerOf, waterGoalMlOf, mlOn, setMl, addMl, mergeNative, countIn, waterDays, waterStreak,
   waterAverage, recommendedMl, waterRemindPrefs, reminderSlots, nextReminder, suggestMove, MOVES, MAX_ML_DAY,
+  stepBonusMl, workoutBonusMl, autoGoalMl, workoutMinutesOn, waterGoalParts, waterPanelOn,
 } from './water.js'
 import { waterConfig, waterStrings, staticReminder, bodyKg } from './waterSync.js'
 import { serviceStrings, serviceConfig } from './stepService.js'
@@ -18,9 +19,10 @@ describe('water — ml, containers, goal', () => {
   })
   it('reads the 2.4 glass goal and counts as 250 ml each', () => {
     expect(waterGoalMlOf({})).toBe(2000)
-    expect(waterGoalMlOf({ waterGoal: 10 })).toBe(2500)
-    expect(waterGoalMlOf({ waterGoal: 10, waterGoalMl: 3000 })).toBe(3000)
-    expect(waterGoalMlOf({ waterGoalMl: 99 })).toBe(2000)
+    // with the automatic goal switched off (2.6), the fixed goal — 2.4 glasses read as 250 ml
+    expect(waterGoalMlOf({ waterAuto: false, waterGoal: 10 })).toBe(2500)
+    expect(waterGoalMlOf({ waterAuto: false, waterGoal: 10, waterGoalMl: 3000 })).toBe(3000)
+    expect(waterGoalMlOf({ waterAuto: false, waterGoalMl: 99 })).toBe(2000)
     expect(mlOn({ water: { [today]: 3 } }, today)).toBe(750)
     expect(mlOn({ water: { [today]: 3 }, waterMl: { [today]: 400 } }, today)).toBe(400)
   })
@@ -109,9 +111,13 @@ describe('water — reminders', () => {
 describe('water — what the native side receives', () => {
   afterAll(() => setLang('en'))
   it('sends goal, container, reminders, moves and every placeholder', () => {
-    const S = { waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 120 }, walk: { celebrate: true } }
+    const S = { waterAuto: false, waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 120 }, walk: { celebrate: true } }
     const c = waterConfig(S)
-    expect(c).toMatchObject({ on: true, goalMl: 2500, unitMl: 330, unit: 'can', fullCelebrate: true })
+    expect(c).toMatchObject({ on: true, goalMl: 2500, auto: false, unitMl: 330, unit: 'can', fullCelebrate: true, panel: true })
+    expect(c.containers.map(x => [x.key, x.ml, x.name])).toEqual([['glass', 200, 'Glass'], ['cup', 250, 'Cup'], ['can', 330, 'Can'], ['bottle', 500, 'Bottle']])
+    for (const k of ['panelTitle', 'panelLeft', 'panelDone', 'panelAuto', 'undo', 'edit', 'channelPanel']) expect(c.strings[k]).toBeTruthy()
+    expect(c.strings.panelLeft).toContain('{left}')
+    expect(c.strings.panelAuto).toMatch(/\{base\}.*\{walk\}.*\{train\}/)
     expect(c.remind).toMatchObject({ on: true, every: 120 })
     expect(c.moves).toHaveLength(MOVES.length)
     const s = c.strings
@@ -139,5 +145,51 @@ describe('water — what the native side receives', () => {
     expect(ss.goalKicker).toMatch(/[\u0600-\u06FF]/)
     expect(serviceConfig({ walk: { fullMilestones: true } }).fullMilestones).toBe(true)
     expect(serviceConfig({}).fullCelebrate).toBe(true)
+  })
+})
+
+describe('water — the automatic goal (2.6, mirrored in WaterMath.autoGoal)', () => {
+  const day = '2026-10-12'
+  const H = 3600000
+  it('adds 70 ml per 1,000 steps after 3,000, in 50 ml steps, at most 1,200 ml', () => {
+    expect(stepBonusMl(0)).toBe(0)
+    expect(stepBonusMl(3000)).toBe(0)
+    expect(stepBonusMl(3700)).toBe(0)
+    expect(stepBonusMl(10000)).toBe(450)
+    expect(stepBonusMl(60000)).toBe(1200)
+  })
+  it('adds 10 ml per training minute, at most 1,500 ml', () => {
+    expect(workoutBonusMl(0)).toBe(0)
+    expect(workoutBonusMl(30)).toBe(300)
+    expect(workoutBonusMl(45)).toBe(450)
+    expect(workoutBonusMl(999)).toBe(1500)
+    expect(autoGoalMl(2000, 10000, 30)).toBe(2750)
+    expect(autoGoalMl(5000, 60000, 999)).toBe(6000)
+  })
+  it('counts the day’s finished workouts and the running one, each capped at 4 h', () => {
+    const t0 = new Date(2026, 9, 12, 8).getTime()
+    const S = {
+      workouts: [{ d: day, start: t0, end: t0 + 0.5 * H }, { d: day, start: t0, end: t0 + 9 * H }, { d: '2026-10-11', start: 0, end: H }],
+      active: { d: day, start: t0 + 10 * H },
+    }
+    expect(workoutMinutesOn(S, day, t0 + 10.25 * H)).toBe(30 + 240 + 15)
+    expect(workoutMinutesOn({}, day)).toBe(0)
+  })
+  it('explains the goal: body weight + walking + training', () => {
+    const S = { unit: 'kg', bodyweight: [{ w: 80 }], steps: { [day]: { n: 10000 } }, workouts: [{ d: day, start: 0, end: 30 * 60000 }] }
+    const p = waterGoalParts(S, day, 40 * 60000)
+    expect(p).toMatchObject({ auto: true, base: 2750, steps: 10000, stepMl: 450, workoutMin: 30, workoutMl: 300, total: 3500 })
+    expect(waterGoalMlOf(S, day)).toBe(3500)
+    // switched off: the fixed goal, whatever the day held
+    expect(waterGoalParts({ ...S, waterAuto: false, waterGoalMl: 2000 }, day)).toMatchObject({ auto: false, total: 2000, stepMl: 0 })
+  })
+  it('judges each day of a streak against that day’s own goal', () => {
+    const S = { waterMl: { '2026-10-11': 2000, '2026-10-12': 2000 }, steps: { '2026-10-11': { n: 20000 } } }
+    expect(waterStreak(S, '2026-10-12')).toBe(1)        // the 11th needed 3,150 ml
+  })
+  it('shows the water panel in the notifications unless switched off', () => {
+    expect(waterPanelOn({})).toBe(true)
+    expect(waterPanelOn({ waterPanel: false })).toBe(false)
+    expect(waterPanelOn({ waterOn: false })).toBe(false)
   })
 })

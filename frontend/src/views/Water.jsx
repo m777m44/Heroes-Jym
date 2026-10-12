@@ -6,8 +6,9 @@ import { t, dateLocale } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
 import { MOBILE } from '../lib/mobile.js'
 import {
-  CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, GOALS_ML, REMIND_EVERY, containerOf, waterGoalMlOf, mlOn, waterDays,
-  waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, MOVES,
+  CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, GOALS_ML, REMIND_EVERY, containerOf, waterGoalParts, mlOn, waterDays,
+  waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, MOVES, waterPanelOn, fixedGoalMlOf,
+  ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE,
 } from '../lib/water.js'
 import { bodyKg, testWaterReminder } from '../lib/waterSync.js'
 import Icon from '../components/Icon.jsx'
@@ -25,7 +26,8 @@ export default function Water() {
   const canUndo = useWaterUndo(s => s.stack.length > 0)
   const [busy, setBusy] = useState(false)
   const iso = todayISO()
-  const goal = waterGoalMlOf(S)
+  const parts = waterGoalParts(S, iso)
+  const goal = parts.total
   const ml = mlOn(S, iso)
   const unit = containerOf(S)
   const rp = waterRemindPrefs(S)
@@ -90,16 +92,31 @@ export default function Water() {
       </div>
     </Section>
 
-    <Section title={t('Daily goal')} footer={kg
+    <Section title={t('Daily goal')} footer={parts.auto
+      ? t('{0} ml per 1,000 steps after the first {1}, and {2} ml per minute of training. Updates through the day — also in the notification.', ML_PER_1000_STEPS, fmtMl(STEP_FREE), ML_PER_WORKOUT_MIN)
+      : kg
       ? t('About 33 ml per kg of body weight — {0} ml for {1} kg. More on hot days and training days.', fmtMl(rec), Math.round(kg))
       : t('Log your body weight for a personal recommendation (about 33 ml per kg).')}>
+      <Row icon="sparkles" iconTint="var(--teal)" title={t('Automatic goal')} subtitle={t('From your body weight, today’s steps and workouts')}>
+        <Switch checked={parts.auto} onChange={v => update(s => { s.waterAuto = v; if (!v && !s.waterGoalMl) s.waterGoalMl = goal })} />
+      </Row>
+      {parts.auto ? <GoalBreakdown parts={parts} kg={kg} unit={unit} /> : <>
       <SelectRow icon="target" iconTint="var(--blue)" title={t('Daily water goal')} sheetTitle={t('Daily water goal')}
-        value={goal}
+        value={fixedGoalMlOf(S)}
         options={[...new Set([...GOALS_ML, goal, rec])].sort((a, b) => a - b).map(g => ({ value: g, label: `${fmtMl(g)} ${t('ml')}` + (g === rec && kg ? ' · ' + t('Recommended') : '') }))}
         onChange={v => update(s => { s.waterGoalMl = v })} />
-      {kg && goal !== rec && <Row icon="sparkles" iconTint="var(--teal)" title={t('Use the recommendation')} value={`${fmtMl(rec)} ${t('ml')}`}
+      {kg && fixedGoalMlOf(S) !== rec && <Row icon="sparkles" iconTint="var(--teal)" title={t('Use the recommendation')} value={`${fmtMl(rec)} ${t('ml')}`}
         accessory="chevron" onClick={() => update(s => { s.waterGoalMl = rec })} />}
+      </>}
     </Section>
+
+    {MOBILE && <Section title={t('Water in the notifications')}
+      footer={t('Tap a glass, cup, can or bottle in the notification to add it, Undo to take the last one back, Edit to open this screen — all with the app closed.')}>
+      <Row icon="bell" iconTint="var(--blue)" title={t('Water panel in the notifications')} subtitle={t('Today’s water, the goal and the containers')}>
+        <Switch checked={waterPanelOn(S)} onChange={v => update(s => { s.waterPanel = v })} />
+      </Row>
+      <NotifPreview S={S} ml={ml} goal={goal} unit={unit} parts={parts} />
+    </Section>}
 
     <Section title={t('Reminders')}
       footer={MOBILE
@@ -129,7 +146,7 @@ export default function Water() {
       <div style={{ padding: '12px 14px 14px' }}>
         <div className="wbars" aria-hidden="true">
           {days.map(d => <div key={d.iso} className={'b' + (d.iso === iso ? ' today' : '')}>
-            <i style={{ height: Math.max(3, Math.round(d.ml / max * 100)) + '%', background: d.ml >= goal ? 'linear-gradient(180deg,#64d2ff,var(--blue))' : 'color-mix(in srgb,var(--blue) 40%,transparent)' }} />
+            <i style={{ height: Math.max(3, Math.round(d.ml / max * 100)) + '%', background: d.ml >= waterGoalParts(S, d.iso).total ? 'linear-gradient(180deg,#64d2ff,var(--blue))' : 'color-mix(in srgb,var(--blue) 40%,transparent)' }} />
             <span>{new Date(d.iso + 'T12:00:00').getDate().toLocaleString(dateLocale())}</span>
           </div>)}
         </div>
@@ -147,5 +164,49 @@ export default function Water() {
       </Row>
       <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
     </Section>
+  </div>
+}
+
+// The automatic goal, explained: a bar in three colours (body weight · walking · training)
+// that grows as the day goes on, and one line for each part.
+function GoalBreakdown({ parts, kg, unit }) {
+  const total = Math.max(1, parts.total)
+  const seg = [
+    { k: 'base', v: parts.base, c: 'var(--blue)', icon: 'scale', label: t('Base'), sub: kg ? t('{0} kg × 33 ml', Math.round(kg).toLocaleString(dateLocale())) : t('No weigh-in yet — standard 2,000 ml') },
+    { k: 'walk', v: parts.stepMl, c: 'var(--green)', icon: 'figureWalk', label: t('Walking'), sub: t('{0} steps today', parts.steps.toLocaleString(dateLocale())) },
+    { k: 'train', v: parts.workoutMl, c: 'var(--orange)', icon: 'figureStrength', label: t('Training'), sub: t('{0} min today', parts.workoutMin.toLocaleString(dateLocale())) },
+  ]
+  return <div className="wgoal">
+    <div className="wgoal-bar" aria-hidden="true">
+      {seg.map(x => <i key={x.k} style={{ flexGrow: x.v / total, background: x.c }} />)}
+    </div>
+    {seg.map(x => (
+      <div key={x.k} className="wgoal-row">
+        <span className="wgoal-ic" style={{ '--tint': x.c }}><Icon name={x.icon} /></span>
+        <div className="wgoal-t"><b>{x.label}</b><span>{x.sub}</span></div>
+        <b className="wgoal-v">{x.k === 'base' ? '' : '+'}{fmtMl(x.v)} {t('ml')}</b>
+      </div>
+    ))}
+    <div className="wgoal-row total">
+      <span className="wgoal-ic" style={{ '--tint': 'var(--teal)' }}><Icon name="drop" /></span>
+      <div className="wgoal-t"><b>{t('Today’s goal')}</b><span>{t(CONTAINER_COUNT[unit.key], countIn(parts.total, unit).toLocaleString(dateLocale()))}</span></div>
+      <b className="wgoal-v">{fmtMl(parts.total)} {t('ml')}</b>
+    </div>
+  </div>
+}
+
+// What the notification looks like — the same panel as WaterReminder.java draws, so the
+// buttons are recognisable when they show up in the shade.
+function NotifPreview({ ml, goal, unit, parts }) {
+  const pct = Math.min(999, Math.round(ml / Math.max(1, goal) * 100))
+  return <div className="wnotif" aria-hidden="true">
+    <div className="wnotif-h"><Icon name="drop" /><b>{fmtMl(ml)} / {fmtMl(goal)} {t('ml')}</b><span>{pct}%</span></div>
+    <div className="wnotif-bar"><i style={{ width: Math.min(100, pct) + '%' }} /></div>
+    <div className="wnotif-sub">{ml >= goal ? t('Goal reached — well done!') : t('{0} ml to go', fmtMl(goal - ml))}
+      {parts.auto ? ' · ' + t('Auto goal: {0} + {1} walking + {2} training', fmtMl(parts.base), fmtMl(parts.stepMl), fmtMl(parts.workoutMl)) : ''}</div>
+    <div className="wnotif-chips">
+      {CONTAINERS.map(c => <span key={c.key} className={c.key === unit.key ? 'sel' : ''}><ContainerIcon kind={c.key} /><b>{t(CONTAINER_NAME[c.key])}</b><small>+{fmtMl(c.ml)}</small></span>)}
+    </div>
+    <div className="wnotif-acts"><span><Icon name="reset" /> {t('Undo')}</span><span><Icon name="pencil" /> {t('Edit')}</span></div>
   </div>
 }

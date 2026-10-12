@@ -14,7 +14,9 @@ export const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 // lived in Iraq and most of the Arab world (Friday is the weekend); Sunday or Monday can be
 // picked in Settings. Every week view (plan, week strip, calendar, heatmap) follows it.
 export const WEEK_STARTS = [6, 0, 1]
-export const weekStartOf = S => { const v = S && S.weekStart; return v === 0 || v === 1 || v === 6 ? v : 6 }
+// 2.6: the week always runs Saturday → Friday (the "Week starts on" setting was removed);
+// an older saved S.weekStart is ignored.
+export const weekStartOf = () => 6
 /** The seven weekdays (getDay() numbers) in display order. */
 export const weekOrder = start => Array.from({ length: 7 }, (_, i) => (start + i) % 7)
 /** The first day (local noon) of the week that contains `date`. */

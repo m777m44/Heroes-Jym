@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -33,6 +33,9 @@ import BodyWeight from './views/BodyWeight.jsx'
 import Water from './views/Water.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
+import AccountGate from './components/AccountGate.jsx'
+import { storageChosen, startCloudSync } from './lib/cloud.js'
+import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
@@ -72,6 +75,10 @@ function Shell() {
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
   // water: reminders (native on Android) and the two-way sync with the notification buttons
   useEffect(() => { if (ready && authed) return startWaterSync(useStore) }, [ready, authed])
+  // 2.6: the Google account copy (when signed in) — kept in step while the app runs
+  useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
+  // first launch on the phone: where should the data live? (then the permissions dialog)
+  const [chosen, setChosen] = useState(() => !MOBILE || storageChosen())
   // back from the system settings (e.g. "Physical activity" allowed again): try once more
   useEffect(() => {
     if (!ready || !authed) return
@@ -127,7 +134,7 @@ function Shell() {
       <Modals />
       <Toast />
       <CelebrationOverlay />
-      {authed && ready && !DEMO && <PermissionGate />}
+      {authed && ready && !DEMO && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
     </>
   )
 }

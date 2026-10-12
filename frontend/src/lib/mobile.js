@@ -49,7 +49,8 @@ export async function syncReminder(S, interactive = false) {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i)]
     await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
-    if (!S.reminder?.on) { lastSig = sig; return true }
+    const { reminderPrefs } = await import('./dailyReminder.js')
+    if (!reminderPrefs(S).on) { lastSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false

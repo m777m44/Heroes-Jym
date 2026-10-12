@@ -6,7 +6,7 @@
 // re-plans after every relevant state change — log today's workout and today's reminder and
 // its follow-up simply aren't in the next plan any more.
 //
-// What a day can get (S.reminder = { on, time, tz, nudge, walk }):
+// What a day can get (S.reminder = { on, time, tz, nudge, walk, days, v2 }):
 //   · workout day, not trained yet  → a reminder at `time`, mentioning the step goal too —
 //                                     one combined notification rather than two
 //   · …still not trained an hour on → a follow-up nudge (`nudge`, default on)
@@ -19,7 +19,13 @@ import { effectiveRoutineId } from './history.js'
 import { routineLabel } from './routines.js'
 import { isoOf } from './format.js'
 import { goalOf, stepsOn } from './stepMetrics.js'
-import { t, dateLocale, getLang } from './i18n.js'
+import { t, dateLocale, getLang, exName } from './i18n.js'
+import { EXIDX } from './exercises.js'
+
+// 2.6: on by default in the phone app (until switched off there — `v2` marks a choice made),
+// and a time per weekday (`days` { getDay(): 'HH:MM' }) on top of the one time for all days.
+const DEFAULT_ON = import.meta.env && import.meta.env.VITE_MOBILE === '1'
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
 export const PLAN_DAYS = 14
 export const NUDGE_AFTER_MIN = 60
@@ -28,25 +34,43 @@ export const LEGACY_IDS = [100, 101, 102, 103, 104, 105, 106]   // the old weekd
 
 export const reminderPrefs = S => {
   const r = (S && S.reminder) || {}
-  return { on: !!r.on, time: /^\d\d:\d\d$/.test(r.time || '') ? r.time : '08:00', nudge: r.nudge !== false, walk: !!r.walk }
+  const days = {}
+  for (const [k, v] of Object.entries(r.days || {})) if (/^[0-6]$/.test(k) && HHMM.test(v || '')) days[k] = v
+  return {
+    on: r.v2 || !DEFAULT_ON ? !!r.on : true,
+    time: /^\d\d:\d\d$/.test(r.time || '') ? r.time : '08:00', nudge: r.nudge !== false, walk: !!r.walk, days,
+  }
+}
+
+/** The reminder time on weekday `dow` (getDay()): that day's own time, else the shared one. */
+export const timeFor = (p, dow) => p.days[dow] || p.time
+
+/** Exercises, sets and a time estimate of a routine: { n, sets, min, names }. */
+export function routineSummary(routine, restSec = 90) {
+  const ex = (routine && routine.ex) || []
+  const sets = ex.reduce((a, e) => a + (Number(e.sets) || 3), 0)
+  const min = Math.max(10, Math.round(sets * (40 + (Number(restSec) || 90)) / 60 / 5) * 5)
+  const names = ex.slice(0, 3).map(e => (EXIDX[e.id] ? exName(EXIDX[e.id]) : '')).filter(Boolean)
+  return { n: ex.length, sets, min, names, more: Math.max(0, ex.length - names.length) }
 }
 
 /** Every reminder still to come in the next `days` days, in time order. */
 export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
   const r = reminderPrefs(S)
   if (!r.on) return []
-  const [hh, mm] = r.time.split(':').map(Number)
   const trained = new Set((S.workouts || []).map(w => w.d))
   const out = []
   for (let i = 0; i < days; i++) {
+    const dow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12).getDay()
+    const [hh, mm] = timeFor(r, dow).split(':').map(Number)
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, hh, mm, 0, 0)
     const iso = isoOf(day)
     if (trained.has(iso)) continue
     const rid = effectiveRoutineId(S, iso)
     const routine = rid ? (S.routines || []).find(x => x.id === rid) : null
     if (routine) {
-      out.push({ id: ID_BASE + i * 2, kind: 'workout', iso, at: day, routine: routineLabel(routine.name) })
-      if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'nudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), routine: routineLabel(routine.name) })
+      out.push({ id: ID_BASE + i * 2, kind: 'workout', iso, at: day, routine: routineLabel(routine.name), rid: routine.id })
+      if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'nudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), routine: routineLabel(routine.name), rid: routine.id })
     } else if (r.walk) {
       if (i === 0 && stepsOn(S, iso) >= goalOf(S)) continue
       out.push({ id: ID_BASE + i * 2, kind: 'walk', iso, at: day })
@@ -58,6 +82,18 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
 /** Title and body for a planned reminder, in the current language. */
 export function reminderText(item, S) {
   const goal = goalOf(S).toLocaleString(dateLocale())
+  const routine = item.rid ? (S.routines || []).find(r => r.id === item.rid) : null
+  const sum = routine ? routineSummary(routine, S.restSec) : null
+  if (item.kind === 'workout' && sum && sum.n) {
+    let list = sum.names.join(', ')
+    try { list = new Intl.ListFormat(dateLocale(), { style: 'short', type: 'unit' }).format(sum.names) } catch { /* old engine */ }
+    const names = list + (sum.more ? ' ' + t('+{0} more', sum.more.toLocaleString(dateLocale())) : '')
+    return {
+      title: '🏋️ ' + t('{0} today', item.routine),
+      body: t('{0} exercises · about {1} min', sum.n.toLocaleString(dateLocale()), sum.min.toLocaleString(dateLocale())) +
+        (names ? ' — ' + names : '') + '. ' + t('Plus {0} steps to walk.', goal),
+    }
+  }
   if (item.kind === 'workout') return {
     title: t('{0} today', item.routine),
     body: t('It’s on your plan — plus {0} steps to walk. Let’s go!', goal),
@@ -97,7 +133,7 @@ export function suggestedReminderTime(workouts) {
  */
 export function planSignature(S, now = new Date()) {
   return JSON.stringify([
-    reminderPrefs(S), S.week, S.dayPlan, (S.routines || []).map(r => [r.id, r.name]), getLang(),   // texts follow the language
+    reminderPrefs(S), S.week, S.dayPlan, (S.routines || []).map(r => [r.id, r.name, (r.ex || []).length]), S.restSec, getLang(),   // texts follow the language
     (S.workouts || []).slice(-3).map(w => w.d), goalOf(S), isoOf(now),
     // a rest-day walk reminder disappears once today's goal is met
     reminderPrefs(S).walk && stepsOn(S, isoOf(now)) >= goalOf(S),
