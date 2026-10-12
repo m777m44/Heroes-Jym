@@ -30,10 +30,12 @@ import CoachIntake from './views/CoachIntake.jsx'
 import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
+import Water from './views/Water.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
+import { startWaterSync } from './lib/waterSync.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -68,6 +70,8 @@ function Shell() {
   const authed = user || isGuest
   // the step counter comes back on by itself if it was on when the app was last closed
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
+  // water: reminders (native on Android) and the two-way sync with the notification buttons
+  useEffect(() => { if (ready && authed) return startWaterSync(useStore) }, [ready, authed])
   // back from the system settings (e.g. "Physical activity" allowed again): try once more
   useEffect(() => {
     if (!ready || !authed) return
@@ -105,6 +109,7 @@ function Shell() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/walk" element={<Walking />} />
               <Route path="/weight" element={<BodyWeight />} />
+              <Route path="/water" element={<Water />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}

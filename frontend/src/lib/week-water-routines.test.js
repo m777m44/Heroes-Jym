@@ -1,6 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { weekStartOf, weekOrder, startOfWeek, weekId, isoOf, ACCENTS } from './format.js'
-import { GLASS_ML, waterGoalOf, glassesOn, setGlasses, waterDays, waterStreak, MAX_GLASSES } from './water.js'
 import {
   routineLabel, routineColor, ROUTINE_COLORS, SIX_DAY_SPLIT, starterKind, applySixDaySplit, hasSixDaySplit
 } from './routines.js'
@@ -30,43 +29,6 @@ describe('week order', () => {
     expect(isoOf(startOfWeek('2026-10-17T12:00:00', 6))).toBe('2026-10-17')
     expect(weekId('2026-10-11', 0)).toBe('2026-10-11')
     expect(weekId('2026-10-11', 1)).toBe('2026-10-05')
-  })
-})
-
-describe('water tracker', () => {
-  const today = '2026-10-11'
-  it('defaults and clamps the goal', () => {
-    expect(GLASS_ML).toBe(250)
-    expect(waterGoalOf({})).toBe(8)
-    expect(waterGoalOf({ waterGoal: 10 })).toBe(10)
-    expect(waterGoalOf({ waterGoal: 7 })).toBe(8)
-  })
-  it('stores glasses per day, clamped, without zeros', () => {
-    const s = {}
-    setGlasses(s, today, 3)
-    expect(glassesOn(s, today)).toBe(3)
-    setGlasses(s, today, -2)
-    expect(s.water[today]).toBeUndefined()
-    setGlasses(s, today, 999)
-    expect(glassesOn(s, today)).toBe(MAX_GLASSES)
-  })
-  it('drops history older than 400 days', () => {
-    const s = { water: { '2020-01-01': 5, '2026-10-01': 4 } }
-    setGlasses(s, today, 1)
-    expect(s.water['2020-01-01']).toBeUndefined()
-    expect(s.water['2026-10-01']).toBe(4)
-  })
-  it('lists the last seven days oldest first', () => {
-    const d = waterDays({ water: { [today]: 2, '2026-10-05': 8 } }, today)
-    expect(d).toHaveLength(7)
-    expect(d[0]).toEqual({ iso: '2026-10-05', n: 8, dow: 1 })
-    expect(d[6]).toEqual({ iso: today, n: 2, dow: 0 })
-  })
-  it('counts the streak, not breaking it before today is done', () => {
-    const S = { waterGoal: 8, water: { '2026-10-08': 8, '2026-10-09': 9, '2026-10-10': 8, [today]: 3 } }
-    expect(waterStreak(S, today)).toBe(3)
-    expect(waterStreak({ ...S, water: { ...S.water, [today]: 8 } }, today)).toBe(4)
-    expect(waterStreak({ waterGoal: 8, water: {} }, today)).toBe(0)
   })
 })
 

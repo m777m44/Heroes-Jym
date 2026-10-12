@@ -286,6 +286,9 @@ public class StepCounterService extends Service implements SensorEventListener {
         });
     }
 
+    /** Redraw the live notification now (water added from a notification button). */
+    void refreshNotification() { main.post(() -> publish(true)); }
+
     void applyConfig() {
         main.post(() -> {
             StepNotifier.createChannels(this, store);
@@ -362,7 +365,13 @@ public class StepCounterService extends Service implements SensorEventListener {
             say = store.str("milestoneSay", "{steps} steps").replace("{steps}", nf.format(m)) + ". " + body;
         }
         if (store.pref("vibrate", true)) vibrate(goalNow);
-        if (!appVisible && store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        if (!appVisible) {
+            // 2.5: the goal (and, when switched on, every 1,000 steps) is celebrated outside the
+            // app — a picture notification and a full-screen cheer; otherwise the plain alert.
+            boolean cheer = goalNow ? store.pref("fullCelebrate", true) : store.pref("fullMilestones", false);
+            if (cheer && store.pref("celebrate", true)) Celebration.steps(this, store, goalNow, goalNow ? next : m, body);
+            else if (store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        }
         if (store.pref("voice", false)) speak(goalNow ? say + " " + body : say);
     }
 

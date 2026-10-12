@@ -127,9 +127,8 @@ export default function Settings() {
     <Section title={t('Walking & body')}>
       <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
-      <Row icon="drop" iconTint="var(--blue)" title={t('Water tracker')} subtitle={t('A card on Home to count glasses of water')}>
-        <Switch checked={S.waterOn !== false} onChange={v => update(s => { s.waterOn = v })} />
-      </Row>
+      <Row icon="drop" iconTint="var(--blue)" title={t('Water & reminders')} subtitle={t('Glass, cup or can · daily goal · reminders with an exercise')} accessory="chevron" onClick={() => nav('/water')} />
+      <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
     </Section>
 
     {/* ---------- during a workout ---------- */}

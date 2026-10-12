@@ -27,6 +27,10 @@ export const WALK_DEFAULTS = {
   gps: false,         // GPS speed (more accurate outdoors) — off: location is opt-in
   voice: false,       // spoken encouragement every 1,000 steps and at the goal (Android app)
   alertSound: true,   // milestone alerts make a sound (also needs the app's Sounds switch)
+  // 2.5 — the celebration outside the app (Android): a full-screen cheer over the lock screen
+  // and other apps when the goal is reached with the app closed, plus a picture notification.
+  fullCelebrate: true,
+  fullMilestones: false,   // …also at every 1,000 steps (off: that would be a lot of screens)
 }
 export const walkPrefs = S => ({ ...WALK_DEFAULTS, ...(S && S.walk) })
 

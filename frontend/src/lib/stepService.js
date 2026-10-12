@@ -9,7 +9,7 @@
 //
 // Everything here is behind MOBILE + platform checks; web bundles never load the plugin.
 import { MOBILE } from './mobile.js'
-import { t, getLang, dateLocale } from './i18n.js'
+import { t, U, getLang, dateLocale } from './i18n.js'
 import { goalOf, strideMeters, walkPrefs } from './stepMetrics.js'
 import { IRAQ_TZ, clockZoneOf } from './liveClock.js'
 
@@ -70,13 +70,20 @@ export function serviceStrings(S) {
     pause: t('Pause'),
     resume: t('Resume'),
     open: t('Open'),
-    km: 'km',
-    kcal: 'kcal',
-    kmh: 'km/h',
+    km: U('km'),
+    kcal: U('kcal'),
+    kmh: U('km/h'),
     active: t('active'),
     dayLeft: t('Day ends in'),
     zoneLabel: zone === IRAQ_TZ ? t('Baghdad') : '',
     goalTitle: t('Daily goal reached!') + ' 🎉',
+    // 2.5 — the full-screen celebration and its picture notification
+    goalKicker: t('Daily goal reached!'),
+    milestoneKicker: t('Milestone'),
+    stepsUnit: t('steps'),
+    celebrateOpen: t('Open app'),
+    celebrateHint: t('Tap anywhere to close'),
+    channelCelebrate: t('Celebrations'),
     goalBody: [t('{0} steps today — well done.', '{steps}'), t('Champion! {0} steps today.', '{steps}')],
     goalSay: t('Goal reached. Well done!'),
     milestoneTitle: t('{0} steps!', '{steps}'),
@@ -106,6 +113,9 @@ export function serviceConfig(S, weightKg) {
     alerts: !!p.notify,
     sound: S.sound !== false && p.alertSound !== false,
     voice: !!p.voice,
+    celebrate: p.celebrate !== false,
+    fullCelebrate: p.celebrate !== false && p.fullCelebrate !== false,
+    fullMilestones: p.celebrate !== false && !!p.fullMilestones,
     lang: getLang(),
     locale: dateLocale(),
     clockZone: clockZoneOf(S),

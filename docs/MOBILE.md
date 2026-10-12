@@ -129,6 +129,24 @@ What keeps it running:
 Turning counting off (Walking → Stop) cancels the watchdog; nothing restarts after that.
 The consent is stored in `localStorage` (`mj_consent_v1`).
 
+## Water reminders & the full-screen celebration (2.5, Android)
+
+- **Water reminders** are AlarmManager alarms owned by `WaterReminder.java` (re-armed after a
+  reboot by `BootReceiver` and whenever the web app sends `configureWater`). Each one reads the
+  native `WaterStore` (prefs `mj_water`) and `StepStore`, so it shows today's water, steps and
+  an exercise picked by `WaterMath.suggest` (mirrored in `lib/water.js`, tested on both sides).
+  “Drank it” and the “+ water” button on the live step notification are broadcasts — they work
+  without opening the app; the web app merges the days back (`getWater` / `water` event).
+- **Celebration outside the app:** `Celebration.java` posts a high-priority notification with
+  a picture drawn by `CelebrationArt` and a full-screen intent to `CelebrationActivity`
+  (Canvas scene in `CelebrationView`, jingle synthesized by `Fanfare`). Android shows it over
+  the lock screen when the screen is off/locked; on Android 14+ the user can switch
+  full-screen intents off per app (Walking → Celebrations shows the state and a shortcut).
+  With **Display over other apps** allowed (`SYSTEM_ALERT_WINDOW`, optional) it also opens on
+  top of other apps on an unlocked screen.
+- iPhone schedules the next day of water reminders as local notifications; there is no
+  full-screen celebration outside the app on iOS.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

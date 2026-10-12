@@ -44,6 +44,25 @@
             android:name=".steps.Watchdog"
             android:exported="false" />
 
+        <!-- MAHDI-JYM 2.5 — water reminders with a short exercise, scheduled natively so they
+             arrive (and "Drank it" works) with the app closed. -->
+        <receiver
+            android:name=".steps.WaterReminder"
+            android:exported="false" />
+
+        <!-- The full-screen celebration: over the lock screen (full-screen intent) and, with
+             "Display over other apps", on top of whatever is open. Own task, no recents entry. -->
+        <activity
+            android:name=".steps.CelebrationActivity"
+            android:exported="false"
+            android:theme="@style/CelebrationTheme"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
+
         <receiver
             android:name=".steps.StepWidget"
             android:exported="true"
@@ -94,6 +113,11 @@
          on the device to compute speed and are never stored or sent anywhere. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- 2.5 — the goal celebration may cover the lock screen (Android 14+ lets the user turn
+         this off per app), and — only if the user allows "Display over other apps" in
+         Settings — open on top of another app. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

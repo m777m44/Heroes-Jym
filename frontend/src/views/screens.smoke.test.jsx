@@ -75,8 +75,39 @@ describe('2.0 screens render', () => {
     expect(useCelebration.getState().current).toBeTruthy()
     useCelebration.getInitialState().current = useCelebration.getState().current   // SSR snapshot, see above
     const html = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
-    expect(html).toContain('celebrate goal')
-    expect(html).toContain('cheer-arm-l')
+    // 2.5: full screen — confetti canvas, rings, badge, count-up, no bouncing figure
+    expect(html).toContain('celebrate kind-goal')
+    expect(html).toContain('celebrate-confetti')
+    expect(html).toContain('celebrate-badge')
+    expect(html).toContain('Daily goal reached!')
+    expect(html).not.toContain('cheer-fig')
+    celebrate(2000, 'water')
+    useCelebration.getInitialState().current = useCelebration.getState().current
+    const w = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
+    expect(w).toContain('kind-water')
+    expect(w).toContain('Water goal reached!')
+    useCelebration.getInitialState().current = null
+  })
+  it('Water (2.5: containers, goal, reminders, history)', async () => {
+    const st = useStore.getInitialState().S
+    Object.assign(st, { waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 90, from: '08:00', to: '22:00' } })
+    const html = await render('/water', './Water.jsx')
+    expect(html).toContain('vessel')
+    expect(html).toContain('wcont')
+    expect(html).toContain('Remind me to drink')
+    expect(html).toContain('How often')
+    expect(html).toContain('type="time"')
+    expect(html).toContain('2,500')
+    expect(html).toContain('Last 14 days')
+    const home = await render('/home', '../components/WaterCard.jsx')
+    expect(home).toContain('water-chips')
+    expect(home).toMatch(/wchip sel[^>]*>.*?Can/)
+    const { setLang } = await import('../lib/i18n.js')
+    await setLang('ar')
+    try {
+      const ar = await render('/water', './Water.jsx')
+      for (const w of ['كلاص', 'كوب', 'علبة', 'قنينة', 'ذكّرني بشرب الماء', 'التذكيرات']) expect(ar).toContain(w)
+    } finally { await setLang('en') }
   })
   it('Walking in Arabic (RTL language, translated)', async () => {
     const { setLang, isRTL, dateLocale } = await import('../lib/i18n.js')

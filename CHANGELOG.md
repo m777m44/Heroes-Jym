@@ -3,6 +3,66 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.5.0 — 2026-10-12
+
+**Water reminders with an exercise, by glass, cup or can — and a full-screen celebration that
+appears even with the app closed.**
+*تذكير بشرب الماء مع تمرين مناسب، بالكلاص أو الكوب أو العلبة — واحتفال بملء الشاشة يظهر حتى والتطبيق مغلق.*
+
+### 💧 Water, in millilitres, by what you drink from
+- Pick your container: **glass / كلاص (200 ml) · cup / كوب (250 ml) · can / علبة (330 ml) ·
+  bottle / قنينة (500 ml)**. One tap per container on the Home card, with **Undo**.
+- A glass on the Home card **fills up as you drink** (a slow wave, no bounce); ml against
+  the goal, the count in your container, the next reminder, the week, the streak.
+- New **Water screen** (Home → Water, or Settings → Water & reminders): today's glass, the
+  container picker, the daily goal with a **recommendation from your body weight**
+  (≈ 33 ml per kg), the reminders and the last 14 days (7-day average, streak, best day).
+- 2.4's glass counts are kept: they're read as 250 ml each until the day is written again.
+
+### 🔔 Water reminders — with an exercise, in the notifications, with the app closed
+- Every 60 / 90 / 120 / 180 minutes between the hours you choose (default 09:00–22:00,
+  every 90 min). **Scheduled natively on Android**, so they arrive with the app closed and
+  after a restart; skipped once the day's goal is reached.
+- Each reminder shows **today's water with a progress bar and today's steps**, and **a
+  suitable exercise**: a short walk (e.g. «امشِ 500 خطوة — حوالي 5 دقائق») when you've been
+  still for an hour or are behind on the step pace for this time of day, otherwise a rotating
+  mini-workout (10 squats, 20 calf raises, a 30-second plank, wall sit, lunges, stretches…).
+- Buttons right in the notification: **“Drank it”** (adds one container, without opening the
+  app) and **“In 15 min”**.
+- The **live step notification** now has a **water row with its
+  own progress bar** and a **“+ water” button** (adds one of your container).
+- Changes made from a notification and in the app are merged both ways.
+- iPhone: local notifications; browser: reminders while the app is open (+ a system
+  notification when the tab is in the background). "Send a test reminder" on the Water screen.
+
+### 🎉 Celebration — redesigned, full screen, also outside the app
+- **New full-screen scene** in the app: a dark backdrop lit in the goal's colour, expanding
+  rings, a glowing badge (trophy / medal / drop), the number counting up, and confetti
+  falling with gravity, drift, spin and flutter on a canvas. Eases in — no bounce.
+  6 seconds, tap to close. A water-goal celebration in blue.
+- **With the app closed (Android)**, reaching the step goal or the water goal shows:
+  - a **full-screen celebration over the lock screen** (it turns the screen on), drawn
+    natively with the same scene, closing itself after 8 seconds, with an “Open app” button;
+  - a **picture notification** — the image is drawn on the phone (gradient, confetti,
+    number) — that replays the full-screen celebration when tapped;
+  - a short **fanfare synthesized on the phone** (follows the Sounds switch and silent mode)
+    and a vibration.
+- With “Display over other apps” allowed (optional), the celebration also opens **on top of
+  whatever app is in use**.
+- Walking → **Celebrations**: in-app cheer, full screen with the app closed, also every
+  1,000 steps (off by default), the status of “Full-screen notifications” and “Display over
+  other apps” with a shortcut to each, and **Preview celebration / Preview the notification**.
+
+### 🛠️ Fixes & polish
+- The step notification's units are translated (كم · سعرة · كم/س instead of km / kcal).
+- 79 new strings in all 12 languages (1,155 keys each); Arabic container names كلاص · كوب ·
+  علبة · قنينة.
+- Tests: water maths (ml, migration, merge, slots, exercise choice), the native config,
+  the new screens and the Arabic guard (now covering the Water screen) — 344 web tests;
+  `WaterMathTest` mirrors the reminder rules on the JVM in CI.
+- Android: `USE_FULL_SCREEN_INTENT` and the optional `SYSTEM_ALERT_WINDOW` permissions;
+  versionCode 11.
+
 ## v2.4.0 — 2026-10-11
 
 **A Saturday-to-Friday week, routine names in Arabic, colours for every routine, a water

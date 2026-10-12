@@ -159,7 +159,10 @@ final class StepNotifier {
         fillBig(c, big, s, speed, moving, nf, steps, goal, pct, zone);
 
         String title = s.str("todayTitle", "Steps today") + " · " + stepsTxt + " " + goalTxt;
-        String text = twoDecimals(s, s.km()) + " km · " + nf.format(s.kcal()) + " kcal · " + oneDecimal(s, speed) + " km/h";
+        String text = twoDecimals(s, s.km()) + " " + s.str("km", "km") + " · " + nf.format(s.kcal()) + " " + s.str("kcal", "kcal")
+            + " · " + oneDecimal(s, speed) + " " + s.str("kmh", "km/h");
+        String water = waterLine(c);
+        if (water != null) text = text + " · " + water;
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_LIVE)
             .setSmallIcon(R.drawable.ic_stat_steps)
@@ -187,7 +190,17 @@ final class StepNotifier {
             b.addAction(android.R.drawable.ic_media_pause, s.str("pause", "Pause"), serviceAction(c, StepCounterService.ACTION_PAUSE, 12));
         }
         b.addAction(android.R.drawable.ic_menu_view, s.str("open", "Open"), openApp(c, 13));
+        // 2.5: "+ cup" — log a drink straight from the step notification.
+        WaterStore w = WaterStore.get(c);
+        if (w.trackerOn()) b.addAction(android.R.drawable.ic_input_add, w.str("liveAdd", "+ water"), WaterReminder.liveDrink(c));
         return b.build();
+    }
+
+    /** "💧 1,250 / 2,000 ml" — null when the water tracker is off. */
+    static String waterLine(Context c) {
+        WaterStore w = WaterStore.get(c);
+        if (!w.trackerOn()) return null;
+        return w.fill(w.str("liveRow", "\uD83D\uDCA7 {ml} / {goal} ml"), w.todayMl());
     }
 
     /** Fills the big layout; also used for the home-screen widget, which shares the ids. */
@@ -228,6 +241,17 @@ final class StepNotifier {
         }
 
         v.setTextViewText(R.id.n_motto, motto(s, steps, goal));
+
+        WaterStore w = WaterStore.get(c);
+        String water = waterLine(c);
+        if (water != null) {
+            int ml = w.todayMl(), wg = w.goal();
+            v.setViewVisibility(R.id.n_water_box, View.VISIBLE);
+            v.setTextViewText(R.id.n_water, water);
+            v.setProgressBar(R.id.n_water_bar, Math.max(1, wg), Math.min(ml, wg), false);
+        } else {
+            v.setViewVisibility(R.id.n_water_box, View.GONE);
+        }
     }
 
     /** One-off milestone / goal alert — audible unless sounds are switched off. */

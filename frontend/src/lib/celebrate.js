@@ -8,10 +8,10 @@
 import { create } from 'zustand'
 import { audioContext } from './sound.js'
 
-export const CELEBRATION_MS = 5000
+export const CELEBRATION_MS = 6000
 
 export const useCelebration = create(set => ({
-  current: null,   // { steps, kind: 'milestone' | 'goal', key }
+  current: null,   // { steps (the number shown — ml for water), kind: 'milestone' | 'goal' | 'water', key }
   show: (steps, kind = 'milestone') => set({ current: { steps, kind, key: Date.now() } }),
   hide: () => set({ current: null }),
 }))
@@ -28,10 +28,12 @@ export function playCheer(enabled, kind = 'milestone') {
     master.gain.value = 0.7
     master.connect(ctx.destination)
 
-    const notes = kind === 'goal' ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [523.25, 659.25, 783.99, 1046.5]
+    // C major for steps (a full chord at the goal); a softer G-major bell for water.
+    const notes = kind === 'goal' ? [523.25, 659.25, 783.99, 1046.5, 1318.5]
+      : kind === 'water' ? [392, 493.88, 587.33, 783.99, 987.77] : [523.25, 659.25, 783.99, 1046.5]
     notes.forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain()
-      o.type = 'triangle'
+      o.type = kind === 'water' ? 'sine' : 'triangle'
       o.frequency.value = f
       const at = t0 + i * 0.11
       const len = i === notes.length - 1 ? 0.9 : 0.22

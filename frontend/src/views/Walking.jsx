@@ -21,6 +21,7 @@ import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Button, Segmented } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
+import CelebrationSection from '../components/pedometer/CelebrationSection.jsx'
 import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
 import { WalkSession, Achievements } from '../components/pedometer/WalkExtras.jsx'
 
@@ -210,9 +211,6 @@ export default function Walking() {
       {MOBILE && <Row icon="speaker" iconTint="var(--blue)" title={t('Voice coach')} subtitle={t('Speaks every 1,000 steps and when you reach your goal.')}>
         <Switch checked={prefs.voice} onChange={v => setPref('voice', v)} />
       </Row>}
-      <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('A 5-second cheer at every 1,000 steps and at your goal.')}>
-        <Switch checked={prefs.celebrate} onChange={v => setPref('celebrate', v)} />
-      </Row>
       <Row icon="location" iconTint="var(--blue)" title={t('GPS speed')} subtitle={t('More accurate outdoors. Your location stays on this device.')}>
         <Switch checked={prefs.gps} onChange={v => setPref('gps', v)} />
       </Row>
@@ -223,6 +221,8 @@ export default function Walking() {
           onChange={v => { update(s => { s.clockZone = v === 'device' ? 'device' : 'iraq' }); prefsChanged('clock') }} />
       </Row>
     </Section>
+
+    <CelebrationSection prefs={prefs} setPref={setPref} />
 
     {MOBILE && <BackgroundSection />}
   </div>
