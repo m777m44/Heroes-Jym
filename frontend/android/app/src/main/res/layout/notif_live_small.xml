@@ -159,6 +159,5 @@
         android:textColor="#FFF2F2F7"
         android:textSize="13sp"
         android:textStyle="bold"
-        android:timeZone="Asia/Baghdad"
         android:visibility="gone" />
 </LinearLayout>

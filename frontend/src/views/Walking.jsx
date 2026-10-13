@@ -8,7 +8,7 @@ import {
   goalOf, stepsOn, activeMsOn, strideMeters, distanceKm, caloriesFor, walkPrefs,
   weekSummary, stepStreak, bestDay, hourlyOn, DEFAULT_STRIDE_CM,
 } from '../lib/stepMetrics.js'
-import { useNow, msToMidnight, stepsPerHourNeeded, motivationTier, fmtDuration, clockZoneOf, IRAQ_TZ } from '../lib/liveClock.js'
+import { useNow, msToMidnight, stepsPerHourNeeded, motivationTier, fmtDuration } from '../lib/liveClock.js'
 import { MOBILE } from '../lib/mobile.js'
 import { hasStepService, call as serviceCall } from '../lib/stepService.js'
 import { openAppSettings } from '../lib/permissions.js'
@@ -19,7 +19,7 @@ import { stepGoalSheet } from '../components/pedometer/StepGoalSetter.jsx'
 import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Switch, Button, Segmented } from '../components/ui.jsx'
+import { Section, Row, Switch, Button } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
 import CelebrationSection from '../components/pedometer/CelebrationSection.jsx'
 import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
@@ -119,7 +119,6 @@ export default function Walking() {
   const hours = hourlyOn(S, today).slice()
   if (pending > 0) hours[now.getHours()] += pending
   const setPref = (k, v) => { update(s => { s.walk = { ...walkPrefs(s), [k]: v } }); prefsChanged(k) }
-  const zone = clockZoneOf(S)
 
   return <div className="narrow">
     <div className="hdr">
@@ -142,14 +141,25 @@ export default function Walking() {
       <div className={'walk-motto tier' + tier}>{MOTTOS[tier](left)}</div>
       {left > 0 && <div className="walk-need small">{t('To reach your goal: {0} steps per hour until midnight', fmtInt(perHour))}</div>}
       <StatusLine status={status} source={source} />
-      <div className="walk-btns">
-        {tracking && source === 'service' && <Button icon="pause" onClick={pause}>{t('Pause')}</Button>}
+      {/* 2.9: one control dock — the big round button starts / pauses, the two equal side
+          buttons reset and stop; every button the same shape, labelled underneath. */}
+      <div className="walk-dock" role="group" aria-label={t('Step counter')}>
+        <button className="dock-btn" onClick={stepResetSheet} aria-label={t('Reset step counter')}>
+          <span className="dock-c"><Icon name="reset" /></span><span className="dock-l">{t('Reset')}</span>
+        </button>
         {tracking
-          ? <Button icon={source === 'service' ? 'stop' : 'pause'} onClick={stop}>{t('Stop counting')}</Button>
-          : <Button variant="primary" icon="play" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>{paused ? t('Resume counting') : t('Start counting')}</Button>}
-        {status === 'denied' && MOBILE && <Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button>}
+          ? <button className="dock-btn main on" onClick={pause} aria-label={t('Pause')}>
+            <span className="dock-c"><Icon name="pause" /></span><span className="dock-l">{t('Pause')}</span>
+          </button>
+          : <button className="dock-btn main" disabled={status === 'starting'} onClick={() => start({ interactive: true })}
+            aria-label={paused ? t('Resume counting') : t('Start counting')}>
+            <span className="dock-c"><Icon name="play" /></span><span className="dock-l">{paused ? t('Resume') : t('Start')}</span>
+          </button>}
+        <button className="dock-btn stop" onClick={stop} disabled={!(tracking || paused)} aria-label={t('Stop counting')}>
+          <span className="dock-c"><Icon name="stop" /></span><span className="dock-l">{t('Stop')}</span>
+        </button>
       </div>
-      <button className="walk-reset" onClick={stepResetSheet}><Icon name="reset" /> {t('Reset step counter')}</button>
+      {status === 'denied' && MOBILE && <div className="walk-btns"><Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button></div>}
     </div>
 
     <div className="tiles">
@@ -213,12 +223,6 @@ export default function Walking() {
       </Row>}
       <Row icon="location" iconTint="var(--blue)" title={t('GPS speed')} subtitle={t('More accurate outdoors. Your location stays on this device.')}>
         <Switch checked={prefs.gps} onChange={v => setPref('gps', v)} />
-      </Row>
-      <Row icon="clock" iconTint="var(--teal)" title={t('Clock')}>
-        <Segmented className="seg-inline"
-          options={[{ value: 'iraq', label: t('Baghdad') }, { value: 'device', label: t('Device') }]}
-          value={zone === IRAQ_TZ && S.clockZone !== 'device' ? 'iraq' : 'device'}
-          onChange={v => { update(s => { s.clockZone = v === 'device' ? 'device' : 'iraq' }); prefsChanged('clock') }} />
       </Row>
     </Section>
 

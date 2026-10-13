@@ -50,6 +50,10 @@ public class WaterReminder extends BroadcastReceiver {
     static final String ACTION_SNOOZE = "io.github.m777m44.mahdijym.water.SNOOZE";
     static final int NOTIF_ID = 7101, ADDED_ID = 7102;
     static final String CH = "mj_water", CH_QUIET = "mj_water_quiet", CH_PANEL = "mj_water_panel";
+    /** 2.9 — channels can't change after creation, so vibration lives in two new ones. */
+    static final String CH_VIB = "mj_water_vib", CH_QUIET_VIB = "mj_water_quiet_vib";
+    /** "drip, drip, drop" */
+    static final long[] VIBRATION = { 0, 180, 120, 180, 120, 420 };
     private static final int REQ_ALARM = 51, REQ_DRINK = 52, REQ_SNOOZE = 53, REQ_OPEN = 54, REQ_LIVE_DRINK = 55;
     private static final int REQ_ADD0 = 60, REQ_UNDO = 64, REQ_EDIT = 65, REQ_SMALL_ADD = 66, REQ_SMALL_UNDO = 67;
 
@@ -235,6 +239,18 @@ public class WaterReminder extends BroadcastReceiver {
         q.enableVibration(false);
         q.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(q);
+        NotificationChannel v = new NotificationChannel(CH_VIB, w.str("channelVib", "Water reminders (vibrate)"), NotificationManager.IMPORTANCE_HIGH);
+        v.setDescription(w.str("channelDesc", "A reminder to drink, with a short exercise."));
+        v.enableVibration(true);
+        v.setVibrationPattern(VIBRATION);
+        v.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        nm.createNotificationChannel(v);
+        NotificationChannel qv = new NotificationChannel(CH_QUIET_VIB, w.str("channelQuietVib", "Water reminders (vibrate only)"), NotificationManager.IMPORTANCE_HIGH);
+        qv.setSound(null, null);
+        qv.enableVibration(true);
+        qv.setVibrationPattern(VIBRATION);
+        qv.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        nm.createNotificationChannel(qv);
         // The quiet panel: no sound, no pop-up, still on the lock screen.
         NotificationChannel p = new NotificationChannel(CH_PANEL, w.str("channelPanel", "Water in the notifications"), NotificationManager.IMPORTANCE_LOW);
         p.setSound(null, null);
@@ -333,7 +349,8 @@ public class WaterReminder extends BroadcastReceiver {
             : sub;
 
         boolean sound = w.pref("sound", true);
-        String channel = alert ? (sound ? CH : CH_QUIET) : CH_PANEL;
+        boolean vib = w.remindVibrate();
+        String channel = !alert ? CH_PANEL : sound ? (vib ? CH_VIB : CH) : (vib ? CH_QUIET_VIB : CH_QUIET);
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, channel)
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle(title)
@@ -358,7 +375,9 @@ public class WaterReminder extends BroadcastReceiver {
                 .addAction(0, w.str("snooze", "In 15 min"), action(c, ACTION_SNOOZE, REQ_SNOOZE));
             if (inLive) b.setTimeoutAfter(MERGED_ALERT_MS);
             else if (!panel) b.setTimeoutAfter(Math.max(15, w.every() - 5) * 60_000L);
-            if (!sound) b.setSilent(true);
+            if (vib) b.setVibrate(VIBRATION);                 // Android 7 and older (no channels)
+            if (!sound && !vib) b.setSilent(true);
+            else if (!sound) b.setSound(null);
         } else {
             b.setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setPriority(NotificationCompat.PRIORITY_LOW)

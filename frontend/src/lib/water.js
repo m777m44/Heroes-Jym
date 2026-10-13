@@ -182,7 +182,8 @@ export function waterRemindPrefs(S) {
   let to = HHMM.test(r.to || '') ? r.to : '22:00'
   if (minOf(to) <= minOf(from)) { from = '09:00'; to = '22:00' }
   // On by default (2.5): every 90 minutes, 09:00–22:00; switched off on the Water screen.
-  return { on: r.on !== false, every: REMIND_EVERY.includes(r.every) ? r.every : 90, from, to, move: r.move !== false }
+  // 2.9: `vibrate` — the reminder buzzes ("drip, drip, drop"), also with the sound off.
+  return { on: r.on !== false, every: REMIND_EVERY.includes(r.every) ? r.every : 90, from, to, move: r.move !== false, vibrate: r.vibrate !== false }
 }
 
 /** The reminder times on the day of `day` (local): from, from + every, … ≤ to. */
@@ -191,6 +192,28 @@ export function reminderSlots(p, day) {
   const base = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0)
   for (let m = minOf(p.from); m <= minOf(p.to); m += p.every) out.push(new Date(base.getTime() + m * 60000))
   return out
+}
+
+/**
+ * Today's drinking schedule (2.9): the reminder times, each with how much you should have drunk
+ * by then (the goal spread evenly, the last slot = the whole goal). A slot that has passed is
+ * 'done' when you'd drunk that much, else 'late'; the first upcoming slot is 'next', the rest
+ * 'later'. `behind` is how far you are from the pace right now (0 = on track).
+ */
+export function waterSchedule(p, goalMl, ml, now = new Date()) {
+  const slots = reminderSlots(p, now)
+  const n = slots.length
+  if (!n || !(goalMl > 0)) return { slots: [], behind: 0, due: 0 }
+  let nextSeen = false, due = 0
+  const out = slots.map((at, i) => {
+    const target = Math.round(goalMl * (i + 1) / n / 10) * 10
+    let state
+    if (at.getTime() <= now.getTime()) { state = ml >= target ? 'done' : 'late'; due = target }
+    else if (!nextSeen) { state = ml >= target ? 'done' : 'next'; nextSeen = true }
+    else state = ml >= target ? 'done' : 'later'
+    return { at, target, state }
+  })
+  return { slots: out, due, behind: Math.max(0, due - ml) }
 }
 
 /** The next reminder strictly after `now` (today's remaining slots, else tomorrow's first). */

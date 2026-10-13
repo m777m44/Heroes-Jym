@@ -255,6 +255,8 @@ final class WaterStore {
     synchronized int fromMin() { return WaterMath.minOf(remind().optString("from", "09:00"), 9 * 60); }
     synchronized int toMin() { return WaterMath.minOf(remind().optString("to", "22:00"), 22 * 60); }
     synchronized boolean moveOn() { return remind().optBoolean("move", true); }
+    /** 2.9 — reminders vibrate ("drip, drip, drop"); on unless switched off on the Water screen. */
+    synchronized boolean remindVibrate() { return remind().optBoolean("vibrate", true); }
 
     synchronized String str(String key, String def) {
         JSONObject s = config.optJSONObject("strings");

@@ -43,6 +43,8 @@ export function waterStrings(S) {
     channel: t('Water reminders'),
     channelDesc: t('A reminder to drink, with a short exercise.'),
     channelQuiet: t('Water reminders (silent)'),
+    channelVib: t('Water reminders (vibrate)'),           // 2.9 — sound + vibration
+    channelQuietVib: t('Water reminders (vibrate only)'),  // 2.9 — vibration, no sound
     channelCelebrate: t('Celebrations'),
     open: t('Open app'),
     tapClose: t('Tap anywhere to close'),

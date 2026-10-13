@@ -381,8 +381,9 @@ final class StepStore {
     synchronized String locale() { return config.optString("locale", ""); }
 
     synchronized String clockZone() {
-        String z = config.optString("clockZone", "");
-        return z == null || z.isEmpty() ? TimeZone.getDefault().getID() : z;
+        // 2.9: always the phone's own zone. Configs saved by older versions may still carry a
+        // fixed city zone; it is ignored so the clock never shows a city's time.
+        return TimeZone.getDefault().getID();
     }
 
     // ---- snapshots for JS / widget -----------------------------------------------------

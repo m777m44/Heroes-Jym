@@ -87,7 +87,7 @@ and the phone locked, and resumes by itself after a reboot.
 | Piece | File | What it does |
 |---|---|---|
 | Service | `StepCounterService.java` | Listens to the hardware step counter (step detector as fallback), files steps per day and per hour, computes speed/active time, fires the 1,000-step and goal alerts (vibration, sound, optional voice via Android TTS) |
-| Notification | `StepNotifier.java`, `res/layout/notif_steps_*.xml` | The live card on the notification shade **and the lock screen**: steps / goal, a progress bar, a clock ticking in Baghdad time (or the device zone) with seconds, walking time, km, kcal, the countdown to midnight and a motivation line; **Pause / Resume** and **Open** buttons |
+| Notification | `StepNotifier.java`, `res/layout/notif_steps_*.xml` | The live card on the notification shade **and the lock screen**: steps / goal, a progress bar, a clock ticking in the phone’s local time with seconds, walking time, km, kcal, the countdown to midnight and a motivation line; **Pause / Resume** and **Open** buttons |
 | Widget | `StepWidget.java`, `res/xml/widget_steps_info.xml` | Home-screen (and, where the launcher allows, lock-screen) widget with the same live numbers |
 | Storage | `StepStore.java` | Two months of daily totals + hourly buckets in SharedPreferences; the app merges them on launch (raise-only — nothing already recorded is ever lowered) |
 | Bridge | `StepServicePlugin.java` ↔ `frontend/src/lib/stepService.js` | `start / pause / resume / stop / configure / getState / getHistory`, battery-exemption and notification-settings shortcuts; `steps` and `open` events |
@@ -205,6 +205,16 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 - **Google Drive** is used when the app's signing key is registered
   ([GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md)). It is retried quietly every 6 h and takes over by itself.
 - `getToken({ ask: false })` never shows a screen in the background.
+
+## Today's plan, vibrating water reminders & a new look (2.9)
+
+| What | Where | Notes |
+|---|---|---|
+| Today's plan | `lib/dailyPlan.js`, `components/TodayPlan.jsx` | Every day one workout + a steps target + a water target, for fat loss. Saturday full body · Sunday walking + core · Monday legs & glutes · Tuesday HIIT · Wednesday upper body & core · Thursday long walk + core · Friday mobility & recovery. A routine from your own week wins; a day marked *rest* becomes mobility & recovery. Steps = last 7 days' average + 10 % (more on walking days, less on HIIT/recovery, 5,000–18,000). Sets follow how often you trained in the last 14 days; with a BMI ≥ 30 jumps become joint-friendly moves. The full day done → the full-screen celebration (once a day). Off in *Settings → Today's plan on Home*. |
+| Vibration | `WaterReminder.java` (`mj_water_vib`, `mj_water_quiet_vib`), `WaterStore.remindVibrate()` | Water reminders buzz "drip, drip, drop" (`0,180,120,180,120,420` ms), also with the sound off. *Water → Reminders → Vibrate*. Android 8+ fixes vibration per channel, hence the two new channels. |
+| Water schedule | `waterSchedule()` in `lib/water.js` | The reminder times with how much you should have drunk by each; on track / *X ml behind*, with a one-tap catch-up. |
+| Clock | `lib/liveClock.js`, `StepStore.clockZone()` | Always the phone's own time zone; no city name anywhere (the old `clockZone` setting is ignored, natively too). |
+| Controls | `index.css` (`.sw`, `.walk-dock`, `.btn`) | One switch size (52 × 32) that works right-to-left, the walking control dock (reset · start/pause · stop), one height per button size. |
 
 ## App icons & splash screens
 

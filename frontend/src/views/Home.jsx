@@ -20,6 +20,8 @@ import { goalOf, stepsOn, strideMeters, distanceKm } from '../lib/stepMetrics.js
 import StepRing from '../components/pedometer/StepRing.jsx'
 import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
+import TodayPlan from '../components/TodayPlan.jsx'
+import { planFor, planRoutine } from '../lib/dailyPlan.js'
 
 // Today's steps at a glance, with the live clock; the whole card opens the walking screen.
 function StepsCard({ nav }) {
@@ -109,7 +111,14 @@ export default function Home() {
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
+  // 2.9: with no routine today, the row offers today's plan instead of a bare "Rest day".
+  const todayPlan = !routine && S.planOn !== false ? planFor(S, todayISO()) : null
+  const onToday = () => {
+    if (S.active) nav('/workout')
+    else if (routine) startFlow(routine.id)
+    else if (todayPlan) startFlow(null, planRoutine(todayPlan))
+    else dayOverrideSheet(todayISO())
+  }
 
   return <div className="narrow">
     <div className="hdr">
@@ -126,19 +135,21 @@ export default function Home() {
       <div className="week">{strip}</div>
       <div className="today-row" onClick={onToday}>
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? colorVar(routineColor(routine)) : 'var(--surface-3)' }}>
-            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
+          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? colorVar(routineColor(routine)) : todayPlan ? colorVar(todayPlan.color) : 'var(--surface-3)' }}>
+            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : todayPlan ? todayPlan.icon : 'moon'} />
           </span>
           <div style={{ minWidth: 0 }}>
             <div className="lbl2">{t('Today')}</div>
-            <div className="ttl">{S.active ? t('{0} — in progress', routineLabel(S.active.name)) : routine ? routineLabel(routine.name) : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
+            <div className="ttl">{S.active ? t('{0} — in progress', routineLabel(S.active.name)) : routine ? routineLabel(routine.name) : todayPlan ? routineLabel(todayPlan.title) : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : routine ? <span className="tag acc">{t('Start')}</span>
+          : routine || todayPlan ? <span className="tag acc">{t('Start')}</span>
           : <Icon name="plus" className="chev" />}
       </div>
     </div>
+
+    {S.planOn !== false && <TodayPlan />}
 
     {coachOn && <CoachCard nav={nav} />}
 

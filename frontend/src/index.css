@@ -412,22 +412,43 @@ h4.sec{
   width:16px;height:16px;stroke:var(--label-3);fill:none;stroke-width:2.1;stroke-linecap:round;
 }
 
-/* --- switch --- */
+/* --- switch (2.9) ---
+   One size everywhere (52 × 32), a soft gradient + glow when on, a check mark that fades in on
+   the knob, a visible focus ring for keyboards. The knob travels along the reading direction:
+   --dir is -1 in Arabic, so it slides to the left and never leaves the track. No bounce. */
 .sw{
-  width:51px;height:31px;border-radius:99px;background:var(--surface-3);
-  flex:none;padding:2px;display:flex;align-items:center;
-  transition:background var(--med) var(--ease);
+  --x:0px;--dir:1;
+  position:relative;width:52px;height:32px;min-width:52px;border-radius:99px;flex:none;padding:3px;
+  display:inline-flex;align-items:center;cursor:pointer;
+  background:var(--surface-3);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--label) 7%,transparent),inset 0 1px 2px rgba(0,0,0,.18);
+  transition:background var(--med) var(--ease),box-shadow var(--med) var(--ease);
+  -webkit-tap-highlight-color:transparent;
 }
+[dir="rtl"] .sw{--dir:-1}
 .sw .knob{
-  width:27px;height:27px;border-radius:50%;background:#fff;
-  box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);
+  position:relative;width:26px;height:26px;border-radius:50%;background:#fff;flex:none;
+  box-shadow:0 2px 6px rgba(0,0,0,.22),0 0 0 .5px rgba(0,0,0,.06);
+  transform:translateX(calc(var(--x) * var(--dir)));
   transition:transform var(--med) var(--ease),width var(--fast) var(--ease);
 }
-.sw.on{background:var(--acc)}
-.sw.on .knob{transform:translateX(20px)}
-.sw:active .knob{width:31px}
-.sw.on:active .knob{transform:translateX(16px)}
-.sw:disabled{opacity:.4}
+.sw .knob::after{          /* the check mark, drawn with two borders */
+  content:"";position:absolute;left:50%;top:46%;width:6px;height:10px;
+  border:solid var(--acc);border-width:0 2.2px 2.2px 0;border-radius:1px;
+  transform:translate(-50%,-50%) rotate(45deg) scale(.4);opacity:0;
+  transition:opacity var(--fast) var(--ease),transform var(--med) var(--ease);
+}
+.sw.on{
+  --x:20px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 78%,#fff),var(--acc) 55%,var(--acc-2,var(--acc)));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%,transparent),0 4px 14px -4px color-mix(in srgb,var(--acc) 70%,transparent);
+}
+.sw.on .knob::after{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(1)}
+.sw:active .knob{width:30px}
+.sw.on:active{--x:16px}
+.sw:focus-visible{outline:2px solid color-mix(in srgb,var(--acc) 70%,transparent);outline-offset:2px}
+.sw:disabled{opacity:.4;cursor:default}
+@media (prefers-reduced-motion:reduce){.sw,.sw .knob,.sw .knob::after{transition:none}}
 
 /* --- segmented control --- */
 /* flex, not grid: an absolutely-positioned child of a GRID container is placed
@@ -1142,6 +1163,7 @@ h4.sec{
 [dir="rtl"] #timer.rest .acts .skip{margin-left:0;margin-right:auto}
 [dir="rtl"] .cal-legend i{margin-right:0;margin-left:5px}
 [dir="rtl"] .seg-sel{left:auto;right:2px;transform:translateX(calc(-100% * var(--i)))}
+[dir="rtl"] .sld{direction:ltr}      /* the fill and the knob both measure from the left */
 [dir="rtl"] .exmedia .gifhint{right:auto;left:9px}
 [dir="rtl"] .exmedia .giftoggle{left:auto;right:9px}
 [dir="rtl"] .mrow .v,[dir="rtl"] .wcmp-row .v,[dir="rtl"] .wh-x{text-align:left}
@@ -1369,3 +1391,127 @@ h3 .exn{align-items:inherit}
 .acc-where b{color:var(--label);font-size:13.5px}
 .acc-where.drive{background:color-mix(in srgb,var(--blue) 12%,transparent)}
 .acc-where.drive .icn{color:var(--blue)}
+
+/* ================================================================ 2.9 =====
+   Consistent buttons, the walking control dock, Today's plan and the water schedule.
+   ========================================================================== */
+/* One height per button size, whatever the label or icon. */
+.btn{min-height:50px;line-height:1.2}
+.btn.sm{min-height:36px}
+.btn.xs{min-height:28px}
+.btn.primary{box-shadow:0 6px 18px -8px color-mix(in srgb,var(--acc) 80%,transparent)}
+.btn:focus-visible,.iconbtn:focus-visible,.dock-btn:focus-visible,.plan-start:focus-visible{outline:2px solid color-mix(in srgb,var(--acc) 70%,transparent);outline-offset:2px}
+
+/* --- walking: the control dock --- */
+.walk-dock{display:flex;align-items:flex-start;justify-content:center;gap:clamp(18px,8vw,40px);width:100%;margin-top:6px}
+.dock-btn{
+  display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;padding:0;
+  color:var(--label);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;min-width:64px;
+}
+.dock-c{
+  width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:var(--surface-2);color:var(--label);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--label) 8%,transparent);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--med) var(--ease);
+}
+.dock-l{font-size:12.5px;font-weight:500;color:var(--label-2);letter-spacing:-.005em}
+.dock-btn:active .dock-c{transform:scale(.93)}
+.dock-btn.main .dock-c{
+  width:74px;height:74px;font-size:30px;color:var(--on-acc);
+  background:linear-gradient(140deg,color-mix(in srgb,var(--acc) 72%,#fff),var(--acc) 60%,var(--acc-2,var(--acc)));
+  box-shadow:0 10px 26px -10px color-mix(in srgb,var(--acc) 90%,transparent),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.dock-btn.main{margin-top:-10px}
+.dock-btn.main .dock-l{color:var(--label);font-weight:600}
+.dock-btn.main.on .dock-c{
+  background:linear-gradient(140deg,#ffc35a,var(--orange) 60%,#e07a00);color:#1a1000;
+  box-shadow:0 10px 26px -10px color-mix(in srgb,var(--orange) 90%,transparent),inset 0 1px 0 rgba(255,255,255,.3);
+}
+.dock-btn.stop .dock-c{color:var(--red);background:color-mix(in srgb,var(--red) 13%,var(--surface-2))}
+.dock-btn:disabled{cursor:default}
+.dock-btn:disabled .dock-c{opacity:.38}
+.dock-btn:disabled .dock-l{opacity:.5}
+.walk-dock + .walk-btns{margin-top:12px}
+
+/* --- Today's plan --- */
+.plan-card{
+  position:relative;overflow:hidden;padding:16px 16px 14px;
+  background:
+    radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--tint) 20%,transparent),transparent 60%),
+    var(--surface);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint) 22%,transparent);
+}
+[dir="rtl"] .plan-card{background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--tint) 20%,transparent),transparent 60%),var(--surface)}
+.plan-card.done{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--yellow,#ffd60a) 60%,transparent)}
+.plan-head{display:flex;align-items:center;gap:12px}
+.plan-ic{
+  width:44px;height:44px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--tint) 70%,#fff),var(--tint));
+  box-shadow:0 6px 16px -6px color-mix(in srgb,var(--tint) 85%,transparent);
+}
+.plan-title{text-transform:capitalize;font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-score{display:flex;align-items:baseline;gap:1px;padding:6px 10px;border-radius:12px;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.plan-score b{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.plan-score span{font-size:12px;color:var(--label-2)}
+.plan-goals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 10px}
+.plan-goal{
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px 9px;border-radius:14px;border:0;font:inherit;color:inherit;cursor:pointer;
+  background:var(--surface-2);transition:transform var(--fast) var(--ease),background var(--fast);min-width:0;
+}
+.plan-goal:active{transform:scale(.97)}
+.plan-goal-v{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;direction:ltr}
+.plan-goal-l{font-size:11px;color:var(--label-3);font-weight:500}
+.plan-ring{position:relative;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ring)}
+.plan-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.plan-ring circle{fill:none;stroke-width:5}
+.plan-ring-bg{stroke:color-mix(in srgb,var(--ring) 18%,transparent)}
+.plan-ring-fg{stroke:var(--ring);stroke-linecap:round;transition:stroke-dashoffset .6s var(--ease)}
+.plan-ring.done{color:#fff}
+.plan-ring.done::before{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--ring)}
+.plan-ring .icn{position:relative}
+.plan-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.plan-meta span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 9px;border-radius:99px;background:var(--surface-2);color:var(--label-2)}
+.plan-meta span.soft{color:var(--pink,#ff375f);background:color-mix(in srgb,var(--pink,#ff375f) 13%,transparent)}
+.plan-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;padding:8px 2px;color:var(--acc);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.plan-ex{list-style:none;margin:0 0 6px;padding:0;border-radius:12px;background:var(--surface-2);overflow:hidden}
+.plan-ex li{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+.plan-ex li+li{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--label) 7%,transparent)}
+.plan-ex li:active{background:var(--surface-3)}
+.plan-ex-n{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:var(--tint);background:color-mix(in srgb,var(--tint) 16%,transparent)}
+.plan-ex-name{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-ex-r{font-size:13px;color:var(--label-2);font-variant-numeric:tabular-nums;white-space:nowrap;direction:ltr}
+.plan-start{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;margin-top:6px;border:0;border-radius:var(--r);
+  font:inherit;font-size:16px;font-weight:600;cursor:pointer;color:#fff;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--tint) 75%,#fff),var(--tint) 60%);
+  box-shadow:0 8px 20px -10px color-mix(in srgb,var(--tint) 90%,transparent);
+  transition:transform var(--fast) var(--ease);
+}
+.plan-start .icn{font-size:19px}
+.plan-start:active{transform:scale(.98)}
+.plan-start.done{background:var(--surface-2);color:var(--label-2);box-shadow:none}
+.plan-foot{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.plan-burn,.plan-tip{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4;color:var(--label-2)}
+.plan-burn .icn{color:var(--orange);font-size:15px;margin-top:1px;flex:none}
+.plan-burn.goal .icn{color:var(--green)}
+.plan-tip{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--yellow,#ffd60a) 10%,var(--surface-2));color:var(--label)}
+.plan-tip .icn{color:var(--yellow,#ffd60a);font-size:16px;flex:none;margin-top:1px}
+
+/* --- water: today's schedule --- */
+.wsched-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 4px}
+.wsched-st{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.wsched-st.ok{color:var(--green)}
+.wsched-st.late{color:var(--orange)}
+.wsched-catch{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:99px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,transparent)}
+.wsched-catch svg{width:16px;height:16px}
+.wsched{display:flex;gap:8px;overflow-x:auto;padding:10px 14px 14px;scrollbar-width:none;scroll-snap-type:x proximity}
+.wsched::-webkit-scrollbar{display:none}
+.wsched-i{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 0 8px;border-radius:14px;background:var(--surface-2);scroll-snap-align:start;transition:opacity var(--med)}
+.wsched-t{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.wsched-d{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;background:color-mix(in srgb,var(--blue) 15%,transparent);color:var(--blue)}
+.wsched-ml{font-size:11px;color:var(--label-3);font-variant-numeric:tabular-nums}
+.wsched-i.done .wsched-d{background:var(--blue);color:#fff}
+.wsched-i.late .wsched-d{background:color-mix(in srgb,var(--orange) 18%,transparent);color:var(--orange)}
+.wsched-i.next{background:color-mix(in srgb,var(--blue) 16%,var(--surface-2));box-shadow:inset 0 0 0 1.5px var(--blue)}
+.wsched-i.next .wsched-t{color:var(--blue)}
+.wsched-i.later{opacity:.55}

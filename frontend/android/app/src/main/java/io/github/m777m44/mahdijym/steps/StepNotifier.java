@@ -23,7 +23,7 @@ import io.github.m777m44.mahdijym.R;
  * Builds the live step notification — a small dark "screen" that sits in the shade and on
  * the lock screen: today's steps against the goal, a progress bar, distance, calories,
  * speed, walking time (a Chronometer that ticks on its own while you move), the time and
- * date (TextClocks that tick every second in the chosen time zone — Baghdad by default) and
+ * date (TextClocks that tick every second in the phone's own time zone) and
  * a countdown to midnight. Clocks and timers are rendered by the system, so they keep moving
  * on the lock screen without the app waking up every second.
  */
@@ -224,9 +224,8 @@ final class StepNotifier {
         // header
         v.setString(R.id.n_date, "setTimeZone", zone);
         v.setString(R.id.n_clock, "setTimeZone", zone);
-        String zl = s.str("zoneLabel", "");
-        v.setTextViewText(R.id.n_status, (s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live"))
-            + (zl.isEmpty() ? "" : " · " + zl));
+        // 2.9: no city label — the clock simply follows the phone's time zone.
+        v.setTextViewText(R.id.n_status, s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live"));
         v.setTextColor(R.id.n_status, s.paused ? 0xFFFF9F0A : moving ? 0xFF30D158 : 0xFF8E8E93);
         v.setImageViewResource(R.id.n_pause_i, s.paused ? R.drawable.ic_n_play : R.drawable.ic_n_pause);
         v.setOnClickPendingIntent(R.id.n_pause, s.paused
@@ -322,7 +321,7 @@ final class StepNotifier {
 
         v.setString(R.id.n_clock, "setTimeZone", zone);
         v.setString(R.id.n_date, "setTimeZone", zone);
-        v.setTextViewText(R.id.n_zone, s.str("zoneLabel", ""));
+        v.setTextViewText(R.id.n_zone, "");
 
         // Countdown to midnight ("the day ends in 05:12:33").
         if (Build.VERSION.SDK_INT >= 24) {

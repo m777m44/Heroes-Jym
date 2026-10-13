@@ -68,8 +68,7 @@
             android:format24Hour="HH:mm:ss"
             android:textColor="#FFF2F2F7"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:timeZone="Asia/Baghdad" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- steps / goal / percent -->
@@ -253,8 +252,7 @@
             android:format24Hour="EEEE d MMMM"
             android:maxLines="1"
             android:textColor="#FFC7C7CC"
-            android:textSize="12sp"
-            android:timeZone="Asia/Baghdad" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:id="@+id/n_left_box"

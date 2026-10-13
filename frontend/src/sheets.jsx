@@ -812,12 +812,14 @@ export function WorkoutRow({ w, onClick }) {
 }
 
 /* ============================ workout lifecycle ============================ */
-export function startFlow(routineId) {
-  bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw) })
+export function startFlow(routineId, adhoc) {
+  bwSheet({ required: true, onDone: bw => beginWorkout(routineId, bw, adhoc) })
 }
-export function beginWorkout(routineId, bw) {
+/** `adhoc` — a one-off routine (today's plan) that is not stored in your routines. */
+export function beginWorkout(routineId, bw, adhoc) {
   const st = S()
-  const r = routineId ? st.routines.find(x => x.id === routineId) : null
+  const r = adhoc || (routineId ? st.routines.find(x => x.id === routineId) : null)
+  if (adhoc) routineId = null
   // The prescription is applied as the session is built, so you walk up to the bar with the
   // right weight already on the screen instead of being told about it afterwards. `plan` is
   // kept on the entry purely so the workout can explain the number it chose.

@@ -3,6 +3,45 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.9.0 — 2026-10-13
+
+**A plan for every day — workout, steps and water — to lose weight and get fitter, water
+reminders that vibrate, and a cleaner, more modern look.**
+*خطة لكل يوم — تمرين وخطوات وماء — لخسارة الوزن وتحسين الجسم، وتذكيرات ماء تهتز، وتصميم أنظف وأحدث.*
+
+### 🎯 Today's plan (new)
+- A card on Home gives **every day one workout, a steps target and a water target** that fit
+  together: Saturday full-body fat burn, Sunday walking + core, Monday legs & glutes, Tuesday
+  HIIT, Wednesday upper body & core, Thursday long walk + core, Friday mobility & recovery.
+- **Adapts to you:** your steps target is your last week's average + 10 % (more on walking
+  days); sets grow as you train more often; with a high BMI jumps are replaced by
+  **joint-friendly** moves. A routine from your own week plan always comes first.
+- Three rings (workout · steps · water), a **day score**, minutes, **calories and grams of fat
+  burned**, the distance to your goal weight and a daily fat-loss tip.
+- **One tap starts the workout** with the right exercises, sets and reps.
+- Finish all three and the **full-screen celebration** plays.
+
+### 💧 Water
+- **Reminders vibrate** with a gentle "drip, drip, drop", also when the sound is off
+  (*Water → Reminders → Vibrate*, on by default).
+- **Today's schedule:** each reminder time with how much you should have drunk by then,
+  *on track* or *X ml behind*, and a one-tap catch-up.
+
+### ✨ Look & controls
+- **New switches:** one neat size everywhere, a soft gradient, a check mark on the knob, a
+  focus ring. **Fixed:** in Arabic the knob slid out of the switch and over the text.
+- **Step counter controls** are now one dock: a big round start/pause button between two
+  equal round buttons, *Reset* and *Stop*, each labelled.
+- **Buttons** have one height per size, so rows and cards line up.
+- **Fixed:** sliders in Arabic filled from the wrong side.
+
+### 🕐 Clock
+- The word **"Baghdad" is gone**: the clock always shows **your phone's local time**, in the
+  app, the notification and the widget (the clock-zone setting was removed).
+
+### 🛠 Under the hood
+- 12 new tests (388 in total); 50 new translations in 12 languages.
+
 ## v2.8.0 — 2026-10-13
 
 **Sign in with Google now always works: no more "isn't set up for this version", and your data

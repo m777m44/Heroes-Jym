@@ -36,8 +36,7 @@
             android:maxLines="1"
             android:textColor="#FFC7C7CC"
             android:textSize="12sp"
-            android:textStyle="bold"
-            android:timeZone="Asia/Baghdad" />
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/n_status"
@@ -59,8 +58,7 @@
             android:maxLines="1"
             android:textColor="#FFF2F2F7"
             android:textSize="13sp"
-            android:textStyle="bold"
-            android:timeZone="Asia/Baghdad" />
+            android:textStyle="bold" />
 
         <LinearLayout
             android:id="@+id/n_pause"

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { todayISO } from '../lib/format.js'
@@ -8,8 +8,9 @@ import { MOBILE } from '../lib/mobile.js'
 import {
   CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, GOALS_ML, REMIND_EVERY, containerOf, waterGoalParts, mlOn, waterDays,
   waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, MOVES, waterPanelOn, fixedGoalMlOf,
-  ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE,
+  ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE, waterSchedule,
 } from '../lib/water.js'
+import { useNow } from '../lib/liveClock.js'
 import { bodyKg, testWaterReminder } from '../lib/waterSync.js'
 import { goalOf, stepsOn } from '../lib/stepMetrics.js'
 import Icon from '../components/Icon.jsx'
@@ -40,6 +41,18 @@ export default function Water() {
   const time = d => d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
   const setRemind = patch => update(s => { s.waterRemind = { ...waterRemindPrefs(s), ...patch } })
   const best = Math.max(0, ...days.map(d => d.ml))
+  const now = useNow(60000)
+  const plan = waterSchedule(rp, goal, ml, now)
+  const schedRef = useRef(null)
+  const nextKey = (plan.slots.find(x => x.state === 'next') || {}).target
+  // Keep the upcoming slot in view (centred) — works the same in left-to-right and Arabic.
+  useEffect(() => {
+    const c = schedRef.current, el = c && c.querySelector('.wsched-i.next')
+    if (!c || !el || !c.scrollBy) return
+    const cr = c.getBoundingClientRect(), er = el.getBoundingClientRect()
+    c.scrollBy({ left: er.left - cr.left - (cr.width - er.width) / 2 })
+  }, [nextKey])
+  const hhmm = v => { const [h, m] = v.split(':').map(Number); return time(new Date(2000, 0, 1, h, m)) }
 
   const enableReminders = async v => {
     setRemind({ on: v })
@@ -119,6 +132,24 @@ export default function Water() {
       <NotifPreview S={S} ml={ml} goal={goal} unit={unit} />
     </Section>}
 
+    {rp.on && plan.slots.length > 0 && <Section title={t("Today's schedule")}
+      footer={t('How much you should have drunk by each reminder to reach {0} ml by {1}.', fmtMl(goal), hhmm(rp.to))}>
+      <div className="wsched-head">
+        {ml >= goal ? <span className="wsched-st ok"><Icon name="checkCircle" />{t('Goal reached')}</span>
+          : plan.behind > 0 ? <span className="wsched-st late"><Icon name="timer" />{t('{0} ml behind', fmtMl(plan.behind))}</span>
+          : <span className="wsched-st ok"><Icon name="check" />{t('On track')}</span>}
+        {plan.behind > 0 && ml < goal && <button className="wsched-catch" onClick={() => drink(unit)}>
+          <ContainerIcon kind={unit.key} />+{fmtMl(unit.ml)}</button>}
+      </div>
+      <div className="wsched" role="list" ref={schedRef}>
+        {plan.slots.map(sl => <div key={sl.at.getTime()} role="listitem" className={'wsched-i ' + sl.state}>
+          <span className="wsched-t">{time(sl.at)}</span>
+          <span className="wsched-d"><Icon name={sl.state === 'done' ? 'check' : 'drop'} /></span>
+          <span className="wsched-ml">{fmtMl(sl.target)}</span>
+        </div>)}
+      </div>
+    </Section>}
+
     <Section title={t('Reminders')}
       footer={MOBILE
         ? t('Arrive with the app closed, with today’s water and steps and a short exercise. Skipped once the goal is reached.')
@@ -139,6 +170,10 @@ export default function Water() {
           subtitle={t('A short walk after sitting still or when behind on steps, else a quick move like “{0}”.', t(MOVES[0]))}>
           <Switch checked={rp.move} onChange={v => setRemind({ move: v })} />
         </Row>
+        {MOBILE && <Row icon="vibrate" iconTint="var(--pink)" title={t('Vibrate')}
+          subtitle={t('A gentle “drip, drip, drop” buzz with each reminder — also when the sound is off.')}>
+          <Switch checked={rp.vibrate} onChange={v => setRemind({ vibrate: v })} />
+        </Row>}
         <Row icon="play" iconTint="var(--teal)" title={t('Send a test reminder')} accessory="chevron" onClick={busy ? undefined : test} />
       </>}
     </Section>

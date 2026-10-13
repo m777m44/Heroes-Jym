@@ -78,10 +78,11 @@ describe('water — ml, containers, goal', () => {
 
 describe('water — reminders', () => {
   it('validates the reminder settings', () => {
-    expect(waterRemindPrefs({})).toEqual({ on: true, every: 90, from: '09:00', to: '22:00', move: true })
+    expect(waterRemindPrefs({})).toEqual({ on: true, every: 90, from: '09:00', to: '22:00', move: true, vibrate: true })
+    expect(waterRemindPrefs({ waterRemind: { vibrate: false } }).vibrate).toBe(false)   // 2.9
     expect(waterRemindPrefs({ waterRemind: { on: false } }).on).toBe(false)
     expect(waterRemindPrefs({ waterRemind: { on: true, every: 7, from: '23:00', to: '08:00' } }))
-      .toEqual({ on: true, every: 90, from: '09:00', to: '22:00', move: true })
+      .toEqual({ on: true, every: 90, from: '09:00', to: '22:00', move: true, vibrate: true })
     expect(waterRemindPrefs({ waterRemind: { on: true, every: 60, from: '08:30', to: '20:00', move: false } }).every).toBe(60)
   })
   it('lays slots from `from` to `to` and finds the next one (same cases as WaterMathTest)', () => {

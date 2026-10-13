@@ -11,10 +11,10 @@ import java.util.TimeZone;
 
 /** JVM tests for the water reminder rules — the same cases as frontend water tests. */
 public class WaterMathTest {
-    private static final TimeZone TZ = TimeZone.getTimeZone("Asia/Baghdad");
+    private static final TimeZone TZ = TimeZone.getTimeZone("Asia/Riyadh");
     private static final long MIN = 60_000L;
 
-    /** 2026-10-12 hh:mm in Baghdad. */
+    /** 2026-10-12 hh:mm at UTC+3. */
     private static long at(int hh, int mm) {
         Calendar c = Calendar.getInstance(TZ);
         c.clear();

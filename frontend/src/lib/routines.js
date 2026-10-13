@@ -9,7 +9,9 @@
 import { t } from './i18n.js'
 import { uid } from './format.js'
 
-export const BUILTIN_NAMES = ['Push Day', 'Pull Day', 'Leg Day', 'Freestyle', 'New routine', 'Shared routine']
+export const BUILTIN_NAMES = ['Push Day', 'Pull Day', 'Leg Day', 'Freestyle', 'New routine', 'Shared routine',
+  // Today's plan (lib/dailyPlan.js) — saved on the workout, so history shows them translated.
+  'Full-body fat burn', 'Walking day + core', 'Legs & glutes', 'HIIT fat burner', 'Upper body & core', 'Long walk + core', 'Mobility & recovery']
 export const routineLabel = name => (name && BUILTIN_NAMES.includes(name) ? t(name) : name || '')
 
 export const ROUTINE_COLORS = ['green', 'blue', 'orange', 'purple', 'pink', 'red', 'teal', 'yellow', 'indigo', 'mint']

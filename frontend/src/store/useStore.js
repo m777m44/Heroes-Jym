@@ -36,8 +36,9 @@ export const DEF = {
   // heightCm improves the stride estimate and enables BMI; targetFrom is the weight the goal
   // was set at (the start of the goal progress bar, lib/weightTracker.js).
   stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
-  // 2.1 — the live clock's zone: 'iraq' (Asia/Baghdad) or 'device'. See lib/liveClock.js.
-  clockZone: 'iraq',
+  // 2.9 — the "Today's plan" card on Home (lib/dailyPlan.js). The clock always follows the
+  // phone's own time zone now (the old `clockZone` setting is ignored).
+  planOn: true,
   // 2.4 — first day of the week (6 = Saturday, see weekStartOf in lib/format.js) and the water
   // tracker (lib/water.js): glasses per day, the daily goal, whether the Home card shows.
   weekStart: 6, water: {}, waterGoal: 8, waterOn: true,

@@ -13,6 +13,7 @@ const KINDS = {
   goal: { c1: '#ffd60a', c2: '#ff9f0a', icon: 'trophy' },
   milestone: { c1: '#30d158', c2: '#64d2ff', icon: 'medal' },
   water: { c1: '#0a84ff', c2: '#64d2ff', icon: 'drop' },
+  plan: { c1: '#bf5af2', c2: '#ff375f', icon: 'crown' },
 }
 const PAPER = ['#ffd60a', '#ff375f', '#64d2ff', '#30d158', '#bf5af2', '#ff9f0a', '#ffffff']
 const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -93,9 +94,11 @@ function Scene({ cur, onClose }) {
   const fmt = n => n.toLocaleString(dateLocale())
   const water = cur.kind === 'water'
   const goal = cur.kind === 'goal'
-  const kicker = water ? t('Water goal reached!') : goal ? t('Daily goal reached!') : t('Milestone')
-  const unit = water ? t('ml') : t('steps')
-  const sub = water ? t('{0} ml today — your body thanks you.', fmt(cur.steps))
+  const plan = cur.kind === 'plan'            // today's plan: workout + steps + water all done
+  const kicker = plan ? t("Today's plan complete!") : water ? t('Water goal reached!') : goal ? t('Daily goal reached!') : t('Milestone')
+  const unit = plan ? '%' : water ? t('ml') : t('steps')
+  const sub = plan ? t('Workout, steps and water — all done. A great day for your body!')
+    : water ? t('{0} ml today — your body thanks you.', fmt(cur.steps))
     : goal ? t('{0} steps today — well done.', fmt(cur.steps)) : t('steps — keep it up!')
   return (
     <div className={'celebrate kind-' + (cur.kind || 'milestone')} onClick={onClose} role="status" aria-live="polite"

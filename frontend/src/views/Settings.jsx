@@ -125,6 +125,9 @@ export default function Settings() {
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
       <Row icon="drop" iconTint="var(--blue)" title={t('Water & reminders')} subtitle={t('Glass, cup or can · daily goal · reminders with an exercise')} accessory="chevron" onClick={() => nav('/water')} />
       <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
+      <Row icon="target" iconTint="var(--orange)" title={t("Today's plan on Home")} subtitle={t('A daily workout, steps and water target for losing weight')}>
+        <Switch checked={S.planOn !== false} onChange={v => update(s => { s.planOn = v })} />
+      </Row>
     </Section>
 
     {/* ---------- during a workout ---------- */}

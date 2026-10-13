@@ -40,15 +40,20 @@ describe('2.0 screens render', () => {
     expect(html).toContain('stepring')
     if (process.env.DUMP) console.log(text(html))
     expect(html).toMatch(/8[,.\u202f\u00a0]?000/)   // the goal, localized
-    // 2.1: live clock (Baghdad by default) with the midnight countdown, hourly chart, mottos
+    // live clock (the phone's local time — no city since 2.9) with the midnight countdown, hourly chart, mottos
     expect(html).toContain('lc-time big')
-    expect(html).toContain('Baghdad time')
-    expect(html).toContain('GMT+3')
+    expect(html).toContain('Local time')
+    expect(html).not.toMatch(/Baghdad|بغداد/)
+    expect(html).toContain('GMT')
     expect(html).toContain('Day ends in')
     expect(html).toContain('hourchart')
     expect(html).toContain('walk-motto')
     expect(html).toContain('Milestone sound')
     expect(html).not.toContain('Voice coach')       // native TTS — Android app only
+    // 2.9: one control dock (reset · start · stop), all the same round shape
+    expect(html).toContain('walk-dock')
+    expect((html.match(/class="dock-btn/g) || []).length).toBe(3)
+    expect(html).not.toContain('walk-reset')
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')
@@ -64,6 +69,11 @@ describe('2.0 screens render', () => {
     expect(html).toContain('h2link')
     expect(html).toContain('lc-compact')           // 2.1: the live clock line
     expect(html).toContain('steps-bar')
+    // 2.9: today's plan — workout + steps + water, with a start button and a tip
+    expect(html).toContain('plan-card')
+    expect((html.match(/class="plan-goal[" ]/g) || []).length).toBe(3)
+    expect(html).toContain('plan-start')
+    expect(html).toContain('plan-tip')
   })
   it('Settings (reminder extras + walking section)', async () => {
     const html = await render('/settings', './Settings.jsx')
@@ -86,6 +96,11 @@ describe('2.0 screens render', () => {
     const w = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
     expect(w).toContain('kind-water')
     expect(w).toContain('Water goal reached!')
+    celebrate(100, 'plan')                           // 2.9: the whole day's plan done
+    useCelebration.getInitialState().current = useCelebration.getState().current
+    const pl = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
+    expect(pl).toContain('kind-plan')
+    expect(pl).toContain('Today’s plan complete!'.replace('’', "'").replace("'", '&#x27;'))
     useCelebration.getInitialState().current = null
   })
   it('Water (2.5: containers, goal, reminders, history)', async () => {
@@ -99,6 +114,8 @@ describe('2.0 screens render', () => {
     expect(html).toContain('type="time"')
     expect(html).toContain('2,500')
     expect(html).toContain('Last 14 days')
+    expect(html).toContain('wsched')                 // 2.9: today's drinking schedule
+    expect(html).toContain('Today&#x27;s schedule')
     const home = await render('/home', '../components/WaterCard.jsx')
     expect(home).toContain('water-chips')
     expect(home).toMatch(/wchip sel[^>]*>.*?Can/)
@@ -118,7 +135,8 @@ describe('2.0 screens render', () => {
       const html = await render('/walk', './Walking.jsx')
       expect(html).toContain('المشي')
       expect(html).toContain('icn-dir')            // the back chevron is the mirrored kind
-      expect(html).toContain('توقيت بغداد')         // 2.1: the clock label, translated
+      expect(html).toContain('التوقيت المحلي')       // the clock label, translated
+      expect(html).not.toContain('بغداد')           // 2.9: no city anywhere
       expect(html).toContain('ينتهي اليوم بعد')
       expect(html).toContain('dir="ltr"')          // digits of the clock stay left-to-right
     } finally { await setLang('en') }
