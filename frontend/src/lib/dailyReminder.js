@@ -10,6 +10,9 @@
 //   · workout day, not trained yet  → a reminder at `time`, mentioning the step goal too —
 //                                     one combined notification rather than two
 //   · …still not trained an hour on → a follow-up nudge (`nudge`, default on)
+//   · no routine, daily plan on     → 2.10: the day's no-equipment HOME WORKOUT (`home`, default
+//                                     on) — exercises, minutes, steps and water in one reminder,
+//                                     shown on screen with a light vibration (Android, natively)
 //   · rest day, step reminder on    → a walking reminder at `time` (`walk`, default off),
 //                                     skipped when today's goal is already met
 //
@@ -21,6 +24,7 @@ import { isoOf } from './format.js'
 import { goalOf, stepsOn } from './stepMetrics.js'
 import { t, dateLocale, getLang, exName } from './i18n.js'
 import { EXIDX } from './exercises.js'
+import { planFor } from './dailyPlan.js'
 
 // 2.6: on by default in the phone app (until switched off there — `v2` marks a choice made),
 // and a time per weekday (`days` { getDay(): 'HH:MM' }) on top of the one time for all days.
@@ -39,6 +43,7 @@ export const reminderPrefs = S => {
   return {
     on: r.v2 || !DEFAULT_ON ? !!r.on : true,
     time: /^\d\d:\d\d$/.test(r.time || '') ? r.time : '08:00', nudge: r.nudge !== false, walk: !!r.walk, days,
+    home: r.home !== false,
   }
 }
 
@@ -71,6 +76,12 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
     if (routine) {
       out.push({ id: ID_BASE + i * 2, kind: 'workout', iso, at: day, routine: routineLabel(routine.name), rid: routine.id })
       if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'nudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), routine: routineLabel(routine.name), rid: routine.id })
+    } else if (r.home && S.planOn !== false) {
+      const plan = planFor(S, iso)
+      const p = { title: plan.title, kind: plan.kind, n: plan.exercises.length, min: plan.minutes, steps: plan.stepsTarget,
+        water: plan.waterMl, kcal: plan.kcalTotal, tip: plan.tip, ids: plan.exercises.map(e => e.id) }
+      out.push({ id: ID_BASE + i * 2, kind: 'plan', iso, at: day, plan: p })
+      if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'plannudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), plan: p })
     } else if (r.walk) {
       if (i === 0 && stepsOn(S, iso) >= goalOf(S)) continue
       out.push({ id: ID_BASE + i * 2, kind: 'walk', iso, at: day })
@@ -79,9 +90,31 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
   return out.filter(x => x.at > now)
 }
 
-/** Title and body for a planned reminder, in the current language. */
+const listOf = names => {
+  try { return new Intl.ListFormat(dateLocale(), { style: 'short', type: 'unit' }).format(names) } catch { return names.join(', ') }
+}
+
+/** Title and body for a planned reminder, in the current language (`big`: the expanded text). */
 export function reminderText(item, S) {
   const goal = goalOf(S).toLocaleString(dateLocale())
+  const n = v => Number(v || 0).toLocaleString(dateLocale())
+  if ((item.kind === 'plan' || item.kind === 'plannudge') && item.plan) {
+    const p = item.plan
+    const names = (p.ids || []).slice(0, 3).map(id => (EXIDX[id] ? exName(EXIDX[id]) : '')).filter(Boolean)
+    const more = Math.max(0, (p.ids || []).length - names.length)
+    const list = names.length ? listOf(names) + (more ? ' ' + t('+{0} more', n(more)) : '') : ''
+    const facts = '👟 ' + t('{0} steps', n(p.steps)) + ' · 💧 ' + n(p.water) + ' ' + t('ml') + ' · 🔥 ' + t('{0} kcal', n(p.kcal))
+    if (item.kind === 'plannudge') {
+      const body = t('Just {0} minutes at home — no equipment needed.', n(p.min))
+      return { title: '⏰ ' + t('Still time for {0}', t(p.title)), body, big: body + (list ? '\n' + list : '') }
+    }
+    const body = t('{0} exercises · about {1} min', n(p.n), n(p.min)) + ' · ' + t('No equipment')
+    return {
+      title: (p.kind === 'recover' ? '🧘 ' : '🏠 ') + t('Home workout: {0}', t(p.title)),
+      body: body + (list ? ' — ' + list : ''),
+      big: body + (list ? '\n' + list : '') + '\n' + facts + (p.tip ? '\n💡 ' + t(p.tip) : ''),
+    }
+  }
   const routine = item.rid ? (S.routines || []).find(r => r.id === item.rid) : null
   const sum = routine ? routineSummary(routine, S.restSec) : null
   if (item.kind === 'workout' && sum && sum.n) {
@@ -133,7 +166,7 @@ export function suggestedReminderTime(workouts) {
  */
 export function planSignature(S, now = new Date()) {
   return JSON.stringify([
-    reminderPrefs(S), S.week, S.dayPlan, (S.routines || []).map(r => [r.id, r.name, (r.ex || []).length]), S.restSec, getLang(),   // texts follow the language
+    reminderPrefs(S), S.week, S.dayPlan, S.planOn, (S.bodyweight || []).length, S.heightCm, (S.routines || []).map(r => [r.id, r.name, (r.ex || []).length]), S.restSec, getLang(),   // texts follow the language
     (S.workouts || []).slice(-3).map(w => w.d), goalOf(S), isoOf(now),
     // a rest-day walk reminder disappears once today's goal is met
     reminderPrefs(S).walk && stepsOn(S, isoOf(now)) >= goalOf(S),

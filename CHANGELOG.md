@@ -3,6 +3,52 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.10.0 — 2026-10-13
+
+**120 themes in one "Themes" screen, the app follows your phone's language and light / dark
+mode, a home-workout reminder with a light vibration, steps that never jump back, the walking
+buttons from 2.8 — refined — and a brand-new celebration.**
+*١٢٠ ثيمًا في زر واحد «الثيمات»، التطبيق يتبع لغة الهاتف ووضعه الفاتح/الداكن، تذكير تمرين البيت
+مع اهتزاز خفيف، عدّاد خطوات لا يرجع للخلف، أزرار المشي بأسلوب 2.8 بشكل أقوى، واحتفال جديد كليًا.*
+
+### 🎨 Themes (new)
+- **One "Themes" row in Settings opens 120 themes:** 20 colour families (Classic, Midnight,
+  Ocean, Forest, Sunset, Sakura, Royal, …) × 6 styles — *Dark*, *Pure black* (AMOLED), *Deep*,
+  *Dusk*, *Light* and *Pastel*. Every card is a live mini preview.
+- **Follows the phone** by default: switch the phone to light or dark and the app switches to
+  the matching version of your theme. Filter by *All / Dark / Light*.
+- The accent colour follows the theme, or pick your own.
+
+### 🌍 Language
+- A fresh install opens in **the phone's language** (*Settings → Language → Phone language*);
+  change the phone's language and the app follows. Anything you chose yourself is kept.
+
+### 🏠 Home-workout reminder (new)
+- On days without a gym routine, a **heads-up reminder with a light vibration** shows the day's
+  no-equipment workout: name, number of exercises, minutes, and the day's steps, water and
+  calories. **Start** opens the workout right away; **Later** reminds you in 30 minutes.
+- A follow-up an hour later if you haven't trained yet. *Settings → Notifications*.
+
+### 👟 Steps
+- **The number never steps back** (7,412 → 7,409 → 7,413 is gone): live steps from the step
+  detector are shown at once and the step counter confirms them, without ever counting a step
+  twice. Unconfirmed steps are dropped when you stop; only confirmed steps are saved.
+- **Walking buttons:** back to the 2.8 layout — one big start / pause button, stop and reset
+  beside it — larger, clearer and smoother.
+
+### 💧 Water
+- **The exercise with each water reminder follows the day's workout** — leg moves on leg day,
+  mobility on Friday, cardio bursts on HIIT day, 30 new moves in total.
+
+### 🎉 Celebration
+- **Fireworks**, slowly turning light rays, twinkling stars and a shine across the badge;
+  a new **brass fanfare** with a final chord (in the app and outside it).
+
+### 📅 Today's plan
+- **The whole week at a glance** (Saturday → Friday): each day's workout, minutes, steps and
+  water, with the exercises one tap away.
+- **On-plan streak:** days in a row with a day score of 67 % or more.
+
 ## v2.9.0 — 2026-10-13
 
 **A plan for every day — workout, steps and water — to lose weight and get fitter, water

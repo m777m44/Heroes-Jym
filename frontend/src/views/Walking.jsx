@@ -141,23 +141,27 @@ export default function Walking() {
       <div className={'walk-motto tier' + tier}>{MOTTOS[tier](left)}</div>
       {left > 0 && <div className="walk-need small">{t('To reach your goal: {0} steps per hour until midnight', fmtInt(perHour))}</div>}
       <StatusLine status={status} source={source} />
-      {/* 2.9: one control dock — the big round button starts / pauses, the two equal side
-          buttons reset and stop; every button the same shape, labelled underneath. */}
-      <div className="walk-dock" role="group" aria-label={t('Step counter')}>
-        <button className="dock-btn" onClick={stepResetSheet} aria-label={t('Reset step counter')}>
-          <span className="dock-c"><Icon name="reset" /></span><span className="dock-l">{t('Reset')}</span>
-        </button>
+      {/* 2.10: the 2.8 layout back, refined — one wide start button; while counting, Pause and
+          Stop side by side with the same size; "reset" as a quiet chip underneath. */}
+      <div className={'walk-ctl' + (tracking ? ' on' : '')} role="group" aria-label={t('Step counter')}>
         {tracking
-          ? <button className="dock-btn main on" onClick={pause} aria-label={t('Pause')}>
-            <span className="dock-c"><Icon name="pause" /></span><span className="dock-l">{t('Pause')}</span>
-          </button>
-          : <button className="dock-btn main" disabled={status === 'starting'} onClick={() => start({ interactive: true })}
-            aria-label={paused ? t('Resume counting') : t('Start counting')}>
-            <span className="dock-c"><Icon name="play" /></span><span className="dock-l">{paused ? t('Resume') : t('Start')}</span>
-          </button>}
-        <button className="dock-btn stop" onClick={stop} disabled={!(tracking || paused)} aria-label={t('Stop counting')}>
-          <span className="dock-c"><Icon name="stop" /></span><span className="dock-l">{t('Stop')}</span>
-        </button>
+          ? <div className="walk-ctl-row">
+            {source === 'service' && <button className="wbtn wbtn-soft" onClick={pause}>
+              <span className="wbtn-ic"><Icon name="pause" /></span><span>{t('Pause')}</span>
+            </button>}
+            <button className="wbtn wbtn-stop" onClick={stop}>
+              <span className="wbtn-ic"><Icon name={source === 'service' ? 'stop' : 'pause'} /></span><span>{t('Stop counting')}</span>
+            </button>
+          </div>
+          : <div className="walk-ctl-row">
+            <button className="wbtn wbtn-go" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>
+              <span className="wbtn-ic"><Icon name="play" /></span><span>{paused ? t('Resume counting') : t('Start counting')}</span>
+            </button>
+            {paused && <button className="wbtn wbtn-stop wbtn-sq" onClick={stop} aria-label={t('Stop counting')}>
+              <span className="wbtn-ic"><Icon name="stop" /></span>
+            </button>}
+          </div>}
+        <button className="walk-reset" onClick={stepResetSheet}><Icon name="reset" /> {t('Reset step counter')}</button>
       </div>
       {status === 'denied' && MOBILE && <div className="walk-btns"><Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button></div>}
     </div>

@@ -9,6 +9,7 @@ const base = (over = {}) => ({
   routines: [{ id: 'a', name: 'Push' }, { id: 'b', name: 'Legs' }],
   week: { 6: 'a', 1: 'b' },        // Saturdays push, Mondays legs
   dayPlan: {}, workouts: [], steps: {}, stepGoal: 8000,
+  planOn: false,                   // the 2.x behaviour; 2.10's home-workout reminders below
   ...over,
 })
 
@@ -141,5 +142,42 @@ describe('workout reminders at each day’s own time (2.6)', () => {
     const a = planSignature(base(), NOW)
     expect(planSignature(base({ reminder: { on: true, time: '08:00', days: { 6: '19:00' } } }), NOW)).not.toBe(a)
     expect(planSignature(base({ routines: [{ id: 'a', name: 'Push', ex: [{ id: 'x' }] }, { id: 'b', name: 'Legs' }] }), NOW)).not.toBe(a)
+  })
+})
+
+describe('2.10 home-workout reminders', () => {
+  const S = (over = {}) => base({ planOn: true, ...over })
+  it('fills the days without a routine with the day’s home workout (and a follow-up)', () => {
+    const p = planReminders(S(), NOW, 3)
+    expect(p.map(x => [x.iso, x.kind])).toEqual([
+      ['2026-10-10', 'workout'], ['2026-10-10', 'nudge'],
+      ['2026-10-11', 'plan'], ['2026-10-11', 'plannudge'],
+      ['2026-10-12', 'workout'], ['2026-10-12', 'nudge'],
+    ])
+    const home = p[2]
+    expect(home.plan.kind).toBe('walk')                 // Sunday: walking day + core
+    expect(home.plan.n).toBeGreaterThan(0)
+    expect(home.plan.min).toBeGreaterThanOrEqual(10)
+    expect(home.plan.steps).toBeGreaterThan(0)
+    expect(home.plan.water).toBeGreaterThan(0)
+    expect(new Set(p.map(x => x.id)).size).toBe(p.length)
+  })
+  it('can be switched off on its own, and is off with the daily plan', () => {
+    expect(planReminders(S({ reminder: { on: true, time: '08:00', home: false } }), NOW, 3).some(x => x.kind === 'plan')).toBe(false)
+    expect(planReminders(base(), NOW, 3).some(x => x.kind === 'plan')).toBe(false)
+    expect(reminderPrefs({ reminder: { on: true } }).home).toBe(true)
+  })
+  it('skips a day whose workout is already logged', () => {
+    const p = planReminders(S({ workouts: [{ d: '2026-10-11' }] }), NOW, 3)
+    expect(p.some(x => x.iso === '2026-10-11')).toBe(false)
+  })
+  it('writes a title, a short body and an expanded text', () => {
+    const [home] = planReminders(S(), NOW, 3).filter(x => x.kind === 'plan')
+    const tx = reminderText(home, S())
+    expect(tx.title).toMatch(/^🏠 Home workout: Walking day \+ core$/)
+    expect(tx.body).toMatch(/exercises · about \d+ min · No equipment/)
+    expect(tx.big).toMatch(/👟 [\d,]+ steps · 💧 [\d,]+ ml · 🔥 [\d,]+ kcal/)
+    const [nudge] = planReminders(S(), NOW, 3).filter(x => x.kind === 'plannudge')
+    expect(reminderText(nudge, S()).body).toMatch(/^Just \d+ minutes at home/)
   })
 })

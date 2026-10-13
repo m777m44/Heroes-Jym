@@ -264,13 +264,24 @@ final class WaterStore {
         return v == null || v.isEmpty() ? def : v;
     }
 
+    /** 2.10: today's moves (each weekday follows its workout — "movesByDay"), else the general list. */
+    private JSONArray moves() {
+        JSONObject byDay = config.optJSONObject("movesByDay");
+        if (byDay != null) {
+            int dow = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1;   // = JS getDay()
+            JSONArray d = byDay.optJSONArray(String.valueOf(dow));
+            if (d != null && d.length() > 0) return d;
+        }
+        return config.optJSONArray("moves");
+    }
+
     synchronized int moveCount() {
-        JSONArray a = config.optJSONArray("moves");
+        JSONArray a = moves();
         return a == null ? 0 : a.length();
     }
 
     synchronized String move(int i) {
-        JSONArray a = config.optJSONArray("moves");
+        JSONArray a = moves();
         if (a == null || a.length() == 0) return "10 squats";
         return a.optString(Math.abs(i) % a.length(), "10 squats");
     }

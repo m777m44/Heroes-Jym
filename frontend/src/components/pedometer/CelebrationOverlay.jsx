@@ -18,7 +18,7 @@ const KINDS = {
 const PAPER = ['#ffd60a', '#ff375f', '#64d2ff', '#30d158', '#bf5af2', '#ff9f0a', '#ffffff']
 const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-function useConfetti(ref, seed) {
+function useConfetti(ref, seed, colors = PAPER) {
   useEffect(() => {
     const cv = ref.current
     if (!cv || reduced()) return
@@ -39,6 +39,13 @@ function useConfetti(ref, seed) {
         ? { x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.35 * h }
         : { x: rnd() * w, y: -rnd() * h * 0.9 - 20, vx: (rnd() - 0.5) * 60, vy: 60 + rnd() * 90 }
     }).map(p => ({ ...p, r: rnd() * 360, vr: (rnd() - 0.5) * 720, z: 5 + rnd() * 7, ph: rnd() * 6.28, c: PAPER[Math.floor(rnd() * PAPER.length)], k: Math.floor(rnd() * 5) }))
+    // 2.10: fireworks — bursts of glowing sparks in the goal's colours, one after another
+    const BURSTS = [0.15, 0.75, 1.3, 1.95, 2.7]
+    const F = BURSTS.map((at, b) => ({
+      at, x: w * (0.18 + rnd() * 0.64), y: h * (0.1 + rnd() * 0.28), done: false,
+      c: [colors[b % colors.length], colors[(b + 1) % colors.length], '#ffffff'],
+    }))
+    const sparks = []
     let raf = 0, last = performance.now()
     const t0 = last
     const frame = now => {
@@ -61,12 +68,38 @@ function useConfetti(ref, seed) {
         else ctx.fillRect(-p.z / 2, -p.z * 0.32 * fl - 1, p.z, p.z * 0.64 * fl + 2)
         ctx.restore()
       }
+      for (const f of F) {
+        if (f.done || tt < f.at) continue
+        f.done = true
+        const n = 38 + Math.floor(rnd() * 14)
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * Math.PI * 2 + rnd() * 0.2, v = 90 + rnd() * 150
+          sparks.push({ x: f.x, y: f.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: 1 + rnd() * 0.6, c: f.c[i % 3] })
+        }
+      }
+      if (sparks.length) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'
+        for (const sp of sparks) {
+          if (sp.t >= sp.life) continue
+          sp.t += dt; sp.vx *= 1 - 1.6 * dt; sp.vy = sp.vy * (1 - 1.6 * dt) + 70 * dt
+          sp.x += sp.vx * dt; sp.y += sp.vy * dt
+          const al = Math.max(0, 1 - sp.t / sp.life)
+          ctx.globalAlpha = al
+          ctx.fillStyle = sp.c
+          ctx.beginPath(); ctx.arc(sp.x, sp.y, 1.2 + 1.6 * al, 0, 6.283); ctx.fill()
+          ctx.globalAlpha = al * 0.25
+          ctx.beginPath(); ctx.arc(sp.x, sp.y, 5 * al + 1, 0, 6.283); ctx.fill()
+          alive++
+        }
+        ctx.restore()
+      }
+      if (F.some(f => !f.done)) alive++
       if (alive) raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     window.addEventListener('resize', size)
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', size) }
-  }, [ref, seed])
+  }, [ref, seed])                                  // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 function useCountUp(target, key) {
@@ -89,7 +122,7 @@ function useCountUp(target, key) {
 function Scene({ cur, onClose }) {
   const cvRef = useRef(null)
   const k = KINDS[cur.kind] || KINDS.milestone
-  useConfetti(cvRef, cur.key % 100000)
+  useConfetti(cvRef, cur.key % 100000, [k.c1, k.c2, ...PAPER])
   const v = useCountUp(cur.steps, cur.key)
   const fmt = n => n.toLocaleString(dateLocale())
   const water = cur.kind === 'water'
@@ -108,7 +141,9 @@ function Scene({ cur, onClose }) {
         <span className="celebrate-ring r1" aria-hidden="true" />
         <span className="celebrate-ring r2" aria-hidden="true" />
         <span className="celebrate-ring r3" aria-hidden="true" />
+        <span className="celebrate-rays" aria-hidden="true" />
         <span className="celebrate-glow" aria-hidden="true" />
+        {[0, 1, 2, 3, 4, 5].map(i => <span key={i} className={'celebrate-star s' + i} aria-hidden="true" />)}
         <span className="celebrate-badge"><Icon name={k.icon} /></span>
       </div>
       <div className="celebrate-kicker">{kicker}</div>

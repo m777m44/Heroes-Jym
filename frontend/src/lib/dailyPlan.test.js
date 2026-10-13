@@ -3,6 +3,7 @@ import {
   planFor, planProgress, planRoutine, levelOf, recentStepAverage, stepsTargetFor, PLAN_DAYS, WEEK_KINDS, PLAN_TITLES, TIPS,
 } from './dailyPlan.js'
 import { waterSchedule } from './water.js'
+import { weekPlan, planStreak } from './dailyPlan.js'
 import { BUILTIN_NAMES } from './routines.js'
 import { EXIDX } from './exercises.js'
 import { waterGoalMlOf } from './water.js'
@@ -139,5 +140,26 @@ describe('water schedule', () => {
 
   it('is empty without a goal', () => {
     expect(waterSchedule(p, 0, 0, at(10)).slots).toEqual([])
+  })
+})
+
+describe('2.10 week plan and streak', () => {
+  it('lists Saturday → Friday of the week, every day different', () => {
+    const w = weekPlan({ dayPlan: {}, week: {}, routines: [] }, '2026-10-13')                 // a Tuesday
+    expect(w.map(d => d.iso)).toEqual(['2026-10-10', '2026-10-11', '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'])
+    expect(w.map(d => d.dow)).toEqual([6, 0, 1, 2, 3, 4, 5])
+    expect(new Set(w.map(d => d.plan.kind)).size).toBe(7)
+  })
+  it('counts days in a row with two of three parts done', () => {
+    const S = { stepGoal: 8000, steps: {}, water: {}, workouts: [], dayPlan: {}, week: {}, routines: [] }
+    for (const d of ['2026-10-11', '2026-10-12']) {
+      S.steps[d] = { n: 20000, ms: 0 }
+      S.workouts.push({ d, start: Date.parse(d + 'T08:00:00'), end: Date.parse(d + 'T09:30:00') })
+    }
+    expect(planStreak(S, '2026-10-13')).toBe(2)          // today not done yet: doesn't break it
+    S.steps['2026-10-13'] = { n: 20000, ms: 0 }
+    S.workouts.push({ d: '2026-10-13', start: Date.parse('2026-10-13T08:00:00'), end: Date.parse('2026-10-13T09:30:00') })
+    expect(planStreak(S, '2026-10-13')).toBe(3)
+    expect(planStreak({ dayPlan: {}, week: {}, routines: [] }, '2026-10-13')).toBe(0)
   })
 })

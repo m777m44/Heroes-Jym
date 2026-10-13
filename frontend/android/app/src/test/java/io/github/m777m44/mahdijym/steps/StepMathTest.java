@@ -84,4 +84,15 @@ public class StepMathTest {
         assertEquals(40, StepMath.plausible(-1000));
         assertEquals(280, StepMath.plausible(60_000));
     }
+
+    @Test public void counterUsesUpProvisionalStepsWithoutGoingBack() {
+        // detector showed 5 live steps; the counter then confirms 3 → 2 stay live (5 shown either way)
+        assertEquals(2, StepMath.provisionalAfter(5, 3));
+        assertEquals(0, StepMath.provisionalAfter(5, 9));     // counter caught up and passed
+        assertEquals(4, StepMath.provisionalAfter(4, 0));     // nothing confirmed yet: keep showing them
+        assertEquals(0, StepMath.provisionalAfter(0, 7));
+        assertEquals(0, StepMath.provisionalAfter(-3, 2));
+        int shownBefore = 100 + 5, shownAfter = (100 + 3) + StepMath.provisionalAfter(5, 3);
+        assertTrue(shownAfter >= shownBefore);
+    }
 }

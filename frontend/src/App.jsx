@@ -3,8 +3,8 @@ import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'r
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
-import { ACCENTS } from './lib/format.js'
-import { setLang, useLang, isRTL, t } from './lib/i18n.js'
+import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
+import { resolveTheme, applyTheme } from './lib/themes.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -31,6 +31,7 @@ import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
 import Water from './views/Water.jsx'
+import Themes from './views/Themes.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
@@ -43,12 +44,17 @@ import { installBackButton } from './lib/backButton.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
-function applyPrefs(theme, accent) {
-  const de = document.documentElement
-  de.dataset.theme = theme === 'light' ? 'light' : 'dark'
-  de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
-  const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+// The phone's light / dark setting, live (2.10: themes can follow it — lib/themes.js).
+const darkQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null
+function useSystemDark() {
+  const [dark, setDark] = useState(() => (darkQuery ? darkQuery.matches : null))
+  useEffect(() => {
+    if (!darkQuery) return
+    const on = e => setDark(e.matches)
+    darkQuery.addEventListener ? darkQuery.addEventListener('change', on) : darkQuery.addListener(on)
+    return () => { darkQuery.removeEventListener ? darkQuery.removeEventListener('change', on) : darkQuery.removeListener(on) }
+  }, [])
+  return dark
 }
 
 function Shell() {
@@ -60,13 +66,15 @@ function Shell() {
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => installBackButton(), [])
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
-  useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
-  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
+  const systemDark = useSystemDark()
+  useEffect(() => { applyTheme(resolveTheme(S, systemDark), S.accent) }, [S.theme, S.themeSystem, S.accent, systemDark])
+  const lang = langOf(S)                     // 'auto' → the phone's language
+  useEffect(() => { setLang(lang) }, [lang])
   useEffect(() => {
     const de = document.documentElement
-    de.lang = S.lang || 'en'
-    de.dir = isRTL(S.lang) ? 'rtl' : 'ltr'
-  }, [langV, S.lang])
+    de.lang = lang
+    de.dir = isRTL(lang) ? 'rtl' : 'ltr'
+  }, [langV, lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
@@ -131,6 +139,7 @@ function Shell() {
               <Route path="/walk" element={<Walking />} />
               <Route path="/weight" element={<BodyWeight />} />
               <Route path="/water" element={<Water />} />
+              <Route path="/themes" element={<Themes />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}

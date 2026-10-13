@@ -50,10 +50,18 @@ describe('2.0 screens render', () => {
     expect(html).toContain('walk-motto')
     expect(html).toContain('Milestone sound')
     expect(html).not.toContain('Voice coach')       // native TTS — Android app only
-    // 2.9: one control dock (reset · start · stop), all the same round shape
-    expect(html).toContain('walk-dock')
-    expect((html.match(/class="dock-btn/g) || []).length).toBe(3)
-    expect(html).not.toContain('walk-reset')
+    // 2.10: the 2.8 layout again, refined — one wide start button, reset as a chip
+    expect(html).toContain('walk-ctl')
+    expect((html.match(/class="wbtn wbtn-go/g) || []).length).toBe(1)   // idle: one wide start button
+    expect(html).toContain('walk-reset')
+  })
+  it('Themes (2.10)', async () => {
+    const html = await render('/themes', './Themes.jsx')
+    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(120)
+    expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
+    expect(html).toContain('Follow the phone')
+    expect(html).toContain('120 themes · 20 colour families')
+    expect(html).toContain('swatch-theme')
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')

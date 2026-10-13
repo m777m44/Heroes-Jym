@@ -216,6 +216,18 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 | Clock | `lib/liveClock.js`, `StepStore.clockZone()` | Always the phone's own time zone; no city name anywhere (the old `clockZone` setting is ignored, natively too). |
 | Controls | `index.css` (`.sw`, `.walk-dock`, `.btn`) | One switch size (52 × 32) that works right-to-left, the walking control dock (reset · start/pause · stop), one height per button size. |
 
+## Themes, phone language, home-workout reminders & steady steps (2.10)
+
+| What | Where | Notes |
+|---|---|---|
+| Themes | `lib/themes.js`, `views/Themes.jsx` (`/themes`) | 20 families × 6 variants (dark · pure black · deep · dusk · light · pastel) = 120, generated from a hue; `applyTheme()` sets the CSS variables inline. `themeSystem` (default on) swaps to the light / dark counterpart with the phone (`prefers-color-scheme`). Old `dark` / `light` values migrate to Classic. |
+| Phone language | `langOf()` / `deviceLang()` in `lib/i18n.js` | `lang: 'auto'` is the new default: the first of `navigator.languages` we have, else English. |
+| Home-workout reminder | `WorkoutReminder.java` (channel `mj_workout`), `scheduleWorkoutReminders`, `lib/dailyReminder.js` | Heads-up, silent, light vibration `0,60,90,60`; *Start* → `/home?start=plan`, *Later* = 30 min; next 14 days, rescheduled after a restart (`BootReceiver`). iOS uses Capacitor local notifications. |
+| Steady steps | `StepMath.provisionalAfter()`, `StepStore.settleProvisional()` | A counter reading of *d* steps uses up *d* provisional detector steps (max 200), so the total never goes down; 1.5 s after the idle flush unconfirmed ones are dropped. The snapshot's `confirmed` is what JS saves. |
+| Day-specific water moves | `movesForKind()` in `lib/water.js`, `movesByDay` in `lib/waterSync.js`, `WaterStore.moves()` | Each weekday's reminders pick moves that fit that day's workout. |
+| Celebration | `CelebrationView.java`, `Fanfare.java`, `CelebrationOverlay.jsx`, `lib/celebrate.js` | Fireworks, rays, a brass fanfare with a final chord. |
+| Walking buttons | `views/Walking.jsx` (`.walk-ctl`, `.wbtn`) | The 2.8 layout again, refined; the 2.9 dock is gone. |
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

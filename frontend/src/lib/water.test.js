@@ -2,9 +2,9 @@ import { describe, it, expect, afterAll } from 'vitest'
 import {
   CONTAINERS, containerOf, waterGoalMlOf, mlOn, setMl, addMl, mergeNative, countIn, waterDays, waterStreak,
   waterAverage, recommendedMl, waterRemindPrefs, reminderSlots, nextReminder, suggestMove, MOVES, MAX_ML_DAY,
-  stepBonusMl, workoutBonusMl, autoGoalMl, workoutMinutesOn, waterGoalParts, waterPanelOn,
+  stepBonusMl, workoutBonusMl, autoGoalMl, workoutMinutesOn, waterGoalParts, waterPanelOn, MOVES_BY_KIND, movesForKind,
 } from './water.js'
-import { waterConfig, waterStrings, staticReminder, bodyKg } from './waterSync.js'
+import { waterConfig, waterStrings, staticReminder, bodyKg, movesByDay, dayMoves } from './waterSync.js'
 import { serviceStrings, serviceConfig } from './stepService.js'
 import { setLang, t } from './i18n.js'
 
@@ -192,5 +192,30 @@ describe('water — the automatic goal (2.6, mirrored in WaterMath.autoGoal)', (
     expect(waterPanelOn({})).toBe(true)
     expect(waterPanelOn({ waterPanel: false })).toBe(false)
     expect(waterPanelOn({ waterOn: false })).toBe(false)
+  })
+})
+
+describe('2.10 — water moves that follow each day’s workout', () => {
+  it('has its own set of moves for every plan day', () => {
+    expect(Object.keys(MOVES_BY_KIND).sort()).toEqual(['full', 'hiit', 'lower', 'recover', 'upper', 'walk', 'walk2'])
+    for (const l of Object.values(MOVES_BY_KIND)) expect(l.length).toBeGreaterThanOrEqual(5)
+    expect(movesForKind('routine')).toBe(MOVES)
+  })
+  it('sends seven different lists, keyed by getDay()', () => {
+    const by = movesByDay({ dayPlan: {}, week: {}, routines: [] }, new Date(2026, 9, 10, 9))
+    expect(Object.keys(by).sort()).toEqual(['0', '1', '2', '3', '4', '5', '6'])
+    expect(new Set(Object.values(by).map(l => l.join('|'))).size).toBe(7)
+    expect(by[5]).toEqual(MOVES_BY_KIND.recover.map(m => t(m)))      // Friday: recovery
+    expect(by[2]).toEqual(MOVES_BY_KIND.hiit.map(m => t(m)))         // Tuesday: HIIT
+    expect(waterConfig({}).movesByDay).toBeTruthy()
+  })
+  it('falls back to the general moves with the daily plan off, and on gym days', () => {
+    expect(dayMoves({ planOn: false }, '2026-10-13')).toBe(MOVES)
+    expect(dayMoves({ dayPlan: {}, routines: [{ id: 'a', name: 'Push', ex: [{ id: '0001', sets: 3, reps: 10 }] }], week: { 2: 'a' } }, '2026-10-13')).toBe(MOVES)
+  })
+  it('rotates through the given list', () => {
+    const l = MOVES_BY_KIND.lower
+    const g = suggestMove({ now: new Date(2026, 9, 12, 12).getTime(), steps: 9000, goal: 8000, slot: 7, moves: l })
+    expect(g).toEqual({ kind: 'move', i: 7 % l.length })
   })
 })

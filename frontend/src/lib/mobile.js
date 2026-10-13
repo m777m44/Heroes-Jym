@@ -41,6 +41,19 @@ export async function nativeSave(state) {
 // are saved every few seconds on a walk. `interactive` gates the OS permission prompt to the
 // Settings toggle; a background resync never pops a dialog.
 let lastSig = null
+// true when the Android step service took the list (it replaces whatever was scheduled before).
+async function nativeWorkoutReminders(items) {
+  try {
+    const { hasStepService, call } = await import('./stepService.js')
+    if (!(await hasStepService())) return false
+    const { t } = await import('./i18n.js')
+    const r = await call('scheduleWorkoutReminders', {
+      items,
+      strings: { channel: t('Workout reminders'), channelDesc: t('Your workout and home-workout reminders'), start: t('Start'), later: t('In 30 min') },
+    })
+    return !!r && typeof r.scheduled === 'number'
+  } catch { return false }
+}
 export async function syncReminder(S, interactive = false) {
   try {
     const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS } = await import('./dailyReminder.js')
@@ -50,16 +63,23 @@ export async function syncReminder(S, interactive = false) {
     const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i)]
     await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
     const { reminderPrefs } = await import('./dailyReminder.js')
-    if (!reminderPrefs(S).on) { lastSig = sig; return true }
+    if (!reminderPrefs(S).on) { await nativeWorkoutReminders([]); lastSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
-    const notifications = planReminders(S).map(item => ({
-      id: item.id,
-      ...reminderText(item, S),
-      schedule: { at: item.at, allowWhileIdle: true },
-      extra: { route: item.kind === 'walk' ? '/walk' : '/home' },
-    }))
+    const plan = planReminders(S)
+    const routeOf = item => (item.kind === 'walk' ? '/walk' : '/home')
+    // 2.10 Android: scheduled natively — a heads-up banner with a light vibration, "Start" and
+    // "In 30 min" buttons, back after a reboot (WorkoutReminder.java).
+    if (await nativeWorkoutReminders(plan.map(item => {
+      const tx = reminderText(item, S)
+      return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
+        route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
+    }))) { lastSig = sig; return true }
+    const notifications = plan.map(item => {
+      const { title, body } = reminderText(item, S)
+      return { id: item.id, title, body, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
+    })
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true

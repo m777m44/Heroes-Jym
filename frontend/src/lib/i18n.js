@@ -14,6 +14,18 @@ export const LANGS = {
 }
 // Languages written right to left — the shell sets <html dir> from this.
 export const RTL_LANGS = ['ar']
+/** The phone's / browser's language when we have it, else English. */
+export function deviceLang() {
+  try {
+    for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])) {
+      const k = String(l || '').toLowerCase().split('-')[0]
+      if (LANGS[k]) return k
+    }
+  } catch { /* no navigator (SSR, tests) */ }
+  return 'en'
+}
+/** The language to show: S.lang, or the phone's when it is 'auto' (2.10 default) / unknown. */
+export const langOf = S => (S && S.lang && S.lang !== 'auto' && LANGS[S.lang] ? S.lang : deviceLang())
 export const isRTL = l => RTL_LANGS.includes(l)
 export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko', 'ar']
 const DATE_LOCALES = {

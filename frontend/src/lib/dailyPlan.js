@@ -172,3 +172,35 @@ export function planProgress(S, plan, { now = Date.now(), pending = 0 } = {}) {
   p.done = p.stepsPct >= 1 && p.waterPct >= 1 && p.workoutPct >= 1
   return p
 }
+
+// ---- 2.10: the week at a glance and the streak ----------------------------------------------
+
+/** The plans of the week (Saturday → Friday) that holds `iso`: [{ iso, dow, plan }]. */
+export function weekPlan(S, iso) {
+  const d = dayAt(iso)
+  const back = (d.getDay() + 1) % 7                     // days since Saturday
+  return Array.from({ length: 7 }, (_, i) => {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back + i, 12)
+    const xi = isoOf(x)
+    return { iso: xi, dow: x.getDay(), plan: planFor(S, xi) }
+  })
+}
+
+/** A day counts as "on plan" when at least two of its three parts are done (score ≥ 67). */
+export const ON_PLAN_SCORE = 67
+
+/**
+ * Days in a row on plan, ending today (when today already counts) or yesterday — up to `max`.
+ * A streak isn't broken by today still being in progress.
+ */
+export function planStreak(S, iso, { pending = 0, max = 60 } = {}) {
+  const d = dayAt(iso)
+  const scoreOn = (xi, pend, now) => planProgress(S, planFor(S, xi), { now, pending: pend }).score
+  let n = scoreOn(iso, pending, Date.now()) >= ON_PLAN_SCORE ? 1 : 0
+  for (let i = 1; i <= max; i++) {
+    const xi = isoOf(new Date(d.getFullYear(), d.getMonth(), d.getDate() - i, 12))
+    if (scoreOn(xi, 0, dayAt(xi).getTime() + 12 * 3600e3 - 1) < ON_PLAN_SCORE) break
+    n++
+  }
+  return n
+}

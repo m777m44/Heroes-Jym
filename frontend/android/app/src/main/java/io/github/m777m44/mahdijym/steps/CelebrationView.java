@@ -39,6 +39,14 @@ final class CelebrationView extends View {
     private final int[] col = new int[N], shape = new int[N];
     private final Random rnd = new Random();
 
+    // 2.10: fireworks — FB bursts of FS sparks each, launched one after another
+    private static final int FB = 5, FS = 44;
+    private static final float[] BURST_AT = { 0.15f, 0.75f, 1.3f, 1.95f, 2.7f };
+    private final float[] bx = new float[FB], by = new float[FB];
+    private final float[] fx = new float[FB * FS], fy = new float[FB * FS], fvx = new float[FB * FS], fvy = new float[FB * FS], flife = new float[FB * FS];
+    private final int[] fcol = new int[FB * FS];
+    private final RectF rays = new RectF();
+
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -105,6 +113,19 @@ final class CelebrationView extends View {
             col[i] = CelebrationArt.CONFETTI[rnd.nextInt(CelebrationArt.CONFETTI.length)];
             shape[i] = rnd.nextInt(5);   // 0 = circle, 1 = ribbon, else rectangle
         }
+        for (int b = 0; b < FB; b++) {
+            bx[b] = w * (0.18f + rnd.nextFloat() * 0.64f);
+            by[b] = h * (0.1f + rnd.nextFloat() * 0.28f);
+            for (int j = 0; j < FS; j++) {
+                int i = b * FS + j;
+                double a = j / (double) FS * Math.PI * 2 + rnd.nextDouble() * 0.2;
+                float v = (90 + rnd.nextFloat() * 150) * dp;
+                fx[i] = bx[b]; fy[i] = by[b];
+                fvx[i] = (float) Math.cos(a) * v; fvy[i] = (float) Math.sin(a) * v;
+                flife[i] = 1f + rnd.nextFloat() * 0.6f;
+                fcol[i] = j % 3 == 0 ? 0xFFFFFFFF : (j % 3 == 1 ? sp.c1() : sp.c2());
+            }
+        }
         text.setTextSize(17 * dp);
         text.setTypeface(Typeface.DEFAULT);
         int width = (int) Math.max(1, w - 64 * dp);
@@ -138,6 +159,15 @@ final class CelebrationView extends View {
             cv.drawCircle(cx, cy, easeOut(p) * m * 0.62f, ring);
         }
 
+        // 2.10: light rays turning slowly behind the badge
+        float rf = easeOut((t - 0.15f) / 0.9f);
+        if (rf > 0) {
+            float rr = m * 0.75f;
+            rays.set(cx - rr, cy - rr, cx + rr, cy + rr);
+            paint.setColor(CelebrationArt.alpha(sp.c1(), (int) (40 * rf)));
+            for (int k = 0; k < 16; k++) cv.drawArc(rays, k * 22.5f + t * 16f, 7f, true, paint);
+        }
+
         // glow (a slow, gentle breathing — not a bounce)
         cv.save();
         cv.translate(cx, cy);
@@ -167,6 +197,25 @@ final class CelebrationView extends View {
             else if (shape[i] == 1) { tmp.set(-s * 0.25f, -s * 1.1f * flutter, s * 0.25f, s * 1.1f * flutter); cv.drawRoundRect(tmp, s * 0.2f, s * 0.2f, paint); }
             else { tmp.set(-s / 2, -s * 0.32f * flutter - 1, s / 2, s * 0.32f * flutter + 1); cv.drawRect(tmp, paint); }
             cv.restore();
+        }
+
+        // 2.10: fireworks
+        for (int b = 0; b < FB; b++) {
+            float age = t - BURST_AT[b];
+            if (age <= 0) continue;
+            for (int j = 0; j < FS; j++) {
+                int i = b * FS + j;
+                if (age >= flife[i]) continue;
+                fvx[i] *= (1 - 1.6f * dt);
+                fvy[i] = fvy[i] * (1 - 1.6f * dt) + 70 * dp * dt;
+                fx[i] += fvx[i] * dt;
+                fy[i] += fvy[i] * dt;
+                float al = 1 - age / flife[i];
+                paint.setColor(CelebrationArt.alpha(fcol[i], (int) (60 * al)));
+                cv.drawCircle(fx[i], fy[i], (5 * al + 1) * dp, paint);
+                paint.setColor(CelebrationArt.alpha(fcol[i], (int) (255 * al)));
+                cv.drawCircle(fx[i], fy[i], (1.2f + 1.6f * al) * dp, paint);
+            }
         }
 
         // emoji

@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ, DAYN, weekOrder } from '../lib/format.js'
+import { todayISO, localTZ, DAYN, weekOrder } from '../lib/format.js'
+import { resolveTheme } from '../lib/themes.js'
+import { ThemeMock, themeName } from './Themes.jsx'
 import { effortOf } from '../lib/history.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, U, LANGS, INSTR_LANGS, dateLocale } from '../lib/i18n.js'
+import { t, U, LANGS, INSTR_LANGS, dateLocale, deviceLang } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
@@ -106,11 +108,11 @@ export default function Settings() {
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
-        value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
-        options={Object.entries(LANGS).map(([k, name]) => ({
+        value={S.lang && LANGS[S.lang] ? S.lang : 'auto'} onChange={v => update(s => { s.lang = v })}
+        options={[{ value: 'auto', label: t('Phone language'), subtitle: LANGS[deviceLang()] }, ...Object.entries(LANGS).map(([k, name]) => ({
           value: k, label: name,
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
-        }))}
+        }))]}
       />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
@@ -169,13 +171,10 @@ export default function Settings() {
 
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
-        <Segmented
-          className="seg-inline"
-          options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }]}
-          value={S.theme === 'light' ? 'light' : 'dark'}
-          onChange={v => update(s => { s.theme = v })}
-        />
+      {/* 2.10: every theme behind one row — 120 themes, follow the phone, accent (views/Themes.jsx) */}
+      <Row icon="sparkles" iconTint="var(--pink)" title={t('Themes')} accessory="chevron" onClick={() => nav('/themes')}
+        subtitle={themeName(resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)) + (S.themeSystem !== false ? ' · ' + t('Follow the phone') : '')}>
+        <ThemeMock th={resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)} />
       </Row>
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
@@ -186,15 +185,6 @@ export default function Settings() {
           onChange={v => update(s => { s.body = v })}
         />
       </Row>
-      <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
-        <span className="lrow-t">{t('Accent color')}</span>
-        <div className="swatches">
-          {Object.entries(ACCENTS).map(([k, c]) => (
-            <button key={k} className={'swatch' + ((S.accent || 'lime') === k ? ' on' : '')}
-              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={t('Accent color') + ' ' + (Object.keys(ACCENTS).indexOf(k) + 1)} />
-          ))}
-        </div>
-      </div>
     </Section>
 
     <OfflineSection />
@@ -325,6 +315,10 @@ function ReminderExtras({ S, setReminder }) {
         subtitle={t('You usually start training around {0} — remind you half an hour before.', sug.usual)}
         accessory="chevron" onClick={() => setReminder({ time: sug.remind })} />
     )}
+    <Row icon="figureStrength" iconTint="var(--green)" title={t('Home-workout reminder')}
+      subtitle={t('Days without a routine: the day’s no-equipment workout, on screen with a light vibration.')}>
+      <Switch checked={r.home} onChange={v => setReminder({ home: v })} />
+    </Row>
     <Row icon="reset" iconTint="var(--orange)" title={t('Follow-up reminder')} subtitle={t('Once more an hour later if the workout still isn’t logged.')}>
       <Switch checked={r.nudge} onChange={v => setReminder({ nudge: v })} />
     </Row>

@@ -4,24 +4,13 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
-import { LANGS } from '../lib/i18n.js'
 
 const KEY = 'gym_state_v1'
-// A fresh install starts in the phone's / browser's language when we have it (an Arabic phone
-// opens in Arabic), else English. Saved profiles keep whatever they chose.
-function deviceLang() {
-  try {
-    for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])) {
-      const k = String(l || '').toLowerCase().split('-')[0]
-      if (LANGS[k]) return k
-    }
-  } catch { /* no navigator (SSR, tests) */ }
-  return 'en'
-}
-
+// 2.10: a fresh install follows the phone — its language ('auto', see langOf in lib/i18n.js) and
+// its light / dark setting (themeSystem, lib/themes.js). Saved profiles keep what they chose.
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: deviceLang(),
-  theme: 'dark', accent: 'lime', body: 'male', targetW: null,
+  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'auto',
+  theme: 'classic-dark', themeSystem: true, accent: 'theme', body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so

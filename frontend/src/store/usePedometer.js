@@ -112,7 +112,9 @@ export const usePedometer = create((set, get) => {
     const iso = today()
     useStore.getState().updateQuiet(s => {
       if (snap && snap.day === iso) {
-        mergeDay(s, iso, snap)
+        // 2.10: save only what the step counter confirmed; the live detector steps on top are
+        // shown (pending) but could still be dropped as a shake, and S.steps only ever rises.
+        mergeDay(s, iso, typeof snap.confirmed === 'number' ? { ...snap, steps: snap.confirmed } : snap)
       } else if (n || ms) {
         // spread the batch over the hours it was walked in (usually just this one)
         let left = n

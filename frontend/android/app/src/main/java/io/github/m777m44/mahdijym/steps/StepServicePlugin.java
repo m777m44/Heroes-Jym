@@ -13,6 +13,7 @@ import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
@@ -22,6 +23,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -54,6 +56,7 @@ import java.util.List;
  *   getWater()                    → { days: { 'YYYY-MM-DD': { ml, at } }, day, ml, goal }
  *   setWater({ day, ml, at, celebrated })  a change made in the app (the later `at` wins)
  *   testWaterReminder()           posts a reminder now
+ *   scheduleWorkoutReminders({ items, strings }) → { scheduled } — 2.10 heads-up workout reminders
  *   getCelebrationStatus()        → { fullScreen, overlay, sdk }
  *   openFullScreenSettings() / openOverlaySettings()
  *   previewCelebration({ spec, mode: 'screen' | 'notification' })
@@ -450,6 +453,28 @@ public class StepServicePlugin extends Plugin {
     public void testWaterReminder(PluginCall call) {
         WaterReminder.post(ctx(), true);
         call.resolve();
+    }
+
+    // ---- workout reminders (2.10) ---------------------------------------------------------
+
+    /** { items: [{ id, at, title, body, big, route, start }], strings: { channel, start, later } } */
+    @PluginMethod
+    public void scheduleWorkoutReminders(PluginCall call) {
+        JSArray items = call.getArray("items");
+        JSObject strings = call.getObject("strings");
+        JSONArray list = new JSONArray();
+        if (items != null) {
+            try {
+                for (int i = 0; i < items.length(); i++) {
+                    JSONObject o = items.optJSONObject(i);
+                    if (o != null) list.put(o);
+                }
+            } catch (RuntimeException ignored) { }
+        }
+        int n = WorkoutReminder.setPlan(ctx(), list, strings);
+        JSObject r = new JSObject();
+        r.put("scheduled", n);
+        call.resolve(r);
     }
 
     // ---- celebrations (2.5) --------------------------------------------------------------

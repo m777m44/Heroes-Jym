@@ -244,13 +244,31 @@ export const MOVES = [
 ]
 
 /**
+ * 2.10 — the water reminder's moves follow the day's workout (lib/dailyPlan.js WEEK_KINDS), so
+ * every day of the week feels different and each move helps that day's goal: active moves on
+ * fat-burn days, glutes on leg day, gentle stretches on recovery day. English t() keys.
+ */
+export const MOVES_BY_KIND = {
+  full: ['12 squats and 8 push-ups', '20 high knees', '15 jumping jacks', '10 squat thrusts (no jump is fine)', 'A 30-second plank', '12 reverse lunges'],
+  walk: ['Walk 300 steps — a lap of the house', '20 calf raises', 'March in place for 1 minute', '10 standing knee-to-elbow crunches per side', 'Climb one flight of stairs (or 30 step-ups)', 'A 20-second side plank per side'],
+  lower: ['15 glute bridges', '12 sumo squats', '10 lunges per leg', 'A 40-second wall sit', '20 calf raises', '12 side leg raises per side'],
+  hiit: ['20 seconds of fast high knees', '10 skater hops', '15 mountain climbers per leg', '20 jumping jacks', '8 burpees (skip the push-up if you like)', '30 seconds of shadow boxing'],
+  upper: ['10 push-ups (on your knees is fine)', '12 chair dips', '15 arm circles each way', '10 shoulder taps per side', 'A 30-second plank', '10 superman lifts'],
+  walk2: ['Walk 500 steps', 'Walk while you take your next phone call', '20 calf raises', '10 bird-dogs per side', 'March in place for 1 minute', '10 standing side bends per side'],
+  recover: ['Shoulder rolls and a neck stretch — 30 seconds', 'A 30-second hamstring stretch per leg', '5 slow cat-cow stretches', 'A 20-second chest-opener stretch', '10 deep breaths — in for 4, out for 6', 'A 30-second hip-flexor stretch per side'],
+}
+
+/** The moves for a plan kind (a gym routine or an unknown kind: the general MOVES). */
+export const movesForKind = kind => MOVES_BY_KIND[kind] || MOVES
+
+/**
  * What the reminder suggests, from the day so far:
  *  · sitting for an hour, or well behind the step pace for this time of day → a short walk
  *    ({ kind: 'walk', n: steps, min: minutes });
  *  · otherwise one of MOVES, rotating with the slot ({ kind: 'move', i }).
  * Mirrored in WaterMath.suggest (Java).
  */
-export function suggestMove({ now = Date.now(), steps = 0, goal = 10000, lastStepAt = 0, from = '09:00', to = '22:00', slot = 0 } = {}) {
+export function suggestMove({ now = Date.now(), steps = 0, goal = 10000, lastStepAt = 0, from = '09:00', to = '22:00', slot = 0, moves = MOVES } = {}) {
   const d = new Date(now)
   const mins = d.getHours() * 60 + d.getMinutes()
   const span = Math.max(60, minOf(to) - minOf(from))
@@ -261,5 +279,6 @@ export function suggestMove({ now = Date.now(), steps = 0, goal = 10000, lastSte
     const n = Math.max(300, Math.min(1000, Math.round((behind > 0 ? behind : 500) / 100) * 100))
     return { kind: 'walk', n, min: Math.ceil(n / 100) }
   }
-  return { kind: 'move', i: ((slot % MOVES.length) + MOVES.length) % MOVES.length }
+  const n = Math.max(1, moves.length)
+  return { kind: 'move', i: ((slot % n) + n) % n }
 }

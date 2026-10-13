@@ -9,12 +9,13 @@
 //           as a toast (and a system notification when the tab is in the background).
 import { MOBILE } from './mobile.js'
 import { t, getLang, dateLocale } from './i18n.js'
-import { todayISO } from './format.js'
+import { todayISO, isoOf } from './format.js'
 import { walkPrefs } from './stepMetrics.js'
 import {
   CONTAINERS, CONTAINER_NAME, MOVES, containerOf, waterGoalMlOf, waterGoalParts, waterRemindPrefs, mlOn, changedAt,
-  mergeNative, nextReminder, reminderSlots, suggestMove, bodyKg, waterPanelOn,
+  mergeNative, nextReminder, reminderSlots, suggestMove, bodyKg, waterPanelOn, movesForKind,
 } from './water.js'
+import { planFor } from './dailyPlan.js'
 
 export { bodyKg }
 
@@ -85,14 +86,34 @@ export function waterConfig(S) {
     locale: dateLocale(),
     strings: waterStrings(S),
     moves: MOVES.map(m => t(m)),
+    // 2.10: { getDay(): [moves] } — each weekday's reminders follow that day's workout
+    movesByDay: movesByDay(S),
   }
+}
+
+/** The water-reminder moves of the day `iso` (English keys), from its plan. */
+export function dayMoves(S, iso) {
+  let kind = null
+  try { kind = S.planOn === false ? null : planFor(S, iso).kind } catch { /* no plan */ }
+  return movesForKind(kind)
+}
+
+/** Translated moves for the next seven days, keyed by getDay() (native: Calendar.DAY_OF_WEEK - 1). */
+export function movesByDay(S, now = new Date()) {
+  const out = {}
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12)
+    out[d.getDay()] = dayMoves(S, isoOf(d)).map(m => t(m))
+  }
+  return out
 }
 
 /** The reminder text for a non-native platform (no live step count available). */
 export function staticReminder(S, at, slot) {
   const p = waterRemindPrefs(S)
-  const g = suggestMove({ now: at.getTime(), steps: 0, goal: 1, lastStepAt: 0, from: p.from, to: p.to, slot })
-  const move = g.kind === 'move' ? t(MOVES[g.i]) : t(MOVES[0])
+  const moves = dayMoves(S, isoOf(at))
+  const g = suggestMove({ now: at.getTime(), steps: 0, goal: 1, lastStepAt: 0, from: p.from, to: p.to, slot, moves })
+  const move = t(moves[g.kind === 'move' ? g.i : 0])
   return {
     title: '💧 ' + t('Time for water — {0}', containerPhrase(containerOf(S))),
     body: p.move ? t('Quick move: {0}', move) : t('A reminder to drink, with a short exercise.'),

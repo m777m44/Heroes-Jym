@@ -3,11 +3,12 @@
 //
 // When workout, steps and water are all done, the full-screen celebration plays once a day.
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { usePedometer } from '../store/usePedometer.js'
-import { planFor, planProgress, planRoutine } from '../lib/dailyPlan.js'
-import { todayISO } from '../lib/format.js'
+import { planFor, planProgress, planRoutine, weekPlan, planStreak } from '../lib/dailyPlan.js'
+import { todayISO, DAYN } from '../lib/format.js'
+import { useUI } from '../store/useUI.js'
 import { t, exName, dateLocale } from '../lib/i18n.js'
 import { EXIDX } from '../lib/exercises.js'
 import { routineLabel, colorVar } from '../lib/routines.js'
@@ -59,6 +60,7 @@ export default function TodayPlan() {
     if (walkPrefs(S).celebrate !== false) { celebrate(100, 'plan'); playCheer(S.sound !== false, 'goal') }
   }, [p.done, iso])
 
+  const streak = useMemo(() => planStreak(S, iso, { pending }), [S, iso, p.score >= 67])   // eslint-disable-line react-hooks/exhaustive-deps
   const kg = bodyKg(S)
   const toGoal = S.targetW && kg ? Math.round(Math.abs(kg - (S.unit === 'lb' ? S.targetW * 0.45359237 : S.targetW)) * 10) / 10 : null
   const start = () => {
@@ -66,6 +68,13 @@ export default function TodayPlan() {
     if (plan.routineId) startFlow(plan.routineId)
     else startFlow(null, planRoutine(plan))
   }
+  // 2.10: "Start" on the home-workout reminder opens /home?start=plan — begin right away.
+  const loc = useLocation()
+  useEffect(() => {
+    if (!/[?&]start=plan\b/.test(loc.search || '')) return
+    nav('/home', { replace: true })
+    if (!p.trained) start()
+  }, [loc.search])                                   // eslint-disable-line react-hooks/exhaustive-deps
   const levelTxt = { easy: t('Beginner'), normal: t('Intermediate'), hard: t('Advanced') }[plan.level]
 
   return <div className={'card plan-card' + (p.done ? ' done' : '')} style={{ '--tint': colorVar(plan.color) }}>
@@ -75,6 +84,9 @@ export default function TodayPlan() {
         <div className="lbl2">{t("Today's plan")}</div>
         <div className="plan-title">{routineLabel(plan.title)}</div>
       </div>
+      <button className="plan-week-btn" onClick={() => weekPlanSheet(iso)} aria-label={t('This week’s plan')}>
+        <Icon name="calendar" />
+      </button>
       <div className="plan-score" title={t('Day score')}>
         <b>{p.score}</b><span>%</span>
       </div>
@@ -88,6 +100,9 @@ export default function TodayPlan() {
       <Goal pct={p.waterPct} color="var(--blue)" icon="drop" onClick={() => nav('/water')}
         value={n0(p.water) + ' / ' + n0(plan.waterMl)} label={t('Water (ml)')} />
     </div>
+
+    {streak >= 2 && <div className="plan-streak"><Icon name="flame" />
+      <span>{t('{0} days in a row on plan — keep the chain going!', n0(streak))}</span></div>}
 
     <div className="plan-meta">
       <span><Icon name="timer" />{t('{0} min', plan.minutes)}</span>
@@ -130,3 +145,45 @@ export default function TodayPlan() {
     </div>
   </div>
 }
+
+/* ---- 2.10: the week at a glance (Saturday → Friday) ---- */
+function WeekPlan({ iso, close }) {
+  const S = useStore(st => st.S)
+  const days = useMemo(() => weekPlan(S, iso), [S, iso])
+  const [open, setOpen] = useState(iso)
+  const trained = new Set((S.workouts || []).map(w => w.d))
+  const total = days.reduce((a, d) => a + d.plan.kcalTotal, 0)
+  return <>
+    <h3>{t('This week’s plan')}</h3>
+    <p className="small muted" style={{ marginTop: -4 }}>{t('Every day a different workout, steps and water — ≈ {0} kcal this week.', n0(total))}</p>
+    <div className="wk-list">
+      {days.map(({ iso: d, dow, plan }) => {
+        const past = d < iso, today = d === iso, done = trained.has(d)
+        const isOpen = open === d
+        return <div key={d} className={'wk-day' + (today ? ' today' : '') + (past ? ' past' : '') + (done ? ' done' : '')} style={{ '--tint': colorVar(plan.color) }}>
+          <button className="wk-row" onClick={() => setOpen(isOpen ? null : d)} aria-expanded={isOpen}>
+            <span className="wk-ic"><Icon name={done ? 'check' : plan.icon} /></span>
+            <span className="wk-m">
+              <span className="wk-d">{t(DAYN[dow])}{today && <span className="wp-today">{t('Today')}</span>}</span>
+              <span className="wk-t">{routineLabel(plan.title)}</span>
+              <span className="wk-s">{t('{0} min', n0(plan.minutes))} · {t('{0} steps', n0(plan.stepsTarget))} · {n0(plan.waterMl)} {t('ml')}</span>
+            </span>
+            <Icon name={isOpen ? 'chevronUp' : 'chevronDown'} className="wk-c" />
+          </button>
+          {isOpen && <ol className="plan-ex wk-ex">
+            {plan.exercises.map((e, i) => {
+              const ex = EXIDX[e.id]
+              return <li key={e.id + i} onClick={() => ex && exerciseDetailSheet(ex)}>
+                <span className="plan-ex-n">{(i + 1).toLocaleString(dateLocale())}</span>
+                <span className="plan-ex-name capitalize">{ex ? exName(ex) : e.id}</span>
+                <span className="plan-ex-r">{e.hold ? t('{0} × {1} s', e.sets, e.reps) : t('{0} × {1}', e.sets, e.reps)}</span>
+              </li>
+            })}
+          </ol>}
+        </div>
+      })}
+    </div>
+    <button className="btn" style={{ width: '100%', marginTop: 14 }} onClick={close}>{t('Close')}</button>
+  </>
+}
+export const weekPlanSheet = iso => useUI.getState().openSheet(close => <WeekPlan iso={iso} close={close} />)

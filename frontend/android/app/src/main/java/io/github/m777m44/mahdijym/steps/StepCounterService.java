@@ -84,7 +84,15 @@ public class StepCounterService extends Service implements SensorEventListener {
             main.postDelayed(this, 30_000);
         }
     };
-    private final Runnable idleCheck = () -> publish(true);   // stops the walking timer
+    // Walking stopped: ask the sensors for anything batched, then settle the live steps the
+    // counter didn't confirm (2.10) and stop the walking timer.
+    private final Runnable settle = () -> { store.settleProvisional(); publish(true); };
+    private final Runnable idleCheck = () -> {
+        try { if (sensors != null && listening) sensors.flush(this); } catch (RuntimeException ignored) { }
+        main.removeCallbacks(settle);
+        main.postDelayed(settle, 1500);
+        publish(true);
+    };
 
     @Override public void onCreate() {
         super.onCreate();
@@ -287,6 +295,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         main.post(() -> {
             samples.clear();
             main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
             publish(true);
         });
     }
@@ -324,6 +333,7 @@ public class StepCounterService extends Service implements SensorEventListener {
             while (samples.size() > 2 && samples.peekFirst()[0] < now - 20_000) samples.pollFirst();
             if (after > before) milestones(before, after);
             main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
             main.postDelayed(idleCheck, MOVING_MS + 500);
         }
         publish(false);

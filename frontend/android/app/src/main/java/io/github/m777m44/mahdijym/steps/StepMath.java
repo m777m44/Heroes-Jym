@@ -73,4 +73,21 @@ final class StepMath {
         if (d > plausible(window) || (long) stepsToday + d > MAX_STEPS_PER_DAY) return REJECT;
         return d;
     }
+
+    // ---- 2.10: the live (provisional) steps -------------------------------------------------
+    // The step detector fires on every step at once; the step counter — the authority — lags a
+    // few steps behind. Detector steps are shown as "provisional" on top of the confirmed total.
+    // 2.x cleared them on every counter reading, so the number shown could step BACK (7,412 →
+    // 7,409 → 7,413). Now a counter reading of d new steps uses up d provisional ones: the shown
+    // total never goes down while walking and never counts a step twice.
+
+    /** Provisional steps left after the counter confirmed {@code confirmed} new ones. */
+    static int provisionalAfter(int provisional, long confirmed) {
+        if (provisional <= 0) return 0;
+        if (confirmed <= 0) return provisional;
+        return (int) Math.max(0, provisional - confirmed);
+    }
+
+    /** Most provisional steps shown before the counter has to confirm them. */
+    static final int MAX_PROVISIONAL = 200;
 }

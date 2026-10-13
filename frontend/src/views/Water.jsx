@@ -7,11 +7,11 @@ import { nav } from '../lib/nav.js'
 import { MOBILE } from '../lib/mobile.js'
 import {
   CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, GOALS_ML, REMIND_EVERY, containerOf, waterGoalParts, mlOn, waterDays,
-  waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, MOVES, waterPanelOn, fixedGoalMlOf,
+  waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, waterPanelOn, fixedGoalMlOf,
   ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE, waterSchedule,
 } from '../lib/water.js'
 import { useNow } from '../lib/liveClock.js'
-import { bodyKg, testWaterReminder } from '../lib/waterSync.js'
+import { bodyKg, testWaterReminder, dayMoves } from '../lib/waterSync.js'
 import { goalOf, stepsOn } from '../lib/stepMetrics.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Button } from '../components/ui.jsx'
@@ -167,7 +167,7 @@ export default function Water() {
           <input type="time" className="timefield" value={rp.to} onChange={e => e.target.value && setRemind({ to: e.target.value })} aria-label={t('Until')} />
         </Row>
         <Row icon="figureStrength" iconTint="var(--orange)" title={t('Suggest an exercise')}
-          subtitle={t('A short walk after sitting still or when behind on steps, else a quick move like “{0}”.', t(MOVES[0]))}>
+          subtitle={t('A short walk after sitting still or when behind on steps, else a quick move like “{0}”.', t(dayMoves(S, todayISO())[0]))}>
           <Switch checked={rp.move} onChange={v => setRemind({ move: v })} />
         </Row>
         {MOBILE && <Row icon="vibrate" iconTint="var(--pink)" title={t('Vibrate')}

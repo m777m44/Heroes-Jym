@@ -245,8 +245,8 @@ final class StepStore {
     synchronized int onCounter(float value, long now, long up, int boot) {
         rollIfNeeded();
         if (Float.isNaN(value) || Float.isInfinite(value) || value < 0) return 0;
-        provisional = 0;
         if (lastCounter < 0) {            // first reading since counting was switched on
+            provisional = 0;
             baseline(value, up, boot);
             save();
             return 0;
@@ -269,18 +269,30 @@ final class StepStore {
         baseline(value, up, boot);
         if (d == StepMath.REJECT) {
             rejected++;                    // a baseline jump, not walking
+            provisional = 0;
             save();
             return 0;
         }
         if (d <= 0) { save(); return 0; }
+        provisional = StepMath.provisionalAfter(provisional, d);   // 2.10: no step back, no double
         return addSteps((int) d, now);
+    }
+
+    /**
+     * 2.10: walking stopped and the sensors were flushed — detector steps the counter never
+     * confirmed were not steps (the counter filters out shakes). Returns how many were dropped.
+     */
+    synchronized int settleProvisional() {
+        int p = provisional;
+        provisional = 0;
+        return p;
     }
 
     /** A TYPE_STEP_DETECTOR event: shown immediately, confirmed by the next counter reading. */
     synchronized void onDetector(boolean hasCounter, long now) {
         rollIfNeeded();
         if (hasCounter) {
-            if (provisional < 200) provisional++;
+            if (provisional < StepMath.MAX_PROVISIONAL) provisional++;
             lastStepAt = now;
         } else {
             addSteps(1, now);
@@ -399,6 +411,7 @@ final class StepStore {
             o.put("paused", paused);
             o.put("day", day);
             o.put("steps", total());
+            o.put("confirmed", steps);       // 2.10: without the live detector steps — what gets saved
             o.put("activeMs", activeMs);
             o.put("lastStepAt", lastStepAt);
             o.put("speed", Math.round(speed * 10) / 10.0);
