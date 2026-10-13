@@ -41,6 +41,8 @@ reminders that vibrate, and a cleaner, more modern look.**
 
 ### 🛠 Under the hood
 - 12 new tests (388 in total); 50 new translations in 12 languages.
+- **Fixed:** five Coach server tests began failing on 13 October because their sample workout
+  had aged out of the 12-week review window; the sample data now uses dates relative to today.
 
 ## v2.8.0 — 2026-10-13
 
