@@ -9,7 +9,7 @@ import { Thumb } from '../components/Media.jsx'
 import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { Button, SelectRow } from '../components/ui.jsx'
+import { Button, SelectRow, BackButton } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
@@ -41,7 +41,7 @@ export default function RoutineEdit() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Plan')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/plan" />
       <div style={{ flex: 1, margin: '0 12px' }}>
         <input className="input" defaultValue={routineLabel(r.name)} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />

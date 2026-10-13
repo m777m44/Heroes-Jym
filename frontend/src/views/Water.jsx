@@ -14,7 +14,7 @@ import { useNow } from '../lib/liveClock.js'
 import { bodyKg, testWaterReminder, dayMoves } from '../lib/waterSync.js'
 import { goalOf, stepsOn } from '../lib/stepMetrics.js'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, SelectRow, Switch, Button } from '../components/ui.jsx'
+import { Section, Row, SelectRow, Switch, Button, BackButton } from '../components/ui.jsx'
 import { ContainerIcon, Vessel, drink, undoLast, useWaterUndo, fmtMl } from '../components/water/WaterParts.jsx'
 
 const everyLabel = m => m % 60 === 0 ? t('Every {0} h', m / 60) : t('Every {0} min', m)
@@ -70,7 +70,7 @@ export default function Water() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" className="icn-dir" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Water')}</h1></div>
       <Button size="sm" icon="reset" onClick={undoLast} disabled={!canUndo}>{t('Undo')}</Button>
     </div>

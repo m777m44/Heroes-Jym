@@ -5,11 +5,10 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { nav } from '../lib/nav.js'
 import { ACCENTS } from '../lib/format.js'
 import { FAMILIES, VARIANTS, THEMES, THEME_IDX, resolveTheme, themePreview } from '../lib/themes.js'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Switch, Segmented } from '../components/ui.jsx'
+import { Section, Row, Switch, Segmented, BackButton } from '../components/ui.jsx'
 
 const systemDark = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)
 
@@ -49,7 +48,7 @@ export default function Themes() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="chevronLeft" className="icn-dir" /></button>
+      <BackButton fallback="/settings" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Themes')}</h1></div>
     </div>
 

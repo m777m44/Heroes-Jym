@@ -15,7 +15,7 @@ import {
 } from '../lib/coach-api.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Button, TextArea, SelectRow } from '../components/ui.jsx'
+import { Section, Row, Button, TextArea, SelectRow, BackButton } from '../components/ui.jsx'
 
 /* The Coach's home: what it's doing, what it's proposing, what it has done before, and every
    switch that turns it off. Deliberately one screen — a feature that edits your training plan
@@ -88,7 +88,7 @@ export default function Coach() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/plan" />
       <div style={{ flex: 1, marginLeft: 10 }}>
         <h1>{t('Coach')}</h1>
         <div className="sub">{t('Plan design and reviews, from your own training')}</div>

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { fmtNum, fmtDate } from '../lib/format.js'
 import { t, U } from '../lib/i18n.js'
@@ -10,7 +9,7 @@ import WeightComparison from '../components/weight/WeightComparison.jsx'
 import WeightPhotoUpload from '../components/weight/WeightPhotoUpload.jsx'
 import WeightHistory from '../components/weight/WeightHistory.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button, Section, Row, Segmented } from '../components/ui.jsx'
+import { Button, Section, Row, Segmented, BackButton } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
 
 const RANGES = { 30: 30, 90: 90, 365: 365, all: Infinity }
@@ -20,7 +19,6 @@ const RANGES = { 30: 30, 90: 90, 365: 365, all: Infinity }
 // the one sheet the rest of the app uses (bwSheet), so a weigh-in before a workout and one
 // made here are the same thing.
 export default function BodyWeight() {
-  const nav = useNavigate()
   const S = useStore(s => s.S)
   const { update } = useStore()
   const [range, setRange] = useState('90')
@@ -37,7 +35,7 @@ export default function BodyWeight() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Body weight')}</h1></div>
       <Button size="sm" icon="plus" onClick={() => bwSheet()}>{t('Log')}</Button>
     </div>

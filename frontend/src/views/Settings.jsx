@@ -20,7 +20,7 @@ import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
 import OfflineSection from '../components/OfflineSection.jsx'
 import AccountSection from '../components/AccountSection.jsx'
-import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
+import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, BackButton } from '../components/ui.jsx'
 
 export default function Settings() {
   const nav = useNavigate()
@@ -77,7 +77,7 @@ export default function Settings() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 

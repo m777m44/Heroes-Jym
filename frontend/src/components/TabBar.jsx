@@ -13,7 +13,7 @@ export default function TabBar({ onStart }) {
   const isGuest = useStore(s => s.isGuest())
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
-  const on = k => cur === k || (cur === 'history' && k === 'stats') || (['settings', 'walk', 'weight'].includes(cur) && k === 'home')
+  const on = k => cur === k || (cur === 'history' && k === 'stats') || (['settings', 'walk', 'weight', 'water', 'themes'].includes(cur) && k === 'home') || (cur === 'coach' && k === 'plan')
 
   const startWorkout = () => {
     if (!S.active) {

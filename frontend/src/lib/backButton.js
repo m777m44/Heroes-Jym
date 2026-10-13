@@ -34,9 +34,10 @@ export function onBack(now = Date.now()) {
   const ui = useUI.getState()
   const path = (window.location.hash || '').replace(/^#/, '').split('?')[0] || '/home'
   const idx = (window.history.state && Number(window.history.state.idx)) || 0
-  const act = decideBack({ sheets: ui.sheets, path, idx, now, last: lastBack })
+  const sheets = ui.sheets.filter(s => !s.closing)          // one already sliding away doesn't count
+  const act = decideBack({ sheets, path, idx, now, last: lastBack })
   switch (act) {
-    case 'close': ui.closeSheet(ui.sheets[ui.sheets.length - 1].id); return 'handled'
+    case 'close': ui.closeSheet(sheets[sheets.length - 1].id); return 'handled'
     case 'locked': return 'handled'
     case 'back': window.history.back(); return 'handled'
     case 'home': nav('/home', { replace: true }); return 'handled'

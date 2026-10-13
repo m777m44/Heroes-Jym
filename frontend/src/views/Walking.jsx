@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { usePedometer, weightForCalories } from '../store/usePedometer.js'
 import { todayISO, fmtDate } from '../lib/format.js'
@@ -19,7 +18,7 @@ import { stepGoalSheet } from '../components/pedometer/StepGoalSetter.jsx'
 import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Switch, Button } from '../components/ui.jsx'
+import { Section, Row, Switch, Button, BackButton } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
 import CelebrationSection from '../components/pedometer/CelebrationSection.jsx'
 import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
@@ -85,7 +84,6 @@ function BackgroundSection() {
 }
 
 export default function Walking() {
-  const nav = useNavigate()
   const S = useStore(s => s.S)
   const { update } = useStore()
   const status = usePedometer(s => s.status)
@@ -122,7 +120,7 @@ export default function Walking() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Walking')}</h1></div>
     </div>
 

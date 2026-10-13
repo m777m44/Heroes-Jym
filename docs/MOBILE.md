@@ -228,6 +228,15 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 | Celebration | `CelebrationView.java`, `Fanfare.java`, `CelebrationOverlay.jsx`, `lib/celebrate.js` | Fireworks, rays, a brass fanfare with a final chord. |
 | Walking buttons | `views/Walking.jsx` (`.walk-ctl`, `.wbtn`) | The 2.8 layout again, refined; the 2.9 dock is gone. |
 
+## Panels you can swipe away & one back button (2.11)
+
+| What | Where | Notes |
+|---|---|---|
+| ✕ and swipe-to-close | `components/Modals.jsx` (`swipeCloses()`), `.sheet-head` / `.sheet-x` in `index.css` | Every bottom sheet has a ✕ at the top right and a sticky handle. A pull of more than 110 px, or a flick faster than 0.55 px/ms (min 28 px), closes; less springs back. Locked sheets have neither. |
+| Exit animation | `useUI.closeSheet()` (`closing`, `SHEET_OUT_MS` = 220) | A closing sheet slides down / fades, then leaves the stack — the same for ✕, swipe, backdrop, Back and `close()`. The Back button skips sheets already closing. |
+| Workout check-in | `bwSheet()` in `sheets.jsx` | No longer locked: dismissing it starts nothing. |
+| Back button | `BackButton` in `components/ui.jsx`, `goBack()` in `lib/nav.js` | History back when the router has an index > 0, else a per-screen fallback (`replace`). |
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

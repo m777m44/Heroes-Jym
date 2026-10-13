@@ -3,6 +3,30 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.11.0 — 2026-10-13
+
+**Close any panel the way you expect — swipe it down or tap ✕ — and a ‹ back button that
+takes you back to where you came from, on every screen.**
+*أغلق أي لوحة كما تتوقع — اسحبها للأسفل أو اضغط ✕ — وزر رجوع ‹ في كل شاشة يعيدك إلى حيث كنت.*
+
+### ✕ Panels (bottom sheets)
+- **Every panel has a ✕ button** at its top right.
+- **Swipe down to close:** the panel follows your finger and the background fades with it; a
+  long pull or a quick flick closes it, a small one springs back. The handle bar always drags,
+  even when the panel is scrolled.
+- **The quick check-in before a workout** (the weight panel after the centre *Start* button)
+  is no longer stuck: swipe it down, tap ✕, tap outside or press Back — nothing starts.
+- **A smooth way out** for every panel and dialog: they slide down / fade instead of vanishing,
+  whether closed by ✕, a swipe, a tap outside, the phone's Back button or a button inside.
+- **Esc** closes the top panel on a keyboard.
+
+### ‹ Back
+- **One back button on every screen** (Settings, Themes, Walking, Water, Body weight, History,
+  a routine, the coach): it goes back to the screen you came from, and to the right screen
+  when you arrived from a notification. It points the right way in Arabic.
+- The phone's Back button closes the top panel first, then goes back, as before.
+- The tab bar now highlights *Home* on Water and Themes, and *Plan* on the coach.
+
 ## v2.10.0 — 2026-10-13
 
 **120 themes in one "Themes" screen, the app follows your phone's language and light / dark

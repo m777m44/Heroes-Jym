@@ -167,7 +167,9 @@ function BwSheet({ required, onDone, close }) {
   </>
 }
 export function bwSheet(opts = {}) {
-  const h = ui().openSheet(close => <BwSheet {...opts} close={close} />, { locked: !!opts.required })
+  // 2.11: the check-in before a workout is no longer locked — swipe it down, tap ✕ (or outside,
+  // or Back) and nothing starts; the workout begins only from its own buttons.
+  const h = ui().openSheet(close => <BwSheet {...opts} close={close} />)
   return h
 }
 
