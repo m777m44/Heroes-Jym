@@ -125,6 +125,7 @@ export default function Settings() {
     <Section title={t('Walking & body')}>
       <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
+      <Row icon="person" iconTint="var(--green)" title={t('Ideal body')} subtitle={t('Ideal weight by height, age and sex · calories · body fat')} accessory="chevron" onClick={() => nav('/ideal')} />
       <Row icon="drop" iconTint="var(--blue)" title={t('Water & reminders')} subtitle={t('Glass, cup or can · daily goal · reminders with an exercise')} accessory="chevron" onClick={() => nav('/water')} />
       <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="target" iconTint="var(--orange)" title={t("Today's plan on Home")} subtitle={t('A daily workout, steps and water target for losing weight')}>
@@ -171,7 +172,7 @@ export default function Settings() {
 
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
-      {/* 2.10: every theme behind one row — 120 themes, follow the phone, accent (views/Themes.jsx) */}
+      {/* every theme behind one row — 658 curated in 12 categories + the Theme Studio, follow the phone, accent (views/Themes.jsx) */}
       <Row icon="sparkles" iconTint="var(--pink)" title={t('Themes')} accessory="chevron" onClick={() => nav('/themes')}
         subtitle={themeName(resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)) + (S.themeSystem !== false ? ' · ' + t('Follow the phone') : '')}>
         <ThemeMock th={resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)} />

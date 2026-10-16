@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { fmtNum, fmtDate } from '../lib/format.js'
 import { t, U } from '../lib/i18n.js'
-import { compareLatest, totalChange, weeklyRate, etaToGoal } from '../lib/weightTracker.js'
+import { compareLatest, totalChange, weeklyRate, etaToGoal, fromKg } from '../lib/weightTracker.js'
+import { idealBody, ageOf, sexOf } from '../lib/idealBody.js'
 import { bwSheet, goalSheet, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import WeightComparison from '../components/weight/WeightComparison.jsx'
@@ -11,6 +12,8 @@ import WeightHistory from '../components/weight/WeightHistory.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Section, Row, Segmented, BackButton } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
+import IdealChip from '../components/IdealChip.jsx'
+import { nav } from '../lib/nav.js'
 
 const RANGES = { 30: 30, 90: 90, 365: 365, all: Infinity }
 
@@ -28,6 +31,9 @@ export default function BodyWeight() {
   const rate = weeklyRate(S.bodyweight)
   const eta = S.targetW ? etaToGoal(S.bodyweight, S.targetW) : null
   const cut = RANGES[range]
+  // 2.12: the ideal range for your height and age, shaded behind the curve
+  const ib = idealBody({ heightCm: S.heightCm, age: ageOf(S), sex: sexOf(S) })
+  const band = ib && ib.idealKg ? ib.idealKg.map(v => Math.round(fromKg(v, S.unit) * 10) / 10) : null
   const now = Date.now()
   const points = S.bodyweight
     .map(b => ({ t: b.t || new Date(b.d + 'T12:00:00').getTime(), y: b.w, d: b.d }))
@@ -84,8 +90,9 @@ export default function BodyWeight() {
         <Segmented className="seg-inline" value={range} onChange={setRange}
           options={[{ value: '30', label: t('30 d') }, { value: '90', label: t('90 d') }, { value: '365', label: t('1 y') }, { value: 'all', label: t('All') }]} />
         <div className="chart" style={{ marginTop: 10 }}>
-          {points.length ? <LineChart points={points} h={170} unit={u} goal={S.targetW} /> : <div className="muted small">{t('No weigh-ins in this period.')}</div>}
+          {points.length ? <LineChart points={points} h={170} unit={u} goal={S.targetW} band={band} /> : <div className="muted small">{t('No weigh-ins in this period.')}</div>}
         </div>
+        {band && points.length > 0 && <div className="small dim row" style={{ gap: 6, marginTop: 6 }}><i className="lc-band-key" />{t('Shaded: your ideal range {0}–{1} {2}', fmtNum(band[0]), fmtNum(band[1]), u)}</div>}
       </div>
 
       <div className="card">
@@ -93,6 +100,8 @@ export default function BodyWeight() {
         <WeightPhotoUpload iso={current.d} flagged={!!current.p} />
       </div>
     </>}
+
+    <div style={{ marginBottom: 14 }}><IdealChip onOpen={() => nav('/ideal')} /></div>
 
     <Section title={t('For BMI')} footer={t('Height is only used for BMI and to estimate your walking stride.')}>
       <Row icon="ruler" iconTint="var(--teal)" title={t('Height')}>

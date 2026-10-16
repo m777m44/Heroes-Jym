@@ -154,6 +154,7 @@ export function buildDemoState() {
     dayPlan,
     workouts, bodyweight, exWeights,
     targetW: TARGET_W,
+    heightCm: 178, sex: 'male', birthYear: new Date().getFullYear() - 31, waistCm: 90,
     // The history is rated, so the demo turns the column on and the stats get a scale to
     // label their aggregates with instead of guessing one (see displayScale).
     effort: 'rir'

@@ -10,7 +10,7 @@ const KEY = 'gym_state_v1'
 // its light / dark setting (themeSystem, lib/themes.js). Saved profiles keep what they chose.
 export const DEF = {
   unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'auto',
-  theme: 'classic-dark', themeSystem: true, accent: 'theme', body: 'male', targetW: null,
+  theme: 'classic-dark', themeSystem: true, accent: 'theme', themeFavs: [], body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
@@ -25,6 +25,9 @@ export const DEF = {
   // heightCm improves the stride estimate and enables BMI; targetFrom is the weight the goal
   // was set at (the start of the goal progress bar, lib/weightTracker.js).
   stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
+  // 2.12 "Ideal body": sex picks the formulas, birthYear keeps the age right as years pass,
+  // waistCm (optional) gives waist-to-height
+  sex: null, birthYear: null, waistCm: null,
   // 2.9 — the "Today's plan" card on Home (lib/dailyPlan.js). The clock always follows the
   // phone's own time zone now (the old `clockZone` setting is ignored).
   planOn: true,

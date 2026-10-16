@@ -55,13 +55,25 @@ describe('2.0 screens render', () => {
     expect((html.match(/class="wbtn wbtn-go/g) || []).length).toBe(1)   // idle: one wide start button
     expect(html).toContain('walk-reset')
   })
-  it('Themes (2.10)', async () => {
+  it('Themes (2.12: categories + Studio)', async () => {
     const html = await render('/themes', './Themes.jsx')
-    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(120)
+    // opens on the category of the theme in use (Classic: 6 families × 7 styles)
+    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(42)
     expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
     expect(html).toContain('Follow the phone')
-    expect(html).toContain('120 themes · 20 colour families')
+    expect(html).toContain('2,722,258 themes in all')
+    for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
+    expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(13)
     expect(html).toContain('swatch-theme')
+  })
+  it('Ideal body (2.12)', async () => {
+    Object.assign(useStore.getInitialState().S, { sex: 'male', birthYear: new Date().getFullYear() - 34, waistCm: 88 })
+    const html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ideal-big')
+    expect(html).toContain('bmig-me')
+    expect((html.match(/class="ideal-tile"/g) || []).length).toBe(8)
+    expect(html).toContain('Devine formula')
+    expect(html).toContain('not medical advice')
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')

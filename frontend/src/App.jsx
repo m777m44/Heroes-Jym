@@ -31,6 +31,7 @@ import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
 import Water from './views/Water.jsx'
+import IdealBody from './views/IdealBody.jsx'
 import Themes from './views/Themes.jsx'
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
@@ -139,6 +140,7 @@ function Shell() {
               <Route path="/walk" element={<Walking />} />
               <Route path="/weight" element={<BodyWeight />} />
               <Route path="/water" element={<Water />} />
+              <Route path="/ideal" element={<IdealBody />} />
               <Route path="/themes" element={<Themes />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane

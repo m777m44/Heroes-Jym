@@ -22,6 +22,7 @@ import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import TodayPlan from '../components/TodayPlan.jsx'
 import { planFor, planRoutine } from '../lib/dailyPlan.js'
+import IdealChip from '../components/IdealChip.jsx'
 
 // Today's steps at a glance, with the live clock; the whole card opens the walking screen.
 function StepsCard({ nav }) {
@@ -201,6 +202,7 @@ export default function Home() {
         )}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
+      <IdealChip onOpen={() => nav('/ideal')} />
     </div>
 
     <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>

@@ -70,3 +70,43 @@ describe('themes', () => {
     }
   })
 })
+
+describe('themes 2.12 — categories and the Studio', async () => {
+  const { CATEGORIES, STUDIO_COUNT, studioNumber, studioParams, studioTheme, themeOf, familiesOf, randomStudio } = await import('./themes.js')
+  it('sorts every family into one of the named categories', () => {
+    const ids = CATEGORIES.map(c => c.id)
+    for (const want of ['golden', 'royal', 'dark', 'light', 'premium']) expect(ids).toContain(want)
+    for (const f of FAMILIES) expect(ids).toContain(f.cat)
+    expect(CATEGORIES.reduce((n, c) => n + familiesOf(c.id).length, 0)).toBe(FAMILIES.length)
+    for (const c of CATEGORIES) expect(familiesOf(c.id).length).toBeGreaterThanOrEqual(5)
+    expect(new Set(FAMILIES.map(f => f.id)).size).toBe(FAMILIES.length)
+  })
+  it('offers well over a million themes in all', () => {
+    expect(STUDIO_COUNT + THEMES.length).toBeGreaterThan(1_000_000)
+  })
+  it('numbers Studio themes both ways', () => {
+    for (const n of [1, 2, 777, 123456, STUDIO_COUNT - 1, STUDIO_COUNT, randomStudio(() => 0.5)]) expect(studioNumber(studioParams(n))).toBe(n)
+    expect(studioParams(0)).toBeNull()
+    expect(studioParams(STUDIO_COUNT + 1)).toBeNull()
+    expect(themeOf('g-0')).toBeNull()
+    expect(themeOf('g-' + (STUDIO_COUNT + 1))).toBeNull()
+  })
+  it('keeps every Studio accent readable', () => {
+    for (let i = 0; i < 400; i++) {
+      const th = studioTheme(1 + Math.floor((i * 104729) % STUDIO_COUNT))
+      const tk = themeTokens(th)
+      expect(contrast(tk.accent['--acc'], tk.bg)).toBeGreaterThanOrEqual(2.95)
+    }
+  })
+  it('saves and restores a Studio theme, and follows the phone with it', () => {
+    const n = studioNumber({ h: 210, s: 6, v: 'deep', a: 40, g: 1 })
+    expect(themeIdOf('g-' + n)).toBe('g-' + n)
+    const dark = resolveTheme({ theme: 'g-' + n }, true)
+    expect(dark.id).toBe('g-' + n)
+    const light = resolveTheme({ theme: 'g-' + n }, false)
+    expect(light.mode).toBe('light')
+    expect(light.studio).toMatchObject({ h: 210, s: 6, a: 40, g: 1 })
+    const props = themePreview(light)
+    expect(props).toBeTruthy()
+  })
+})
