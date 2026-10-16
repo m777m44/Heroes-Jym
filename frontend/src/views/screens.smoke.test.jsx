@@ -61,9 +61,10 @@ describe('2.0 screens render', () => {
     expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(42)
     expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
     expect(html).toContain('Follow the phone')
-    expect(html).toContain('2,722,258 themes in all')
+    expect(html).toContain('2,722,538 themes in all')
+    expect(html).toContain('>Glass<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
     for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
-    expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(13)
+    expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(15)
     expect(html).toContain('swatch-theme')
   })
   it('Ideal body (2.12)', async () => {
@@ -73,7 +74,24 @@ describe('2.0 screens render', () => {
     expect(html).toContain('bmig-me')
     expect((html.match(/class="ideal-tile"/g) || []).length).toBe(8)
     expect(html).toContain('Devine formula')
+    expect(html).toContain('Lorentz formula')
     expect(html).toContain('not medical advice')
+    expect(html).toContain('ideal-tabs')                       // 3.0: Overview · Body · Plan · Compare
+    for (const x of ['Overview', 'Body', 'Plan', 'Compare']) expect(html).toContain('>' + x + '<')
+  })
+  it('Health log (3.0)', async () => {
+    const iso = new Date().toISOString().slice(0, 10)
+    Object.assign(useStore.getInitialState().S, {
+      health: { [iso]: { mood: 4, sleepH: 7.5, bp: [{ t: Date.now(), sys: 185, dia: 100 }], sugar: [{ t: Date.now() + 1, v: 95, ctx: 'fasting' }] } },
+      meds: [{ id: 'm1', name: 'Vitamin D', kind: 'vit', dose: '1000 IU', times: ['08:00'], on: true, remind: true }], medLog: {},
+    })
+    const html = await render('/health', './Health.jsx')
+    expect(html).toContain('Health log')
+    expect(html).toContain('hl-alert')                         // 185 / 100 is in the crisis range
+    expect(html).toContain('185 / 100')
+    expect(html).toContain('Vitamin D')
+    expect((html.match(/class="hl-dot[" ]/g) || []).length).toBe(20)   // mood, energy, stress, sleep quality × 5
+    expect(html).toContain('not a diagnosis')
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')

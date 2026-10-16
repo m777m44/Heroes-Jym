@@ -32,7 +32,7 @@ export const DEF = {
   // the ideal body: lose / muscle / keep), the plan's start (bodyPlan: { start, fromKg, toKg,
   // weeklyKg }), custom themes, and the health log (see lib/health.js)
   neckCm: null, hipCm: null, wristCm: null, frame: 'auto', bodyGoal: 'auto', bodyPlan: null,
-  customThemes: [], health: {}, meds: [], medLog: {}, sugarUnit: 'mgdl',
+  health: {}, meds: [], medLog: {}, sugarUnit: 'mgdl',
   // 2.9 — the "Today's plan" card on Home (lib/dailyPlan.js). The clock always follows the
   // phone's own time zone now (the old `clockZone` setting is ignored).
   planOn: true,

@@ -1,5 +1,5 @@
-// Themes: 94 colour families in 12 categories × 7 variants = 658 curated themes (2.12; 2.10 had
-// 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
+// Themes: 134 colour families in 14 categories × 7 variants = 938 curated themes (3.0 added
+// Glass and Minimal and 40 families; 2.12 had 658, 2.10 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
 // saturation and an accent so every one of them stays readable and consistent.
 //
 //   S.theme        the chosen theme id, '<family>-<variant>' (old saves: 'dark' / 'light')
@@ -26,6 +26,9 @@ export const CATEGORIES = [
   { id: 'pastel', name: 'Pastel', icon: 'heart' },
   { id: 'classic', name: 'Classic', icon: 'circle' },
   { id: 'sport', name: 'Sport', icon: 'dumbbell' },
+  // 3.0
+  { id: 'glass', name: 'Glass', icon: 'layers' },
+  { id: 'minimal', name: 'Minimal', icon: 'square' },
 ]
 
 /**
@@ -141,6 +144,53 @@ export const FAMILIES = [
   { id: 'power', name: 'Power', cat: 'sport', h: 220, s: 45, acc: '#ff9a1f', accL: '#b35a00' },
   { id: 'victory', name: 'Victory', cat: 'sport', h: 45, s: 20, acc: '#ffc61a', accL: '#946e00' },
   { id: 'stadium', name: 'Stadium', cat: 'sport', h: 140, s: 35, acc: '#8aff3d', accL: '#2e7d00' },
+  // ---- 3.0: 40 more ----
+  // glass — see-through cards over a soft aurora (glass: true)
+  { id: 'glass-aurora', name: 'Aurora glass', cat: 'glass', glass: true, h: 265, s: 60, acc: '#9d8cff', accL: '#5b45e0' },
+  { id: 'glass-ocean', name: 'Ocean glass', cat: 'glass', glass: true, h: 200, s: 70, acc: '#5ad1ff', accL: '#0a7fb8' },
+  { id: 'glass-rose', name: 'Rose glass', cat: 'glass', glass: true, h: 335, s: 60, acc: '#ff7aa8', accL: '#c8245e' },
+  { id: 'glass-mint', name: 'Mint glass', cat: 'glass', glass: true, h: 165, s: 55, acc: '#5ef0c8', accL: '#0b8f6c' },
+  { id: 'glass-amber', name: 'Amber glass', cat: 'glass', glass: true, h: 38, s: 65, acc: '#ffc04d', accL: '#a86a00' },
+  { id: 'glass-violet', name: 'Violet glass', cat: 'glass', glass: true, h: 285, s: 60, acc: '#d68cff', accL: '#8e2fc4' },
+  { id: 'glass-frost', name: 'Frost glass', cat: 'glass', glass: true, h: 210, s: 25, acc: '#bfe3ff', accL: '#2f6f9e' },
+  { id: 'glass-ember', name: 'Ember glass', cat: 'glass', glass: true, h: 8, s: 65, acc: '#ff7a5c', accL: '#c22f10' },
+  { id: 'glass-lime', name: 'Lime glass', cat: 'glass', glass: true, h: 90, s: 55, acc: '#c4f25a', accL: '#4f7f00' },
+  { id: 'glass-night', name: 'Night glass', cat: 'glass', glass: true, h: 230, s: 45, acc: '#7fa8ff', accL: '#2f55c8' },
+  // minimal — quiet, nearly grey surfaces and one clear accent
+  { id: 'chalk', name: 'Chalk', cat: 'minimal', h: 200, s: 4, acc: '#e5e7eb', accL: '#374151' },
+  { id: 'stone', name: 'Stone', cat: 'minimal', h: 30, s: 6, acc: '#d6c7b4', accL: '#6b5a45' },
+  { id: 'fog', name: 'Fog', cat: 'minimal', h: 210, s: 6, acc: '#9fb3c8', accL: '#46607a' },
+  { id: 'sandstone', name: 'Sandstone', cat: 'minimal', h: 38, s: 12, acc: '#e3b778', accL: '#94621f' },
+  { id: 'zen', name: 'Zen', cat: 'minimal', h: 150, s: 8, acc: '#8fc9a8', accL: '#3f7a58' },
+  { id: 'nordic', name: 'Nordic', cat: 'minimal', h: 205, s: 14, acc: '#88c0d0', accL: '#3b6e8a' },
+  { id: 'sepia', name: 'Sepia', cat: 'minimal', h: 32, s: 18, acc: '#d2a679', accL: '#7a4f24' },
+  { id: 'pure', name: 'Pure', cat: 'minimal', h: 0, s: 0, acc: '#0a84ff', accL: '#007aff' },
+  // dark
+  { id: 'nightfall', name: 'Nightfall', cat: 'dark', h: 235, s: 35, acc: '#7d8cff', accL: '#3a4bd6' },
+  { id: 'raven', name: 'Raven', cat: 'dark', h: 260, s: 18, acc: '#b9a5ff', accL: '#5f45c8' },
+  { id: 'void', name: 'Void', cat: 'dark', h: 280, s: 30, acc: '#e05cff', accL: '#9a1fc0' },
+  { id: 'blackout', name: 'Blackout', cat: 'dark', h: 0, s: 0, acc: '#ff3b30', accL: '#d70015' },
+  { id: 'storm', name: 'Storm', cat: 'dark', h: 210, s: 25, acc: '#64d2ff', accL: '#0a7fb8' },
+  // light
+  { id: 'daylight', name: 'Daylight', cat: 'light', h: 210, s: 30, acc: '#3d9bff', accL: '#0066d6' },
+  { id: 'morning', name: 'Morning', cat: 'light', h: 45, s: 40, acc: '#ffb340', accL: '#b06a00' },
+  { id: 'blossom', name: 'Blossom', cat: 'light', h: 345, s: 35, acc: '#ff6f91', accL: '#c81e4a' },
+  { id: 'lemon', name: 'Lemon', cat: 'light', h: 55, s: 60, acc: '#f5e050', accL: '#8a7600' },
+  { id: 'breeze', name: 'Breeze', cat: 'light', h: 185, s: 35, acc: '#4fd8d0', accL: '#0b8a83' },
+  // neon
+  { id: 'hotpink', name: 'Hot pink', cat: 'neon', h: 320, s: 70, acc: '#ff2fb3', accL: '#c4007f' },
+  { id: 'ultraviolet', name: 'Ultraviolet', cat: 'neon', h: 270, s: 75, acc: '#a64dff', accL: '#7212d6' },
+  { id: 'acid', name: 'Acid', cat: 'neon', h: 75, s: 70, acc: '#d4ff00', accL: '#5e7a00' },
+  { id: 'cyberpunk', name: 'Cyberpunk', cat: 'neon', h: 300, s: 65, acc: '#fcee0a', accL: '#8a7f00' },
+  { id: 'neonblue', name: 'Neon blue', cat: 'neon', h: 220, s: 80, acc: '#2e9bff', accL: '#0057c2' },
+  { id: 'arcade', name: 'Arcade', cat: 'neon', h: 160, s: 70, acc: '#00ffa3', accL: '#008a58' },
+  // nature
+  { id: 'sage', name: 'Sage', cat: 'nature', h: 120, s: 20, acc: '#a3c9a8', accL: '#4a7a52' },
+  { id: 'canyon', name: 'Canyon', cat: 'nature', h: 15, s: 45, acc: '#e8865a', accL: '#a84a1f' },
+  { id: 'rainforest', name: 'Rainforest', cat: 'nature', h: 145, s: 55, acc: '#3ee07a', accL: '#13873f' },
+  { id: 'tundra', name: 'Tundra', cat: 'nature', h: 190, s: 12, acc: '#a8d8e0', accL: '#3d7480' },
+  { id: 'savanna', name: 'Savanna', cat: 'nature', h: 42, s: 50, acc: '#e6b84a', accL: '#94690a' },
+  { id: 'orchid', name: 'Orchid', cat: 'nature', h: 300, s: 35, acc: '#e08ce0', accL: '#9a3a9a' },
 ]
 
 /** Lightness of bg / elevated / surface / surface-2 / surface-3, and how much of the hue's saturation. */
@@ -285,6 +335,20 @@ export function themeTokens(th) {
     surfaces['--label-2'] = `hsl(${f.h} ${Math.min(30, f.s * 0.3)}% 92% / .62)`
     surfaces['--label-3'] = `hsl(${f.h} ${Math.min(30, f.s * 0.3)}% 92% / .34)`
   }
+  if (f.glass) {
+    // 3.0 glass: cards and lists turn see-through (the stylesheet adds a light rim) over a
+    // three-colour aurora; sheets and the page itself stay solid so text always reads
+    const dk = v.mode === 'dark', gs = Math.max(30, f.s)
+    const a = (l, o) => `hsl(${f.h} ${Math.round(gs * 0.5)}% ${l}% / ${o})`
+    surfaces['--surface'] = dk ? a(Math.min(40, s1 + 10), 0.42) : a(100, 0.55)
+    surfaces['--surface-2'] = dk ? a(Math.min(46, s2 + 12), 0.5) : a(97, 0.62)
+    surfaces['--surface-3'] = dk ? a(Math.min(52, s3 + 14), 0.55) : a(92, 0.7)
+    const o = dk ? 1 : 0.65
+    const aur = `radial-gradient(70% 55% at 8% 0%, color-mix(in srgb, ${acc} ${Math.round(58 * o)}%, transparent), transparent 70%),` +
+      `radial-gradient(60% 50% at 100% 38%, hsl(${(f.h + 60) % 360} 85% 58% / ${(0.42 * o).toFixed(2)}), transparent 70%),` +
+      `radial-gradient(70% 55% at 30% 100%, hsl(${(f.h + 310) % 360} 85% 52% / ${(0.38 * o).toFixed(2)}), transparent 70%)`
+    return { surfaces, accent, glow: aur, bg: hslHex(f.h, s, b), glass: true }
+  }
   const g = th.glow != null ? th.glow : v.glow
   const glow = g ? `radial-gradient(120% 70% at 85% -10%, color-mix(in srgb, ${acc} ${Math.round(g * 100)}%, transparent), transparent 60%)` : null
   return { surfaces, accent, glow, bg: hslHex(f.h, s, b) }
@@ -307,6 +371,7 @@ export function applyTheme(th, accent = 'theme', doc = typeof document !== 'unde
   for (const k of KEYS) de.style.removeProperty(k)
   de.dataset.theme = th.mode
   de.dataset.themeId = th.id
+  if (tk.glass) de.dataset.glass = th.mode; else delete de.dataset.glass
   if (tk.surfaces) for (const [k, v] of Object.entries(tk.surfaces)) de.style.setProperty(k, v)
   if (accent && accent !== 'theme' && ACCENTS[accent]) {
     de.dataset.accent = accent                         // the stylesheet's accent rules
@@ -331,4 +396,56 @@ export function themePreview(th) {
     acc: tk.accent['--acc'], onAcc: tk.accent['--on-acc'],
     label: light ? '#000000' : '#ffffff', glow: tk.glow,
   }
+}
+
+// ---- 3.0: colours you type, theme files ------------------------------------------------------
+/** '#rrggbb' (or 'rgb' / without #) → { h 0-359, s 0-100, l 0-100 }, else null. */
+export function hexToHsl(hex) {
+  const x = normHex(hex)
+  if (!x) return null
+  const [r, g, b] = rgbOf(x).map(v => v / 255)
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn
+  let h = 0
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4
+  const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0
+  return { h: Math.round((h * 60 + 360) % 360), s: Math.round(sat * 100), l: Math.round(l * 100) }
+}
+export const normHex = hex => { const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim()); return m ? '#' + (m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1]).toLowerCase() : null }
+export { hslHex }
+
+/** The curated theme whose accent is closest to `hex` (in the mode asked, else either). */
+export function nearestTheme(hex, mode = null) {
+  const c = normHex(hex)
+  if (!c) return null
+  const [r, g, b] = rgbOf(c)
+  // a rough perceptual distance (weighted RGB — "redmean")
+  const dist = x => { const [r2, g2, b2] = rgbOf(x), rm = (r + r2) / 2; return Math.sqrt((2 + rm / 256) * (r - r2) ** 2 + 4 * (g - g2) ** 2 + (2 + (255 - rm) / 256) * (b - b2) ** 2) }
+  let best = null, bd = Infinity
+  for (const th of THEMES) {
+    if (mode && th.mode !== mode) continue
+    const d = dist(th.mode === 'light' ? th.family.accL : th.family.acc)
+    if (d < bd) { bd = d; best = th }
+  }
+  return best
+}
+
+/** Studio settings built around a colour: its hue for the accent, a matching background. */
+export function studioFromHex(hex, mode = 'dark') {
+  const c = hexToHsl(hex)
+  if (!c) return null
+  return { h: c.h, s: Math.max(1, Math.min(10, Math.round(c.s / 25) + 2)), v: mode === 'light' ? 'tint' : 'deep', a: Math.round(c.h / 10) * 10 % 360, g: 1 }
+}
+
+export const THEME_FILE_KIND = 'mahdi-jym-themes'
+/** My themes (and the one in use) as a small JSON file to share or keep. */
+export function exportThemes(S) {
+  const ids = [...new Set([S && S.theme, ...((S && S.themeFavs) || [])])].filter(id => id && themeOf(id))
+  return JSON.stringify({ kind: THEME_FILE_KIND, version: 1, current: themeIdOf(S && S.theme), themes: ids }, null, 2)
+}
+/** A theme file → { current, themes } with only ids this app knows, else throws. */
+export function parseThemes(text) {
+  const d = JSON.parse(text)
+  if (!d || d.kind !== THEME_FILE_KIND || !Array.isArray(d.themes)) throw new Error('not a theme file')
+  const themes = [...new Set(d.themes.filter(id => typeof id === 'string' && themeOf(id)))]
+  return { current: typeof d.current === 'string' && themeOf(d.current) ? d.current : null, themes }
 }

@@ -22,6 +22,8 @@ import { estimate1RM, best1RM, is1RMRecord, REP_CAP } from './lib/onerm.js'
 import { nextPrescription, applyPrescription, policyFor, defaultIncrement, POLICIES_FOR, POLICY_NAME, POLICY_DESC } from './lib/progression.js'
 import { MOBILE, shareExport } from './lib/mobile.js'
 import { validateWeighIn } from './lib/weightTracker.js'
+import { milestoneCrossed } from './lib/idealBody.js'
+import { celebrate, playCheer } from './lib/celebrate.js'
 import { attachPhoto } from './components/weight/WeightPhotoUpload.jsx'
 import { deletePhoto } from './lib/photoStore.js'
 import { photosChanged, photoProfile } from './components/weight/usePhoto.js'
@@ -111,6 +113,9 @@ function BwSheet({ required, onDone, close }) {
       s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
     if (photo) attachPhoto(iso, photo).catch(() => toast(t('Could not save the photo')))
+    // 3.0: a milestone on the road to your ideal weight gets the full-screen celebration
+    const hit = milestoneCrossed(st, useStore.getState().S)
+    if (hit && st.walk?.celebrate !== false) { celebrate(hit.pct, 'body'); playCheer(st.sound !== false, 'goal') }
     close()
     if (onDone) onDone(n); else toast(photo ? t('Photo saved — weigh-in verified') : t('Weight saved'))
   }

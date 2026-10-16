@@ -305,5 +305,16 @@ export function weightRoad({ fromKg, toKg: goalKg, weeklyKg, startIso, history =
   return { weeks, milestones, done: milestones[3].reached }
 }
 
+/** The plan milestone (25 / 50 / 75 / 100 %) a new weigh-in just reached, else null. */
+export function milestoneCrossed(before, after) {
+  const p = after && after.bodyPlan
+  if (!p) return null
+  const road = S => weightRoad({ fromKg: p.fromKg, toKg: p.toKg, weeklyKg: p.weeklyKg, startIso: p.start, history: S.bodyweight, unit: S.unit })
+  const a = road(before), b = road(after)
+  if (!a || !b || !a.milestones || !b.milestones.length) return null
+  const hit = b.milestones.filter((m, i) => m.reached && !(a.milestones[i] && a.milestones[i].reached))
+  return hit.length ? hit[hit.length - 1] : null
+}
+
 /** Where `v` sits on the BMI scale 15–40, as 0–100 % (for the gauge). */
 export const bmiPos = v => clamp((v - 15) / 25 * 100, 0, 100)

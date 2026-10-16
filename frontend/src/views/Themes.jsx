@@ -4,7 +4,7 @@
 //   · the Theme Studio: 2,721,600 numbered themes from five controls, a dice and a number jump
 //   · "My themes" (★, up to MAX_FAVS), "follow the phone" for light / dark, an accent of your own
 // See lib/themes.js.
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
@@ -12,7 +12,11 @@ import { ACCENTS, fmtNum } from '../lib/format.js'
 import {
   CATEGORIES, VARIANTS, THEMES, THEME_IDX, STUDIO_COUNT, resolveTheme, themePreview,
   themeOf, familiesOf, studioNumber, studioParams, studioTheme, randomStudio,
+  normHex, nearestTheme, studioFromHex, exportThemes, parseThemes,
 } from '../lib/themes.js'
+import { todayISO } from '../lib/format.js'
+import { MOBILE, shareExport } from '../lib/mobile.js'
+import ColorWheel from '../components/ColorWheel.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Segmented, Slider, Button, BackButton } from '../components/ui.jsx'
 
@@ -22,7 +26,7 @@ const systemDark = () => (typeof window !== 'undefined' && window.matchMedia ? w
 /** A tiny phone screen in the theme's colours. */
 export function ThemeMock({ th, big = false }) {
   const p = themePreview(th)
-  return <span className={'tmock' + (big ? ' big' : '')} style={{ background: p.bg, color: p.label }} aria-hidden="true">
+  return <span className={'tmock' + (big ? ' big' : '') + (th.family.glass ? ' glass' : '')} style={{ background: p.bg, color: p.label }} aria-hidden="true">
     {p.glow && <span className="tmock-glow" style={{ background: p.glow }} />}
     <span className="tmock-bar" style={{ background: p.surface }}>
       <i style={{ background: p.acc }} /><b style={{ background: p.label }} />
@@ -141,6 +145,8 @@ export default function Themes() {
         </section>)}
       </>}
 
+    <ThemeFile S={S} update={update} pick={pick} />
+
     <Section title={t('Accent color')} footer={t('“From the theme” uses each theme’s own colour.')}>
       <div className="lrow" style={{ paddingTop: 14, paddingBottom: 14 }}>
         <div className="swatches">
@@ -197,6 +203,8 @@ function Studio({ shown, onPick, favs, onFav }) {
     </div>
 
     <div className="card studio-ctl">
+      <ColorWheel h={p.h} s={p.s} a={p.a} onChange={set} />
+      <HexPick mode={th.mode} onBuild={q => setP(q)} onPick={onPick} shown={shown} />
       <label className="studio-l"><span>{t('Background colour')}</span><b>{p.h}°</b></label>
       <Slider className="sld-hue" value={p.h} min={0} max={359} onChange={h => set({ h })} />
       <label className="studio-l"><span>{t('Colour strength')}</span><b>{p.s}/10</b></label>
@@ -231,3 +239,66 @@ function Studio({ shown, onPick, favs, onFav }) {
   </div>
 }
 
+
+/* ---- 3.0: type or pick a colour → a Studio theme around it, and the closest curated one ---- */
+function HexPick({ mode, onBuild, onPick, shown }) {
+  const [hex, setHex] = useState('')
+  const ok = normHex(hex)
+  const near = ok ? nearestTheme(ok, mode) : null
+  return <div className="hexpick">
+    <label className="studio-l"><span>{t('Your own colour (HEX)')}</span></label>
+    <div className="hexrow">
+      <input type="color" value={ok || '#30d158'} onChange={e => setHex(e.target.value)} aria-label={t('Pick a colour')} />
+      <input className="input" placeholder="#30d158" value={hex} maxLength={7} spellCheck={false} autoCapitalize="off"
+        onChange={e => setHex(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && ok) onBuild(studioFromHex(ok, mode)) }} aria-label={t('Your own colour (HEX)')} />
+      <Button size="sm" disabled={!ok} onClick={() => onBuild(studioFromHex(ok, mode))}>{t('Build')}</Button>
+    </div>
+    {hex && !ok && <div className="small" style={{ color: 'var(--orange)' }}>{t('Use 3 or 6 hex digits, like #30d158.')}</div>}
+    {near && <div className="hex-near">
+      <ThemeMock th={near} />
+      <div><div className="small muted">{t('Closest ready-made theme')}</div><b>{themeName(near)}</b></div>
+      <Button size="sm" variant={near.id === shown.id ? 'plain' : 'primary'} disabled={near.id === shown.id} onClick={() => onPick(near.id)}>{near.id === shown.id ? t('On') : t('Use')}</Button>
+    </div>}
+  </div>
+}
+
+/* ---- 3.0: My themes as a file — keep it, send it to a friend, load it on another phone ---- */
+function ThemeFile({ S, update, pick }) {
+  const ref = useRef(null)
+  const toast = useUI(s => s.toast)
+  const doExport = async () => {
+    const json = exportThemes(S)
+    const name = 'mahdi-jym-themes-' + todayISO() + '.json'
+    if (MOBILE) { try { await shareExport(json, name); toast(t('Themes exported')) } catch (e) { /* dismissed */ } return }
+    const blob = new Blob([json], { type: 'application/json' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
+    toast(t('Themes exported'))
+  }
+  const doImport = ev => {
+    const f = ev.target.files && ev.target.files[0]
+    ev.target.value = ''
+    if (!f) return
+    const rd = new FileReader()
+    rd.onload = () => {
+      try {
+        const d = parseThemes(String(rd.result))
+        let added = 0
+        update(s => {
+          const have = (s.themeFavs || []).slice()
+          for (const id of d.themes) if (!have.includes(id) && have.length < MAX_FAVS) { have.push(id); added++ }
+          s.themeFavs = have
+        })
+        if (d.current) pick(d.current)
+        toast(t('{0} themes added to My themes', added))
+      } catch (e) { toast(t('This is not a MAHDI-JYM theme file')) }
+    }
+    rd.readAsText(f)
+  }
+  return <Section title={t('Theme file')} footer={t('Save My themes and the current theme as a small file, or load one from a friend or another phone.')}>
+    <div className="theme-file">
+      <Button icon="download" onClick={doExport}>{t('Export')}</Button>
+      <Button icon="upload" onClick={() => ref.current && ref.current.click()}>{t('Import')}</Button>
+    </div>
+    <input ref={ref} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={doImport} />
+  </Section>
+}

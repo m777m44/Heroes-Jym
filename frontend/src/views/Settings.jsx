@@ -125,7 +125,8 @@ export default function Settings() {
     <Section title={t('Walking & body')}>
       <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
-      <Row icon="person" iconTint="var(--green)" title={t('Ideal body')} subtitle={t('Ideal weight by height, age and sex · calories · body fat')} accessory="chevron" onClick={() => nav('/ideal')} />
+      <Row icon="person" iconTint="var(--green)" title={t('Ideal body')} subtitle={t('Ideal weight, body fat, your plan and progress')} accessory="chevron" onClick={() => nav('/ideal')} />
+      <Row icon="heartPulse" iconTint="var(--red)" title={t('Health log')} subtitle={t('Sleep, mood, blood pressure, sugar, medicines')} accessory="chevron" onClick={() => nav('/health')} />
       <Row icon="drop" iconTint="var(--blue)" title={t('Water & reminders')} subtitle={t('Glass, cup or can · daily goal · reminders with an exercise')} accessory="chevron" onClick={() => nav('/water')} />
       <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="target" iconTint="var(--orange)" title={t("Today's plan on Home")} subtitle={t('A daily workout, steps and water target for losing weight')}>

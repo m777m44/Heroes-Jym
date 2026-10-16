@@ -110,3 +110,53 @@ describe('themes 2.12 — categories and the Studio', async () => {
     expect(props).toBeTruthy()
   })
 })
+
+describe('themes 3.0 — glass, minimal, HEX and theme files', async () => {
+  const T = await import('./themes.js')
+  it('has 40 more families, Glass and Minimal, all with unique ids', () => {
+    expect(T.FAMILIES.length).toBe(134)
+    expect(T.THEMES.length).toBe(938)
+    expect(T.CATEGORIES.map(c => c.id)).toEqual(expect.arrayContaining(['glass', 'minimal']))
+    expect(new Set(T.FAMILIES.map(f => f.id)).size).toBe(T.FAMILIES.length)
+    for (const c of T.CATEGORIES) expect(T.familiesOf(c.id).length).toBeGreaterThan(0)
+    expect(T.familiesOf('glass').every(f => f.glass)).toBe(true)
+  })
+  it('glass themes get see-through cards and an aurora, and mark the page', () => {
+    const tk = T.themeTokens(T.THEME_IDX['glass-aurora-dark'])
+    expect(tk.glass).toBe(true)
+    expect(tk.surfaces['--surface']).toMatch(/\/ 0\.\d+\)$/)
+    expect(tk.glow.split('radial-gradient').length - 1).toBe(3)
+    const de = { style: { setProperty() {}, removeProperty() {} }, dataset: {} }
+    const doc = { documentElement: de, querySelector: () => null }
+    T.applyTheme(T.THEME_IDX['glass-rose-light'], 'theme', doc)
+    expect(de.dataset.glass).toBe('light')
+    T.applyTheme(T.THEME_IDX['forest-dark'], 'theme', doc)
+    expect(de.dataset.glass).toBeUndefined()
+  })
+  it('reads HEX colours', () => {
+    expect(T.hexToHsl('#ff0000')).toEqual({ h: 0, s: 100, l: 50 })
+    expect(T.hexToHsl('0f0')).toEqual({ h: 120, s: 100, l: 50 })
+    expect(T.hexToHsl('#808080').s).toBe(0)
+    expect(T.hexToHsl('nope')).toBeNull()
+    expect(T.normHex('#ABC')).toBe('#aabbcc')
+  })
+  it('finds the closest curated theme and builds a Studio theme around a colour', () => {
+    expect(T.nearestTheme('#ffd60a', 'dark').id).toBe('gold-dark')
+    expect(T.nearestTheme('#0a84ff', 'dark').family.acc).toBe('#0a84ff')
+    expect(T.nearestTheme('#zzz')).toBeNull()
+    const p = T.studioFromHex('#ff375f', 'light')
+    expect(p.v).toBe('tint')
+    expect(T.studioTheme(T.studioNumber(p))).toBeTruthy()
+    expect(p.a).toBe(Math.round(T.hexToHsl('#ff375f').h / 10) * 10 % 360)
+  })
+  it('exports My themes and imports only known ids', () => {
+    const json = T.exportThemes({ theme: 'glass-ocean-dark', themeFavs: ['gold-dark', 'g-42', 'gold-dark'] })
+    const back = T.parseThemes(json)
+    expect(back.current).toBe('glass-ocean-dark')
+    expect(back.themes).toEqual(['glass-ocean-dark', 'gold-dark', 'g-42'])
+    const mixed = T.parseThemes(JSON.stringify({ kind: T.THEME_FILE_KIND, themes: ['nope', 'pure-light'], current: 'bad' }))
+    expect(mixed).toEqual({ current: null, themes: ['pure-light'] })
+    expect(() => T.parseThemes('{"workouts":[]}')).toThrow()
+    expect(() => T.parseThemes('not json')).toThrow()
+  })
+})
