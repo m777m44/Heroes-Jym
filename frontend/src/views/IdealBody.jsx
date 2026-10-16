@@ -145,7 +145,7 @@ export default function IdealBody() {
     {/* ---- how it is worked out ---- */}
     {r && r.adult && r.formulas && <Section title={t('How it is worked out')} footer={t('Your ideal weight blends the age-adjusted BMI range with the four classic formulas (which know your sex) and stays inside the range for your age.')}>
       {[['Devine', r.formulas.devine], ['Robinson', r.formulas.robinson], ['Miller', r.formulas.miller], ['Hamwi', r.formulas.hamwi]].map(([n, v]) =>
-        <div key={n} className="lrow ideal-f"><span className="grow">{t('{0} formula', n)}</span><b>{w(v)} {u}</b></div>)}
+        <div key={n} className="lrow ideal-f"><span className="grow">{t('{0} formula', t(n))}</span><b>{w(v)} {u}</b></div>)}
       <div className="lrow ideal-f"><span className="grow">{t('BMI range for age {0}', age)}</span><b>{w(r.idealKg[0])}–{w(r.idealKg[1])} {u}</b></div>
     </Section>}
 
