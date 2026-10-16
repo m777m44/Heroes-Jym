@@ -3,6 +3,70 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v3.0.0 — 2026-10-17
+
+**A full body plan: your ideal weight from 8 methods, what your body is made of, calories
+and macros that adapt, a week-by-week road with milestones, workouts by goal and a
+comparison dashboard. Plus 40 new themes with glass styles, a colour wheel, theme files,
+and a private health log with medicine reminders.**
+*خطة جسم كاملة: وزنك المثالي من 8 طرق، مكوّنات جسمك، سعرات وماكروز تتكيّف، طريق أسبوعي بمحطات إنجاز، تمارين حسب هدفك ولوحة مقارنة. مع 40 ثيم جديد بأنماط زجاجية، عجلة ألوان، ملفات ثيمات، وسجل صحي خاص مع تذكير الأدوية.*
+
+### 🧍 Ideal body, now in four tabs: Overview · Body · Plan · Compare
+- **8 ways to work out your ideal weight:** Devine, Robinson, Miller, Hamwi, Broca, Lorentz,
+  BMI 22 and one based on body fat. Each is drawn against your healthy range. Your ideal
+  weight blends them with the age-adjusted BMI range and adjusts ±5% for your **frame size**
+  (small / medium / large, worked out from your wrist or picked by you).
+- **What your body is made of:** fat, lean mass, skeletal muscle and body water, in kg and
+  %, with a colour bar. Body fat uses the **US-Navy tape method** once you add your neck
+  (and hips for women), otherwise the estimate from BMI and age. Both are shown.
+- **Your programme:** lose fat, build muscle or keep your weight. It is chosen for you, or
+  you pick it.
+- **Calories and macros:** protein, carbs and fat in grams and %. **Calories adapt**: if your
+  weight stalls for weeks the plan trims 150 kcal; if you lose too fast it adds 200 back
+  (never below a safe floor).
+- **Your road, week by week:** "Make it my goal" starts a plan from today's weight, with a
+  target for every week (on track ✓, behind ↑, missed), 25 / 50 / 75 / 100% milestones, and
+  a **full-screen celebration** when a weigh-in reaches one.
+- **Workouts by goal:**
+  - **Lose fat:** home workouts, HIIT and walking, as before.
+  - **Build muscle:** a gym week of Push / Pull / Legs / Upper / Lower with real gym
+    exercises and muscle-building tips. The reminder says "Gym workout".
+  - **Keep my weight:** a mix of strength, walking and recovery.
+  - Your training week is shown in the Plan tab.
+- **Compare:** now vs before, your ideal, your goal, body fat, muscle and BMI side by side,
+  a progress bar from your start to your goal, and the weight chart with the ideal band and
+  goal line.
+
+### 🎨 Themes: 40 more, glass styles, a colour wheel and theme files
+- **40 new families** (280 themes) in two new categories, **Glass style** (10, with
+  see-through cards over a soft aurora) and **Minimal** (8), plus new Dark, Light, Neon and
+  Nature families. That makes 938 curated themes in 14 categories, and **2,722,538** in all.
+- **Colour wheel** in the Theme Studio: drag inside for the background colour and strength,
+  and on the ring for the accent.
+- **Your own colour (HEX):** type or pick a colour to build a Studio theme around it, and see
+  the closest ready-made theme.
+- **Theme file:** export My themes and the current theme as a small JSON file, or import one
+  from a friend or another phone.
+
+### ❤️ Health log (new: Settings → Health log, or the card on Home)
+- Every day: **mood, energy, stress** (1–5), **sleep** hours and quality, **resting heart
+  rate**, **blood pressure** readings and **blood sugar** readings (fasting / after a meal /
+  any time, in mg/dL or mmol/L).
+- Readings are coloured by the official ranges: blood pressure by the American Heart
+  Association, blood sugar by the American Diabetes Association.
+  - A **red warning** appears for a blood-pressure crisis (over 180 / 120).
+  - An orange one appears for low sugar.
+- **Medicines & vitamins:** name, dose and up to 6 times a day. Tick off each dose, and get a
+  **reminder notification** at each time, even when the app is closed. Tap the reminder to
+  open the log.
+- **Trends** over 7 or 30 days: averages, doses taken %, and charts for sleep, mood, blood
+  pressure, heart rate and sugar. Move between days with ‹ ›.
+- Private: it stays on the phone (and in your own backup). It is not a diagnosis.
+
+### 🌍 Everything in 12 languages
+- 268 new strings, all translated (1,824 keys per language). The Arabic UI guard now also
+  checks the health log, every Ideal body tab and the new sheets.
+
 ## v2.12.0 — 2026-10-17
 
 **Your ideal body by height, age and sex, and more than 2.7 million themes, sorted into

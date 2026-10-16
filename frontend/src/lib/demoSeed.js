@@ -148,7 +148,30 @@ export function buildDemoState() {
     dayPlan[tIso] = order[(order.findIndex(r => r.name === lastName) + 1) % order.length].id
   }
 
+  // 3.0: three weeks of health log, two medicines with today's morning dose taken, and a plan
+  // to the goal weight that started six weeks ago (so the road has weeks on target and behind)
+  const health = {}, medLog = {}
+  for (let i = 20; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const iso = isoOf(d), k = 20 - i
+    health[iso] = {
+      sleepH: 6 + ((k * 7) % 6) / 2, sleepQ: 2 + (k % 4), mood: 3 + (k % 3 === 0 ? 1 : 0) + (k % 7 === 6 ? 1 : 0), energy: 2 + ((k * 3) % 4), stress: 1 + ((k * 5) % 4),
+      rhr: 62 - Math.round(k / 4) + (k % 3),
+      ...(k % 2 === 0 ? { bp: [{ t: at(d, 7, 40), sys: 128 - Math.round(k / 3) + (k % 4), dia: 82 - Math.round(k / 5) + (k % 3), pulse: 66 + (k % 5) }] } : {}),
+      ...(k % 3 === 0 ? { sugar: [{ t: at(d, 7, 10), v: 96 - (k % 5) + Math.round(k / 7), ctx: 'fasting' }] } : {}),
+    }
+    if (i > 0) medLog[iso] = { 'demo-d3@08:00': true, ...(k % 5 ? { 'demo-mg@21:00': true } : {}) }
+  }
+  medLog[isoOf(today)] = { 'demo-d3@08:00': true }
+  const meds = [
+    { id: 'demo-d3', name: 'Vitamin D', kind: 'vit', dose: '1000 IU', times: ['08:00'], on: true, remind: true },
+    { id: 'demo-mg', name: 'Magnesium', kind: 'vit', dose: '200 mg', times: ['21:00'], on: true, remind: true },
+  ]
+  const planFrom = bodyweight.find(b => (today - new Date(b.d + 'T12:00:00')) / 86400000 <= 42) || bodyweight[0]
+  const bodyPlan = planFrom ? { start: planFrom.d, fromKg: planFrom.w, toKg: TARGET_W, weeklyKg: 0.5 } : null
+
   return {
+    health, meds, medLog, bodyPlan,
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,

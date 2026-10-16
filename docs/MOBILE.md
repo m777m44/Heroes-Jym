@@ -248,6 +248,19 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 | Theme Studio | `studioNumber` / `studioParams` / `studioTheme` | 360 hues × 10 strengths × 7 styles × 36 accents × 3 glows = 2,721,600. Saved as `g-<n>`. The accent lightness is solved for ≥ 3:1 on the background. Following the phone swaps the style for its light/dark counterpart. |
 | Favourites | `S.themeFavs` (max 30) | Curated or `g-` ids. |
 
+## Ideal-body plan, glass themes & a health log (3.0)
+
+| What | Where | Notes |
+|---|---|---|
+| Ideal-body engine | `lib/idealBody.js` (tests: `idealBody.test.js`) | 8 methods: Devine, Robinson, Miller, Hamwi, Broca, Lorentz, BMI 22 and body-fat-based (today's lean mass ÷ (1 − healthy-fat mid)). `ideal` = (age band mid + mean of the first 6) / 2 × frame (±5 %, from wrist ÷ height), clamped to the band. US-Navy body fat when waist + neck (+ hips) are known, else Deurenberg. Composition: Boer lean mass, Lee skeletal muscle, Watson body water. Programmes: lose (TDEE − 500, floors 1200/1500), muscle (+250/300), keep. Macros 1.8/2.0/1.6 g protein per kg. |
+| Adaptive calories & road | `adaptKcal`, `weightRoad`, `milestoneCrossed` | Pace over 4 weeks: stalled → −150 kcal, too fast → +200 (muscle: the other way). Road = weekly targets (on / behind / missed / future) and 25/50/75/100 % milestones. A weigh-in that crosses a milestone fires the full-screen `body` celebration. |
+| Screen | `views/IdealBody.jsx` (`/ideal`) | Tabs Overview · Body · Plan · Compare. State: `neckCm`, `hipCm`, `wristCm`, `frame` ('auto'), `bodyGoal` ('auto' / lose / muscle / keep), `bodyPlan` `{ start, fromKg, toKg, weeklyKg }`. |
+| Daily programmes | `lib/dailyPlan.js` `PROGRAM_WEEKS`, `programOf` | Muscle week = push / pull / legs / upper / lower in the gym (`gym: true`); the reminder says "Gym workout" and drops "no equipment". |
+| Glass & minimal themes | `lib/themes.js` | 14 categories, 134 families, 938 curated ids. A family with `glass: true` gets see-through `--surface*` and a three-colour aurora glow; `applyTheme` sets `data-glass` = mode for the rim / blur rules. |
+| Colour wheel, HEX, files | `components/ColorWheel.jsx`, `hexToHsl`, `nearestTheme`, `studioFromHex`, `exportThemes` / `parseThemes` | Disc = background hue × strength, ring = accent hue (10° steps). File: `{ kind: 'mahdi-jym-themes', version: 1, current, themes }`; import merges into My themes (unknown ids dropped). |
+| Health log | `lib/health.js` (tests: `health.test.js`), `views/Health.jsx` (`/health`), `components/HealthCard.jsx` | `S.health[iso]` = `{ sleepH, sleepQ, mood, energy, stress, rhr, bp[], sugar[] }` (sugar stored in mg/dL, shown in `S.sugarUnit`). BP by ACC/AHA 2017 (crisis > 180/120 → red warning), sugar by ADA per context. `S.meds[]` + `S.medLog[iso]['id@HH:MM']`. |
+| Medicine reminders | `lib/mobile.js` `syncMedReminders` | Local notifications on channel `mj_meds`, ids 7400–7459, daily repeat (`schedule.on`), tap → `/health`. Re-synced on every save and on start. |
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

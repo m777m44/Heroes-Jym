@@ -62,7 +62,7 @@ describe('2.0 screens render', () => {
     expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
     expect(html).toContain('Follow the phone')
     expect(html).toContain('2,722,538 themes in all')
-    expect(html).toContain('>Glass<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
+    expect(html).toContain('>Glass style<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
     for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
     expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(15)
     expect(html).toContain('swatch-theme')

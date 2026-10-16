@@ -18,10 +18,12 @@ it('the Arabic UI has no stray English', async () => {
   const { buildDemoState } = await import('../lib/demoSeed.js')
   const { setLang } = await import('../lib/i18n.js')
   const st = buildDemoState()
+  // medicine names / doses are what the user typed — an Arabic user types them in Arabic
+  st.meds = st.meds.map((m, i) => ({ ...m, name: ['فيتامين د', 'مغنيسيوم'][i], dose: ['1000 وحدة', '200 ملغ'][i] }))
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -33,11 +35,19 @@ it('the Arabic UI has no stray English', async () => {
       if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(name)
     }
   }
+  // 3.0: the other Ideal body tabs, and the Theme Studio (wheel, HEX)
+  const IB = await import('./IdealBody.jsx')
+  for (const tab of ['body', 'plan', 'compare']) {
+    const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/ideal'] }, React.createElement(IB.default, { initialTab: tab })))
+    for (const line of text(html).split('\n').map(s => s.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('IdealBody:' + tab)
+  }
   // sheets
   const { useUI } = await import('../store/useUI.js')
   const sh = await import('../sheets.jsx')
   const { stepResetSheet } = await import('../components/pedometer/StepReset.jsx')
   const { EXDB } = await import('../lib/exercises-data.js')
+  const H = await import('./Health.jsx')
+  const isoToday = new Date().toISOString().slice(0, 10)
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -45,6 +55,7 @@ it('the Arabic UI has no stray English', async () => {
     custom: () => sh.customExSheet(), exConfig: () => sh.exConfigSheet(ex0, null, () => {}), tools: () => sh.planToolsSheet(),
     override: () => sh.dayOverrideSheet(w0.d), assign: () => sh.dayAssignSheet(6), detail: () => sh.workoutDetailSheet(w0), cal: () => sh.calendarSheet(),
     reset: () => stepResetSheet(),
+    bp: () => H.bpSheet(isoToday), sugar: () => H.sugarSheet(isoToday, 'mmol'), med: () => H.medSheet(), medEdit: () => H.medSheet(st.meds[0]),
   }
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })

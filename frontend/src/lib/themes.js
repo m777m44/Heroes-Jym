@@ -27,7 +27,7 @@ export const CATEGORIES = [
   { id: 'classic', name: 'Classic', icon: 'circle' },
   { id: 'sport', name: 'Sport', icon: 'dumbbell' },
   // 3.0
-  { id: 'glass', name: 'Glass', icon: 'layers' },
+  { id: 'glass', name: 'Glass style', icon: 'layers' },   // not 'Glass' — that key is the water glass
   { id: 'minimal', name: 'Minimal', icon: 'square' },
 ]
 

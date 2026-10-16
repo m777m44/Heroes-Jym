@@ -1879,3 +1879,6 @@ html{transition:background-color .35s var(--ease)}
 .hcard-row span{display:inline-flex;align-items:center;gap:5px}
 .hcard-row .icn{color:var(--label-2)}
 .hcard-next{margin-top:8px;color:var(--acc);display:flex;align-items:center;gap:5px}
+.hl-scale>.grow{flex:1 1 auto;min-width:0;width:100%}
+.hl-dots{width:100%}
+.hl-dot{flex:1 1 0;min-width:0;padding:0}

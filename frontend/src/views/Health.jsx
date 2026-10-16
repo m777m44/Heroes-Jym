@@ -210,7 +210,7 @@ function Trend({ S, iso, days, metric, unit }) {
 }
 
 /* ---------------------------------------------------------------- sheets */
-function bpSheet(iso) {
+export function bpSheet(iso) {
   ui().openSheet(close => <BpSheet iso={iso} close={close} />)
 }
 function BpSheet({ iso, close }) {
@@ -234,7 +234,7 @@ function BpSheet({ iso, close }) {
     <Button variant="primary" onClick={save} disabled={!ok}>{t('Save')}</Button>
   </div>
 }
-function sugarSheet(iso, unit) {
+export function sugarSheet(iso, unit) {
   ui().openSheet(close => <SugarSheet iso={iso} unit={unit} close={close} />)
 }
 function SugarSheet({ iso, unit, close }) {

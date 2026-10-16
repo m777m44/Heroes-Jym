@@ -41,11 +41,13 @@ const PROGRAM = {
   keep: ['Keep my weight', 'checkCircle', 'Eat what you burn, and mix strength, walking and recovery.'],
 }
 const TABS = ['overview', 'body', 'plan', 'compare']
+// '14 Sep' — short enough for the week rows and milestone tiles
+const dShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' })
 
-export default function IdealBody() {
+export default function IdealBody({ initialTab } = {}) {
   const S = useStore(s => s.S)
   const update = useStore(s => s.update)
-  const [tab, setTab] = useState(() => (typeof location !== 'undefined' && TABS.find(x => location.hash.includes('tab=' + x))) || 'overview')
+  const [tab, setTab] = useState(() => initialTab || (typeof location !== 'undefined' && location.hash && TABS.find(x => location.hash.includes('tab=' + x))) || 'overview')
   const unit = S.unit
   const u = U(unit)
   const w = v => fmtNum(Math.round(fromKg(v, unit) * 10) / 10)
@@ -293,18 +295,18 @@ function PlanTab({ S, update, r, u, w, unit, last, pace, isGoal, setGoal }) {
     </div>}
 
     {/* the road, week by week */}
-    {road && road.weeks.length > 0 ? <div className="card">
+    {road && road.weeks.length > 0 ? <div className="card ideal-road">
       <h2><Icon name="flag" /> {t('Your road to {0} {1}', w(plan.toKg), u)}</h2>
       <div className="mile-row">
         {road.milestones.map(x => <div key={x.pct} className={'mile' + (x.reached ? ' on' : '')}>
           <span className="mile-i"><Icon name={x.reached ? 'check' : x.pct === 100 ? 'trophy' : 'flag'} /></span>
-          <b>{x.pct}%</b><span>{w(x.kg)} {u}</span><span className="dim">{fmtDate(x.iso, true)}</span>
+          <b>{x.pct}%</b><span>{w(x.kg)} {u}</span><span className="dim">{dShort(x.iso)}</span>
         </div>)}
       </div>
       <div className="road-list">
         {(all ? road.weeks : road.weeks.slice(0, 8)).map(x => <div key={x.week} className={'road-w ' + x.status}>
           <span className="road-n">{t('Week {0}', x.week)}</span>
-          <span className="dim small">{fmtDate(x.iso, true)}</span>
+          <span className="dim small">{dShort(x.iso)}</span>
           <span className="grow" />
           <span className="small">{t('Target')} <b>{w(x.target)}</b></span>
           <span className="road-a">{x.actual != null ? w(x.actual) : x.status === 'missed' ? '—' : ''}</span>
@@ -364,7 +366,7 @@ function CompareTab({ S, r, u, w, unit, last }) {
       <div className="row between"><h2 style={{ margin: 0 }}>{t('Progress to your goal')}</h2><b className="cmp-pct">{Math.round(pct)}%</b></div>
       <div className="cmp-track">
         <span className="cmp-fill" style={{ width: pct + '%' }} />
-        {target != null && Math.abs(ideal - target) > 0.05 && <span className="cmp-ideal" style={{ left: at(ideal) + '%' }} title={t('Ideal')} />}
+        {target != null && Math.abs(ideal - target) > 0.05 && at(ideal) > 0 && at(ideal) < 100 && <span className="cmp-ideal" style={{ left: at(ideal) + '%' }} title={t('Ideal')} />}
       </div>
       <div className="cmp-lbl"><span>{t('Start')} {fmtNum(from)}</span><span>{t('Now')} {fmtNum(cur)}</span><span>{t('Goal')} {fmtNum(end)}</span></div>
     </div>}
