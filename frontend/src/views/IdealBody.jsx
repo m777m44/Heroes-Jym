@@ -3,7 +3,7 @@
 // actually losing (or gaining) at. All the maths is in lib/idealBody.js.
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { t, U } from '../lib/i18n.js'
+import { t, U, dateLocale } from '../lib/i18n.js'
 import { fmtNum, fmtDate, todayISO } from '../lib/format.js'
 import { fromKg, toKg } from '../lib/weightTracker.js'
 import { idealBody, ageOf, sexOf, birthYearFor, stepsAverage, paceCheck, bmiPos, ADULT_AGE, MIN_AGE, MAX_AGE } from '../lib/idealBody.js'
@@ -117,7 +117,7 @@ export default function IdealBody() {
           value={fmtNum(r.kcal)} unit={t('kcal / day')} sub={r.goal === 'keep' ? t('your weight stays put') : t('about {0} {1} a week', w(r.weeklyKg), u)} />}
         {r.proteinG != null && <Tile icon="dumbbell" tint="var(--indigo)" label={t('Protein')} value={fmtNum(r.proteinG)} unit={t('g / day')} sub={t('keeps muscle while you train')} />}
         {r.waterMl != null && <Tile icon="drop" tint="var(--blue)" label={t('Water')} value={fmtNum(r.waterMl)} unit={U('ml')} sub={t('a day, before workouts')} />}
-        {r.whtr != null ? <Tile icon="ruler" tint={WHTR_COL[r.whtrCat]} label={t('Waist ÷ height')} value={fmtNum(r.whtr)} sub={t(WHTR_CAT[r.whtrCat]) + ' · ' + t('keep it under 0.5')} />
+        {r.whtr != null ? <Tile icon="ruler" tint={WHTR_COL[r.whtrCat]} label={t('Waist ÷ height')} value={r.whtr.toLocaleString(dateLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sub={t(WHTR_CAT[r.whtrCat]) + ' · ' + t('keep it under 0.5', 0.5)} />
           : <Tile icon="ruler" tint="var(--label-3)" label={t('Waist ÷ height')} value="—" sub={t('add your waist above')} />}
       </div>
     </>}

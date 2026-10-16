@@ -237,6 +237,17 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 | Workout check-in | `bwSheet()` in `sheets.jsx` | No longer locked: dismissing it starts nothing. |
 | Back button | `BackButton` in `components/ui.jsx`, `goBack()` in `lib/nav.js` | History back when the router has an index > 0, else a per-screen fallback (`replace`). |
 
+## Ideal body & theme categories (2.12)
+
+| What | Where | Notes |
+|---|---|---|
+| Ideal-body maths | `lib/idealBody.js` (tests: `idealBody.test.js`) | Pure, in kg/cm. Healthy BMI 18.5–24.9 (22–27 from 65) ∩ NRC-by-age band → `idealKg`. `ideal` = mean of band mid and the 4 formulas, clamped to the band. Deurenberg body fat, Mifflin–St Jeor BMR × step-based activity, ±500/300 kcal, floors 1200/1500. |
+| Screen | `views/IdealBody.jsx` (`/ideal`), `components/IdealChip.jsx` | State: `sex`, `birthYear` (from the age typed in), `waistCm`, `heightCm`. "Make it my goal" sets `targetW` (in the profile unit) and `targetFrom`. |
+| Weight-chart band | `LineChart` `band` prop | Shaded `[lo, hi]` and clipped to the chart, so it never stretches the y-axis. |
+| Theme categories | `lib/themes.js` `CATEGORIES`, `FAMILIES[].cat` | 12 categories, 94 families × 7 variants = 658 curated ids `<family>-<variant>`. |
+| Theme Studio | `studioNumber` / `studioParams` / `studioTheme` | 360 hues × 10 strengths × 7 styles × 36 accents × 3 glows = 2,721,600. Saved as `g-<n>`. The accent lightness is solved for ≥ 3:1 on the background. Following the phone swaps the style for its light/dark counterpart. |
+| Favourites | `S.themeFavs` (max 30) | Curated or `g-` ids. |
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

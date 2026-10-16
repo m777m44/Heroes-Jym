@@ -3,6 +3,63 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v2.12.0 — 2026-10-17
+
+**Your ideal body by height, age and sex, and more than 2.7 million themes, sorted into
+categories: Golden, Royal, Premium, Dark, Light and more, plus a Theme Studio.**
+*جسمك المثالي حسب الطول والعمر والجنس، وأكثر من 2.7 مليون ثيم مقسّمة إلى فئات: الذهبي، الملكي، المتميز، الداكن، الفاتح وغيرها، مع استوديو الثيمات.*
+
+### 🧍 Ideal body (new screen: Settings → Ideal body, or the line under any weight card)
+- **Your ideal weight** worked out from your **height, age and sex**. It combines the
+  age-adjusted BMI range (WHO, plus the US NRC table by age) with the four classic formulas
+  (Devine, Robinson, Miller, Hamwi), and it always stays inside the healthy range for your
+  height and the ideal range for your age.
+- **Is your weight right for your height?** You get a BMI gauge with the four bands, your ideal
+  band and a marker for you, plus how many kg you are from your ideal weight, or "you are in
+  your ideal range".
+- **Make it my goal** in one tap. The weight goal, the progress bar and the goal date all
+  follow it.
+- **Your numbers:**
+  - BMI with its category.
+  - Estimated body fat against the healthy range for your age and sex.
+  - Resting burn (Mifflin–St Jeor).
+  - Daily energy, from your real step average over the last 7 days.
+  - Calories to lose, gain or keep.
+  - Protein and water per day.
+  - Waist ÷ height, if you add your waist.
+- **Your road there:** how many weeks it takes at a safe pace (0.25–0.5 kg a week, never below
+  1,200 / 1,500 kcal), and the expected date.
+- **Weight monitoring:**
+  - A pace check compares how fast you are actually losing or gaining with a safe 0.25–1 % of
+    your weight a week. It flags "too fast", "good", "stalled" or "going the wrong way".
+  - The body-weight chart now shades your ideal range behind the curve.
+- Under-18s get their BMI and a growth-chart note instead of an adult ideal weight.
+- Age is saved as a birth year, so it stays correct as the years pass. Everything stays on
+  the phone.
+
+### 🎨 Themes
+- **Categories inside Themes:**
+  - Golden, Royal, Premium, Dark, Light, Nature, Ocean & sky, Neon, Warm, Pastel, Classic and
+    Sport.
+  - A chip bar shows a count on every chip.
+  - The screen opens on the category of the theme you are using.
+- **658 named themes** (up from 120): 94 colour families (Champagne, Black gold, Imperial,
+  Sapphire, Diamond, Obsidian, Pearl, Marble, Galaxy, Synthwave, Matrix, Lagoon, Terracotta,
+  Cotton candy…), each in 7 styles. "Tinted" is new.
+- **Theme Studio, with 2,721,600 more themes.** Pick a background colour, colour strength,
+  accent, style and glow:
+  - Every combination has its own number. Jump to any number, step with ‹ ›, or tap 🎲 for a
+    surprise.
+  - You get 9 fresh ideas each time.
+  - The accent is always tuned to stay readable.
+- **2,722,258 themes in all.** "Follow the phone" also works with Studio themes.
+- **My themes:** keep up to 30 favourites with ★. They get their own chip at the front.
+
+### ✨ Also
+- New icons: crown, medal, palette, dice and more.
+- New translations in all 12 languages.
+- Arabic is fully Arabic on the new screens. The formula names are written in Arabic too.
+
 ## v2.11.0 — 2026-10-13
 
 **Close any panel the way you expect — swipe it down or tap ✕ — and a ‹ back button that
