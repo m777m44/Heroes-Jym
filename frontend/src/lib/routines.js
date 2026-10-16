@@ -11,7 +11,9 @@ import { uid } from './format.js'
 
 export const BUILTIN_NAMES = ['Push Day', 'Pull Day', 'Leg Day', 'Freestyle', 'New routine', 'Shared routine',
   // Today's plan (lib/dailyPlan.js) — saved on the workout, so history shows them translated.
-  'Full-body fat burn', 'Walking day + core', 'Legs & glutes', 'HIIT fat burner', 'Upper body & core', 'Long walk + core', 'Mobility & recovery']
+  'Full-body fat burn', 'Walking day + core', 'Legs & glutes', 'HIIT fat burner', 'Upper body & core', 'Long walk + core', 'Mobility & recovery',
+  // 3.0: the muscle-gain week
+  'Push: chest, shoulders & triceps', 'Pull: back & biceps', 'Legs: squat & hinge', 'Upper body strength', 'Lower body strength']
 export const routineLabel = name => (name && BUILTIN_NAMES.includes(name) ? t(name) : name || '')
 
 export const ROUTINE_COLORS = ['green', 'blue', 'orange', 'purple', 'pink', 'red', 'teal', 'yellow', 'indigo', 'mint']

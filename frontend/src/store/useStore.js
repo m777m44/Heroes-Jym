@@ -3,7 +3,7 @@ import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
+import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders } from '../lib/mobile.js'
 
 const KEY = 'gym_state_v1'
 // 2.10: a fresh install follows the phone — its language ('auto', see langOf in lib/i18n.js) and
@@ -28,6 +28,11 @@ export const DEF = {
   // 2.12 "Ideal body": sex picks the formulas, birthYear keeps the age right as years pass,
   // waistCm (optional) gives waist-to-height
   sex: null, birthYear: null, waistCm: null,
+  // 3.0: more tape measurements (US-Navy body fat, frame size), the programme ('auto' follows
+  // the ideal body: lose / muscle / keep), the plan's start (bodyPlan: { start, fromKg, toKg,
+  // weeklyKg }), custom themes, and the health log (see lib/health.js)
+  neckCm: null, hipCm: null, wristCm: null, frame: 'auto', bodyGoal: 'auto', bodyPlan: null,
+  customThemes: [], health: {}, meds: [], medLog: {}, sugarUnit: 'mgdl',
   // 2.9 — the "Today's plan" card on Home (lib/dailyPlan.js). The clock always follows the
   // phone's own time zone now (the old `clockZone` setting is ignored).
   planOn: true,
@@ -59,7 +64,7 @@ export const useStore = create((set, get) => {
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
   const nativePersist = () => {
     clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S) }, 800)
+    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S); syncMedReminders(get().S) }, 800)
   }
 
   const persist = (S, push = true) => {
@@ -201,6 +206,7 @@ export const useStore = create((set, get) => {
         }
         get().setGuest(true)
         syncReminder(get().S)
+        syncMedReminders(get().S)
         set({ ready: true })
         return
       }

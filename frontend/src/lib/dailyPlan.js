@@ -1,5 +1,7 @@
 // Today's plan (2.9): every day one workout, a steps target and a water target that fit
-// together, aimed at losing fat and building a fitter body.
+// together, aimed at losing fat and building a fitter body. 3.0: the week follows your
+// programme — fat loss (below), muscle gain (push / pull / legs / upper / lower in the gym,
+// two recovery days) or keeping your weight (a mix) — chosen on the Ideal body screen.
 //
 //   · The week (Saturday → Friday) alternates hard and easy days: full body, a walking day,
 //     legs & glutes, HIIT, upper body & core, a second walking day, and Friday for mobility.
@@ -15,6 +17,7 @@
 import { goalOf, stepsOn, caloriesFor, strideMeters } from './stepMetrics.js'
 import { waterGoalMlOf, bodyKg, workoutMinutesOn, mlOn } from './water.js'
 import { effectiveRoutine } from './history.js'
+import { idealBodyOf } from './idealBody.js'
 
 // [id, sets, reps] — reps for holds are seconds (`hold`).
 const HOLD = 'hold'
@@ -43,6 +46,27 @@ export const PLAN_DAYS = {
     title: 'Long walk + core', icon: 'route', color: 'teal', met: 4, rest: 25, steps: 1.3,
     ex: [['1685', 3, 12], ['0687', 3, 20], ['0276', 3, 12], ['1373', 3, 20]],
   },
+  // 3.0 — muscle-gain days (gym: barbell, dumbbells, cable, machines), heavier and slower
+  push: {
+    title: 'Push: chest, shoulders & triceps', icon: 'figureStrength', color: 'orange', met: 5, rest: 90, gym: true, steps: 0.9,
+    ex: [['0025', 4, 8], ['0314', 3, 10], ['0405', 3, 10], ['0334', 3, 15], ['0201', 3, 12], ['0251', 3, 10]],
+  },
+  pull: {
+    title: 'Pull: back & biceps', icon: 'arm', color: 'blue', met: 5, rest: 90, gym: true, steps: 0.9,
+    ex: [['0032', 3, 5], ['0652', 4, 8], ['0027', 3, 10], ['0198', 3, 12], ['0378', 3, 15], ['0294', 3, 12]],
+  },
+  legs: {
+    title: 'Legs: squat & hinge', icon: 'legs', color: 'purple', met: 6, rest: 120, gym: true, steps: 0.9,
+    ex: [['0043', 4, 8], ['0085', 3, 10], ['0739', 3, 12], ['0586', 3, 12], ['0605', 4, 15], ['0472', 3, 12]],
+  },
+  gupper: {
+    title: 'Upper body strength', icon: 'dumbbell', color: 'teal', met: 5, rest: 90, gym: true, steps: 0.9,
+    ex: [['0289', 4, 10], ['0861', 4, 10], ['0426', 3, 10], ['0292', 3, 10], ['0313', 3, 12], ['0060', 3, 10]],
+  },
+  glower: {
+    title: 'Lower body strength', icon: 'legs', color: 'pink', met: 5.5, rest: 90, gym: true, steps: 0.9,
+    ex: [['1760', 4, 12], ['1459', 4, 10], ['0336', 3, 10], ['0585', 3, 15], ['1372', 3, 15], ['0274', 3, 20]],
+  },
   recover: {
     title: 'Mobility & recovery', icon: 'stretch', color: 'mint', met: 2.5, rest: 15, steps: 0.85,
     ex: [['1511', 2, 30, HOLD], ['0613', 2, 30, HOLD], ['1377', 2, 30, HOLD], ['1405', 2, 30, HOLD], ['1471', 2, 6], ['3013', 2, 12]],
@@ -50,6 +74,19 @@ export const PLAN_DAYS = {
 }
 /** getDay() → the day's kind (Saturday first). */
 export const WEEK_KINDS = { 6: 'full', 0: 'walk', 1: 'lower', 2: 'hiit', 3: 'upper', 4: 'walk2', 5: 'recover' }
+/** 3.0 — the week for each programme (S.bodyGoal; 'auto' follows the ideal-body screen). */
+export const PROGRAM_WEEKS = {
+  lose: WEEK_KINDS,
+  muscle: { 6: 'push', 0: 'pull', 1: 'legs', 2: 'recover', 3: 'gupper', 4: 'glower', 5: 'recover' },
+  keep: { 6: 'full', 0: 'walk', 1: 'gupper', 2: 'recover', 3: 'lower', 4: 'walk2', 5: 'glower' },
+}
+/** The programme the plan follows: the one chosen, else what your body needs (fat loss by default). */
+export function programOf(S) {
+  const g = S && S.bodyGoal
+  if (g === 'lose' || g === 'muscle' || g === 'keep') return g
+  const r = idealBodyOf(S || {})
+  return r && r.program ? r.program : 'lose'
+}
 export const PLAN_TITLES = [...Object.values(PLAN_DAYS).map(d => d.title), 'Your routine']
 
 // Joint-friendly swaps (BMI ≥ 30): jumps → controlled moves.
@@ -67,6 +104,20 @@ export const TIPS = [
   'Aim for 0.5–1 kg a week: steady loss stays off.',
   'Take the stairs instead of the lift today.',
   'Consistency beats intensity: show up again tomorrow.',
+]
+
+/** 3.0 — muscle-gain tips (programme 'muscle'). */
+export const MUSCLE_TIPS = [
+  'Add a little weight or one more rep than last time: that is how muscle grows.',
+  'Eat protein at every meal — about 2 g per kg of body weight a day.',
+  'Rest 2–3 minutes between heavy sets so the next one is strong too.',
+  'Sleep 7–9 hours: muscle is built while you recover.',
+  'A small surplus is enough: about 250–300 kcal over what you burn.',
+  'Control the way down: 2–3 seconds on every rep.',
+  'Train each muscle about twice a week.',
+  'Warm up with two light sets before your first heavy one.',
+  'Gaining about 0.25 kg a week keeps it mostly muscle.',
+  'Log every set — what gets measured gets better.',
 ]
 
 const round500 = n => Math.round(n / 500) * 500
@@ -120,13 +171,14 @@ export function planFor(S, iso) {
   const lowImpact = bmi != null && bmi >= 30
   // A day you marked as rest becomes the gentle mobility & recovery session.
   const rest = S && S.dayPlan && S.dayPlan[iso] === 'rest'
-  const kind = own && own.ex && own.ex.length ? 'routine' : rest ? 'recover' : WEEK_KINDS[wd]
+  const program = programOf(S)
+  const kind = own && own.ex && own.ex.length ? 'routine' : rest ? 'recover' : (PROGRAM_WEEKS[program] || WEEK_KINDS)[wd]
   const spec = PLAN_DAYS[kind] || { title: 'Your routine', icon: 'dumbbell', color: 'acc', met: 5, rest: 60 }
   const exercises = kind === 'routine'
     ? own.ex.map(c => ({ id: c.id, sets: Math.max(1, c.sets || 3), reps: Math.max(1, c.reps || 10), hold: false }))
     : spec.ex.map(([id, sets, reps, hold]) => ({
       id: lowImpact && LOW_IMPACT[id] ? LOW_IMPACT[id] : id,
-      sets: clamp(sets + (level === 'easy' ? -1 : level === 'hard' && kind !== 'recover' ? 1 : 0), 2, 5),
+      sets: clamp(sets + (level === 'easy' ? -1 : level === 'hard' && kind !== 'recover' && !spec.gym ? 1 : 0), 2, 5),
       reps, hold: hold === HOLD,
     }))
   const work = exercises.reduce((a, e) => a + e.sets * (setSecs(e) + spec.rest), 0)
@@ -138,13 +190,13 @@ export function planFor(S, iso) {
   const kcalSteps = Math.round(caloriesFor(stepsTarget, { strideM: stride, ...(bodyKg(S) ? { weight: bodyKg(S), unit: 'kg' } : {}) }))
   const doy = Math.floor((dayAt(iso) - new Date(dayAt(iso).getFullYear(), 0, 0)) / 864e5)
   return {
-    iso, kind, title: kind === 'routine' ? own.name : spec.title, icon: spec.icon, color: spec.color,
+    iso, kind, program, gym: !!spec.gym, title: kind === 'routine' ? own.name : spec.title, icon: spec.icon, color: spec.color,
     routineId: kind === 'routine' ? own.id : null,
     exercises, minutes, kcalWorkout, stepsTarget, kcalSteps,
     kcalTotal: kcalWorkout + kcalSteps,
     fatGrams: Math.round((kcalWorkout + kcalSteps) / 7.7),     // ~7,700 kcal per kg of body fat
     waterMl: waterGoalMlOf(S, iso),
-    level, lowImpact, tip: TIPS[doy % TIPS.length],
+    level, lowImpact, tip: (program === 'muscle' ? MUSCLE_TIPS : TIPS)[doy % TIPS.length],
   }
 }
 

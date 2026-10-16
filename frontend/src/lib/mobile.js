@@ -86,6 +86,38 @@ export async function syncReminder(S, interactive = false) {
   } catch (e) { return false }
 }
 
+// 3.0 — medicine & vitamin reminders from the health log: one daily repeating local
+// notification per dose time (ids 7400 + n), on their own channel with vibration. Re-run only
+// when the list changes.
+let lastMedSig = null
+export async function syncMedReminders(S, interactive = false) {
+  try {
+    const { medReminders, MED_ID_BASE } = await import('./health.js')
+    const items = medReminders(S)
+    const sig = JSON.stringify([items, S.lang])
+    if (!interactive && sig === lastMedSig) return true
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    await LocalNotifications.cancel({ notifications: Array.from({ length: 60 }, (_, i) => ({ id: MED_ID_BASE + i })) }).catch(() => {})
+    if (!items.length) { lastMedSig = sig; return true }
+    let perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
+    if (perm.display !== 'granted') return false
+    const { t } = await import('./i18n.js')
+    await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.schedule({
+      notifications: items.map(m => ({
+        id: m.id, channelId: 'mj_meds',
+        title: (m.kind === 'vit' ? '💊 ' + t('Vitamin time: {0}', m.name) : '💊 ' + t('Medicine time: {0}', m.name)),
+        body: (m.dose ? m.dose + ' · ' : '') + t('Tap to mark it as taken.'),
+        schedule: { on: { hour: m.hour, minute: m.minute }, repeats: true, allowWhileIdle: true },
+        extra: { route: '/health' },
+      })),
+    })
+    lastMedSig = sig
+    return true
+  } catch { return false }
+}
+
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
 // (Files, AirDrop, mail, …) from a temp file instead.
 // Tapping a local notification (reminder or step counter) opens the screen it is about.

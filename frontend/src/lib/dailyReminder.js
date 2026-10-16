@@ -79,7 +79,7 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
     } else if (r.home && S.planOn !== false) {
       const plan = planFor(S, iso)
       const p = { title: plan.title, kind: plan.kind, n: plan.exercises.length, min: plan.minutes, steps: plan.stepsTarget,
-        water: plan.waterMl, kcal: plan.kcalTotal, tip: plan.tip, ids: plan.exercises.map(e => e.id) }
+        water: plan.waterMl, kcal: plan.kcalTotal, tip: plan.tip, gym: !!plan.gym, ids: plan.exercises.map(e => e.id) }
       out.push({ id: ID_BASE + i * 2, kind: 'plan', iso, at: day, plan: p })
       if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'plannudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), plan: p })
     } else if (r.walk) {
@@ -105,12 +105,12 @@ export function reminderText(item, S) {
     const list = names.length ? listOf(names) + (more ? ' ' + t('+{0} more', n(more)) : '') : ''
     const facts = '👟 ' + t('{0} steps', n(p.steps)) + ' · 💧 ' + n(p.water) + ' ' + t('ml') + ' · 🔥 ' + t('{0} kcal', n(p.kcal))
     if (item.kind === 'plannudge') {
-      const body = t('Just {0} minutes at home — no equipment needed.', n(p.min))
+      const body = p.gym ? t('About {0} minutes — your gym session is waiting.', n(p.min)) : t('Just {0} minutes at home — no equipment needed.', n(p.min))
       return { title: '⏰ ' + t('Still time for {0}', t(p.title)), body, big: body + (list ? '\n' + list : '') }
     }
-    const body = t('{0} exercises · about {1} min', n(p.n), n(p.min)) + ' · ' + t('No equipment')
+    const body = t('{0} exercises · about {1} min', n(p.n), n(p.min)) + (p.gym ? '' : ' · ' + t('No equipment'))
     return {
-      title: (p.kind === 'recover' ? '🧘 ' : '🏠 ') + t('Home workout: {0}', t(p.title)),
+      title: p.gym ? '🏋️ ' + t('Gym workout: {0}', t(p.title)) : (p.kind === 'recover' ? '🧘 ' : '🏠 ') + t('Home workout: {0}', t(p.title)),
       body: body + (list ? ' — ' + list : ''),
       big: body + (list ? '\n' + list : '') + '\n' + facts + (p.tip ? '\n💡 ' + t(p.tip) : ''),
     }

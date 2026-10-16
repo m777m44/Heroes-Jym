@@ -163,3 +163,29 @@ describe('2.10 week plan and streak', () => {
     expect(planStreak({ dayPlan: {}, week: {}, routines: [] }, '2026-10-13')).toBe(0)
   })
 })
+
+describe('dailyPlan 3.0 — programmes', async () => {
+  const { PROGRAM_WEEKS, programOf } = await import('./dailyPlan.js')
+  it('every programme day exists and the week has two easy days', () => {
+    for (const [prog, wk] of Object.entries(PROGRAM_WEEKS)) {
+      expect(Object.keys(wk).length, prog).toBe(7)
+      for (const k of Object.values(wk)) expect(PLAN_DAYS[k], prog + ':' + k).toBeTruthy()
+    }
+    expect(Object.values(PROGRAM_WEEKS.muscle).filter(k => k === 'recover').length).toBe(2)
+  })
+  it('follows the chosen programme, else the ideal body, else fat loss', () => {
+    expect(programOf({})).toBe('lose')
+    expect(programOf({ bodyGoal: 'muscle' })).toBe('muscle')
+    const thin = { heightCm: 180, sex: 'male', birthYear: new Date().getFullYear() - 30, unit: 'kg', bodyweight: [{ d: '2026-10-01', w: 55 }] }
+    expect(programOf(thin)).toBe('muscle')
+    expect(programOf({ ...thin, bodyweight: [{ d: '2026-10-01', w: 74 }] })).toBe('keep')
+    expect(programOf({ ...thin, bodyweight: [{ d: '2026-10-01', w: 100 }] })).toBe('lose')
+  })
+  it('a muscle-gain Saturday is a gym push day without extra sets', () => {
+    const p = planFor(base({ bodyGoal: 'muscle' }), '2026-10-17')
+    expect(p.kind).toBe('push')
+    expect(p.gym).toBe(true)
+    expect(p.program).toBe('muscle')
+    expect(p.exercises[0].id).toBe('0025')
+  })
+})

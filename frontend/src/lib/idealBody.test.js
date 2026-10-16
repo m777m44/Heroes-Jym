@@ -122,3 +122,78 @@ describe('idealBody — monitoring', () => {
     expect(bmiPos(15)).toBe(0); expect(bmiPos(40)).toBe(100); expect(bmiPos(27.5)).toBe(50); expect(bmiPos(60)).toBe(100)
   })
 })
+
+describe('idealBody 3.0 — formulas, frame, composition, plan', async () => {
+  const { frameOf, navyBodyFat, composition, macrosFor, adaptKcal, weightRoad, idealBodyOf, FORMULA_ORDER } = await import('./idealBody.js')
+  it('has Broca, Lorentz and BMI 22 next to the classic four', () => {
+    const f = formulas(180, 'male')
+    expect(f.broca).toBe(80); expect(f.lorentz).toBe(72.5); expect(f.bmi22).toBeCloseTo(71.3, 1)
+    expect(formulas(170, 'female').broca).toBe(65); expect(formulas(170, 'female').lorentz).toBe(60)
+    const r = idealBody({ heightCm: 180, age: 30, sex: 'male', weightKg: 80 })
+    for (const k of FORMULA_ORDER) expect(r.formulas[k], k).toBeGreaterThan(40)
+  })
+  it('reads the frame from the wrist and moves the ideal weight with it', () => {
+    expect(frameOf(180, 16, 'male')).toBe('small')     // 11.25
+    expect(frameOf(180, 18, 'male')).toBe('medium')    // 10
+    expect(frameOf(180, 20, 'male')).toBe('large')     // 9
+    expect(frameOf(165, 14, 'female')).toBe('small')
+    expect(frameOf(180, null, 'male')).toBeNull()
+    const s = idealBody({ heightCm: 180, age: 30, wristCm: 16 }), m = idealBody({ heightCm: 180, age: 30 }), l = idealBody({ heightCm: 180, age: 30, frame: 'large' })
+    expect(s.frame).toBe('small'); expect(m.frame).toBe('medium'); expect(l.frame).toBe('large')
+    expect(s.ideal).toBeLessThan(m.ideal); expect(l.ideal).toBeGreaterThan(m.ideal)
+    expect(l.ideal).toBeLessThanOrEqual(l.healthyKg[1]); expect(s.ideal).toBeGreaterThanOrEqual(s.healthyKg[0])
+  })
+  it('uses the US-Navy tape method when the tape is there', () => {
+    expect(navyBodyFat({ heightCm: 178, waistCm: 90, neckCm: 38, sex: 'male' })).toBeCloseTo(20.1, 0)
+    expect(navyBodyFat({ heightCm: 165, waistCm: 75, neckCm: 33, hipCm: 98, sex: 'female' })).toBeCloseTo(28.5, 0)
+    expect(navyBodyFat({ heightCm: 165, waistCm: 75, neckCm: 33, sex: 'female' })).toBeNull()
+    const r = idealBody({ heightCm: 178, age: 31, sex: 'male', weightKg: 80, waistCm: 90, neckCm: 38 })
+    expect(r.bodyFatMethod).toBe('navy'); expect(r.bodyFat).toBe(r.bodyFatNavy)
+    expect(idealBody({ heightCm: 178, age: 31, weightKg: 80 }).bodyFatMethod).toBe('bmi')
+  })
+  it('splits the body into fat, lean, muscle and water that add up', () => {
+    const c = composition({ weightKg: 80, heightCm: 178, age: 31, sex: 'male', bodyFat: 20 })
+    expect(c.fatKg).toBe(16); expect(c.leanKg).toBe(64)
+    expect(c.muscleKg).toBeGreaterThan(25); expect(c.muscleKg).toBeLessThan(c.leanKg)
+    expect(c.waterPct).toBeGreaterThan(45); expect(c.waterPct).toBeLessThan(65)
+  })
+  it('makes macros that add up to the calories', () => {
+    const m = macrosFor(2200, 'lose', 75)
+    expect(m.protein).toBe(135)
+    expect(Math.abs(m.protein * 4 + m.fat * 9 + m.carbs * 4 - 2200)).toBeLessThan(15)
+    expect(m.pct.protein + m.pct.fat + m.pct.carbs).toBeGreaterThanOrEqual(99)
+    expect(macrosFor(2800, 'muscle', 75).protein).toBe(150)
+  })
+  it('lets you pick the programme', () => {
+    const base = { heightCm: 180, age: 30, sex: 'male', weightKg: 74 }
+    expect(idealBody(base).program).toBe('keep')
+    const mu = idealBody({ ...base, goal: 'muscle' })
+    expect(mu.program).toBe('muscle'); expect(mu.kcal).toBe(mu.tdee + 250); expect(mu.weeks).toBe(0)
+    const heavy = idealBody({ ...base, weightKg: 100, goal: 'keep' })
+    expect(heavy.goal).toBe('lose'); expect(heavy.kcal).toBe(heavy.tdee); expect(heavy.weeks).toBe(0)
+  })
+  it('adapts the calories to the real pace', () => {
+    const r = idealBody({ heightCm: 175, age: 35, sex: 'male', weightKg: 95 })
+    expect(adaptKcal(r, { verdict: 'stalled' }).delta).toBe(-150)
+    expect(adaptKcal(r, { verdict: 'tooFast' }).delta).toBe(200)
+    expect(adaptKcal(r, { verdict: 'good' }).delta).toBe(0)
+    expect(adaptKcal({ ...r, kcal: 1550, floor: 1500 }, { verdict: 'stalled' }).kcal).toBe(1500)
+  })
+  it('lays out the road week by week with milestones', () => {
+    const road = weightRoad({ fromKg: 90, toKg: 86, weeklyKg: 0.5, startIso: '2026-09-01', today: '2026-09-25',
+      history: [{ d: '2026-09-07', w: 89.4 }, { d: '2026-09-14', w: 89.3 }] })
+    expect(road.weeks.length).toBe(8)
+    expect(road.weeks[0]).toMatchObject({ target: 89.5, actual: 89.4, status: 'on' })
+    expect(road.weeks[1]).toMatchObject({ target: 89, actual: 89.3, status: 'behind' })
+    expect(road.weeks[2].status).toBe('missed')
+    expect(road.weeks[7].target).toBe(86)
+    expect(road.milestones.map(m => m.kg)).toEqual([89, 88, 87, 86])
+    expect(road.milestones[0].reached).toBe(false)
+    expect(weightRoad({ fromKg: 80, toKg: 80, weeklyKg: 0.5, startIso: '2026-09-01' }).done).toBe(true)
+  })
+  it('reads everything from the app state', () => {
+    const S = { heightCm: 178, birthYear: 1995, sex: 'male', unit: 'lb', bodyweight: [{ d: '2026-10-01', w: 176.4 }], waistCm: 90, neckCm: 38, bodyGoal: 'auto', frame: 'auto' }
+    const r = idealBodyOf(S, NOW)
+    expect(r.weightKg).toBeCloseTo(80, 0); expect(r.age).toBe(31); expect(r.bodyFatMethod).toBe('navy')
+  })
+})
