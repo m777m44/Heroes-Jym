@@ -10,6 +10,7 @@ import {
 import { confirmSheet } from '../sheets.jsx'
 import Icon from './Icon.jsx'
 import { GoogleG, accountError } from './AccountGate.jsx'
+import { explainDrive } from '../lib/googleErrors.js'
 import { Section, Row, Switch } from './ui.jsx'
 
 /** "just now" · "5 min ago" · "14:32" · "12 Oct" */
@@ -57,15 +58,23 @@ export default function AccountSection() {
       const msg = typeof okMsg === 'function' ? okMsg(r) : okMsg
       if (msg) toast(msg)
     }
-    catch (e) { if (my === rid.current && (!e || e.reason !== 'cancelled')) toast(accountError(e && e.reason)) }
+    catch (e) {
+      if (my === rid.current && (!e || e.reason !== 'cancelled')) {
+        // 4.1: a Drive answer gets Google's real reason, never a bare "didn't work"
+        const x = e && e.code ? explainDrive({ code: e.code, reason: e.reason, msg: e.raw }) : null
+        toast(x ? t(x.title) : accountError(e && e.reason))
+      }
+    }
     if (my === rid.current) setBusy(false)
   }
   const cancel = () => { rid.current++; setBusy(false) }
-  const resultMsg = r => r === 'restored' ? t('Your data was restored from the account.') : r === 'uploaded' ? t('Saved to your Google account') : t('Everything is up to date')
+  const resultMsg = r => r === 'restored' ? t('Your data was restored from the account.') : r === 'uploaded' || r === 'backup' ? t('Saved to your Google account') : t('Everything is up to date')
 
   const signIn = () => run(async () => {
     await signInGoogle()
-    const r = await firstSync(useStore)
+    // 4.1: once an account is picked, signing in has worked — if Drive can't be used yet the data
+    // goes to the account through Android Backup (firstSync already falls back), never an error
+    const r = await firstSync(useStore).catch(e => { if (e && e.reason === 'cancelled') throw e; return 'backup' })
     if (r === 'choose') {
       // Both sides have data: ask, and finish in the background (busy ends now).
       const finish = which => resolveChoice(useStore, which).then(x => toast(resultMsg(x))).catch(e => toast(accountError(e && e.reason)))

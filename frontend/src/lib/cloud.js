@@ -152,7 +152,10 @@ async function getToken(stale) {
     token = r && r.token
     if (!token) throw new Error('no token')
     return token
-  } catch (e) { throw Object.assign(new Error(e && e.message), { reason: (e && e.reason) || reasonOf(e) }) }
+  } catch (e) {
+    // 4.1: keep Google's own code and words too — Settings → Backups → Google check shows them
+    throw Object.assign(new Error(e && e.message), { reason: (e && e.reason) || reasonOf(e), code: String((e && e.code) || ''), raw: String((e && (e.raw || e.message)) || '') })
+  }
 }
 
 // ---- Google Drive (app-data folder) -------------------------------------------------------
@@ -168,7 +171,19 @@ async function drive(url, opts = {}, retried = false) {
     throw Object.assign(new Error((e && e.message) || 'network'), { reason: 'network' })
   } finally { clearTimeout(tm) }
   if (res.status === 401 && !retried) { await getToken(tok); return drive(url, opts, true) }
-  if (!res.ok) throw Object.assign(new Error('Drive ' + res.status), { reason: res.status >= 500 ? 'network' : 'failed', status: res.status })
+  if (!res.ok) {
+    // 4.1: a 403 that says the Drive API isn't switched on in the Cloud project is a setup step,
+    // not a failure — say so (Settings → Backups → Google check)
+    let body = ''
+    try { body = await res.text() } catch { /* no body */ }
+    const off = res.status === 403 && /accessNotConfigured|SERVICE_DISABLED|has not been used|is disabled/i.test(body)
+    let msg = ''
+    try { msg = ((JSON.parse(body) || {}).error || {}).message || '' } catch { /* not JSON */ }
+    throw Object.assign(new Error('Drive ' + res.status), {
+      reason: off ? 'setup' : res.status >= 500 ? 'network' : 'failed', status: res.status,
+      code: off ? 'API_DISABLED' : 'HTTP_' + res.status, raw: msg.slice(0, 300),
+    })
+  }
   return res
 }
 
@@ -265,7 +280,22 @@ export async function restoreFromBackup(store) {
 
 /** Drive didn't work (yet): remember why, keep saving through Android Backup. */
 function toBackup(e) {
-  setMeta({ backend: 'backup', driveWhy: (e && e.reason) || 'failed', driveAt: Date.now() })
+  setMeta({ backend: 'backup', driveWhy: (e && e.reason) || 'failed', driveAt: Date.now(),
+    driveCode: (e && e.code) || '', driveMsg: String((e && (e.raw || e.message)) || '').slice(0, 300) })
+}
+
+/**
+ * 4.1 — what Google needs to match, read from the INSTALLED app: package name, the SHA-1 of the
+ * certificate this APK was signed with, Google Play services, the chosen account. Null outside
+ * the Android app (or on an APK older than 4.1).
+ */
+export async function googleDiagnostics() {
+  const h = await holder()
+  if (!h) return null
+  try {
+    const r = await h.p.diagnostics()
+    return r ? { package: r.package || '', sha1: r.sha1 || '', play: Number(r.play), playOk: !!r.playOk, email: r.email || null } : null
+  } catch { return null }
 }
 
 /** What signing in found: 'uploaded' | 'restored' | 'choose' (both sides have data) | 'backup'. */
@@ -279,7 +309,7 @@ export async function firstSync(store) {
     await saveBackup(store)
     return 'backup'
   } finally { interactive = false }
-  setMeta({ backend: 'drive', driveWhy: null, driveAt: Date.now() })
+  setMeta({ backend: 'drive', driveWhy: null, driveCode: '', driveMsg: '', driveAt: Date.now() })
   fetchProfile().catch(() => {})
   const S = store.getState().S
   let r
@@ -320,7 +350,7 @@ export async function upgradeToDrive(store, ask = false) {
   try { remote = await findFile() }
   catch (e) { if (!e || e.reason !== 'cancelled') toBackup(e); throw e }
   finally { interactive = false }
-  setMeta({ backend: 'drive', driveWhy: null, driveAt: Date.now(), syncedTs: 0, remoteTs: 0 })
+  setMeta({ backend: 'drive', driveWhy: null, driveCode: '', driveMsg: '', driveAt: Date.now(), syncedTs: 0, remoteTs: 0 })
   fetchProfile().catch(() => {})
   const S = store.getState().S
   let r

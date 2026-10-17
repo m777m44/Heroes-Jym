@@ -7,6 +7,11 @@ import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.content.pm.SigningInfo;
+import android.os.Build;
 
 import androidx.activity.result.ActivityResult;
 
@@ -29,6 +34,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -97,6 +104,55 @@ public class GoogleAccountPlugin extends Plugin {
 
     @PluginMethod
     public void current(PluginCall call) { call.resolve(accountJson(chosen())); }
+
+    /**
+     * 4.1 — what Google Cloud has to match, read from THIS installed app: the package name and the
+     * SHA-1 of the certificate the APK was signed with (the value for the Android OAuth client),
+     * plus Google Play services and the chosen account. Settings → Backups → Google check.
+     */
+    @PluginMethod
+    public void diagnostics(PluginCall call) {
+        JSObject o = new JSObject();
+        Context c = getContext();
+        o.put("package", c.getPackageName());
+        o.put("sha1", signingSha1(c));
+        int r;
+        try { r = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(c); }
+        catch (RuntimeException e) { r = ConnectionResult.SERVICE_MISSING; }
+        o.put("play", r);
+        o.put("playOk", r == ConnectionResult.SUCCESS);
+        Account a = chosen();
+        if (a != null) o.put("email", a.name);
+        call.resolve(o);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static String signingSha1(Context c) {
+        try {
+            PackageManager pm = c.getPackageManager();
+            Signature[] sigs;
+            if (Build.VERSION.SDK_INT >= 28) {
+                PackageInfo pi = pm.getPackageInfo(c.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                SigningInfo si = pi.signingInfo;
+                if (si == null) return "";
+                sigs = si.hasMultipleSigners() ? si.getApkContentsSigners() : si.getSigningCertificateHistory();
+            } else {
+                PackageInfo pi = pm.getPackageInfo(c.getPackageName(), PackageManager.GET_SIGNATURES);
+                sigs = pi.signatures;
+            }
+            if (sigs == null || sigs.length == 0) return "";
+            // with key rotation the history runs oldest → current; without it there is just one
+            byte[] d = MessageDigest.getInstance("SHA-1").digest(sigs[sigs.length - 1].toByteArray());
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < d.length; i++) {
+                if (i > 0) b.append(':');
+                b.append(String.format(Locale.US, "%02X", d[i] & 0xff));
+            }
+            return b.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
 
     @PluginMethod
     public void signIn(PluginCall call) {

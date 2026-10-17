@@ -18,6 +18,7 @@ import { goalOf, stepsOn, caloriesFor, strideMeters } from './stepMetrics.js'
 import { waterGoalMlOf, bodyKg, workoutMinutesOn, mlOn } from './water.js'
 import { effectiveRoutine } from './history.js'
 import { idealBodyOf } from './idealBody.js'
+import { scaleStatus, energyOn, intensityFor, setDelta, scaleReasons } from './scaleWorkout.js'
 
 // [id, sets, reps] — reps for holds are seconds (`hold`).
 const HOLD = 'hold'
@@ -174,11 +175,16 @@ export function planFor(S, iso) {
   const program = programOf(S)
   const kind = own && own.ex && own.ex.length ? 'routine' : rest ? 'recover' : (PROGRAM_WEEKS[program] || WEEK_KINDS)[wd]
   const spec = PLAN_DAYS[kind] || { title: 'Your routine', icon: 'dumbbell', color: 'acc', met: 5, rest: 60 }
+  // 4.1 — linked to the scale: how far you are from your ideal / target weight and today's
+  // energy size the sets (lib/scaleWorkout.js)
+  const scale = scaleStatus(S, iso)
+  const energy = energyOn(S, iso)
+  const delta = setDelta({ kind, gym: !!spec.gym, urgency: scale && scale.urgency, energy, goal: scale && scale.goal })
   const exercises = kind === 'routine'
     ? own.ex.map(c => ({ id: c.id, sets: Math.max(1, c.sets || 3), reps: Math.max(1, c.reps || 10), hold: false }))
     : spec.ex.map(([id, sets, reps, hold]) => ({
       id: lowImpact && LOW_IMPACT[id] ? LOW_IMPACT[id] : id,
-      sets: clamp(sets + (level === 'easy' ? -1 : level === 'hard' && kind !== 'recover' && !spec.gym ? 1 : 0), 2, 5),
+      sets: clamp(sets + (level === 'easy' ? -1 : level === 'hard' && kind !== 'recover' && !spec.gym ? 1 : 0) + delta, 2, 5),
       reps, hold: hold === HOLD,
     }))
   const work = exercises.reduce((a, e) => a + e.sets * (setSecs(e) + spec.rest), 0)
@@ -197,6 +203,7 @@ export function planFor(S, iso) {
     fatGrams: Math.round((kcalWorkout + kcalSteps) / 7.7),     // ~7,700 kcal per kg of body fat
     waterMl: waterGoalMlOf(S, iso),
     level, lowImpact, tip: (program === 'muscle' ? MUSCLE_TIPS : TIPS)[doy % TIPS.length],
+    scale, energy, intensity: intensityFor(kind, scale && scale.urgency, energy), reasons: scaleReasons(scale),
   }
 }
 

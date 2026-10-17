@@ -1,5 +1,7 @@
 // 4.0 — Settings → Backups & restore: where your data is saved, versions you can go back to
 // (on this phone, and in Google Drive once Drive is on), and how to switch Drive on.
+// 4.1: the Google check — the installed app's real package name and SHA-1, Google's own reason
+// when Drive refuses, and a button to test again.
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF } from '../store/useStore.js'
@@ -10,8 +12,9 @@ import {
 } from '../lib/backups.js'
 import {
   cloudMeta, onCloudChange, signedInGoogle, onDrive, lastSavedAt,
-  listDriveVersions, uploadDriveVersion, readDriveVersion, deleteDriveVersion, upgradeToDrive,
+  listDriveVersions, uploadDriveVersion, readDriveVersion, deleteDriveVersion, upgradeToDrive, googleDiagnostics,
 } from '../lib/cloud.js'
+import { explainDrive, sameSha1 } from '../lib/googleErrors.js'
 import { MOBILE } from '../lib/mobile.js'
 import { copyText } from '../lib/clipboard.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -114,6 +117,7 @@ export default function Backups() {
       </div>
     </div>}
     {!signed && MOBILE && <Button icon="personCircle" onClick={() => nav('/settings')}>{t('Sign in with Google in Settings')}</Button>}
+    {MOBILE && <GoogleCheck meta={meta} signed={signed} drive={drive} />}
 
     <Section title={t('Automatic versions')} footer={drive ? t('Once a day, when something changed, a full copy is kept on this phone and in Google Drive. The newest ones are kept; older ones are removed.') : t('Once a day, when something changed, a full copy is kept on this phone. The newest ones are kept; older ones are removed.')}>
       <Row icon="clock" iconTint="var(--teal)" title={t('Save a version every day')}>
@@ -150,16 +154,57 @@ export default function Backups() {
   </div>
 }
 
+/* ---- 4.1: the Google check ---- */
+function GoogleCheck({ meta, signed, drive }) {
+  const [d, setD] = useState(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => { googleDiagnostics().then(setD).catch(() => setD(null)) }, [])
+  const x = drive ? null : explainDrive({ code: meta.driveCode, reason: meta.driveWhy, msg: meta.driveMsg })
+  const raw = [meta.driveCode, meta.driveMsg].filter(Boolean).join(' · ')
+  const test = async () => {
+    setBusy(true)
+    try {
+      const r = await upgradeToDrive(useStore, true)
+      ui().toast(r === 'restored' ? t('Your data was restored from the account.') : t('Google Drive is on'))
+    } catch (e) {
+      if (!e || e.reason !== 'cancelled') {
+        const y = explainDrive({ code: e && e.code, reason: e && e.reason, msg: e && e.raw })
+        ui().toast(y ? t(y.title) : t('Google Drive is not available yet'))
+      }
+    } finally { setBusy(false) }
+  }
+  return <Section title={t('Google check')} footer={t('Google compares the package name and SHA-1 below with the Android OAuth client in Google Cloud — they must match exactly.')}>
+    <Row icon={drive ? 'cloudCheck' : 'cloud'} iconTint={drive ? 'var(--green)' : 'var(--orange)'}
+      title={drive ? t('Google Drive is on') : t('Google Drive is not on yet')}
+      subtitle={x ? t(x.title) : signed ? t('Saving through Android Backup') : t('Not signed in')} />
+    {x && <div className="bk-fix small">
+      <span>{t(x.fix)}</span>
+      {raw && <code dir="ltr">{raw}</code>}
+    </div>}
+    {d && <div className="bk-diag">
+      <Copyable label={t('Package name')} value={d.package || PACKAGE} />
+      <Copyable label={t('SHA-1 of this installed app')} value={d.sha1 || SHA1} />
+      {d.sha1 && !sameSha1(d.sha1, SHA1) && <p className="small bk-warn">{t('This copy of the app was signed with a different key than the official release — register this SHA-1 instead.')}</p>}
+    </div>}
+    {d && <Row icon="shield" iconTint={d.playOk ? 'var(--green)' : 'var(--red)'} title={t('Google Play services')}
+      subtitle={d.playOk ? t('Working properly') : t('Not available — update Google Play services from the Play Store.')} />}
+    <div className="bk-note-b bk-keep">
+      {signed && !drive && <Button size="sm" variant="tinted" icon="reset" disabled={busy} onClick={test}>{t('Test Google Drive')}</Button>}
+      <Button size="sm" icon="list" onClick={() => driveGuideSheet(d && d.sha1)}>{t('How to switch on Google Drive')}</Button>
+    </div>
+  </Section>
+}
+
 /* ---- the one-time Google Cloud setup, step by step (for the app's owner) ---- */
-export function driveGuideSheet() {
-  ui().openSheet(close => <DriveGuide close={close} />)
+export function driveGuideSheet(sha1) {
+  ui().openSheet(close => <DriveGuide close={close} sha1={sha1} />)
 }
 function Copyable({ label, value }) {
   return <button className="bk-copy" onClick={async () => { const ok = await copyText(value); ui().toast(ok ? t('Copied: {0}', label) : t('Could not copy')) }}>
     <span className="small muted">{label}</span><code dir="ltr">{value}</code><Icon name="copy" />
   </button>
 }
-function DriveGuide() {
+function DriveGuide({ sha1 }) {
   const steps = [
     t('Open console.cloud.google.com with your Google account and create a project (any name).'),
     t('APIs & Services → Library → search “Google Drive API” → Enable.'),
@@ -167,12 +212,14 @@ function DriveGuide() {
     t('Credentials → Create credentials → OAuth client ID → Android → paste the package name and SHA-1 below.'),
     t('Wait about 5 minutes, then come back here and tap Try again. Nothing changes in the app itself.'),
   ]
+  // 4.1: the SHA-1 of the app actually installed (it is what Google checks), else the release key's
   return <div className="bk-guide">
     <h3>{t('Switch on Google Drive')}</h3>
     <p className="small muted">{t('Only needed once, by the app’s owner. Saving through Android Backup keeps working the whole time.')}</p>
     <ol>{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
     <Copyable label={t('Package name')} value={PACKAGE} />
-    <Copyable label="SHA-1" value={SHA1} />
+    <Copyable label="SHA-1" value={sha1 || SHA1} />
+    <p className="small muted">{t('Only the Android client is needed — no Web client ID and no new app version.')}</p>
     <p className="small muted">{t('Full guide: docs/GOOGLE_SIGN_IN.md in the project.')}</p>
   </div>
 }

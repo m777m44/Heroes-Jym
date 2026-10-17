@@ -101,14 +101,31 @@ package name + signing certificate.
 > release, create a private keystore, keep it secret (GitHub Actions secrets), and register its
 > SHA-1 instead.
 
+### The Google check (4.1) — read the real SHA-1 from the phone
+
+**Settings → Backups & restore → Google check** shows what Google actually compares:
+
+- the **package name** and the **SHA-1 of the installed APK**, read from the phone itself (tap to
+  copy). If it differs from the release key above, the app was built with another key —
+  register *that* SHA-1;
+- whether **Google Play services** work;
+- the **last answer from Google** (code + Google's own message) with what it means and what to do;
+- **Test Google Drive** — tries again right away (and asks for the Drive permission if needed).
+
+Signing in itself never fails once an account is picked: if Drive can't be used yet, saving
+goes through Android Backup, and the app retries Drive by itself every 6 hours.
+
 ### Errors you may see
 
-| Message | Meaning |
-|---|---|
-| *isn't set up for this version* | Code 10/12500: the package + SHA-1 isn't registered, or the account isn't a test user |
-| *Drive access wasn't allowed* | The user declined the Drive permission |
-| *Google Play services aren't available* | A phone without Google services (some Huawei phones, emulators without Play) |
-| *No connection to Google* | Offline. The next save happens automatically when back online |
+| Code | Shown as | What to do |
+|---|---|---|
+| `10` / `12500` / `UNREGISTERED_ON_API_CONSOLE` / `INVALID_AUDIENCE` | *Google doesn't know this app yet* | Create an **Android** OAuth client with exactly the package name + SHA-1 from the Google check. Wait ~5 minutes |
+| `API_DISABLED` (HTTP 403 *accessNotConfigured* / *SERVICE_DISABLED*) | *The Google Drive API is switched off* | APIs & Services → Library → Google Drive API → Enable |
+| `CONSENT` | *Access to Google Drive wasn't allowed* | Tap Test Google Drive → Allow. In Testing mode the account must be a test user |
+| `HTTP_403` / `AUTH` / `16` | *Google refused access for this account* | Consent screen: External, the account as a test user, scope `…/auth/drive.appdata` |
+| `7` / network | *No connection to Google* | Offline — the next save happens automatically |
+| `12501` / user cancelled | nothing | The user closed the account picker |
+| `UNAVAILABLE` | *Google Play services aren't available* | A phone without Google services (some Huawei phones, emulators without Play) |
 
 ## For developers
 
@@ -143,6 +160,13 @@ access token); no other dependencies. The web/self-hosted build keeps its own ac
 5. انتظر بضع دقائق، ثم من الهاتف: الإعدادات ← حساب Google ← **تسجيل الدخول باستخدام Google**.
 
 لا يحتاج التطبيق أي Client ID أو كلمة سر داخل الكود. Google يتعرّف عليه من اسم الحزمة وبصمة التوقيع.
+
+### فحص Google (4.1)
+
+الإعدادات ← النسخ الاحتياطي والاستعادة ← **فحص Google**: يعرض اسم الحزمة وبصمة **SHA-1 للنسخة المثبّتة فعلًا**
+(اضغط للنسخ)، وحالة خدمات Google Play، وآخر رد من Google مع شرح بالعربية وماذا تفعل، وزر **اختبار Google Drive**.
+تسجيل الدخول نفسه لا يفشل بعد اختيار الحساب: إن لم يعمل Drive بعد فالحفظ يتم عبر نسخ Android الاحتياطي،
+ويعيد التطبيق المحاولة مع Drive تلقائيًا كل 6 ساعات.
 
 ## Versions in Drive (4.0)
 

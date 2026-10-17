@@ -79,7 +79,8 @@ export function planReminders(S, now = new Date(), days = PLAN_DAYS) {
     } else if (r.home && S.planOn !== false) {
       const plan = planFor(S, iso)
       const p = { title: plan.title, kind: plan.kind, n: plan.exercises.length, min: plan.minutes, steps: plan.stepsTarget,
-        water: plan.waterMl, kcal: plan.kcalTotal, tip: plan.tip, gym: !!plan.gym, ids: plan.exercises.map(e => e.id) }
+        water: plan.waterMl, kcal: plan.kcalTotal, tip: plan.tip, gym: !!plan.gym, ids: plan.exercises.map(e => e.id),
+        intensity: plan.intensity, reason: plan.reasons && plan.reasons[0] }
       out.push({ id: ID_BASE + i * 2, kind: 'plan', iso, at: day, plan: p })
       if (r.nudge) out.push({ id: ID_BASE + i * 2 + 1, kind: 'plannudge', iso, at: new Date(day.getTime() + NUDGE_AFTER_MIN * 60000), plan: p })
     } else if (r.walk) {
@@ -112,7 +113,8 @@ export function reminderText(item, S) {
     return {
       title: p.gym ? '🏋️ ' + t('Gym workout: {0}', t(p.title)) : (p.kind === 'recover' ? '🧘 ' : '🏠 ') + t('Home workout: {0}', t(p.title)),
       body: body + (list ? ' — ' + list : ''),
-      big: body + (list ? '\n' + list : '') + '\n' + facts + (p.tip ? '\n💡 ' + t(p.tip) : ''),
+      // 4.1: why today looks like this, from the scale
+      big: body + (list ? '\n' + list : '') + '\n' + facts + (p.reason ? '\n⚖️ ' + t(p.reason.key, ...(p.reason.args || [])) : '') + (p.tip ? '\n💡 ' + t(p.tip) : ''),
     }
   }
   const routine = item.rid ? (S.routines || []).find(r => r.id === item.rid) : null
@@ -166,7 +168,9 @@ export function suggestedReminderTime(workouts) {
  */
 export function planSignature(S, now = new Date()) {
   return JSON.stringify([
-    reminderPrefs(S), S.week, S.dayPlan, S.planOn, (S.bodyweight || []).length, S.heightCm, (S.routines || []).map(r => [r.id, r.name, (r.ex || []).length]), S.restSec, getLang(),   // texts follow the language
+    reminderPrefs(S), S.week, S.dayPlan, S.planOn, (S.bodyweight || []).length, S.heightCm,
+    ((S.bodyweight || [])[(S.bodyweight || []).length - 1] || {}).w, S.targetW, S.energy, S.bodyGoal,   // 4.1: the plan follows the scale
+    (S.routines || []).map(r => [r.id, r.name, (r.ex || []).length]), S.restSec, getLang(),   // texts follow the language
     (S.workouts || []).slice(-3).map(w => w.d), goalOf(S), isoOf(now),
     // a rest-day walk reminder disappears once today's goal is met
     reminderPrefs(S).walk && stepsOn(S, isoOf(now)) >= goalOf(S),

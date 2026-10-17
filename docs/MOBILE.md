@@ -367,3 +367,12 @@ that would simply install. Your free options:
 - The app requests notification permission only when the workout-day reminder is switched
   on, and (on Android) declares `SCHEDULE_EXACT_ALARM` so the reminder fires to the minute
   where the user allows it.
+
+## Google check & scale-linked workout (4.1)
+
+| What | Where | Notes |
+|---|---|---|
+| Diagnostics | `GoogleAccountPlugin.diagnostics()` | Returns `package`, `sha1` (the installed APK's signing certificate, `GET_SIGNING_CERTIFICATES` on API 28+, else `GET_SIGNATURES`; colon-separated upper case), `play` / `playOk` (GoogleApiAvailability) and `email`. Shown on Settings → Backups → Google check (`views/Backups.jsx`). |
+| Drive error detail | `lib/cloud.js` `drive()` / `getToken()` | Failures keep `code` + `raw`; a 403 *accessNotConfigured* / *SERVICE_DISABLED* becomes reason `setup`, code `API_DISABLED`. Stored as `driveCode` / `driveMsg` in `mj_cloud`, cleared once Drive works. Explained by `lib/googleErrors.js`. |
+| Sign-in never fails after picking | `components/AccountSection.jsx` | `firstSync` errors fall back to Android Backup (`'backup'`) instead of a toast; Drive actions toast Google's explained reason. |
+| Scale-linked plan | `lib/scaleWorkout.js` → `lib/dailyPlan.js` `planFor()` | Adds `scale`, `energy` (`S.energy[iso]`), `intensity`, `reasons`; sets ±1 by gap and energy. The 14-day reminder planner (`lib/dailyReminder.js`) carries the reason; `planSignature` includes the latest weight, `targetW`, `energy`, `bodyGoal`. |

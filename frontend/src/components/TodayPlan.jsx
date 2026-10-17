@@ -2,6 +2,10 @@
 // day score, a fat-loss estimate and a tip. Everything is computed by lib/dailyPlan.js.
 //
 // When workout, steps and water are all done, the full-screen celebration plays once a day.
+//
+// 4.1: linked to the scale — the strip under the title shows your weight against your ideal
+// weight, why today looks like it does, how hard it is, how you feel today (which resizes the
+// sets), and a one-tap reminder at your usual training time (lib/scaleWorkout.js).
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -9,13 +13,16 @@ import { usePedometer } from '../store/usePedometer.js'
 import { planFor, planProgress, planRoutine, weekPlan, planStreak } from '../lib/dailyPlan.js'
 import { todayISO, DAYN } from '../lib/format.js'
 import { useUI } from '../store/useUI.js'
-import { t, exName, dateLocale } from '../lib/i18n.js'
+import { t, exName, dateLocale, U } from '../lib/i18n.js'
 import { EXIDX } from '../lib/exercises.js'
 import { routineLabel, colorVar } from '../lib/routines.js'
 import { bodyKg } from '../lib/water.js'
 import { walkPrefs } from '../lib/stepMetrics.js'
 import { celebrate, playCheer } from '../lib/celebrate.js'
-import { startFlow, exerciseDetailSheet } from '../sheets.jsx'
+import { startFlow, exerciseDetailSheet, bwSheet } from '../sheets.jsx'
+import { setEnergy, INTENSITY_LABEL } from '../lib/scaleWorkout.js'
+import { reminderPrefs, suggestedReminderTime } from '../lib/dailyReminder.js'
+import { fromKg } from '../lib/weightTracker.js'
 import Icon from './Icon.jsx'
 
 const DONE_KEY = 'mj_plan_done'
@@ -39,6 +46,50 @@ function Goal({ pct, color, icon, value, label, onClick }) {
     <span className="plan-goal-v">{value}</span>
     <span className="plan-goal-l">{label}</span>
   </button>
+}
+
+const INT_COLOR = { very_low: 'var(--teal)', low: 'var(--green)', medium: 'var(--orange)', high: 'var(--red)' }
+const GOAL_TXT = { lose: 'Lose weight', gain: 'Gain weight', keep: 'Keep your weight' }
+const URG_TXT = { high: 'Big gap', medium: 'Medium gap', low: 'Small gap' }
+const DEFAULT_START = '18:00'
+
+/** 4.1 — the scale strip: weight → ideal, the reason, intensity, energy and the reminder. */
+function ScaleStrip({ S, plan, iso }) {
+  const update = useStore(s => s.update)
+  const st = plan.scale
+  const w = v => (Math.round(fromKg(v, S.unit) * 10) / 10).toLocaleString(dateLocale()) + ' ' + U(S.unit === 'lb' ? 'lb' : 'kg')
+  const ref = st ? (st.ideal != null ? st.ideal : st.target) : null
+  const start = (suggestedReminderTime(S.workouts) || {}).usual || DEFAULT_START
+  const r = reminderPrefs(S)
+  const set = r.on && r.home && r.time === start && !Object.keys(r.days).length
+  const remind = () => {
+    update(s => { s.reminder = { ...(s.reminder || {}), on: true, v2: true, home: true, time: start, days: {} } })
+    useUI.getState().toast(t('Every day at {0} — reminders are planned two weeks ahead.', start))
+  }
+  return <div className="plan-scale">
+    {st ? <div className="plan-scale-top">
+      <Icon name="scale" />
+      <b>{w(st.kg)}</b>
+      {ref != null && <><Icon name="chevronRight" /><span className="muted">{w(ref)}</span></>}
+      {st.goal && <span className={'plan-badge g-' + st.goal}>{t(GOAL_TXT[st.goal])}</span>}
+      {st.goal && st.goal !== 'keep' && <span className={'plan-badge u-' + st.urgency}>{t(URG_TXT[st.urgency])}</span>}
+    </div> : null}
+    {plan.reasons.map((x, i) => <div key={i} className={'plan-scale-why' + (i ? ' soft' : '')}>{t(x.key, ...x.args)}</div>)}
+    {(!st || st.stale) && <button className="plan-scale-weigh" onClick={() => bwSheet()}><Icon name="plus" />{t('Weigh in now')}</button>}
+    {plan.kind !== 'routine' && <div className="plan-scale-row">
+      <span className="plan-int" style={{ '--int': INT_COLOR[plan.intensity] }}><Icon name="speedometer" />{t(INTENSITY_LABEL[plan.intensity])}</span>
+    </div>}
+    <div className="plan-energy" role="radiogroup" aria-label={t('How do you feel today?')}>
+      <span className="small muted">{t('How do you feel today?')}</span>
+      {[['low', '😴', 'Tired'], ['normal', '🙂', 'Normal'], ['high', '⚡', 'Full of energy']].map(([v, e, l]) =>
+        <button key={v} role="radio" aria-checked={plan.energy === v} className={'plan-chip' + (plan.energy === v ? ' on' : '')}
+          onClick={() => update(s => setEnergy(s, iso, v))}><span aria-hidden="true">{e}</span>{t(l)}</button>)}
+    </div>
+    <button className={'plan-remind' + (set ? ' on' : '')} onClick={set ? undefined : remind} disabled={set}>
+      <Icon name={set ? 'checkCircle' : 'bell'} />
+      <span>{set ? t('Reminder set for {0} every day', start) : t('Remind me at {0}', start)}</span>
+    </button>
+  </div>
 }
 
 export default function TodayPlan() {
@@ -91,6 +142,8 @@ export default function TodayPlan() {
         <b>{p.score}</b><span>%</span>
       </div>
     </div>
+
+    <ScaleStrip S={S} plan={plan} iso={iso} />
 
     <div className="plan-goals">
       <Goal pct={p.workoutPct} color="var(--tint)" icon="dumbbell" onClick={start}

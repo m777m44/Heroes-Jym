@@ -3,6 +3,43 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v4.1.0 — 2026-10-17
+
+**Google sign-in that never ends in "didn't work", a Google check that shows exactly what Google
+compares and what it answered, and today's workout linked to your scale.**
+*تسجيل دخول Google لا ينتهي أبدًا بـ«لم ينجح»، فحص Google يعرض بالضبط ما يقارنه Google وما ردّ به، وتمرين اليوم مربوط بميزانك.*
+
+### Google sign-in & Drive
+- **Signing in can't fail any more once you pick an account.** If Google Drive can't be used yet,
+  everything is saved to your account through Android Backup, and the app quietly tries Drive
+  again every 6 hours. Settings → Account no longer shows "Google sign-in didn't work".
+- **Google check** (Settings → Backups & restore): the package name and the **SHA-1 of the
+  installed app**, read from the phone (tap to copy) — with a warning when it isn't the release
+  key — Google Play services, Drive's status, and **Google's last answer** with its code, what it
+  means and what to do. **Test Google Drive** tries again on the spot.
+- **Every Google answer explained** in all 13 languages: app not registered (10 / 12500 /
+  UNREGISTERED), Drive API switched off (403 accessNotConfigured), permission not allowed,
+  account not a test user (403 / AUTH), no connection, no Google Play services.
+- "Use Google Drive" and "Save now" show Google's real reason instead of a generic error.
+- The setup guide uses the SHA-1 of the app you're running and says plainly: only an **Android**
+  OAuth client is needed — no Web client ID, no new app version.
+- Saving keeps happening on its own: a few seconds after opening, after changes, and when the app
+  goes to the background (with a daily version in Drive).
+
+### Today's workout, linked to your scale
+- Today's plan on Home now compares your **latest weigh-in** with your **ideal weight** (from your
+  height and age) and your **target weight**: lose / gain / keep, and how big the gap is
+  (over 15 kg big, over 5 kg medium).
+- **Why today looks like this** — e.g. "You are 12.4 kg above your ideal weight — today is built
+  to burn more calories" — and a nudge to weigh in when the last weigh-in is over a week old.
+- **Intensity** (very light → hard) from the kind of day, the gap and **how you feel today**:
+  tap 😴 Tired / 🙂 Normal / ⚡ Full of energy. Tired days get one set less per exercise; a big
+  fat-loss gap or lots of energy, one more (never on recovery days or your own routines).
+- **Remind me at …** — one tap sets the daily workout reminder to your usual training time
+  (from your last workouts, else 18:00). Reminders are planned **two weeks ahead** and each one
+  now says why ("⚖️ …") along with the exercises, steps, water and calories.
+- Reminders re-plan by themselves when your weight, target or energy changes.
+
 ## v4.0.0 — 2026-10-17
 
 **Two ways to start a workout (without / with equipment), versioned backups you can go back
