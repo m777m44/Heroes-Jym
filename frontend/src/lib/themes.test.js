@@ -114,8 +114,8 @@ describe('themes 2.12 — categories and the Studio', async () => {
 describe('themes 3.0 — glass, minimal, HEX and theme files', async () => {
   const T = await import('./themes.js')
   it('has 40 more families, Glass and Minimal, all with unique ids', () => {
-    expect(T.FAMILIES.length).toBe(134)
-    expect(T.THEMES.length).toBe(938)
+    expect(T.FAMILIES.length).toBeGreaterThanOrEqual(134)
+    expect(T.THEMES.length).toBe(T.FAMILIES.length * 7)
     expect(T.CATEGORIES.map(c => c.id)).toEqual(expect.arrayContaining(['glass', 'minimal']))
     expect(new Set(T.FAMILIES.map(f => f.id)).size).toBe(T.FAMILIES.length)
     for (const c of T.CATEGORIES) expect(T.familiesOf(c.id).length).toBeGreaterThan(0)
@@ -158,5 +158,26 @@ describe('themes 3.0 — glass, minimal, HEX and theme files', async () => {
     expect(mixed).toEqual({ current: null, themes: ['pure-light'] })
     expect(() => T.parseThemes('{"workouts":[]}')).toThrow()
     expect(() => T.parseThemes('not json')).toThrow()
+  })
+})
+
+describe('themes 4.0 — 56 more families, Signature and Coder classics', async () => {
+  const T = await import('./themes.js')
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
+  it('has 190 families × 7 = 1,330 curated themes in 16 categories', () => {
+    expect(T.FAMILIES.length).toBe(190)
+    expect(T.THEMES.length).toBe(1330)
+    expect(T.CATEGORIES.map(c => c.id)).toEqual(expect.arrayContaining(['signature', 'code']))
+    expect(T.familiesOf('signature').map(f => f.id)).toContain('mahdi')
+    expect(T.familiesOf('code').length).toBe(10)
+  })
+  it('every new theme keeps its accent readable on its background (≥ 3:1)', () => {
+    const fresh = T.THEMES.filter(th => T.FAMILIES.indexOf(th.family) >= 134)
+    expect(fresh.length).toBe(392)
+    for (const th of fresh) {
+      const tk = T.themeTokens(th)
+      expect(ratio(tk.bg, tk.accent['--acc']), th.id).toBeGreaterThanOrEqual(3)
+    }
   })
 })

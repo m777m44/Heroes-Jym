@@ -261,6 +261,22 @@ The consent is stored in `localStorage` (`mj_consent_v1`).
 | Health log | `lib/health.js` (tests: `health.test.js`), `views/Health.jsx` (`/health`), `components/HealthCard.jsx` | `S.health[iso]` = `{ sleepH, sleepQ, mood, energy, stress, rhr, bp[], sugar[] }` (sugar stored in mg/dL, shown in `S.sugarUnit`). BP by ACC/AHA 2017 (crisis > 180/120 → red warning), sugar by ADA per context. `S.meds[]` + `S.medLog[iso]['id@HH:MM']`. |
 | Medicine reminders | `lib/mobile.js` `syncMedReminders` | Local notifications on channel `mj_meds`, ids 7400–7459, daily repeat (`schedule.on`), tap → `/health`. Re-synced on every save and on start. |
 
+## Workout sections, backups, accessibility & app lock (4.0)
+
+- **Start** (the centre tab) opens `/start`: *Without equipment* and *With equipment*, each with
+  categories (`/start/home/hiit`, `/start/gym/chest?eq=dumbbell` …), quick sessions and recent
+  sessions. Categories are filters over the bundled exercise library, so it all works offline.
+- **Backups & restore** (`/backups`): versions are files in the app's private storage
+  (Capacitor Filesystem, `Directory.Data/snapshots`; IndexedDB in a browser), one automatic
+  version a day. With Google Drive switched on they are also uploaded as
+  `mahdi-jym-version-*.json` to the hidden app folder (`drive.appdata`), following the same "keep the newest" setting.
+- **App lock**: the native `AppLock` plugin (`lock/AppLockPlugin.java`) uses
+  `androidx.biometric` with `BIOMETRIC_WEAK | DEVICE_CREDENTIAL`, so fingerprint, face and the
+  phone's PIN / pattern all work. The setting is per phone (`localStorage mj_lock`), never in
+  synced data, so restoring a backup on another phone can't lock anyone out.
+- **Accessibility**: text size uses CSS `zoom` on `<html>` (`--z` corrects viewport-height
+  rules); high contrast and reduced motion are `data-contrast` / `data-motion` on `<html>`.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

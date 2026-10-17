@@ -57,11 +57,11 @@ describe('2.0 screens render', () => {
   })
   it('Themes (2.12: categories + Studio)', async () => {
     const html = await render('/themes', './Themes.jsx')
-    // opens on the category of the theme in use (Classic: 6 families × 7 styles)
-    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(42)
+    // opens on the category of the theme in use (Classic: 7 families × 7 styles — 4.0 added Retro)
+    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(49)
     expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
     expect(html).toContain('Follow the phone')
-    expect(html).toContain('2,722,538 themes in all')
+    expect(html).toContain('2,722,930 themes in all')
     expect(html).toContain('>Glass style<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
     for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
     expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(15)
@@ -210,5 +210,29 @@ describe('2.0 screens render', () => {
     expect(html).toContain('app-sign')
     expect(html).not.toContain('AGPL')
     expect(html).not.toContain('exercises-dataset')
+  })
+})
+
+describe('4.0 screens render', () => {
+  const at = async (path, El) => { const R = await import('react-router-dom'); return renderToString(React.createElement(MemoryRouter, { initialEntries: [path] },
+    React.createElement(R.Routes, null, React.createElement(R.Route, { path: '/start/:mode/:cat', element: React.createElement(El) }), React.createElement(R.Route, { path: '/start/:mode', element: React.createElement(El) })))) }
+  it('Start: two sections', async () => {
+    const html = await render('/start', './StartWorkout.jsx')
+    expect(html).toContain('wmode-home'); expect(html).toContain('wmode-gym')
+  })
+  it('Start: each section lists its categories, the gym has the equipment filter', async () => {
+    const m = await import('./StartWorkout.jsx')
+    const home = await at('/start/home', m.WorkoutSection)
+    expect((home.match(/class="wcat"/g) || []).length).toBe(8)
+    const gym = await at('/start/gym', m.WorkoutSection)
+    expect((gym.match(/class="wcat"/g) || []).length).toBe(8)
+    const cat = await at('/start/gym/chest?eq=dumbbell', m.WorkoutCategory)
+    expect(cat).toContain('startw-eq'); expect(cat).toContain('startw-quick')
+    const run = await at('/start/home/run', m.WorkoutCategory)
+    expect(run).toContain('startw-ql')
+  })
+  it('Backups & restore', async () => {
+    const html = await render('/backups', './Backups.jsx')
+    expect(html).toContain('bk-where')
   })
 })

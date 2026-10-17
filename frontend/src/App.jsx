@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -8,7 +8,6 @@ import { resolveTheme, applyTheme } from './lib/themes.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
-import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -24,20 +23,28 @@ import Stats from './views/Stats.jsx'
 import History from './views/History.jsx'
 import Library from './views/Library.jsx'
 import Settings from './views/Settings.jsx'
-import Admin from './views/Admin.jsx'
-import Coach from './views/Coach.jsx'
-import CoachIntake from './views/CoachIntake.jsx'
-import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
 import Water from './views/Water.jsx'
-import IdealBody from './views/IdealBody.jsx'
-import Health from './views/Health.jsx'
 import Themes from './views/Themes.jsx'
+// 4.0: screens you open now and then load on first use (a smaller first start)
+const Admin = lazy(() => import('./views/Admin.jsx'))
+const Coach = lazy(() => import('./views/Coach.jsx'))
+const CoachIntake = lazy(() => import('./views/CoachIntake.jsx'))
+const CoachProposal = lazy(() => import('./views/CoachProposal.jsx'))
+const IdealBody = lazy(() => import('./views/IdealBody.jsx'))
+const Health = lazy(() => import('./views/Health.jsx'))
+const Backups = lazy(() => import('./views/Backups.jsx'))
+const StartWorkout = lazy(() => import('./views/StartWorkout.jsx'))
+const WorkoutSection = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutSection })))
+const WorkoutCategory = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutCategory })))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
 import { storageChosen, startCloudSync, restoreFromBackup } from './lib/cloud.js'
+import { startAutoSnapshots } from './lib/backups.js'
+import { applyA11y } from './lib/a11y.js'
+import AppLock from './components/AppLock.jsx'
 import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
@@ -70,6 +77,7 @@ function Shell() {
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   const systemDark = useSystemDark()
   useEffect(() => { applyTheme(resolveTheme(S, systemDark), S.accent) }, [S.theme, S.themeSystem, S.accent, systemDark])
+  useEffect(() => { applyA11y(S) }, [S.textScale, S.highContrast, S.reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
   const lang = langOf(S)                     // 'auto' → the phone's language
   useEffect(() => { setLang(lang) }, [lang])
   useEffect(() => {
@@ -89,6 +97,11 @@ function Shell() {
   useEffect(() => { if (ready && authed) return startWaterSync(useStore) }, [ready, authed])
   // 2.6: the Google account copy (when signed in) — kept in step while the app runs
   useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
+  // 4.0: a version of your data once a day, kept on this phone (Settings → Backups & restore)
+  useEffect(() => {
+    if (!ready || !authed || DEMO) return
+    return startAutoSnapshots(() => useStore.getState().S, () => { const st = useStore.getState().S; return { keep: Number(st.backupKeep) || 7, enabled: st.autoBackup !== false } })
+  }, [ready, authed])
   // first launch on the phone: where should the data live? (then the permissions dialog)
   const [chosen, setChosen] = useState(() => !MOBILE || storageChosen())
   // 2.8: installed again / a new phone — Android may have put the account's backup copy back.
@@ -129,6 +142,7 @@ function Shell() {
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
           {!authed ? <Login /> : (
+            <Suspense fallback={<div className="lazy-wait" aria-busy="true" />}>
             <Routes>
               <Route path="/home" element={<Home />} />
               <Route path="/plan" element={<Plan />} />
@@ -143,6 +157,10 @@ function Shell() {
               <Route path="/water" element={<Water />} />
               <Route path="/ideal" element={<IdealBody />} />
               <Route path="/health" element={<Health />} />
+              <Route path="/backups" element={<Backups />} />
+              <Route path="/start" element={<StartWorkout />} />
+              <Route path="/start/:mode" element={<WorkoutSection />} />
+              <Route path="/start/:mode/:cat" element={<WorkoutCategory />} />
               <Route path="/themes" element={<Themes />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
@@ -153,14 +171,16 @@ function Shell() {
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
+            </Suspense>
           )}
         </ErrorBoundary>
       </div>
-      <TabBar onStart={startFlow} />
+      <TabBar />
       <RestTimer />
       <Modals />
       <Toast />
       <CelebrationOverlay />
+      {MOBILE && !DEMO && <AppLock />}
       {authed && ready && !DEMO && checked && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
     </>
   )

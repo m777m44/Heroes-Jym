@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useCelebration, CELEBRATION_MS } from '../../lib/celebrate.js'
 import { t, dateLocale } from '../../lib/i18n.js'
 import Icon from '../Icon.jsx'
+import { motionReduced } from '../../lib/a11y.js'
 
 // The celebration (2.5 redesign) — full screen, the same scene as the native one Android shows
 // over the lock screen when the app is closed (CelebrationActivity.java): a dark backdrop lit
@@ -17,7 +18,7 @@ const KINDS = {
   body: { c1: '#30d158', c2: '#ffd60a', icon: 'flag' },      // 3.0: a milestone to the ideal weight
 }
 const PAPER = ['#ffd60a', '#ff375f', '#64d2ff', '#30d158', '#bf5af2', '#ff9f0a', '#ffffff']
-const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const reduced = () => motionReduced()   // the phone's setting, or Settings → Reduce motion (4.0)
 
 function useConfetti(ref, seed, colors = PAPER) {
   useEffect(() => {

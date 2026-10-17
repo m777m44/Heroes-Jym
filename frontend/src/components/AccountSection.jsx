@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -34,6 +35,7 @@ export function Avatar({ account }) {
 // Settings → Account on the phone: the Google account (saved automatically, sync now, switch,
 // sign out) — or "on this phone" with a way to sign in.
 export default function AccountSection() {
+  const nav = useNavigate()
   const [meta, setMeta] = useState(cloudMeta)
   const [busy, setBusy] = useState(false)
   const [g, setG] = useState(null)
@@ -134,6 +136,7 @@ export default function AccountSection() {
       {meta.backend !== 'drive' && <Row icon="cloud" iconTint="var(--indigo, var(--blue))" title={t('Use Google Drive')}
         subtitle={meta.driveWhy === 'setup' ? t('Needs the one-time Google Cloud setup — tried automatically every few hours') : t('Faster sync between phones')}
         accessory="chevron" onClick={busy ? undefined : switchToDrive} />}
+      <Row icon="history" iconTint="var(--green)" title={t('Backups & restore')} subtitle={t('Versions of your data you can go back to')} accessory="chevron" onClick={() => nav('/backups')} />
       <Row icon="personCircle" iconTint="var(--purple)" title={t('Switch account')} accessory="chevron" onClick={busy ? undefined : signIn} />
       <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={signOut} />
     </Section>

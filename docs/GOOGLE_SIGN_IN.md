@@ -143,3 +143,24 @@ access token); no other dependencies. The web/self-hosted build keeps its own ac
 5. انتظر بضع دقائق، ثم من الهاتف: الإعدادات ← حساب Google ← **تسجيل الدخول باستخدام Google**.
 
 لا يحتاج التطبيق أي Client ID أو كلمة سر داخل الكود. Google يتعرّف عليه من اسم الحزمة وبصمة التوقيع.
+
+## Versions in Drive (4.0)
+
+From 4.0 the app also keeps **versions** — full copies you can restore — in
+**Settings → Data → Backups & restore**. They are always saved on the phone (one a day, plus
+"Save a version now"). Once Google Drive works for the app (the setup above), the daily version is
+also uploaded to the hidden app folder in Drive and listed under *In Google Drive* (same "keep the newest" setting),
+each with restore and delete. Until then the screen says Drive isn't switched on yet and shows
+the same steps as below, with the package name and SHA-1 ready to copy; tap **Try again** about
+five minutes after finishing them — no new app version is needed.
+
+### النسخ في Google Drive (4.0)
+
+ابتداءً من 4.0 يحتفظ التطبيق بـ **نسخ** كاملة من بياناتك يمكنك استعادتها من
+**الإعدادات ← البيانات ← النسخ الاحتياطية والاستعادة**:
+
+1. تُحفظ نسخة تلقائيًا مرة يوميًا على الهاتف (عند حدوث أي تغيير)، ويمكنك حفظ نسخة في أي وقت بزر «احفظ نسخة الآن».
+2. تختار الاحتفاظ بأحدث 3 أو 7 أو 14 نسخة، وعند الاستعادة تُحفظ بياناتك الحالية أولًا باسم «قبل الاستعادة» فيمكنك التراجع.
+3. بعد إكمال خطوات الإعداد بالعربية أعلاه (مرة واحدة فقط)، انتظر نحو 5 دقائق ثم اضغط «حاول مجددًا» في الشاشة نفسها — لا تحتاج نسخة جديدة من التطبيق.
+4. بعدها تُرفع النسخة اليومية أيضًا إلى مجلد التطبيق المخفي في Google Drive (بنفس عدد النسخ المختار)، وتظهر تحت «في Google Drive» مع الاستعادة والحذف.
+5. حتى ذلك الحين لا يضيع شيء: تُحفظ بياناتك عبر النسخ الاحتياطي لأندرويد، والنسخ على الهاتف تعمل دائمًا.

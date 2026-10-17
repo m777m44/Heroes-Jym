@@ -10,7 +10,7 @@ const KEY = 'gym_state_v1'
 // its light / dark setting (themeSystem, lib/themes.js). Saved profiles keep what they chose.
 export const DEF = {
   unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'auto',
-  theme: 'classic-dark', themeSystem: true, accent: 'theme', themeFavs: [], body: 'male', targetW: null,
+  theme: 'classic-dark', themeSystem: true, accent: 'theme', themeFavs: [], recentStudio: [], recentSessions: [], textScale: 1, highContrast: false, reduceMotion: false, autoBackup: true, backupKeep: 7, body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so

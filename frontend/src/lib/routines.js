@@ -13,7 +13,11 @@ export const BUILTIN_NAMES = ['Push Day', 'Pull Day', 'Leg Day', 'Freestyle', 'N
   // Today's plan (lib/dailyPlan.js) — saved on the workout, so history shows them translated.
   'Full-body fat burn', 'Walking day + core', 'Legs & glutes', 'HIIT fat burner', 'Upper body & core', 'Long walk + core', 'Mobility & recovery',
   // 3.0: the muscle-gain week
-  'Push: chest, shoulders & triceps', 'Pull: back & biceps', 'Legs: squat & hinge', 'Upper body strength', 'Lower body strength']
+  'Push: chest, shoulders & triceps', 'Pull: back & biceps', 'Legs: squat & hinge', 'Upper body strength', 'Lower body strength',
+  // 4.0: quick sessions from Start → Without / With equipment (= SESSION_NAMES in lib/workoutCategories.js)
+  'Home HIIT', 'Home running drills', 'Home cardio', 'Home abs & core', 'Home upper body', 'Home lower body', 'Home full body', 'Home stretching',
+  'Gym chest', 'Gym back', 'Gym legs', 'Gym shoulders', 'Gym biceps', 'Gym triceps', 'Gym core', 'Gym full body',
+  'My picks at home', 'My picks at the gym']
 export const routineLabel = name => (name && BUILTIN_NAMES.includes(name) ? t(name) : name || '')
 
 export const ROUTINE_COLORS = ['green', 'blue', 'orange', 'purple', 'pink', 'red', 'teal', 'yellow', 'indigo', 'mint']

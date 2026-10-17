@@ -20,6 +20,8 @@ import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
 import OfflineSection from '../components/OfflineSection.jsx'
 import AccountSection from '../components/AccountSection.jsx'
+import SecuritySection from '../components/SecuritySection.jsx'
+import { TEXT_SIZES, textScaleOf } from '../lib/a11y.js'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, BackButton } from '../components/ui.jsx'
 
 export default function Settings() {
@@ -189,10 +191,25 @@ export default function Settings() {
       </Row>
     </Section>
 
+    {/* 4.0: accessibility — text size, contrast, motion (lib/a11y.js) */}
+    <Section title={t('Accessibility')} footer={t('Animations also stop when the phone’s own “remove animations” setting is on.')}>
+      <Row icon="textformat" iconTint="var(--blue)" title={t('Text size')} />
+      <div className="bk-keep"><Segmented options={TEXT_SIZES.map(x => ({ value: x.value, label: t(x.label) }))} value={textScaleOf(S)} onChange={v => update(s => { s.textScale = v })} /></div>
+      <Row icon="contrast" iconTint="var(--label-2)" title={t('High contrast')} subtitle={t('Stronger text, lines and outlines')}>
+        <Switch checked={!!S.highContrast} onChange={v => update(s => { s.highContrast = v })} />
+      </Row>
+      <Row icon="eye" iconTint="var(--teal)" title={t('Reduce motion')} subtitle={t('No animations or confetti')}>
+        <Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} />
+      </Row>
+    </Section>
+
+    {MOBILE && !DEMO && <SecuritySection />}
+
     <OfflineSection />
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
+      <Row icon="history" iconTint="var(--green)" title={t('Backups & restore')} subtitle={t('Versions of your data you can go back to')} accessory="chevron" onClick={() => nav('/backups')} />
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={loadStarterPlan} />
       <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')}
         subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')}

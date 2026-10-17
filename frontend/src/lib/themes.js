@@ -1,5 +1,5 @@
-// Themes: 134 colour families in 14 categories × 7 variants = 938 curated themes (3.0 added
-// Glass and Minimal and 40 families; 2.12 had 658, 2.10 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
+// Themes: 190 colour families in 16 categories × 7 variants = 1,330 curated themes (4.0 added
+// MAHDI Signature, Coder classics and 56 families; 3.0 had 938, 2.12 658, 2.10 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
 // saturation and an accent so every one of them stays readable and consistent.
 //
 //   S.theme        the chosen theme id, '<family>-<variant>' (old saves: 'dark' / 'light')
@@ -29,12 +29,15 @@ export const CATEGORIES = [
   // 3.0
   { id: 'glass', name: 'Glass style', icon: 'layers' },   // not 'Glass' — that key is the water glass
   { id: 'minimal', name: 'Minimal', icon: 'square' },
+  // 4.0
+  { id: 'signature', name: 'MAHDI Signature', icon: 'starFill' },
+  { id: 'code', name: 'Coder classics', icon: 'code' },
 ]
 
 /**
  * name: a t() key; cat: its category; h/s: hue and saturation of the surfaces;
  * acc / accL: the accent on dark / on light. The first 20 are the 2.10 families (ids kept, so
- * saved themes stay valid); 2.12 added 74 more.
+ * saved themes stay valid); 2.12 added 74 more, 3.0 40, 4.0 56.
  */
 export const FAMILIES = [
   { id: 'classic', name: 'Classic', cat: 'classic', h: 240, s: 0, acc: '#30d158', accL: '#34c759' },
@@ -191,6 +194,76 @@ export const FAMILIES = [
   { id: 'tundra', name: 'Tundra', cat: 'nature', h: 190, s: 12, acc: '#a8d8e0', accL: '#3d7480' },
   { id: 'savanna', name: 'Savanna', cat: 'nature', h: 42, s: 50, acc: '#e6b84a', accL: '#94690a' },
   { id: 'orchid', name: 'Orchid', cat: 'nature', h: 300, s: 35, acc: '#e08ce0', accL: '#9a3a9a' },
+  // ---- 4.0: 56 more ----
+  // signature — the app's own green on black, and five siblings
+  { id: 'mahdi', name: 'MAHDI Signature', cat: 'signature', h: 150, s: 30, acc: '#30d158', accL: '#1f8f45' },
+  { id: 'mahdi-gold', name: 'MAHDI Gold', cat: 'signature', h: 45, s: 40, acc: '#f5c542', accL: '#946c00' },
+  { id: 'mahdi-night', name: 'MAHDI Night', cat: 'signature', h: 225, s: 45, acc: '#4cd98a', accL: '#14824a' },
+  { id: 'mahdi-royal', name: 'MAHDI Royal', cat: 'signature', h: 270, s: 45, acc: '#c9a2ff', accL: '#7040c8' },
+  { id: 'mahdi-fire', name: 'MAHDI Fire', cat: 'signature', h: 10, s: 55, acc: '#ff6a3d', accL: '#c0380f' },
+  { id: 'mahdi-ocean', name: 'MAHDI Ocean', cat: 'signature', h: 195, s: 55, acc: '#3fd8c7', accL: '#0a7f73' },
+  // coder classics — after the editor palettes people know
+  { id: 'dracula', name: 'Dracula', cat: 'code', h: 231, s: 15, acc: '#bd93f9', accL: '#7a4bcc' },
+  { id: 'nord', name: 'Nord', cat: 'code', h: 220, s: 20, acc: '#81a1c1', accL: '#4a6890' },
+  { id: 'tokyo', name: 'Tokyo Night', cat: 'code', h: 230, s: 30, acc: '#7aa2f7', accL: '#3858a0' },
+  { id: 'gruvbox', name: 'Gruvbox', cat: 'code', h: 40, s: 25, acc: '#fabd2f', accL: '#a36a12' },
+  { id: 'solarized', name: 'Solarized', cat: 'code', h: 193, s: 60, acc: '#2aa198', accL: '#1d7a73' },
+  { id: 'monokai', name: 'Monokai', cat: 'code', h: 70, s: 8, acc: '#a6e22e', accL: '#577a00' },
+  { id: 'onedark', name: 'One Dark', cat: 'code', h: 220, s: 13, acc: '#61afef', accL: '#2c6cb0' },
+  { id: 'catppuccin', name: 'Mocha', cat: 'code', h: 240, s: 21, acc: '#cba6f7', accL: '#8034e0' },
+  { id: 'everforest', name: 'Everforest', cat: 'code', h: 100, s: 12, acc: '#a7c080', accL: '#55722a' },
+  { id: 'rosepine', name: 'Rose pine', cat: 'code', h: 249, s: 22, acc: '#ebbcba', accL: '#a8566e' },
+  // dark
+  { id: 'midnightsilk', name: 'Midnight silk', cat: 'dark', h: 240, s: 40, acc: '#c7b8ff', accL: '#5846c8' },
+  { id: 'noir', name: 'Noir', cat: 'dark', h: 0, s: 0, acc: '#f5f5f7', accL: '#1d1d1f' },
+  { id: 'deepspace', name: 'Deep space', cat: 'dark', h: 250, s: 45, acc: '#6e7dff', accL: '#3442c8' },
+  { id: 'smoke', name: 'Smoke', cat: 'dark', h: 215, s: 10, acc: '#c0c8d4', accL: '#4a5566' },
+  { id: 'crimsonnight', name: 'Crimson night', cat: 'dark', h: 350, s: 40, acc: '#ff4d6d', accL: '#c01d39' },
+  // ocean & sky
+  { id: 'oceandeep', name: 'Ocean deep', cat: 'ocean', h: 205, s: 75, acc: '#1ec8ff', accL: '#086ca3' },
+  { id: 'tropic', name: 'Tropic', cat: 'ocean', h: 180, s: 60, acc: '#2ee6d6', accL: '#09857b' },
+  { id: 'navy', name: 'Navy', cat: 'ocean', h: 220, s: 55, acc: '#5c9dff', accL: '#1f54b8' },
+  // light
+  { id: 'cloudwhite', name: 'Cloud white', cat: 'light', h: 210, s: 15, acc: '#5e9eff', accL: '#2160d0' },
+  { id: 'papercream', name: 'Paper cream', cat: 'light', h: 40, s: 35, acc: '#d9a25f', accL: '#865619' },
+  { id: 'notebook', name: 'Notebook', cat: 'light', h: 45, s: 8, acc: '#eb5757', accL: '#c02626' },
+  // premium
+  { id: 'elegant', name: 'Elegant', cat: 'premium', h: 30, s: 15, acc: '#c9a77c', accL: '#79572f' },
+  { id: 'luxe', name: 'Luxe', cat: 'premium', h: 0, s: 0, acc: '#d4af37', accL: '#866a12' },
+  // pastel
+  { id: 'softpastel', name: 'Soft pastel', cat: 'pastel', h: 280, s: 40, acc: '#d7b4ff', accL: '#8549d0' },
+  { id: 'bubblegum', name: 'Bubblegum', cat: 'pastel', h: 320, s: 50, acc: '#ff9ed8', accL: '#bd2f85' },
+  // minimal
+  { id: 'simplegray', name: 'Simple gray', cat: 'minimal', h: 220, s: 3, acc: '#a1a1aa', accL: '#52525b' },
+  { id: 'puremono', name: 'Pure mono', cat: 'minimal', h: 0, s: 0, acc: '#ffffff', accL: '#000000' },
+  // glass
+  { id: 'glass-crystal', name: 'Crystal glass', cat: 'glass', glass: true, h: 190, s: 35, acc: '#a8f0ff', accL: '#0d7890' },
+  { id: 'glass-neon', name: 'Neon glass', cat: 'glass', glass: true, h: 300, s: 75, acc: '#ff4dff', accL: '#a800a8' },
+  { id: 'glass-borealis', name: 'Borealis glass', cat: 'glass', glass: true, h: 150, s: 60, acc: '#5effb0', accL: '#0a8650' },
+  { id: 'glass-gold', name: 'Gold glass', cat: 'glass', glass: true, h: 45, s: 60, acc: '#ffd45c', accL: '#946800' },
+  { id: 'glass-sunset', name: 'Sunset glass', cat: 'glass', glass: true, h: 20, s: 70, acc: '#ff9e5c', accL: '#bb4e0e' },
+  // neon
+  { id: 'vaporwave', name: 'Vaporwave', cat: 'neon', h: 290, s: 60, acc: '#ff71ce', accL: '#bd148a' },
+  { id: 'neonnights', name: 'Neon nights', cat: 'neon', h: 250, s: 70, acc: '#05d9e8', accL: '#007a84' },
+  { id: 'retrowave', name: 'Retrowave', cat: 'neon', h: 330, s: 65, acc: '#ff8a00', accL: '#a85600' },
+  { id: 'grid', name: 'Grid', cat: 'neon', h: 195, s: 85, acc: '#6ff7ff', accL: '#00818e' },
+  // nature
+  { id: 'mountain', name: 'Mountain', cat: 'nature', h: 210, s: 18, acc: '#9cc3a6', accL: '#3d6a4a' },
+  { id: 'oasis', name: 'Oasis', cat: 'nature', h: 170, s: 40, acc: '#4fe3c1', accL: '#0a846a' },
+  { id: 'lavenderfield', name: 'Lavender field', cat: 'nature', h: 265, s: 30, acc: '#b69cff', accL: '#6849c8' },
+  { id: 'volcano', name: 'Volcano', cat: 'nature', h: 5, s: 50, acc: '#ff5a36', accL: '#b5270a' },
+  // warm
+  { id: 'sunrise', name: 'Sunrise', cat: 'warm', h: 28, s: 60, acc: '#ffb05c', accL: '#a85a08' },
+  { id: 'paprika', name: 'Paprika', cat: 'warm', h: 12, s: 55, acc: '#ff6b4a', accL: '#bd3818' },
+  { id: 'caramel', name: 'Caramel', cat: 'warm', h: 30, s: 45, acc: '#e0a060', accL: '#89561d' },
+  // golden / royal / sport / classic
+  { id: 'goldenhour', name: 'Golden hour', cat: 'golden', h: 38, s: 55, acc: '#ffc65c', accL: '#9a6400' },
+  { id: 'sultan', name: 'Sultan', cat: 'golden', h: 42, s: 35, acc: '#e8c070', accL: '#866012' },
+  { id: 'emperor', name: 'Emperor', cat: 'royal', h: 275, s: 50, acc: '#d9a8ff', accL: '#7b33c0' },
+  { id: 'regal', name: 'Regal', cat: 'royal', h: 230, s: 50, acc: '#8fb0ff', accL: '#2d4eae' },
+  { id: 'champion', name: 'Champion', cat: 'sport', h: 210, s: 50, acc: '#ffcc00', accL: '#987600' },
+  { id: 'sprint', name: 'Sprint', cat: 'sport', h: 0, s: 60, acc: '#ff3b3b', accL: '#bf0000' },
+  { id: 'retro', name: 'Retro', cat: 'classic', h: 30, s: 20, acc: '#e8b04a', accL: '#93630f' },
 ]
 
 /** Lightness of bg / elevated / surface / surface-2 / surface-3, and how much of the hue's saturation. */

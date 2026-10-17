@@ -10,6 +10,7 @@ import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
 import io.github.m777m44.mahdijym.account.GoogleAccountPlugin;
+import io.github.m777m44.mahdijym.lock.AppLockPlugin;
 import io.github.m777m44.mahdijym.steps.StepServicePlugin;
 
 public class MainActivity extends BridgeActivity {
@@ -22,6 +23,7 @@ public class MainActivity extends BridgeActivity {
         // In-app plugins must be registered before the bridge starts.
         registerPlugin(StepServicePlugin.class);
         registerPlugin(GoogleAccountPlugin.class);
+        registerPlugin(AppLockPlugin.class);
         super.onCreate(savedInstanceState);
 
         // 2.7.0 — Back no longer closes the app at once. The web app decides first (close a

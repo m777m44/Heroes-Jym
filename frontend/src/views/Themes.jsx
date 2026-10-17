@@ -17,6 +17,8 @@ import {
 import { todayISO } from '../lib/format.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
 import ColorWheel from '../components/ColorWheel.jsx'
+import ColorTools from '../components/ColorTools.jsx'
+import { pushRecent } from '../lib/colorTools.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Segmented, Slider, Button, BackButton } from '../components/ui.jsx'
 
@@ -72,7 +74,7 @@ export default function Themes() {
     if (!th) return
     const sys = systemDark()
     const keepFollow = follow && (sys == null || th.mode === (sys ? 'dark' : 'light'))
-    update(s => { s.theme = id; s.accent = 'theme'; if (follow && !keepFollow) s.themeSystem = false })
+    update(s => { s.theme = id; s.accent = 'theme'; if (follow && !keepFollow) s.themeSystem = false; if (th.studio) s.recentStudio = pushRecent(s.recentStudio, th.studio.n) })
     if (follow && !keepFollow) useUI.getState().toast(t('“Follow the phone” is off, so this theme stays as you chose it.'))
   }
   const toggleFav = id => {
@@ -122,7 +124,7 @@ export default function Themes() {
       </button>)}
     </div>
 
-    {tab === 'studio' ? <Studio shown={shown} onPick={pick} favs={favs} onFav={toggleFav} />
+    {tab === 'studio' ? <Studio shown={shown} onPick={pick} favs={favs} onFav={toggleFav} recent={S.recentStudio || []} />
       : tab === 'favs' ? <section className="theme-fam">
         <div className="theme-grid">
           {favs.map(id => { const th = themeOf(id); return <ThemeCard key={id} th={th} on={th.id === shown.id} onPick={pick} label={th.studio ? '#' + fmtNum(th.studio.n) : t(th.family.name)} /> })}
@@ -166,7 +168,7 @@ export default function Themes() {
 const GLOW_OPTS = [{ value: 0, label: 'Off' }, { value: 1, label: 'Soft' }, { value: 2, label: 'Strong' }]
 const randomSet = k => Array.from({ length: k }, () => randomStudio())
 
-function Studio({ shown, onPick, favs, onFav }) {
+function Studio({ shown, onPick, favs, onFav, recent }) {
   // the draft starts from the Studio theme on screen, else a close match of the curated one
   const [p, setP] = useState(() => shown.studio
     ? { ...shown.studio }
@@ -183,6 +185,7 @@ function Studio({ shown, onPick, favs, onFav }) {
     if (!q) { useUI.getState().toast(t('Pick a number from 1 to {0}.', fmtNum(STUDIO_COUNT))); return }
     setP(q); setJump('')
   }
+  const ideaCards = useMemo(() => ideas.map(m => { const it = studioTheme(m); return <ThemeCard key={m} th={it} on={it.id === shown.id} onPick={() => setP(studioParams(m))} label={'#' + fmtNum(m)} /> }), [ideas, shown.id])
   const applied = shown.id === th.id
   const fav = favs.includes(th.id)
 
@@ -204,6 +207,7 @@ function Studio({ shown, onPick, favs, onFav }) {
 
     <div className="card studio-ctl">
       <ColorWheel h={p.h} s={p.s} a={p.a} onChange={set} />
+      <ColorTools th={th} p={p} onChange={set} recent={recent} onRecent={q => setP(q)} />
       <HexPick mode={th.mode} onBuild={q => setP(q)} onPick={onPick} shown={shown} />
       <label className="studio-l"><span>{t('Background colour')}</span><b>{p.h}°</b></label>
       <Slider className="sld-hue" value={p.h} min={0} max={359} onChange={h => set({ h })} />
@@ -233,7 +237,7 @@ function Studio({ shown, onPick, favs, onFav }) {
       <h2 className="theme-fam-h row between"><span className="row" style={{ gap: 8 }}><Icon name="sparkles" />{t('Ideas for you')}</span>
         <button className="h2link" onClick={() => setIdeas(randomSet(9))}><Icon name="dice" /> {t('More')}</button></h2>
       <div className="theme-grid">
-        {ideas.map(m => { const it = studioTheme(m); return <ThemeCard key={m} th={it} on={it.id === shown.id} onPick={() => setP(studioParams(m))} label={'#' + fmtNum(m)} /> })}
+        {ideaCards}
       </div>
     </section>
   </div>

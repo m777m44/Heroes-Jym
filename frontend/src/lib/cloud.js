@@ -384,6 +384,7 @@ export function syncNow(store) {
       try {
         const r = await driveRound(store)
         backupIfChanged(store).catch(() => {})
+        dailyDriveVersion(store).catch(() => {})
         return r
       } catch (e) {
         const why = e && e.reason
@@ -396,6 +397,52 @@ export function syncNow(store) {
     } finally { running = null }
   })()
   return running
+}
+
+// ---- 4.0: dated versions in Drive ------------------------------------------------------------
+// Besides the one live file, once a day a dated copy (mahdi-jym-version-YYYY-MM-DD-….json) goes to
+// the same private app-data folder; the newest S.backupKeep (default 7) are kept. Listed, restored
+// and deleted from Settings → Backups. Drive only — Android Backup keeps a single copy.
+export const VPREFIX = 'mahdi-jym-version-'
+const dayOf = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+
+/** Dated versions in Drive, newest first: [{ id, at, kind, size, ts, workouts }]. */
+export async function listDriveVersions() {
+  const q = encodeURIComponent(`name contains '${VPREFIX}' and trashed=false`)
+  const res = await drive(`${DRIVE}/files?spaces=appDataFolder&q=${q}&fields=files(id,name,size,modifiedTime,appProperties)&orderBy=modifiedTime desc&pageSize=50`)
+  const j = await res.json()
+  return (j.files || []).map(f => {
+    const p = f.appProperties || {}
+    return { id: f.id, at: Number(p.at) || Date.parse(f.modifiedTime) || 0, kind: p.kind || 'auto', size: Number(f.size) || 0, ts: Number(p.ts) || 0, workouts: Number(p.workouts) || 0, source: 'drive' }
+  })
+}
+
+/** Save a dated version of `S` to Drive. */
+export async function uploadDriveVersion(S, kind = 'auto', now = Date.now()) {
+  const body = JSON.stringify({ app: 'MAHDI-JYM', v: 1, kind: 'snapshot', type: kind, savedAt: new Date(now).toISOString(), version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '', S })
+  const meta = { name: VPREFIX + dayOf(now) + '-' + now.toString(36) + '.json', mimeType: 'application/json', parents: ['appDataFolder'],
+    appProperties: { at: String(now), kind, ts: String(Number(S._ts) || 0), workouts: String((S.workouts || []).length) } }
+  const b = 'mj' + Math.random().toString(36).slice(2)
+  const multipart = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+    `--${b}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${b}--`
+  const res = await drive(`${UPLOAD}/files?uploadType=multipart&fields=id`, { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + b }, body: multipart })
+  const j = await res.json()
+  return { id: j.id, at: now, kind, source: 'drive' }
+}
+export async function deleteDriveVersion(id) { await drive(`${DRIVE}/files/${encodeURIComponent(id)}`, { method: 'DELETE' }) }
+export const readDriveVersion = id => download(id)
+
+/** The once-a-day Drive version (after a successful Drive round). */
+async function dailyDriveVersion(store) {
+  const S = store.getState().S
+  if (S.autoBackup === false || !onDrive()) return
+  const day = dayOf(Date.now())
+  if (cloudMeta().verDay === day) return
+  await uploadDriveVersion(S, 'auto')
+  setMeta({ verDay: day })
+  const keep = Number(S.backupKeep) || 7
+  const autos = (await listDriveVersions()).filter(v => v.kind === 'auto')
+  for (const v of autos.slice(keep)) await deleteDriveVersion(v.id).catch(() => {})
 }
 
 /** The copy that a download replaced: { at, S } or null. */
@@ -433,6 +480,12 @@ export function startCloudSync(store) {
     else if (Date.now() - last > 60000) { last = Date.now(); quiet() }
   }
   document.addEventListener('visibilitychange', onVis)
+  // 4.0: offline changes go up as soon as the phone is back online
+  const onOnline = () => { last = Date.now(); quiet() }
+  if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('online', onOnline)
   setTimeout(quiet, 2500)
-  return () => { started = false; unsub(); clearTimeout(tm); document.removeEventListener('visibilitychange', onVis) }
+  return () => {
+    started = false; unsub(); clearTimeout(tm); document.removeEventListener('visibilitychange', onVis)
+    if (typeof window !== 'undefined' && window.removeEventListener) window.removeEventListener('online', onOnline)
+  }
 }

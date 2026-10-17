@@ -3,6 +3,66 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v4.0.0 — 2026-10-17
+
+**Two ways to start a workout (without / with equipment), versioned backups you can go back
+to, a smoother colour wheel with colour tools, 56 new theme families, and accessibility:
+text size, high contrast, reduced motion — plus a fingerprint / PIN lock for the app.**
+*طريقتان لبدء التمرين (بدون معدّات / بالمعدّات)، نسخ احتياطية بإصدارات يمكنك الرجوع إليها، عجلة ألوان أنعم مع أدوات الألوان، 56 عائلة ثيمات جديدة، وسهولة استخدام: حجم الخط، تباين عالٍ، تقليل الحركة — مع قفل التطبيق بالبصمة أو الرمز.*
+
+### Start your workout
+- The centre **Start** button opens a new screen with two big cards: **Without equipment**
+  (at home, 325 exercises) and **With equipment** (at the gym, 999 exercises), above today's
+  workout from your plan and a suggestion for today from your goal.
+- **Without equipment:** HIIT, cardio, abs & core, upper body, lower body, full body,
+  running & walking (with a shortcut to the step counter) and stretching & yoga.
+- **With equipment:** chest, back, legs, shoulders, biceps, triceps, core and full body, with an
+  **equipment filter** (barbell, dumbbells, cable, machines, kettlebell, bands, balls & more).
+- Every category has a **quick session** (4 / 6 / 8 exercises; staples like push-ups, squats,
+  bench press and rows lead, spread over the muscles; tap shuffle for another set), sensible
+  sets and reps for the kind of training, an estimated time, and a full list to **pick your
+  own** (up to 15). Your **recent sessions** sit on the start screen, one tap to do again.
+
+### Backups & restore (Settings → Data, or Account)
+- **Versions of your data:** a full copy is saved **once a day** when something changed, and
+  whenever you tap **Save a version now**. Keep the newest 3, 7 (default) or 14; your own
+  saves are kept apart. **Restore** any version — what you have now is saved first as
+  "Before a restore", so a restore can always be undone — or **delete** it.
+- When Google Drive is switched on for the app, the daily version is also uploaded to the
+  private app folder in Drive (the same number kept), listed on the same screen with restore and
+  delete; syncing retries by itself when the connection comes back.
+- A clear status card shows where your account copy goes (this phone only / Google Drive /
+  Android Backup), and a step-by-step guide explains the one-time Google Cloud setup that
+  switches Drive on, with the package name and SHA-1 to copy.
+
+### Colour wheel & themes
+- The Theme Studio's wheel is painted once and redrawn at most once per frame, so dragging is
+  smooth on mid-range phones, with a live read-out; arrow keys and [ ] work on a keyboard.
+- New colour tools under the wheel: the theme's real colours with **HEX / RGB / HSL to copy**,
+  a gradient preview, **colour harmonies** for the accent (complementary, split complementary,
+  triadic, analogous, monochrome) and your **recent colours**.
+- **56 new theme families** (392 themes) in two new categories, **MAHDI Signature** and
+  **Coder classics** (Dracula, Nord, Tokyo Night, Gruvbox, Solarized, Monokai, One Dark…), and
+  new members of the existing ones (glass, neon, nature, royal, light…). 16 categories,
+  1,330 curated themes, 2,722,930 in all.
+
+### Accessibility & security
+- **Settings → Accessibility:** text size (Small / Normal / Large / Largest — the whole
+  interface scales), **high contrast** (stronger text, separators and outlines) and **reduce
+  motion** (no animations or confetti; the phone's own setting is always followed too).
+- **Settings → Security** (Android): **lock the app with your fingerprint, face or the phone's
+  PIN**, after it was away right away / 1 / 5 / 15 minutes. It uses the phone's own screen
+  lock — the app never sees your fingerprint — and the phone's PIN always works. If the
+  phone's screen lock is removed, the app lock turns itself off instead of locking you out.
+- Screens open faster: the less-used ones load on demand.
+
+### Under the hood
+- `lib/workoutCategories.js`, `lib/backups.js` (IndexedDB / Capacitor files, a daily
+  auto-version), Drive versions in `lib/cloud.js`, `lib/a11y.js`, `lib/appLock.js` with a new
+  native `AppLock` plugin (androidx.biometric), `lib/colorTools.js`.
+- 477 frontend tests (new: workout sections, backups, accessibility / lock timing, smoke tests
+  for the new screens), 12 locales × 2,044 keys in sync. Android versionCode 20.
+
 ## v3.0.0 — 2026-10-17
 
 **A full body plan: your ideal weight from 8 methods, what your body is made of, calories

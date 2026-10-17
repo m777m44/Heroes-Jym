@@ -23,7 +23,7 @@ it('the Arabic UI has no stray English', async () => {
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -86,9 +86,9 @@ it('the Arabic UI has no stray English', async () => {
     const card = await import('../components/AccountSection.jsx')
     scan(renderToString(React.createElement(gate.default, { onDone: () => {} })), 'AccountGate')
     for (const [k] of ['setup', 'network', 'consent', 'unavailable', 'failed'].map(r => [r])) scan(gate.accountError(k) || '', 'accountError')
-    scan(renderToString(React.createElement(card.default)), 'AccountSection')
+    scan(renderToString(React.createElement(MemoryRouter, null, React.createElement(card.default))), 'AccountSection')
     localStorage.setItem('mj_cloud', JSON.stringify({ mode: 'google', account: { email: 'mahdi@gmail.com', name: 'مهدي' }, auto: true, at: Date.now() - 5 * 60000, syncedTs: 1 }))
-    scan(renderToString(React.createElement(card.default)), 'AccountSection:in')
+    scan(renderToString(React.createElement(MemoryRouter, null, React.createElement(card.default))), 'AccountSection:in')
     localStorage.removeItem('mj_cloud')
   }
   const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/]
