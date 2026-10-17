@@ -10,7 +10,8 @@ MAHDI-JYM ships in two flavors from the same codebase:
 | Reminders | Web Push from your server | native local notifications, no server involved |
 | Step counter | accelerometer, while the page is open | hardware step sensor, keeps counting in the background (Android) |
 | Step notification | service-worker notification | ongoing notification (Android), silent replace (iOS) |
-| Exercise media | served by your server (`img/`, `gif/`) | loaded from the jsDelivr CDN |
+| Exercise media | served by your server (`img/`, `gif/`); *Settings → Offline* saves them in the browser | inside the APK (offline build, the released app) — or the jsDelivr CDN (`build:mobile`) |
+| Without internet | the whole app (service worker precaches every built file) | everything — the app never needs a connection |
 
 The mobile flavor never talks to a backend: no sign-in screen, no sync, no telemetry.
 State is mirrored from `localStorage` into `mahdi-jym-state.json` in the app's private data
@@ -31,7 +32,11 @@ OS share sheet instead of a browser download.
 ```sh
 cd frontend
 npm install
-npm run build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/
+npm run build:mobile        # VITE_MOBILE build + `cap sync` into android/ and ios/ (media from the CDN)
+
+# or the offline app, exactly like the released APK: every exercise image + animation inside
+(cd .. && scripts/fetch-media.sh)   # → ../media; or point MEDIA_DIR at a dataset checkout
+MEDIA_DIR=../media npm run build:mobile:offline
 
 npx cap open android        # opens Android Studio → run on emulator or device
 npx cap open ios            # opens Xcode (Mac only) → set your signing team, then run
@@ -39,6 +44,12 @@ npx cap open ios            # opens Xcode (Mac only) → set your signing team, 
 
 `npm run build:mobile` bakes the CDN media base into the bundle and copies the web build
 into both native projects — re-run it after every web-code change before building natively.
+
+`npm run build:mobile:offline` keeps the media paths relative and copies all 1,324 JPGs and
+1,324 GIFs (~138 MB) into `dist/img` + `dist/gif` before `cap sync`
+(`scripts/bundle-media.mjs` — it fails if any exercise has no file). The APK grows to about
+140 MB, and the exercise library then works with no connection at all. CI always builds this
+way (`.github/workflows/android-apk.yml` downloads the dataset at the pinned commit and caches it).
 
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
 > Run a plain `npm run build` again before deploying `dist` to a server.
@@ -76,7 +87,7 @@ and the phone locked, and resumes by itself after a reboot.
 | Piece | File | What it does |
 |---|---|---|
 | Service | `StepCounterService.java` | Listens to the hardware step counter (step detector as fallback), files steps per day and per hour, computes speed/active time, fires the 1,000-step and goal alerts (vibration, sound, optional voice via Android TTS) |
-| Notification | `StepNotifier.java`, `res/layout/notif_steps_*.xml` | The live card on the notification shade **and the lock screen**: steps / goal, a progress bar, a clock ticking in Baghdad time (or the device zone) with seconds, walking time, km, kcal, the countdown to midnight and a motivation line; **Pause / Resume** and **Open** buttons |
+| Notification | `StepNotifier.java`, `res/layout/notif_steps_*.xml` | The live card on the notification shade **and the lock screen**: steps / goal, a progress bar, a clock ticking in the phone’s local time with seconds, walking time, km, kcal, the countdown to midnight and a motivation line; **Pause / Resume** and **Open** buttons |
 | Widget | `StepWidget.java`, `res/xml/widget_steps_info.xml` | Home-screen (and, where the launcher allows, lock-screen) widget with the same live numbers |
 | Storage | `StepStore.java` | Two months of daily totals + hourly buckets in SharedPreferences; the app merges them on launch (raise-only — nothing already recorded is ever lowered) |
 | Bridge | `StepServicePlugin.java` ↔ `frontend/src/lib/stepService.js` | `start / pause / resume / stop / configure / getState / getHistory`, battery-exemption and notification-settings shortcuts; `steps` and `open` events |
@@ -117,6 +128,154 @@ What keeps it running:
 
 Turning counting off (Walking → Stop) cancels the watchdog; nothing restarts after that.
 The consent is stored in `localStorage` (`mj_consent_v1`).
+
+## Water reminders & the full-screen celebration (2.5, Android)
+
+- **Water reminders** are AlarmManager alarms owned by `WaterReminder.java` (re-armed after a
+  reboot by `BootReceiver` and whenever the web app sends `configureWater`). Each one reads the
+  native `WaterStore` (prefs `mj_water`) and `StepStore`, so it shows today's water, steps and
+  an exercise picked by `WaterMath.suggest` (mirrored in `lib/water.js`, tested on both sides).
+  “Drank it” and the “+ water” button on the live step notification are broadcasts — they work
+  without opening the app; the web app merges the days back (`getWater` / `water` event).
+- **Celebration outside the app:** `Celebration.java` posts a high-priority notification with
+  a picture drawn by `CelebrationArt` and a full-screen intent to `CelebrationActivity`
+  (Canvas scene in `CelebrationView`, jingle synthesized by `Fanfare`). Android shows it over
+  the lock screen when the screen is off/locked; on Android 14+ the user can switch
+  full-screen intents off per app (Walking → Celebrations shows the state and a shortcut).
+  With **Display over other apps** allowed (`SYSTEM_ALERT_WINDOW`, optional) it also opens on
+  top of other apps on an unlocked screen.
+- iPhone schedules the next day of water reminders as local notifications; there is no
+  full-screen celebration outside the app on iOS.
+
+## Water panel, automatic goal, workout reminders & Google account (2.6, Android)
+
+- **Water panel in the notifications** (channel *Water in the notifications*, id 7101,
+  low importance, silent): today's ml against the goal with a bar, the automatic-goal
+  breakdown, and **four container buttons (glass / cup / can / bottle) plus Undo and Edit**.
+  Tapping a container adds it, Undo takes the last one back, and Edit opens the Water screen. All of
+  this works with the app closed. The step notification keeps its small "+" and Undo.
+  Turn it off under Water → *Water panel in the notifications*. The reminder uses the same id,
+  so a reminder and the panel never show twice.
+- **Automatic water goal**: body weight × 33 ml (2,000 ml without a weigh-in), **+70 ml per
+  1,000 steps after the first 3,000** (at most +1,200), and **+10 ml per training minute** (at most +1,500).
+  The same rule runs natively (`WaterMath.autoGoal`, steps from `StepStore`), so the
+  notification goal grows during a walk with the app closed. A fixed goal is still available.
+- **Workout reminders at each day's own time**: Settings → Daily reminder → a time for every
+  weekday that has a routine. The notification names the routine, how many exercises, the
+  first three exercises and about how long it takes (sets × (40 s + rest)).
+- **Sign in with Google**: see [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md). The first launch asks
+  Google / this phone / skip, then shows the permissions dialog.
+
+## One notification, Back twice to exit & a sign-in fix (2.7, Android)
+
+- **One bar instead of two.** While the step counter runs, its notification (id 7001,
+  `notif_live_small` / `notif_live_big`, `DecoratedCustomViewStyle`, no action row) carries the water too:
+  - *Collapsed*: steps | water side by side, each with its own bar, plus a **"+"** for your usual container.
+  - *Expanded*: date · status · clock · ⏸ / ▶; a green **Steps** card and a blue **Water** card
+    (amount / goal, %, bar, "… to go"); km · kcal · km/h · walking time; the four containers
+    with **Undo** and **Edit**; the motto and the countdown to midnight.
+  - With the water tracker or *Water in the notifications* off, the steps card fills the width.
+  - The separate water panel (id 7101) is now only posted while the step counter is off.
+    `WaterReminder.merged()` decides this, and switching between the two needs no restart.
+  - A **water reminder** still pops up on its own so it can be heard (channel *Water
+    reminders*). It disappears when you drink (from any button), tap *In 15 min*, or after 15 minutes.
+- **Back button**: `MainActivity` registers an `OnBackPressedCallback` and asks
+  `window.mjBack()` (`lib/backButton.js`) what to do:
+  - close the open sheet;
+  - from Plan / Stats / Exercises, go Home;
+  - from a deeper screen, go back one screen;
+  - on Home, the first press shows *Press back again to exit* and a second press within
+    2 s leaves the app. The step counter keeps running.
+  - If the page doesn't answer, the same rule runs natively with an Android toast.
+- **Google sign-in no longer hangs** on "Connecting your account…". Capacitor plugin
+  objects are *thenables* (`then` is forwarded to native and never answers), so returning
+  one from an `async` function waited forever. `cloud.js` now keeps the plugin in a `{ p }`
+  holder (like `stepService.js`), gives every call a time limit, and the screens have a
+  **Cancel** button. Natively, the chooser opens after at most 1.5 s even if the
+  sign-out of a cached account stalls, and backing out of it counts as a cancel.
+  Error **10** still means the Google Cloud setup in [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md) isn't finished.
+
+## Google account without setup (2.8, Android)
+
+- **Signing in** uses `AccountManager.newChooseAccountIntent`, Android's own chooser of the Google
+  accounts on the phone. It needs no Google Cloud project, so it can't fail with error 10.
+- **Saving** works straight away through **Android Backup**: `MjBackupAgent`, a key/value
+  agent, backs up only `files/mj-backup.json`, with `restoreAnyVersion`. A fresh install takes
+  the restored copy back before the first-launch question.
+- **Google Drive** is used when the app's signing key is registered
+  ([GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md)). It is retried quietly every 6 h and takes over by itself.
+- `getToken({ ask: false })` never shows a screen in the background.
+
+## Today's plan, vibrating water reminders & a new look (2.9)
+
+| What | Where | Notes |
+|---|---|---|
+| Today's plan | `lib/dailyPlan.js`, `components/TodayPlan.jsx` | Every day one workout + a steps target + a water target, for fat loss. Saturday full body · Sunday walking + core · Monday legs & glutes · Tuesday HIIT · Wednesday upper body & core · Thursday long walk + core · Friday mobility & recovery. A routine from your own week wins; a day marked *rest* becomes mobility & recovery. Steps = last 7 days' average + 10 % (more on walking days, less on HIIT/recovery, 5,000–18,000). Sets follow how often you trained in the last 14 days; with a BMI ≥ 30 jumps become joint-friendly moves. The full day done → the full-screen celebration (once a day). Off in *Settings → Today's plan on Home*. |
+| Vibration | `WaterReminder.java` (`mj_water_vib`, `mj_water_quiet_vib`), `WaterStore.remindVibrate()` | Water reminders buzz "drip, drip, drop" (`0,180,120,180,120,420` ms), also with the sound off. *Water → Reminders → Vibrate*. Android 8+ fixes vibration per channel, hence the two new channels. |
+| Water schedule | `waterSchedule()` in `lib/water.js` | The reminder times with how much you should have drunk by each; on track / *X ml behind*, with a one-tap catch-up. |
+| Clock | `lib/liveClock.js`, `StepStore.clockZone()` | Always the phone's own time zone; no city name anywhere (the old `clockZone` setting is ignored, natively too). |
+| Controls | `index.css` (`.sw`, `.walk-dock`, `.btn`) | One switch size (52 × 32) that works right-to-left, the walking control dock (reset · start/pause · stop), one height per button size. |
+
+## Themes, phone language, home-workout reminders & steady steps (2.10)
+
+| What | Where | Notes |
+|---|---|---|
+| Themes | `lib/themes.js`, `views/Themes.jsx` (`/themes`) | 20 families × 6 variants (dark · pure black · deep · dusk · light · pastel) = 120, generated from a hue; `applyTheme()` sets the CSS variables inline. `themeSystem` (default on) swaps to the light / dark counterpart with the phone (`prefers-color-scheme`). Old `dark` / `light` values migrate to Classic. |
+| Phone language | `langOf()` / `deviceLang()` in `lib/i18n.js` | `lang: 'auto'` is the new default: the first of `navigator.languages` we have, else English. |
+| Home-workout reminder | `WorkoutReminder.java` (channel `mj_workout`), `scheduleWorkoutReminders`, `lib/dailyReminder.js` | Heads-up, silent, light vibration `0,60,90,60`; *Start* → `/home?start=plan`, *Later* = 30 min; next 14 days, rescheduled after a restart (`BootReceiver`). iOS uses Capacitor local notifications. |
+| Steady steps | `StepMath.provisionalAfter()`, `StepStore.settleProvisional()` | A counter reading of *d* steps uses up *d* provisional detector steps (max 200), so the total never goes down; 1.5 s after the idle flush unconfirmed ones are dropped. The snapshot's `confirmed` is what JS saves. |
+| Day-specific water moves | `movesForKind()` in `lib/water.js`, `movesByDay` in `lib/waterSync.js`, `WaterStore.moves()` | Each weekday's reminders pick moves that fit that day's workout. |
+| Celebration | `CelebrationView.java`, `Fanfare.java`, `CelebrationOverlay.jsx`, `lib/celebrate.js` | Fireworks, rays, a brass fanfare with a final chord. |
+| Walking buttons | `views/Walking.jsx` (`.walk-ctl`, `.wbtn`) | The 2.8 layout again, refined; the 2.9 dock is gone. |
+
+## Panels you can swipe away & one back button (2.11)
+
+| What | Where | Notes |
+|---|---|---|
+| ✕ and swipe-to-close | `components/Modals.jsx` (`swipeCloses()`), `.sheet-head` / `.sheet-x` in `index.css` | Every bottom sheet has a ✕ at the top right and a sticky handle. A pull of more than 110 px, or a flick faster than 0.55 px/ms (min 28 px), closes; less springs back. Locked sheets have neither. |
+| Exit animation | `useUI.closeSheet()` (`closing`, `SHEET_OUT_MS` = 220) | A closing sheet slides down / fades, then leaves the stack — the same for ✕, swipe, backdrop, Back and `close()`. The Back button skips sheets already closing. |
+| Workout check-in | `bwSheet()` in `sheets.jsx` | No longer locked: dismissing it starts nothing. |
+| Back button | `BackButton` in `components/ui.jsx`, `goBack()` in `lib/nav.js` | History back when the router has an index > 0, else a per-screen fallback (`replace`). |
+
+## Ideal body & theme categories (2.12)
+
+| What | Where | Notes |
+|---|---|---|
+| Ideal-body maths | `lib/idealBody.js` (tests: `idealBody.test.js`) | Pure, in kg/cm. Healthy BMI 18.5–24.9 (22–27 from 65) ∩ NRC-by-age band → `idealKg`. `ideal` = mean of band mid and the 4 formulas, clamped to the band. Deurenberg body fat, Mifflin–St Jeor BMR × step-based activity, ±500/300 kcal, floors 1200/1500. |
+| Screen | `views/IdealBody.jsx` (`/ideal`), `components/IdealChip.jsx` | State: `sex`, `birthYear` (from the age typed in), `waistCm`, `heightCm`. "Make it my goal" sets `targetW` (in the profile unit) and `targetFrom`. |
+| Weight-chart band | `LineChart` `band` prop | Shaded `[lo, hi]` and clipped to the chart, so it never stretches the y-axis. |
+| Theme categories | `lib/themes.js` `CATEGORIES`, `FAMILIES[].cat` | 12 categories, 94 families × 7 variants = 658 curated ids `<family>-<variant>`. |
+| Theme Studio | `studioNumber` / `studioParams` / `studioTheme` | 360 hues × 10 strengths × 7 styles × 36 accents × 3 glows = 2,721,600. Saved as `g-<n>`. The accent lightness is solved for ≥ 3:1 on the background. Following the phone swaps the style for its light/dark counterpart. |
+| Favourites | `S.themeFavs` (max 30) | Curated or `g-` ids. |
+
+## Ideal-body plan, glass themes & a health log (3.0)
+
+| What | Where | Notes |
+|---|---|---|
+| Ideal-body engine | `lib/idealBody.js` (tests: `idealBody.test.js`) | 8 methods: Devine, Robinson, Miller, Hamwi, Broca, Lorentz, BMI 22 and body-fat-based (today's lean mass ÷ (1 − healthy-fat mid)). `ideal` = (age band mid + mean of the first 6) / 2 × frame (±5 %, from wrist ÷ height), clamped to the band. US-Navy body fat when waist + neck (+ hips) are known, else Deurenberg. Composition: Boer lean mass, Lee skeletal muscle, Watson body water. Programmes: lose (TDEE − 500, floors 1200/1500), muscle (+250/300), keep. Macros 1.8/2.0/1.6 g protein per kg. |
+| Adaptive calories & road | `adaptKcal`, `weightRoad`, `milestoneCrossed` | Pace over 4 weeks: stalled → −150 kcal, too fast → +200 (muscle: the other way). Road = weekly targets (on / behind / missed / future) and 25/50/75/100 % milestones. A weigh-in that crosses a milestone fires the full-screen `body` celebration. |
+| Screen | `views/IdealBody.jsx` (`/ideal`) | Tabs Overview · Body · Plan · Compare. State: `neckCm`, `hipCm`, `wristCm`, `frame` ('auto'), `bodyGoal` ('auto' / lose / muscle / keep), `bodyPlan` `{ start, fromKg, toKg, weeklyKg }`. |
+| Daily programmes | `lib/dailyPlan.js` `PROGRAM_WEEKS`, `programOf` | Muscle week = push / pull / legs / upper / lower in the gym (`gym: true`); the reminder says "Gym workout" and drops "no equipment". |
+| Glass & minimal themes | `lib/themes.js` | 14 categories, 134 families, 938 curated ids. A family with `glass: true` gets see-through `--surface*` and a three-colour aurora glow; `applyTheme` sets `data-glass` = mode for the rim / blur rules. |
+| Colour wheel, HEX, files | `components/ColorWheel.jsx`, `hexToHsl`, `nearestTheme`, `studioFromHex`, `exportThemes` / `parseThemes` | Disc = background hue × strength, ring = accent hue (10° steps). File: `{ kind: 'mahdi-jym-themes', version: 1, current, themes }`; import merges into My themes (unknown ids dropped). |
+| Health log | `lib/health.js` (tests: `health.test.js`), `views/Health.jsx` (`/health`), `components/HealthCard.jsx` | `S.health[iso]` = `{ sleepH, sleepQ, mood, energy, stress, rhr, bp[], sugar[] }` (sugar stored in mg/dL, shown in `S.sugarUnit`). BP by ACC/AHA 2017 (crisis > 180/120 → red warning), sugar by ADA per context. `S.meds[]` + `S.medLog[iso]['id@HH:MM']`. |
+| Medicine reminders | `lib/mobile.js` `syncMedReminders` | Local notifications on channel `mj_meds`, ids 7400–7459, daily repeat (`schedule.on`), tap → `/health`. Re-synced on every save and on start. |
+
+## Workout sections, backups, accessibility & app lock (4.0)
+
+- **Start** (the centre tab) opens `/start`: *Without equipment* and *With equipment*, each with
+  categories (`/start/home/hiit`, `/start/gym/chest?eq=dumbbell` …), quick sessions and recent
+  sessions. Categories are filters over the bundled exercise library, so it all works offline.
+- **Backups & restore** (`/backups`): versions are files in the app's private storage
+  (Capacitor Filesystem, `Directory.Data/snapshots`; IndexedDB in a browser), one automatic
+  version a day. With Google Drive switched on they are also uploaded as
+  `mahdi-jym-version-*.json` to the hidden app folder (`drive.appdata`), following the same "keep the newest" setting.
+- **App lock**: the native `AppLock` plugin (`lock/AppLockPlugin.java`) uses
+  `androidx.biometric` with `BIOMETRIC_WEAK | DEVICE_CREDENTIAL`, so fingerprint, face and the
+  phone's PIN / pattern all work. The setting is per phone (`localStorage mj_lock`), never in
+  synced data, so restoring a backup on another phone can't lock anyone out.
+- **Accessibility**: text size uses CSS `zoom` on `<html>` (`--z` corrects viewport-height
+  rules); high contrast and reduced motion are `data-contrast` / `data-motion` on `<html>`.
 
 ## App icons & splash screens
 
@@ -174,8 +333,8 @@ old key. Export a backup (Settings → *Export backup (JSON)*), uninstall, insta
 To build and sign your own locally:
 
 ```sh
-cd frontend && npm run build:mobile
-cd android && ./gradlew assembleRelease            # → app/build/outputs/apk/release/app-release-unsigned.apk
+cd frontend && MEDIA_DIR=../media npm run build:mobile:offline   # or build:mobile for a small CDN build
+cd android && ./gradlew testReleaseUnitTest assembleRelease            # → app/build/outputs/apk/release/app-release-unsigned.apk
 
 # one-time: create a keystore. KEEP IT — updates must be signed with the same key,
 # or Android refuses to install the new version over the old one.
@@ -208,3 +367,12 @@ that would simply install. Your free options:
 - The app requests notification permission only when the workout-day reminder is switched
   on, and (on Android) declares `SCHEDULE_EXACT_ALARM` so the reminder fires to the minute
   where the user allows it.
+
+## Google check & scale-linked workout (4.1)
+
+| What | Where | Notes |
+|---|---|---|
+| Diagnostics | `GoogleAccountPlugin.diagnostics()` | Returns `package`, `sha1` (the installed APK's signing certificate, `GET_SIGNING_CERTIFICATES` on API 28+, else `GET_SIGNATURES`; colon-separated upper case), `play` / `playOk` (GoogleApiAvailability) and `email`. Shown on Settings → Backups → Google check (`views/Backups.jsx`). |
+| Drive error detail | `lib/cloud.js` `drive()` / `getToken()` | Failures keep `code` + `raw`; a 403 *accessNotConfigured* / *SERVICE_DISABLED* becomes reason `setup`, code `API_DISABLED`. Stored as `driveCode` / `driveMsg` in `mj_cloud`, cleared once Drive works. Explained by `lib/googleErrors.js`. |
+| Sign-in never fails after picking | `components/AccountSection.jsx` | `firstSync` errors fall back to Android Backup (`'backup'`) instead of a toast; Drive actions toast Google's explained reason. |
+| Scale-linked plan | `lib/scaleWorkout.js` → `lib/dailyPlan.js` `planFor()` | Adds `scale`, `energy` (`S.energy[iso]`), `intensity`, `reasons`; sets ±1 by gap and energy. The 14-day reminder planner (`lib/dailyReminder.js`) carries the reason; `planSignature` includes the latest weight, `targetW`, `energy`, `bodyGoal`. |

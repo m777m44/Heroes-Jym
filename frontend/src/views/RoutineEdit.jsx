@@ -9,11 +9,12 @@ import { Thumb } from '../components/Media.jsx'
 import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { glyphOf } from '../lib/glyphs.js'
-import { Button, SelectRow } from '../components/ui.jsx'
+import { Button, SelectRow, BackButton } from '../components/ui.jsx'
 import { POLICIES_FOR, POLICY_NAME, POLICY_DESC } from '../lib/progression.js'
 import BodyMap from '../components/BodyMap.jsx'
 import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 import ExName from '../components/ExName.jsx'
+import { routineLabel, routineColor, colorVar, ROUTINE_COLORS } from '../lib/routines.js'
 
 export default function RoutineEdit() {
   const nav = useNavigate()
@@ -40,12 +41,18 @@ export default function RoutineEdit() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Plan')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/plan" />
       <div style={{ flex: 1, margin: '0 12px' }}>
-        <input className="input" defaultValue={r.name} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
+        <input className="input" defaultValue={routineLabel(r.name)} style={{ fontWeight: 600, fontSize: 20, letterSpacing: '-.021em' }}
           onChange={e => update(s => { s.routines.find(x => x.id === id).name = e.target.value.trim() || t('Routine') })} />
       </div>
-      <button className="iconbtn" aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} /></button>
+      <button className="iconbtn rt-glyph" style={{ '--tint': colorVar(routineColor(r)) }} aria-label={t('Pick an icon')} onClick={() => glyphPicker(r.emoji, g => update(s => { s.routines.find(x => x.id === id).emoji = g }))}><Icon name={glyphOf(r.emoji)} /></button>
+    </div>
+
+    <div className="rt-colors" role="radiogroup" aria-label={t('Routine color')}>
+      {ROUTINE_COLORS.map(c => <button key={c} role="radio" aria-checked={routineColor(r) === c} aria-label={t('Routine color') + ' ' + (ROUTINE_COLORS.indexOf(c) + 1)}
+        className={'swatch sm' + (routineColor(r) === c ? ' on' : '')} style={{ background: colorVar(c) }}
+        onClick={() => update(s => { s.routines.find(x => x.id === id).color = c })} />)}
     </div>
 
     <div className="sect-b" style={{ marginBottom: 16 }}>
@@ -98,7 +105,7 @@ export default function RoutineEdit() {
     <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) }), null, r))} icon="plus">{t('Add exercise')}</Button>
     <div style={{ height: 10 }} />
     <Button variant="danger" onClick={() => confirmSheet({
-      title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', r.name), confirmText: t('Delete'), danger: true,
+      title: t('Delete routine?'), message: t('“{0}” and its exercises will be removed.', routineLabel(r.name)), confirmText: t('Delete'), danger: true,
       onConfirm: () => {
         update(s => {
           s.routines = s.routines.filter(x => x.id !== id)

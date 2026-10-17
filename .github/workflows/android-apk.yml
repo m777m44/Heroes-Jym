@@ -1,6 +1,8 @@
 # Builds the Android app (Capacitor) and, for version tags, publishes it as a GitHub Release.
 #
 #   push to main / PR branch  →  signed APK uploaded as a workflow artifact
+#   Every build is the offline APK: all 1,324 exercise images + animations inside (~140 MB),
+#   and the step counter's JVM unit tests must pass first.
 #   push tag v*               →  same APK attached to a GitHub Release as MAHDI-JYM.apk, so
 #                                https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk
 #                                always points at the newest build (the website links there)
@@ -50,10 +52,40 @@ jobs:
       - run: npm ci
         working-directory: frontend
 
-      # VITE_MOBILE build (exercise media from the pinned jsDelivr dataset, so the APK stays
-      # small) + `cap sync`, which copies dist/ and the native plugins into android/.
-      - run: npm run build:mobile
+      # Every exercise image (JPG) and animation (GIF) goes into the APK, so the library works
+      # with no internet. Pinned to the same dataset commit as the CDN links (frontend/package.json).
+      - name: Cache exercise media
+        id: media
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/media
+          key: exercise-media-7455efae41b330c265e7cd4b78dfa848e7ce5ebd
+
+      - name: Download exercise media
+        if: steps.media.outputs.cache-hit != 'true'
+        run: |
+          SHA=7455efae41b330c265e7cd4b78dfa848e7ce5ebd
+          mkdir -p "$RUNNER_TEMP/media"
+          curl -fsSL --retry 5 --retry-delay 5 "https://codeload.github.com/hasaneyldrm/exercises-dataset/tar.gz/$SHA" \
+            | tar -xz -C "$RUNNER_TEMP/media" --strip-components=1 --wildcards '*/images/*' '*/videos/*'
+
+      - name: Check exercise media
+        run: |
+          IMG=$(find "$RUNNER_TEMP/media/images" -type f | wc -l)
+          GIF=$(find "$RUNNER_TEMP/media/videos" -type f | wc -l)
+          echo "images: $IMG  animations: $GIF  ($(du -sh "$RUNNER_TEMP/media" | cut -f1))"
+          if [ "$IMG" -lt 1324 ] || [ "$GIF" -lt 1324 ]; then
+            echo "::error title=Exercise media incomplete::expected 1324 images and 1324 animations"
+            exit 1
+          fi
+
+      # Offline mobile build: VITE_MOBILE web bundle + every exercise media file copied into
+      # dist/ (scripts/bundle-media.mjs fails on any missing file) + `cap sync`, which copies
+      # dist/ and the native plugins into android/.
+      - run: npm run build:mobile:offline
         working-directory: frontend
+        env:
+          MEDIA_DIR: ${{ runner.temp }}/media
 
       - name: Select signing key
         env:
@@ -86,10 +118,12 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          if ! ./gradlew --no-daemon assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
+          # JVM unit tests of the step counter arithmetic (StepMathTest) run first — a failing
+          # test stops the build, so a step-counting regression never ships.
+          if ! ./gradlew --no-daemon testReleaseUnitTest assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
             # Surface compiler / resource errors as annotations — they are readable through the
             # checks API even where the raw job log isn't.
-            msg=$(grep -E "error:|ERROR:|warning: \[|\.java:[0-9]+|\.xml:[0-9]+|AAPT|What went wrong|Execution failed|^> |^  " "$RUNNER_TEMP/gradle.log" \
+            msg=$(grep -E "FAILED|AssertionError|expected:|error:|ERROR:|warning: \[|\.java:[0-9]+|\.xml:[0-9]+|AAPT|What went wrong|Execution failed|^> |^  " "$RUNNER_TEMP/gradle.log" \
               | grep -v "^> Task" | head -80 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=Gradle build failed::$msg"
             exit 1

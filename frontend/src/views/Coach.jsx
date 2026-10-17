@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { fmtDate } from '../lib/format.js'
+import { fmtDate, DAYN, weekOrder, weekStartOf } from '../lib/format.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
 import {
@@ -15,7 +15,7 @@ import {
 } from '../lib/coach-api.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Button, TextArea, SelectRow } from '../components/ui.jsx'
+import { Section, Row, Button, TextArea, SelectRow, BackButton } from '../components/ui.jsx'
 
 /* The Coach's home: what it's doing, what it's proposing, what it has done before, and every
    switch that turns it off. Deliberately one screen — a feature that edits your training plan
@@ -88,7 +88,7 @@ export default function Coach() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/plan" />
       <div style={{ flex: 1, marginLeft: 10 }}>
         <h1>{t('Coach')}</h1>
         <div className="sub">{t('Plan design and reviews, from your own training')}</div>
@@ -255,7 +255,7 @@ function CadenceCard({ coach, update }) {
       <SelectRow icon="calendar" iconTint="var(--orange)" title={t('Day')}
         value={cadence.weekly.day}
         onChange={v => patch(c => { c.cadence = { weekly: { ...c.cadence.weekly, day: v } } })}
-        options={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => ({ value: i, label: t(d) }))} />
+        options={weekOrder(weekStartOf(useStore.getState().S)).map(i => ({ value: i, label: t(DAYN[i]) }))} />
       <Row icon="clock" iconTint="var(--purple)" title={t('Time')}>
         <input type="time" className="timef" value={cadence.weekly.time || '18:00'}
           onChange={e => patch(c => { c.cadence = { weekly: { ...c.cadence.weekly, time: e.target.value } } })} />

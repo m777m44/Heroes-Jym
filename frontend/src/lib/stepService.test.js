@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { serviceConfig, serviceStrings, hasStepService } from './stepService.js'
-import { IRAQ_TZ } from './liveClock.js'
+import { deviceZone } from './liveClock.js'
 
 describe('stepService config', () => {
   it('builds the native config from the profile', () => {
@@ -12,7 +12,8 @@ describe('stepService config', () => {
     expect(c.alerts).toBe(true)
     expect(c.sound).toBe(true)
     expect(c.voice).toBe(true)
-    expect(c.clockZone).toBe(IRAQ_TZ)
+    expect(c.clockZone).toBe(deviceZone())
+    expect(serviceConfig({ clockZone: 'iraq' }, 70).clockZone).toBe(deviceZone())   // old setting ignored
     expect(typeof c.lang).toBe('string')
   })
 
@@ -29,8 +30,7 @@ describe('stepService config', () => {
     expect(st.milestoneTitle).toContain('{steps}')
     expect(st.milestoneBody.every(x => x.includes('{left}'))).toBe(true)
     expect(st.goalBody.every(x => x.includes('{steps}'))).toBe(true)
-    expect(st.zoneLabel).toBeTruthy()
-    expect(serviceStrings({ clockZone: 'device' }).zoneLabel).toBe('')
+    expect(st.zoneLabel).toBe('')                      // 2.9: no city label
   })
 
   it('reports no service outside the Android app', async () => {

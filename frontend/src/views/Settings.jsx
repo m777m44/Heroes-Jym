@@ -2,20 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
+import { todayISO, localTZ, DAYN, weekOrder } from '../lib/format.js'
+import { resolveTheme } from '../lib/themes.js'
+import { ThemeMock, themeName } from './Themes.jsx'
 import { effortOf } from '../lib/history.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { t, U, LANGS, INSTR_LANGS, dateLocale, deviceLang } from '../lib/i18n.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
-import { suggestedReminderTime, reminderPrefs } from '../lib/dailyReminder.js'
+import { suggestedReminderTime, reminderPrefs, timeFor, routineSummary } from '../lib/dailyReminder.js'
+import { routineLabel, routineColor, colorVar } from '../lib/routines.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
+import OfflineSection from '../components/OfflineSection.jsx'
+import AccountSection from '../components/AccountSection.jsx'
+import SecuritySection from '../components/SecuritySection.jsx'
+import { TEXT_SIZES, textScaleOf } from '../lib/a11y.js'
+import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, BackButton } from '../components/ui.jsx'
 
 export default function Settings() {
   const nav = useNavigate()
@@ -72,17 +79,14 @@ export default function Settings() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
-    <Section title={MOBILE ? t('Your data') : DEMO ? t('Demo') : t('Account')}>
-      {MOBILE ? <>
-        <Row icon="lock" iconTint="var(--acc)" title={t('All data stays on this phone')} subtitle={t('No account, no cloud — back it up anytime with Export below.')} />
-        <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host MAHDI-JYM')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
-          onClick={() => window.open(REPO, '_blank', 'noopener')} />
-      </> : DEMO ? <>
+    {MOBILE && <AccountSection />}
+    {!MOBILE && <Section title={DEMO ? t('Demo') : t('Account')}>
+      {MOBILE ? null : DEMO ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
           onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
@@ -99,22 +103,22 @@ export default function Settings() {
       </> : (
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
-    </Section>
+    </Section>}
     {!user && !DEMO && !MOBILE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
-        value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}
-        options={Object.entries(LANGS).map(([k, name]) => ({
+        value={S.lang && LANGS[S.lang] ? S.lang : 'auto'} onChange={v => update(s => { s.lang = v })}
+        options={[{ value: 'auto', label: t('Phone language'), subtitle: LANGS[deviceLang()] }, ...Object.entries(LANGS).map(([k, name]) => ({
           value: k, label: name,
           subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
-        }))}
+        }))]}
       />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
-          options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
+          options={[{ value: 'kg', label: U('kg') }, { value: 'lb', label: U('lb') }]}
           value={S.unit} onChange={v => update(s => { s.unit = v })} />
       </Row>
     </Section>
@@ -123,13 +127,20 @@ export default function Settings() {
     <Section title={t('Walking & body')}>
       <Row icon="figureWalk" iconTint="var(--acc)" title={t('Walking & steps')} subtitle={t('Step counter, daily goal, notification, celebrations')} accessory="chevron" onClick={() => nav('/walk')} />
       <Row icon="scale" iconTint="var(--teal)" title={t('Body weight')} subtitle={t('Comparison, trend, photo verification, BMI')} accessory="chevron" onClick={() => nav('/weight')} />
+      <Row icon="person" iconTint="var(--green)" title={t('Ideal body')} subtitle={t('Ideal weight, body fat, your plan and progress')} accessory="chevron" onClick={() => nav('/ideal')} />
+      <Row icon="heartPulse" iconTint="var(--red)" title={t('Health log')} subtitle={t('Sleep, mood, blood pressure, sugar, medicines')} accessory="chevron" onClick={() => nav('/health')} />
+      <Row icon="drop" iconTint="var(--blue)" title={t('Water & reminders')} subtitle={t('Glass, cup or can · daily goal · reminders with an exercise')} accessory="chevron" onClick={() => nav('/water')} />
+      <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('Full screen, also with the app closed')} accessory="chevron" onClick={() => nav('/walk')} />
+      <Row icon="target" iconTint="var(--orange)" title={t("Today's plan on Home")} subtitle={t('A daily workout, steps and water target for losing weight')}>
+        <Switch checked={S.planOn !== false} onChange={v => update(s => { s.planOn = v })} />
+      </Row>
     </Section>
 
     {/* ---------- during a workout ---------- */}
     <Section title={t('During a workout')} footer={wakeOK ? t('The screen stays on while a workout is running, so you don’t have to unlock your phone between sets.') : null}>
       <SelectRow icon="timer" iconTint="var(--orange)" title={t('Rest timer')}
         value={S.restSec} onChange={v => update(s => { s.restSec = v })}
-        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + 's' }))} />
+        options={[60, 90, 120, 150, 180].map(v => ({ value: v, label: v + ' ' + U('s') }))} />
       {(wakeOK || !MOBILE) && (
         <Row icon="sun" iconTint="var(--yellow)" title={t('Keep screen awake')}
           subtitle={wakeOK ? null : t('Not supported in this browser.')}>
@@ -164,13 +175,10 @@ export default function Settings() {
 
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
-      <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
-        <Segmented
-          className="seg-inline"
-          options={[{ value: 'dark', icon: 'moon', label: t('Dark') }, { value: 'light', icon: 'sun', label: t('Light') }]}
-          value={S.theme === 'light' ? 'light' : 'dark'}
-          onChange={v => update(s => { s.theme = v })}
-        />
+      {/* every theme behind one row — 658 curated in 12 categories + the Theme Studio, follow the phone, accent (views/Themes.jsx) */}
+      <Row icon="sparkles" iconTint="var(--pink)" title={t('Themes')} accessory="chevron" onClick={() => nav('/themes')}
+        subtitle={themeName(resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)) + (S.themeSystem !== false ? ' · ' + t('Follow the phone') : '')}>
+        <ThemeMock th={resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)} />
       </Row>
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
@@ -181,19 +189,27 @@ export default function Settings() {
           onChange={v => update(s => { s.body = v })}
         />
       </Row>
-      <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
-        <span className="lrow-t">{t('Accent color')}</span>
-        <div className="swatches">
-          {Object.entries(ACCENTS).map(([k, c]) => (
-            <button key={k} className={'swatch' + ((S.accent || 'lime') === k ? ' on' : '')}
-              style={{ background: c }} onClick={() => update(s => { s.accent = k })} aria-label={k} />
-          ))}
-        </div>
-      </div>
     </Section>
+
+    {/* 4.0: accessibility — text size, contrast, motion (lib/a11y.js) */}
+    <Section title={t('Accessibility')} footer={t('Animations also stop when the phone’s own “remove animations” setting is on.')}>
+      <Row icon="textformat" iconTint="var(--blue)" title={t('Text size')} />
+      <div className="bk-keep"><Segmented options={TEXT_SIZES.map(x => ({ value: x.value, label: t(x.label) }))} value={textScaleOf(S)} onChange={v => update(s => { s.textScale = v })} /></div>
+      <Row icon="contrast" iconTint="var(--label-2)" title={t('High contrast')} subtitle={t('Stronger text, lines and outlines')}>
+        <Switch checked={!!S.highContrast} onChange={v => update(s => { s.highContrast = v })} />
+      </Row>
+      <Row icon="eye" iconTint="var(--teal)" title={t('Reduce motion')} subtitle={t('No animations or confetti')}>
+        <Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} />
+      </Row>
+    </Section>
+
+    {MOBILE && !DEMO && <SecuritySection />}
+
+    <OfflineSection />
 
     {/* ---------- data: fill it, bring things over, back it up, wipe it ---------- */}
     <Section title={t('Data')}>
+      <Row icon="history" iconTint="var(--green)" title={t('Backups & restore')} subtitle={t('Versions of your data you can go back to')} accessory="chevron" onClick={() => nav('/backups')} />
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Load starter plan (PPL)')} accessory="chevron" onClick={loadStarterPlan} />
       <Row icon="shuffle" iconTint="var(--teal)" title={t('Import from another app')}
         subtitle={t('FitNotes, Strong, Hevy — or body weight from Apple Health')}
@@ -272,21 +288,56 @@ function effortHelpSheet() {
   </>)
 }
 
+// 2.6: each training day of the week (Saturday → Friday) with its routine — how many
+// exercises, about how long — and its own reminder time (blank = the time for every day).
+function ReminderWeek({ S, setReminder }) {
+  const r = reminderPrefs(S)
+  const rows = weekOrder(6).map(d => {
+    const routine = (S.routines || []).find(x => x.id === (S.week || {})[d])
+    return routine ? { d, routine, sum: routineSummary(routine, S.restSec) } : null
+  }).filter(Boolean)
+  if (!rows.length) return <Row icon="calendar" iconTint="var(--grey)" title={t('No routines on your week yet')} subtitle={t('Put routines on days in Plan — each one gets its reminder.')} />
+  const setDay = (d, v) => {
+    const days = { ...r.days }
+    if (!v || v === r.time) delete days[d]; else days[d] = v
+    setReminder({ days })
+  }
+  return <div className="rweek">
+    {rows.map(({ d, routine, sum }) => {
+      const own = !!r.days[d]
+      return <div key={d} className="rweek-row" style={{ '--rc': colorVar(routineColor(routine)) }}>
+        <span className="rweek-dot" aria-hidden="true" />
+        <div className="rweek-t">
+          <b>{t(DAYN[d])} · {routineLabel(routine.name)}</b>
+          <span>{t('{0} exercises · about {1} min', sum.n.toLocaleString(dateLocale()), sum.min.toLocaleString(dateLocale()))}</span>
+        </div>
+        <input type="time" className={'timef' + (own ? ' own' : '')} value={timeFor(r, d)} aria-label={t(DAYN[d])}
+          onChange={e => setDay(d, e.target.value)} />
+      </div>
+    })}
+  </div>
+}
+
 // Rows shared by both reminder cards (native and push) once the daily reminder is on: the
 // time, a smart suggestion from when you actually train, the follow-up and rest-day walks.
 function ReminderExtras({ S, setReminder }) {
   const r = reminderPrefs(S)
   const sug = suggestedReminderTime(S.workouts)
   return <>
-    <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')}>
+    <Row icon="clock" iconTint="var(--purple)" title={t('Reminder time')} subtitle={t('For every day — or set a time per day below')}>
       <input type="time" className="timef" value={S.reminder?.time || DEF.reminder.time}
-        onChange={e => setReminder({ time: e.target.value })} />
+        onChange={e => e.target.value && setReminder({ time: e.target.value })} />
     </Row>
+    <ReminderWeek S={S} setReminder={setReminder} />
     {sug && sug.remind !== r.time && (
       <Row icon="lightbulb" iconTint="var(--yellow)" title={t('Use {0}', sug.remind)}
         subtitle={t('You usually start training around {0} — remind you half an hour before.', sug.usual)}
         accessory="chevron" onClick={() => setReminder({ time: sug.remind })} />
     )}
+    <Row icon="figureStrength" iconTint="var(--green)" title={t('Home-workout reminder')}
+      subtitle={t('Days without a routine: the day’s no-equipment workout, on screen with a light vibration.')}>
+      <Switch checked={r.home} onChange={v => setReminder({ home: v })} />
+    </Row>
     <Row icon="reset" iconTint="var(--orange)" title={t('Follow-up reminder')} subtitle={t('Once more an hour later if the workout still isn’t logged.')}>
       <Switch checked={r.nudge} onChange={v => setReminder({ nudge: v })} />
     </Row>
@@ -305,22 +356,23 @@ function NotificationsCard({ S, update, toast }) {
 // no push server involved. The schedule itself is (re)synced by the store on every persist;
 // this card only owns the OS permission prompt when the switch turns on.
 function MobileReminderCard({ S, update, toast }) {
-  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), ...patch, tz: localTZ() } })
+  const isOn = reminderPrefs(S).on
+  const setReminder = patch => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: reminderPrefs(s).on, v2: true, ...patch, tz: localTZ() } })
   const toggle = async () => {
-    const on = !S.reminder?.on
+    const on = !isOn
     if (on) {
-      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true } }, true)
+      const ok = await syncReminder({ ...S, reminder: { ...(S.reminder || DEF.reminder), on: true, v2: true } }, true)
       if (!ok) { toast(t('Could not change notification settings')); return }
     }
     setReminder({ on })
   }
   return (
     <Section title={t('Notifications')}
-      footer={S.reminder?.on ? t('Reminds you at this time on days that have a routine planned and not yet trained — with your step goal in the same notification.') : null}>
+      footer={isOn ? t('Reminds you on days that have a routine planned and not yet trained — with the exercises, about how long it takes and your step goal in the same notification.') : null}>
       <Row icon="calendar" iconTint="var(--orange)" title={t('Workout day reminder')}>
-        <Switch checked={!!S.reminder?.on} onChange={toggle} />
+        <Switch checked={isOn} onChange={toggle} />
       </Row>
-      {S.reminder?.on && <ReminderExtras S={S} setReminder={setReminder} />}
+      {isOn && <ReminderExtras S={S} setReminder={setReminder} />}
     </Section>
   )
 }

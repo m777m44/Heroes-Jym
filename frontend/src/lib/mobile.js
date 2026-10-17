@@ -41,6 +41,19 @@ export async function nativeSave(state) {
 // are saved every few seconds on a walk. `interactive` gates the OS permission prompt to the
 // Settings toggle; a background resync never pops a dialog.
 let lastSig = null
+// true when the Android step service took the list (it replaces whatever was scheduled before).
+async function nativeWorkoutReminders(items) {
+  try {
+    const { hasStepService, call } = await import('./stepService.js')
+    if (!(await hasStepService())) return false
+    const { t } = await import('./i18n.js')
+    const r = await call('scheduleWorkoutReminders', {
+      items,
+      strings: { channel: t('Workout reminders'), channelDesc: t('Your workout and home-workout reminders'), start: t('Start'), later: t('In 30 min') },
+    })
+    return !!r && typeof r.scheduled === 'number'
+  } catch { return false }
+}
 export async function syncReminder(S, interactive = false) {
   try {
     const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS } = await import('./dailyReminder.js')
@@ -49,20 +62,60 @@ export async function syncReminder(S, interactive = false) {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i)]
     await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
-    if (!S.reminder?.on) { lastSig = sig; return true }
+    const { reminderPrefs } = await import('./dailyReminder.js')
+    if (!reminderPrefs(S).on) { await nativeWorkoutReminders([]); lastSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
-    const notifications = planReminders(S).map(item => ({
-      id: item.id,
-      ...reminderText(item, S),
-      schedule: { at: item.at, allowWhileIdle: true },
-      extra: { route: item.kind === 'walk' ? '/walk' : '/home' },
-    }))
+    const plan = planReminders(S)
+    const routeOf = item => (item.kind === 'walk' ? '/walk' : '/home')
+    // 2.10 Android: scheduled natively — a heads-up banner with a light vibration, "Start" and
+    // "In 30 min" buttons, back after a reboot (WorkoutReminder.java).
+    if (await nativeWorkoutReminders(plan.map(item => {
+      const tx = reminderText(item, S)
+      return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
+        route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
+    }))) { lastSig = sig; return true }
+    const notifications = plan.map(item => {
+      const { title, body } = reminderText(item, S)
+      return { id: item.id, title, body, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
+    })
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true
   } catch (e) { return false }
+}
+
+// 3.0 — medicine & vitamin reminders from the health log: one daily repeating local
+// notification per dose time (ids 7400 + n), on their own channel with vibration. Re-run only
+// when the list changes.
+let lastMedSig = null
+export async function syncMedReminders(S, interactive = false) {
+  try {
+    const { medReminders, MED_ID_BASE } = await import('./health.js')
+    const items = medReminders(S)
+    const sig = JSON.stringify([items, S.lang])
+    if (!interactive && sig === lastMedSig) return true
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    await LocalNotifications.cancel({ notifications: Array.from({ length: 60 }, (_, i) => ({ id: MED_ID_BASE + i })) }).catch(() => {})
+    if (!items.length) { lastMedSig = sig; return true }
+    let perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
+    if (perm.display !== 'granted') return false
+    const { t } = await import('./i18n.js')
+    await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.schedule({
+      notifications: items.map(m => ({
+        id: m.id, channelId: 'mj_meds',
+        title: (m.kind === 'vit' ? '💊 ' + t('Vitamin time: {0}', m.name) : '💊 ' + t('Medicine time: {0}', m.name)),
+        body: (m.dose ? m.dose + ' · ' : '') + t('Tap to mark it as taken.'),
+        schedule: { on: { hour: m.hour, minute: m.minute }, repeats: true, allowWhileIdle: true },
+        extra: { route: '/health' },
+      })),
+    })
+    lastMedSig = sig
+    return true
+  } catch { return false }
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet

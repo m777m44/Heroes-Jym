@@ -3,6 +3,609 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v4.1.0 — 2026-10-17
+
+**Google sign-in that never ends in "didn't work", a Google check that shows exactly what Google
+compares and what it answered, and today's workout linked to your scale.**
+*تسجيل دخول Google لا ينتهي أبدًا بـ«لم ينجح»، فحص Google يعرض بالضبط ما يقارنه Google وما ردّ به، وتمرين اليوم مربوط بميزانك.*
+
+### Google sign-in & Drive
+- **Signing in can't fail any more once you pick an account.** If Google Drive can't be used yet,
+  everything is saved to your account through Android Backup, and the app quietly tries Drive
+  again every 6 hours. Settings → Account no longer shows "Google sign-in didn't work".
+- **Google check** (Settings → Backups & restore): the package name and the **SHA-1 of the
+  installed app**, read from the phone (tap to copy) — with a warning when it isn't the release
+  key — Google Play services, Drive's status, and **Google's last answer** with its code, what it
+  means and what to do. **Test Google Drive** tries again on the spot.
+- **Every Google answer explained** in all 13 languages: app not registered (10 / 12500 /
+  UNREGISTERED), Drive API switched off (403 accessNotConfigured), permission not allowed,
+  account not a test user (403 / AUTH), no connection, no Google Play services.
+- "Use Google Drive" and "Save now" show Google's real reason instead of a generic error.
+- The setup guide uses the SHA-1 of the app you're running and says plainly: only an **Android**
+  OAuth client is needed — no Web client ID, no new app version.
+- Saving keeps happening on its own: a few seconds after opening, after changes, and when the app
+  goes to the background (with a daily version in Drive).
+
+### Today's workout, linked to your scale
+- Today's plan on Home now compares your **latest weigh-in** with your **ideal weight** (from your
+  height and age) and your **target weight**: lose / gain / keep, and how big the gap is
+  (over 15 kg big, over 5 kg medium).
+- **Why today looks like this** — e.g. "You are 12.4 kg above your ideal weight — today is built
+  to burn more calories" — and a nudge to weigh in when the last weigh-in is over a week old.
+- **Intensity** (very light → hard) from the kind of day, the gap and **how you feel today**:
+  tap 😴 Tired / 🙂 Normal / ⚡ Full of energy. Tired days get one set less per exercise; a big
+  fat-loss gap or lots of energy, one more (never on recovery days or your own routines).
+- **Remind me at …** — one tap sets the daily workout reminder to your usual training time
+  (from your last workouts, else 18:00). Reminders are planned **two weeks ahead** and each one
+  now says why ("⚖️ …") along with the exercises, steps, water and calories.
+- Reminders re-plan by themselves when your weight, target or energy changes.
+
+## v4.0.0 — 2026-10-17
+
+**Two ways to start a workout (without / with equipment), versioned backups you can go back
+to, a smoother colour wheel with colour tools, 56 new theme families, and accessibility:
+text size, high contrast, reduced motion — plus a fingerprint / PIN lock for the app.**
+*طريقتان لبدء التمرين (بدون معدّات / بالمعدّات)، نسخ احتياطية بإصدارات يمكنك الرجوع إليها، عجلة ألوان أنعم مع أدوات الألوان، 56 عائلة ثيمات جديدة، وسهولة استخدام: حجم الخط، تباين عالٍ، تقليل الحركة — مع قفل التطبيق بالبصمة أو الرمز.*
+
+### Start your workout
+- The centre **Start** button opens a new screen with two big cards: **Without equipment**
+  (at home, 325 exercises) and **With equipment** (at the gym, 999 exercises), above today's
+  workout from your plan and a suggestion for today from your goal.
+- **Without equipment:** HIIT, cardio, abs & core, upper body, lower body, full body,
+  running & walking (with a shortcut to the step counter) and stretching & yoga.
+- **With equipment:** chest, back, legs, shoulders, biceps, triceps, core and full body, with an
+  **equipment filter** (barbell, dumbbells, cable, machines, kettlebell, bands, balls & more).
+- Every category has a **quick session** (4 / 6 / 8 exercises; staples like push-ups, squats,
+  bench press and rows lead, spread over the muscles; tap shuffle for another set), sensible
+  sets and reps for the kind of training, an estimated time, and a full list to **pick your
+  own** (up to 15). Your **recent sessions** sit on the start screen, one tap to do again.
+
+### Backups & restore (Settings → Data, or Account)
+- **Versions of your data:** a full copy is saved **once a day** when something changed, and
+  whenever you tap **Save a version now**. Keep the newest 3, 7 (default) or 14; your own
+  saves are kept apart. **Restore** any version — what you have now is saved first as
+  "Before a restore", so a restore can always be undone — or **delete** it.
+- When Google Drive is switched on for the app, the daily version is also uploaded to the
+  private app folder in Drive (the same number kept), listed on the same screen with restore and
+  delete; syncing retries by itself when the connection comes back.
+- A clear status card shows where your account copy goes (this phone only / Google Drive /
+  Android Backup), and a step-by-step guide explains the one-time Google Cloud setup that
+  switches Drive on, with the package name and SHA-1 to copy.
+
+### Colour wheel & themes
+- The Theme Studio's wheel is painted once and redrawn at most once per frame, so dragging is
+  smooth on mid-range phones, with a live read-out; arrow keys and [ ] work on a keyboard.
+- New colour tools under the wheel: the theme's real colours with **HEX / RGB / HSL to copy**,
+  a gradient preview, **colour harmonies** for the accent (complementary, split complementary,
+  triadic, analogous, monochrome) and your **recent colours**.
+- **56 new theme families** (392 themes) in two new categories, **MAHDI Signature** and
+  **Coder classics** (Dracula, Nord, Tokyo Night, Gruvbox, Solarized, Monokai, One Dark…), and
+  new members of the existing ones (glass, neon, nature, royal, light…). 16 categories,
+  1,330 curated themes, 2,722,930 in all.
+
+### Accessibility & security
+- **Settings → Accessibility:** text size (Small / Normal / Large / Largest — the whole
+  interface scales), **high contrast** (stronger text, separators and outlines) and **reduce
+  motion** (no animations or confetti; the phone's own setting is always followed too).
+- **Settings → Security** (Android): **lock the app with your fingerprint, face or the phone's
+  PIN**, after it was away right away / 1 / 5 / 15 minutes. It uses the phone's own screen
+  lock — the app never sees your fingerprint — and the phone's PIN always works. If the
+  phone's screen lock is removed, the app lock turns itself off instead of locking you out.
+- Screens open faster: the less-used ones load on demand.
+
+### Under the hood
+- `lib/workoutCategories.js`, `lib/backups.js` (IndexedDB / Capacitor files, a daily
+  auto-version), Drive versions in `lib/cloud.js`, `lib/a11y.js`, `lib/appLock.js` with a new
+  native `AppLock` plugin (androidx.biometric), `lib/colorTools.js`.
+- 477 frontend tests (new: workout sections, backups, accessibility / lock timing, smoke tests
+  for the new screens), 12 locales × 2,044 keys in sync. Android versionCode 20.
+
+## v3.0.0 — 2026-10-17
+
+**A full body plan: your ideal weight from 8 methods, what your body is made of, calories
+and macros that adapt, a week-by-week road with milestones, workouts by goal and a
+comparison dashboard. Plus 40 new themes with glass styles, a colour wheel, theme files,
+and a private health log with medicine reminders.**
+*خطة جسم كاملة: وزنك المثالي من 8 طرق، مكوّنات جسمك، سعرات وماكروز تتكيّف، طريق أسبوعي بمحطات إنجاز، تمارين حسب هدفك ولوحة مقارنة. مع 40 ثيم جديد بأنماط زجاجية، عجلة ألوان، ملفات ثيمات، وسجل صحي خاص مع تذكير الأدوية.*
+
+### 🧍 Ideal body, now in four tabs: Overview · Body · Plan · Compare
+- **8 ways to work out your ideal weight:** Devine, Robinson, Miller, Hamwi, Broca, Lorentz,
+  BMI 22 and one based on body fat. Each is drawn against your healthy range. Your ideal
+  weight blends them with the age-adjusted BMI range and adjusts ±5% for your **frame size**
+  (small / medium / large, worked out from your wrist or picked by you).
+- **What your body is made of:** fat, lean mass, skeletal muscle and body water, in kg and
+  %, with a colour bar. Body fat uses the **US-Navy tape method** once you add your neck
+  (and hips for women), otherwise the estimate from BMI and age. Both are shown.
+- **Your programme:** lose fat, build muscle or keep your weight. It is chosen for you, or
+  you pick it.
+- **Calories and macros:** protein, carbs and fat in grams and %. **Calories adapt**: if your
+  weight stalls for weeks the plan trims 150 kcal; if you lose too fast it adds 200 back
+  (never below a safe floor).
+- **Your road, week by week:** "Make it my goal" starts a plan from today's weight, with a
+  target for every week (on track ✓, behind ↑, missed), 25 / 50 / 75 / 100% milestones, and
+  a **full-screen celebration** when a weigh-in reaches one.
+- **Workouts by goal:**
+  - **Lose fat:** home workouts, HIIT and walking, as before.
+  - **Build muscle:** a gym week of Push / Pull / Legs / Upper / Lower with real gym
+    exercises and muscle-building tips. The reminder says "Gym workout".
+  - **Keep my weight:** a mix of strength, walking and recovery.
+  - Your training week is shown in the Plan tab.
+- **Compare:** now vs before, your ideal, your goal, body fat, muscle and BMI side by side,
+  a progress bar from your start to your goal, and the weight chart with the ideal band and
+  goal line.
+
+### 🎨 Themes: 40 more, glass styles, a colour wheel and theme files
+- **40 new families** (280 themes) in two new categories, **Glass style** (10, with
+  see-through cards over a soft aurora) and **Minimal** (8), plus new Dark, Light, Neon and
+  Nature families. That makes 938 curated themes in 14 categories, and **2,722,538** in all.
+- **Colour wheel** in the Theme Studio: drag inside for the background colour and strength,
+  and on the ring for the accent.
+- **Your own colour (HEX):** type or pick a colour to build a Studio theme around it, and see
+  the closest ready-made theme.
+- **Theme file:** export My themes and the current theme as a small JSON file, or import one
+  from a friend or another phone.
+
+### ❤️ Health log (new: Settings → Health log, or the card on Home)
+- Every day: **mood, energy, stress** (1–5), **sleep** hours and quality, **resting heart
+  rate**, **blood pressure** readings and **blood sugar** readings (fasting / after a meal /
+  any time, in mg/dL or mmol/L).
+- Readings are coloured by the official ranges: blood pressure by the American Heart
+  Association, blood sugar by the American Diabetes Association.
+  - A **red warning** appears for a blood-pressure crisis (over 180 / 120).
+  - An orange one appears for low sugar.
+- **Medicines & vitamins:** name, dose and up to 6 times a day. Tick off each dose, and get a
+  **reminder notification** at each time, even when the app is closed. Tap the reminder to
+  open the log.
+- **Trends** over 7 or 30 days: averages, doses taken %, and charts for sleep, mood, blood
+  pressure, heart rate and sugar. Move between days with ‹ ›.
+- Private: it stays on the phone (and in your own backup). It is not a diagnosis.
+
+### 🌍 Everything in 12 languages
+- 268 new strings, all translated (1,824 keys per language). The Arabic UI guard now also
+  checks the health log, every Ideal body tab and the new sheets.
+
+## v2.12.0 — 2026-10-17
+
+**Your ideal body by height, age and sex, and more than 2.7 million themes, sorted into
+categories: Golden, Royal, Premium, Dark, Light and more, plus a Theme Studio.**
+*جسمك المثالي حسب الطول والعمر والجنس، وأكثر من 2.7 مليون ثيم مقسّمة إلى فئات: الذهبي، الملكي، المتميز، الداكن، الفاتح وغيرها، مع استوديو الثيمات.*
+
+### 🧍 Ideal body (new screen: Settings → Ideal body, or the line under any weight card)
+- **Your ideal weight** worked out from your **height, age and sex**. It combines the
+  age-adjusted BMI range (WHO, plus the US NRC table by age) with the four classic formulas
+  (Devine, Robinson, Miller, Hamwi), and it always stays inside the healthy range for your
+  height and the ideal range for your age.
+- **Is your weight right for your height?** You get a BMI gauge with the four bands, your ideal
+  band and a marker for you, plus how many kg you are from your ideal weight, or "you are in
+  your ideal range".
+- **Make it my goal** in one tap. The weight goal, the progress bar and the goal date all
+  follow it.
+- **Your numbers:**
+  - BMI with its category.
+  - Estimated body fat against the healthy range for your age and sex.
+  - Resting burn (Mifflin–St Jeor).
+  - Daily energy, from your real step average over the last 7 days.
+  - Calories to lose, gain or keep.
+  - Protein and water per day.
+  - Waist ÷ height, if you add your waist.
+- **Your road there:** how many weeks it takes at a safe pace (0.25–0.5 kg a week, never below
+  1,200 / 1,500 kcal), and the expected date.
+- **Weight monitoring:**
+  - A pace check compares how fast you are actually losing or gaining with a safe 0.25–1 % of
+    your weight a week. It flags "too fast", "good", "stalled" or "going the wrong way".
+  - The body-weight chart now shades your ideal range behind the curve.
+- Under-18s get their BMI and a growth-chart note instead of an adult ideal weight.
+- Age is saved as a birth year, so it stays correct as the years pass. Everything stays on
+  the phone.
+
+### 🎨 Themes
+- **Categories inside Themes:**
+  - Golden, Royal, Premium, Dark, Light, Nature, Ocean & sky, Neon, Warm, Pastel, Classic and
+    Sport.
+  - A chip bar shows a count on every chip.
+  - The screen opens on the category of the theme you are using.
+- **658 named themes** (up from 120): 94 colour families (Champagne, Black gold, Imperial,
+  Sapphire, Diamond, Obsidian, Pearl, Marble, Galaxy, Synthwave, Matrix, Lagoon, Terracotta,
+  Cotton candy…), each in 7 styles. "Tinted" is new.
+- **Theme Studio, with 2,721,600 more themes.** Pick a background colour, colour strength,
+  accent, style and glow:
+  - Every combination has its own number. Jump to any number, step with ‹ ›, or tap 🎲 for a
+    surprise.
+  - You get 9 fresh ideas each time.
+  - The accent is always tuned to stay readable.
+- **2,722,258 themes in all.** "Follow the phone" also works with Studio themes.
+- **My themes:** keep up to 30 favourites with ★. They get their own chip at the front.
+
+### ✨ Also
+- New icons: crown, medal, palette, dice and more.
+- New translations in all 12 languages.
+- Arabic is fully Arabic on the new screens. The formula names are written in Arabic too.
+
+## v2.11.0 — 2026-10-13
+
+**Close any panel the way you expect — swipe it down or tap ✕ — and a ‹ back button that
+takes you back to where you came from, on every screen.**
+*أغلق أي لوحة كما تتوقع — اسحبها للأسفل أو اضغط ✕ — وزر رجوع ‹ في كل شاشة يعيدك إلى حيث كنت.*
+
+### ✕ Panels (bottom sheets)
+- **Every panel has a ✕ button** at its top right.
+- **Swipe down to close:** the panel follows your finger and the background fades with it; a
+  long pull or a quick flick closes it, a small one springs back. The handle bar always drags,
+  even when the panel is scrolled.
+- **The quick check-in before a workout** (the weight panel after the centre *Start* button)
+  is no longer stuck: swipe it down, tap ✕, tap outside or press Back — nothing starts.
+- **A smooth way out** for every panel and dialog: they slide down / fade instead of vanishing,
+  whether closed by ✕, a swipe, a tap outside, the phone's Back button or a button inside.
+- **Esc** closes the top panel on a keyboard.
+
+### ‹ Back
+- **One back button on every screen** (Settings, Themes, Walking, Water, Body weight, History,
+  a routine, the coach): it goes back to the screen you came from, and to the right screen
+  when you arrived from a notification. It points the right way in Arabic.
+- The phone's Back button closes the top panel first, then goes back, as before.
+- The tab bar now highlights *Home* on Water and Themes, and *Plan* on the coach.
+
+## v2.10.0 — 2026-10-13
+
+**120 themes in one "Themes" screen, the app follows your phone's language and light / dark
+mode, a home-workout reminder with a light vibration, steps that never jump back, the walking
+buttons from 2.8 — refined — and a brand-new celebration.**
+*١٢٠ ثيمًا في زر واحد «الثيمات»، التطبيق يتبع لغة الهاتف ووضعه الفاتح/الداكن، تذكير تمرين البيت
+مع اهتزاز خفيف، عدّاد خطوات لا يرجع للخلف، أزرار المشي بأسلوب 2.8 بشكل أقوى، واحتفال جديد كليًا.*
+
+### 🎨 Themes (new)
+- **One "Themes" row in Settings opens 120 themes:** 20 colour families (Classic, Midnight,
+  Ocean, Forest, Sunset, Sakura, Royal, …) × 6 styles — *Dark*, *Pure black* (AMOLED), *Deep*,
+  *Dusk*, *Light* and *Pastel*. Every card is a live mini preview.
+- **Follows the phone** by default: switch the phone to light or dark and the app switches to
+  the matching version of your theme. Filter by *All / Dark / Light*.
+- The accent colour follows the theme, or pick your own.
+
+### 🌍 Language
+- A fresh install opens in **the phone's language** (*Settings → Language → Phone language*);
+  change the phone's language and the app follows. Anything you chose yourself is kept.
+
+### 🏠 Home-workout reminder (new)
+- On days without a gym routine, a **heads-up reminder with a light vibration** shows the day's
+  no-equipment workout: name, number of exercises, minutes, and the day's steps, water and
+  calories. **Start** opens the workout right away; **Later** reminds you in 30 minutes.
+- A follow-up an hour later if you haven't trained yet. *Settings → Notifications*.
+
+### 👟 Steps
+- **The number never steps back** (7,412 → 7,409 → 7,413 is gone): live steps from the step
+  detector are shown at once and the step counter confirms them, without ever counting a step
+  twice. Unconfirmed steps are dropped when you stop; only confirmed steps are saved.
+- **Walking buttons:** back to the 2.8 layout — one big start / pause button, stop and reset
+  beside it — larger, clearer and smoother.
+
+### 💧 Water
+- **The exercise with each water reminder follows the day's workout** — leg moves on leg day,
+  mobility on Friday, cardio bursts on HIIT day, 30 new moves in total.
+
+### 🎉 Celebration
+- **Fireworks**, slowly turning light rays, twinkling stars and a shine across the badge;
+  a new **brass fanfare** with a final chord (in the app and outside it).
+
+### 📅 Today's plan
+- **The whole week at a glance** (Saturday → Friday): each day's workout, minutes, steps and
+  water, with the exercises one tap away.
+- **On-plan streak:** days in a row with a day score of 67 % or more.
+
+## v2.9.0 — 2026-10-13
+
+**A plan for every day — workout, steps and water — to lose weight and get fitter, water
+reminders that vibrate, and a cleaner, more modern look.**
+*خطة لكل يوم — تمرين وخطوات وماء — لخسارة الوزن وتحسين الجسم، وتذكيرات ماء تهتز، وتصميم أنظف وأحدث.*
+
+### 🎯 Today's plan (new)
+- A card on Home gives **every day one workout, a steps target and a water target** that fit
+  together: Saturday full-body fat burn, Sunday walking + core, Monday legs & glutes, Tuesday
+  HIIT, Wednesday upper body & core, Thursday long walk + core, Friday mobility & recovery.
+- **Adapts to you:** your steps target is your last week's average + 10 % (more on walking
+  days); sets grow as you train more often; with a high BMI jumps are replaced by
+  **joint-friendly** moves. A routine from your own week plan always comes first.
+- Three rings (workout · steps · water), a **day score**, minutes, **calories and grams of fat
+  burned**, the distance to your goal weight and a daily fat-loss tip.
+- **One tap starts the workout** with the right exercises, sets and reps.
+- Finish all three and the **full-screen celebration** plays.
+
+### 💧 Water
+- **Reminders vibrate** with a gentle "drip, drip, drop", also when the sound is off
+  (*Water → Reminders → Vibrate*, on by default).
+- **Today's schedule:** each reminder time with how much you should have drunk by then,
+  *on track* or *X ml behind*, and a one-tap catch-up.
+
+### ✨ Look & controls
+- **New switches:** one neat size everywhere, a soft gradient, a check mark on the knob, a
+  focus ring. **Fixed:** in Arabic the knob slid out of the switch and over the text.
+- **Step counter controls** are now one dock: a big round start/pause button between two
+  equal round buttons, *Reset* and *Stop*, each labelled.
+- **Buttons** have one height per size, so rows and cards line up.
+- **Fixed:** sliders in Arabic filled from the wrong side.
+
+### 🕐 Clock
+- The word **"Baghdad" is gone**: the clock always shows **your phone's local time**, in the
+  app, the notification and the widget (the clock-zone setting was removed).
+
+### 🛠 Under the hood
+- 12 new tests (388 in total); 50 new translations in 12 languages.
+- **Fixed:** five Coach server tests began failing on 13 October because their sample workout
+  had aged out of the 12-week review window; the sample data now uses dates relative to today.
+
+## v2.8.0 — 2026-10-13
+
+**Sign in with Google now always works: no more "isn't set up for this version", and your data
+is saved to your Google account straight away.**
+*تسجيل الدخول بحساب Google يعمل دائمًا الآن: لا مزيد من رسالة «غير مُعدّ لهذه النسخة»، وتُحفظ بياناتك في حساب Google مباشرةً.*
+
+### 🔐 Google account: works on every phone, no setup
+- **Fixed:** picking an account showed *"Google sign-in isn't set up for this version of the
+  app yet. Your data stays on this phone for now."* Signing in now uses **Android's own
+  account chooser** (the Google accounts already on the phone, no password), which needs no
+  Google Cloud setup.
+- **Saved to your Google account at once through Android Backup.** Android uploads it in the
+  background and **puts it back by itself** when you install MAHDI-JYM again or on a new
+  phone: you open the app and you're welcomed back with everything in place.
+- **Google Drive** (sync within seconds) switches on **by itself** once the app's one-time Google
+  Cloud setup is done. It is retried quietly every few hours, or right away from
+  *Settings → Google account → Use Google Drive*.
+- Settings shows **where your data is saved** (Android Backup or Google Drive), with
+  *last saved*. Your name and photo appear once Drive is connected.
+
+### 🛠 Fixes and polish
+- **Fixed:** after signing out and back in, automatic saving could stop until the app was
+  restarted.
+- Duplicate translations removed in 11 languages. Code clean-ups.
+- 7 new tests for the account (376 in total).
+
+## v2.7.0 — 2026-10-13
+
+**One elegant notification for everything, Back pressed twice to leave, and Google sign-in
+that no longer hangs.**
+*إشعار واحد أنيق لكل شيء، الخروج بضغطتين على زر الرجوع، وتسجيل دخول Google لم يعد يتجمّد.*
+
+### 🔔 One notification instead of two
+- The step counter and the water panel are now **one bar**, divided into clear sections:
+  - **Header:** today's date, status (Live / Walking / Paused), a clock and a **⏸ / ▶** button.
+  - **Two cards side by side:** green **Steps** (count / goal, %, bar, "2,350 steps to go")
+    and blue **Water** (ml / goal, %, bar, "750 ml to go"). Both turn into a ✓ at the goal.
+  - **Stats:** km · kcal · km/h · walking time.
+  - **Containers:** glass / كلاص · cup / كوب · can / علبة · bottle / قنينة. One tap adds a drink.
+    Undo and Edit sit beside them.
+  - **Footer:** the motto and the countdown to midnight.
+- **Collapsed**, it shows steps and water side by side, plus a "+" for your usual container.
+- Everything works with the app closed, and the bar updates the moment you drink or walk.
+- **Water reminders still pop up** for a moment so you notice them. They go away by themselves
+  when you drink, tap *In 15 min*, or after 15 minutes.
+- With the step counter off, the water keeps its own panel as before. With water in the
+  notifications off, the steps card fills the bar.
+- The water screen's preview shows the new bar.
+
+### ↩️ Back button: press twice to exit
+- Back closes an open sheet first, then goes back a screen (or Home from a tab).
+- On Home, the first press shows **"Press back again to exit"**. Only a second press within
+  2 seconds leaves the app, and the step counter keeps counting in the background.
+
+### 🔐 Google sign-in no longer hangs
+- **Fixed:** sign-in could stay frozen on *"Connecting your account… choose an account in
+  the window that appears"*, and no account list ever opened. The cause was a JavaScript
+  promise that never settled, so the native chooser was never asked to open. It now opens
+  straight away.
+- Every step has a time limit, a hint appears if it's slow, and **Cancel** is always there,
+  both on the first-launch screen and in Settings → Google account.
+- If the chooser opens and then shows **error 10**, the one-time Google Cloud setup isn't done
+  yet (see [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
+
+## v2.6.0 — 2026-10-13
+
+**Water right in the notifications, a water goal that adapts to your day, workout reminders
+at each day's own time, and sign in with Google to save everything to your account.**
+*الماء داخل الإشعارات، هدف ماء يتكيّف مع يومك، تذكير بالتمارين في وقت كل يوم، وتسجيل الدخول بحساب Google لحفظ كل شيء في حسابك.*
+
+### 🔐 Sign in with Google: everything saved to your account
+- **First launch** asks where your data should live: **Continue with Google** (Google's
+  own chooser lists **the accounts already on the phone**; pick one, no password),
+  **Save on this phone**, or **Skip**.
+- Workouts, plan, routines, steps, water, body weight and settings go into a **private
+  app folder in your Google Drive** that only MAHDI-JYM can see (`drive.appdata`, so your own
+  files are never visible to the app). There is no MAHDI-JYM server in between.
+- **Saved automatically**: a moment after each change, and right away when the app goes to
+  the background. If both the account and this phone hold data on first sign-in, you choose
+  which copy to keep. A new phone signed in to the same account gets everything back.
+- **Settings → Google account**: your photo, name and email; *last saved …*; **Save now**;
+  **Save automatically** on/off; **Undo the last restore**; **Switch account**; **Sign out**.
+- One-time Google Cloud setup for the app owner: [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md).
+
+### 💧 Water in the notifications
+- A new **water panel** in the notifications: today's ml and the goal with a bar, plus
+  buttons for **glass / كلاص · cup / كوب · can / علبة · bottle / قنينة**, **Undo** and
+  **Edit**. It all works with the app closed and updates instantly. Each container has its own
+  shape. Your usual one is highlighted.
+- Water → *Water panel in the notifications* switches it on or off, with a live preview of
+  the notification.
+
+### 🎯 An automatic water goal
+- The daily goal now **adapts to your day**: body weight × 33 ml, **+70 ml per 1,000 steps**
+  after the first 3,000, and **+10 ml per minute of training** (including a workout in
+  progress).
+- The Water screen explains it with a coloured breakdown (base · walking · training →
+  today's goal). The Home card shows chips like 🚶 +450 · 🏋️ +300.
+- The goal also grows in the notification during a walk with the app closed: the same rule
+  runs natively. Each past day is judged against its own goal (streak, 14-day chart).
+- Prefer a fixed goal? Switch *Automatic goal* off.
+
+### 🏋️ Workout reminders at the workout's time
+- **A time for each weekday** (Settings → Daily reminder → your week): every day with a
+  routine shows its colour, its name and its own time. The others follow the shared time.
+- The reminder now names **the routine, how many exercises, the first three, and about how
+  long it takes**, e.g. «🏋️ يوم الدفع اليوم — 6 تمارين · حوالي 45 دقيقة — …».
+- On Android the daily reminder is **on by default**.
+
+### ✨ Design & polish
+- New account screens with Google's colours, the account avatar and a live sync status.
+- Smooth fills for the water bars and the goal breakdown (no bouncing).
+- **Removed "Week starts on"** from Settings: the week always runs **Saturday → Friday**.
+
+### Under the hood
+- `lib/cloud.js` (Drive app-data sync, tested against a fake Drive: first sign-in, choose,
+  newer-wins, token refresh, errors), native `GoogleAccount` plugin (`play-services-auth`),
+  `WaterMath.autoGoal` (+ JVM tests), water panel actions (request codes 60–67).
+- 71 new strings, translated into all 12 languages (1,226 keys each). The Arabic-UI guard now
+  also covers the account screens.
+- 365 frontend tests, 64 API tests.
+
+## v2.5.0 — 2026-10-12
+
+**Water reminders with an exercise, by glass, cup or can — and a full-screen celebration that
+appears even with the app closed.**
+*تذكير بشرب الماء مع تمرين مناسب، بالكلاص أو الكوب أو العلبة — واحتفال بملء الشاشة يظهر حتى والتطبيق مغلق.*
+
+### 💧 Water, in millilitres, by what you drink from
+- Pick your container: **glass / كلاص (200 ml) · cup / كوب (250 ml) · can / علبة (330 ml) ·
+  bottle / قنينة (500 ml)**. One tap per container on the Home card, with **Undo**.
+- A glass on the Home card **fills up as you drink** (a slow wave, no bounce); ml against
+  the goal, the count in your container, the next reminder, the week, the streak.
+- New **Water screen** (Home → Water, or Settings → Water & reminders): today's glass, the
+  container picker, the daily goal with a **recommendation from your body weight**
+  (≈ 33 ml per kg), the reminders and the last 14 days (7-day average, streak, best day).
+- 2.4's glass counts are kept: they're read as 250 ml each until the day is written again.
+
+### 🔔 Water reminders — with an exercise, in the notifications, with the app closed
+- Every 60 / 90 / 120 / 180 minutes between the hours you choose (default 09:00–22:00,
+  every 90 min). **Scheduled natively on Android**, so they arrive with the app closed and
+  after a restart; skipped once the day's goal is reached.
+- Each reminder shows **today's water with a progress bar and today's steps**, and **a
+  suitable exercise**: a short walk (e.g. «امشِ 500 خطوة — حوالي 5 دقائق») when you've been
+  still for an hour or are behind on the step pace for this time of day, otherwise a rotating
+  mini-workout (10 squats, 20 calf raises, a 30-second plank, wall sit, lunges, stretches…).
+- Buttons right in the notification: **“Drank it”** (adds one container, without opening the
+  app) and **“In 15 min”**.
+- The **live step notification** now has a **water row with its
+  own progress bar** and a **“+ water” button** (adds one of your container).
+- Changes made from a notification and in the app are merged both ways.
+- iPhone: local notifications; browser: reminders while the app is open (+ a system
+  notification when the tab is in the background). "Send a test reminder" on the Water screen.
+
+### 🎉 Celebration — redesigned, full screen, also outside the app
+- **New full-screen scene** in the app: a dark backdrop lit in the goal's colour, expanding
+  rings, a glowing badge (trophy / medal / drop), the number counting up, and confetti
+  falling with gravity, drift, spin and flutter on a canvas. Eases in — no bounce.
+  6 seconds, tap to close. A water-goal celebration in blue.
+- **With the app closed (Android)**, reaching the step goal or the water goal shows:
+  - a **full-screen celebration over the lock screen** (it turns the screen on), drawn
+    natively with the same scene, closing itself after 8 seconds, with an “Open app” button;
+  - a **picture notification** — the image is drawn on the phone (gradient, confetti,
+    number) — that replays the full-screen celebration when tapped;
+  - a short **fanfare synthesized on the phone** (follows the Sounds switch and silent mode)
+    and a vibration.
+- With “Display over other apps” allowed (optional), the celebration also opens **on top of
+  whatever app is in use**.
+- Walking → **Celebrations**: in-app cheer, full screen with the app closed, also every
+  1,000 steps (off by default), the status of “Full-screen notifications” and “Display over
+  other apps” with a shortcut to each, and **Preview celebration / Preview the notification**.
+
+### 🛠️ Fixes & polish
+- The step notification's units are translated (كم · سعرة · كم/س instead of km / kcal).
+- 79 new strings in all 12 languages (1,155 keys each); Arabic container names كلاص · كوب ·
+  علبة · قنينة.
+- Tests: water maths (ml, migration, merge, slots, exercise choice), the native config,
+  the new screens and the Arabic guard (now covering the Water screen) — 344 web tests;
+  `WaterMathTest` mirrors the reminder rules on the JVM in CI.
+- Android: `USE_FULL_SCREEN_INTENT` and the optional `SYSTEM_ALERT_WINDOW` permissions;
+  versionCode 11.
+
+## v2.4.0 — 2026-10-11
+
+**A Saturday-to-Friday week, routine names in Arabic, colours for every routine, a water
+tracker, and Arabic everywhere.**
+*أسبوع من السبت إلى الجمعة، أسماء الروتينات بالعربية، لون لكل روتين، متابعة شرب الماء، وعربية في كل مكان.*
+
+### 📅 The week runs Saturday → Friday
+- Every week view — the plan's weekly schedule, the week strip on Home, the calendar, the
+  year heatmap, weekly stats, the Coach intake and the printed plan — now starts on
+  **Saturday** and ends on **Friday** (السبت، الأحد، الاثنين، الثلاثاء، الأربعاء، الخميس، الجمعة).
+- **Settings → General → Week starts on:** Saturday (default), Sunday or Monday.
+- Weekly numbers (workouts per week, effort weeks) are grouped by the same week.
+
+### 🏷️ Routine names in Arabic
+- The starter routines and the built-in names are stored once and shown in the app's
+  language: **يوم الدفع · يوم السحب · يوم الأرجل** (Push / Pull / Leg Day), «تمرين حرّ»,
+  «روتين جديد»… Switching language renames them; names you typed stay as typed.
+- Applies everywhere a routine name appears: Home, Plan, Workout, history, toasts, the
+  daily reminder and the printed plan.
+
+### 🎨 Colour
+- Every routine has a colour (Push orange, Pull blue, Legs purple; pick any of ten in the
+  routine editor). Lists, the today card, workout rows and the week schedule use it.
+- **Redesigned weekly schedule:** days in week order, today highlighted, a colour strip per
+  day, a «Rest» tag with a moon on rest days and a training / rest summary.
+- **Six-day split:** Push · Pull · Legs twice a week, Saturday to Thursday, Friday off — the
+  starter plan uses it, and existing starter plans get a one-tap button to switch.
+- Two new accent colours: **indigo** and **mint** (label colours checked for contrast).
+
+### 💧 Water tracker
+- A new Home card: tap to add a glass (250 ml), see today's progress against a daily goal
+  (6–12 glasses), the last seven days and your streak. Fully offline, kept for 400 days.
+- **Settings → Walking & body → Water tracker** hides it.
+
+### 🌐 Arabic everywhere
+- **Exercise instructions in Arabic** for the first time — the dataset has none, so 488 step
+  sentences were translated by hand; 201 exercises (the whole starter plan and the common gym
+  lifts) now read fully in Arabic. The rest keep English steps, marked as such, never half
+  translated.
+- Remaining English in the Arabic UI translated: units (كغ، رطل، مل، ث), RIR / RPE
+  («المتبقّي» / «الجهد»), 1RM («أقصى وزن لتكرار واحد»), GPS, JSON, PDF, Chrome / Safari,
+  GMT (غرينتش), EZ bar, SkiErg, Greyskull LP, the progression hint («2.5 كغ إضافية») and more.
+- A new test renders every screen, the main sheets and a workout in progress in Arabic and
+  fails on any stray English (brand names excepted).
+- 23 new strings in all 12 languages.
+
+### 🐞 Fixes
+- The dataset's broken "sled 45в° leg press" names now read "45°".
+- Coach weekly day picker follows the week order.
+
+## v2.3.0 — 2026-10-10
+
+**Accurate step counting, a fully offline app, reset the counter, and new walking features.**
+*عدّ خطوات دقيق، تطبيق يعمل بالكامل دون إنترنت، تصفير العدّاد، وميزات مشي جديدة.*
+
+### 🐞 Steps jumping from 70 to 24,303 (Android)
+- **Root cause:** Android's step sensor reports the steps since the phone was switched on.
+  The counter treated any *lower* reading as a reboot and re-based on it; a single stray low
+  value (a sensor hiccup) therefore made the next normal reading count in full — tens of
+  thousands of steps at once. Nothing capped it.
+- Reboots are now detected for real (Android's boot counter, uptime going backwards), never
+  guessed. A low reading on the same boot is first treated as a glitch: the baseline stays,
+  so the count simply continues when the sensor recovers; only two low readings in a row mean
+  the sensor really restarted.
+- Every increase must be humanly possible in the time since the previous reading (≤ 4 steps/s
+  plus a small allowance) and a day can't exceed 150,000 steps; anything else is refused.
+- The same rules protect the plugin path (iPhone, Android without the native service) and the
+  browser counter. The arithmetic is unit-tested (JVM `StepMathTest`, run by CI before every
+  APK build, plus vitest).
+- Counting itself never needed the internet: it runs on the phone's sensor, and Settings now
+  says so.
+
+### 🔄 Reset the step counter
+- **Walking → Reset step counter:** put today back to 0 and count on from now (two-tap
+  confirm), or clear a wrong earlier day. The native service, the widget and the lock-screen
+  notification follow at once.
+- **This walk:** steps, time, distance and cadence (steps/min) of the current walk, with a
+  **New walk** button that starts it again without touching the day.
+
+### 🏅 Achievements
+- Badges for big days (5k → 30k), lifetime steps (10k → 1M) and goal streaks (3 → 30 days),
+  with progress — computed from your history, nothing extra stored or sent.
+
+### 📴 Works fully offline
+- **Android app:** all 1,324 exercise images and 1,324 animations (GIFs) now ship *inside*
+  the APK — the exercise library works with no connection. (The APK grows to ~140 MB.)
+- **Web / installed app:** the service worker precaches every file of the build at install,
+  so every screen opens offline, not only the ones visited before; updates copy unchanged
+  files instead of downloading them again. **Settings → Offline → Save for offline use**
+  stores the exercise media in the browser (with progress, and *Free up space*).
+- If a bundled image is ever missing, the app falls back to the pinned CDN copy once.
+
 ## v2.2.1 — 2026-10-10
 
 **Bug fixes: the step counter counts, the permission dialog moves on, no crash from App info.**

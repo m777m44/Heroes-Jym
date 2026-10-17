@@ -1,16 +1,17 @@
 import { useState } from 'react'
+import { goBack } from '../lib/nav.js'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { DAYN } from '../lib/format.js'
+import { DAYS, weekOrder, weekStartOf } from '../lib/format.js'
 import { EXDB } from '../lib/exercises.js'
 import { emptyCoach, coachAvailable } from '../lib/coach.js'
 import { requestPlan } from '../lib/coach-api.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
 import Icon from '../components/Icon.jsx'
-import { Button, TextArea, Segmented } from '../components/ui.jsx'
+import { Button, TextArea, Segmented, BackButton } from '../components/ui.jsx'
 
 /* The intake: one topic per screen, because a single form with eleven fields is a form people
    abandon. Only the first two questions are required — everything after them improves the
@@ -86,7 +87,7 @@ export default function CoachIntake() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => step ? setStep(step - 1) : nav('/coach')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
+      <BackButton onClick={() => (step ? setStep(step - 1) : goBack('/coach'))} />
       <div style={{ flex: 1, marginLeft: 10 }}>
         <h1>{editing ? t('Coach profile') : t('Your plan')}</h1>
         <div className="sub">{t('Step {0} of {1}', step + 1, STEPS.length)}</div>
@@ -125,9 +126,9 @@ export default function CoachIntake() {
           value={p.daysPerWeek} onChange={v => set({ daysPerWeek: v })} />
         <div className="muted small" style={{ margin: '14px 0 8px' }}>{t('Which days suit you? (optional)')}</div>
         <div className="week">
-          {[1, 2, 3, 4, 5, 6, 0].map(d => <div key={d} className={'wday' + (p.preferredDays.includes(d) ? ' today' : '')}
+          {weekOrder(weekStartOf(S)).map(d => <div key={d} className={'wday' + (p.preferredDays.includes(d) ? ' today' : '')}
             onClick={() => toggleDay(d)} style={{ cursor: 'pointer' }}>
-            <div className="lbl">{t(DAYN[d]).slice(0, 2)}</div>
+            <div className="lbl">{t(DAYS[d])}</div>
             <div className={'dot' + (p.preferredDays.includes(d) ? ' plan' : '')} />
           </div>)}
         </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../../store/useStore.js'
 import { fmtNum, fmtDate } from '../../lib/format.js'
-import { t } from '../../lib/i18n.js'
+import { t, U } from '../../lib/i18n.js'
 import { deletePhoto } from '../../lib/photoStore.js'
 import { confirmSheet, bwDeltaColor } from '../../sheets.jsx'
 import { usePhotoUrl, photosChanged, photoProfile } from './usePhoto.js'
@@ -21,7 +21,7 @@ const PAGE = 20
 export default function WeightHistory({ S }) {
   const [n, setN] = useState(PAGE)
   const list = S.bodyweight
-  const u = S.unit
+  const u = U(S.unit)          // label only
   if (!list.length) return null
   const rows = []
   for (let i = list.length - 1; i >= 0 && rows.length < n; i--) rows.push({ b: list[i], prev: list[i - 1] || null })

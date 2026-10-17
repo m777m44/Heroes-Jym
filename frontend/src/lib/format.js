@@ -9,6 +9,25 @@ export const isoOf = d =>
 
 export const DAYN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 export const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+// First day of the week (0 = Sunday … 6 = Saturday). Saturday by default — the week as it is
+// lived in Iraq and most of the Arab world (Friday is the weekend); Sunday or Monday can be
+// picked in Settings. Every week view (plan, week strip, calendar, heatmap) follows it.
+export const WEEK_STARTS = [6, 0, 1]
+// 2.6: the week always runs Saturday → Friday (the "Week starts on" setting was removed);
+// an older saved S.weekStart is ignored.
+export const weekStartOf = () => 6
+/** The seven weekdays (getDay() numbers) in display order. */
+export const weekOrder = start => Array.from({ length: 7 }, (_, i) => (start + i) % 7)
+/** The first day (local noon) of the week that contains `date`. */
+export function startOfWeek(date, start) {
+  const d = new Date(date)
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() - start + 7) % 7))
+  return d
+}
+/** The week an ISO date belongs to, as the ISO date of its first day (follows weekStart). */
+export const weekId = (iso, start) => isoOf(startOfWeek(iso + 'T12:00:00', start))
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -44,4 +63,4 @@ export function weekKey(d) {
 export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' } }
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
-export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a', indigo: '#5e5ce6', mint: '#63e6e2' }

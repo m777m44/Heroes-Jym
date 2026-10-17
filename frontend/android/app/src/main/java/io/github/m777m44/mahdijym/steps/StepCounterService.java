@@ -84,7 +84,15 @@ public class StepCounterService extends Service implements SensorEventListener {
             main.postDelayed(this, 30_000);
         }
     };
-    private final Runnable idleCheck = () -> publish(true);   // stops the walking timer
+    // Walking stopped: ask the sensors for anything batched, then settle the live steps the
+    // counter didn't confirm (2.10) and stop the walking timer.
+    private final Runnable settle = () -> { store.settleProvisional(); publish(true); };
+    private final Runnable idleCheck = () -> {
+        try { if (sensors != null && listening) sensors.flush(this); } catch (RuntimeException ignored) { }
+        main.removeCallbacks(settle);
+        main.postDelayed(settle, 1500);
+        publish(true);
+    };
 
     @Override public void onCreate() {
         super.onCreate();
@@ -187,6 +195,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         }
         main.removeCallbacks(tick);
         main.postDelayed(tick, 30_000);
+        // 2.7.0 — one bar: the water joins the step notification, so its own panel goes.
+        try { WaterReminder.mergeIntoLive(this); } catch (RuntimeException ignored) { }
         publish(true);
         Watchdog.schedule(this);            // restarts the counter if anything ever kills it
         return START_STICKY;
@@ -274,8 +284,27 @@ public class StepCounterService extends Service implements SensorEventListener {
             if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
             else stopForeground(true);
         } catch (RuntimeException ignored) { }
+        // Counting switched off: the water goes back to its own panel (store.running is false
+        // now, so it is no longer merged).
+        try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { }
         stopSelf();
     }
+
+    /** After "reset and start again": drop the speed samples and redraw everything. */
+    void afterReset() {
+        main.post(() -> {
+            samples.clear();
+            main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
+            publish(true);
+        });
+    }
+
+    /** Counting (or paused) with the live notification up — it then carries the water too. */
+    boolean live() { return !bailed && store != null && store.running; }
+
+    /** Redraw the live notification now (water added from a notification button). */
+    void refreshNotification() { main.post(() -> publish(true)); }
 
     void applyConfig() {
         main.post(() -> {
@@ -304,6 +333,7 @@ public class StepCounterService extends Service implements SensorEventListener {
             while (samples.size() > 2 && samples.peekFirst()[0] < now - 20_000) samples.pollFirst();
             if (after > before) milestones(before, after);
             main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
             main.postDelayed(idleCheck, MOVING_MS + 500);
         }
         publish(false);
@@ -353,7 +383,13 @@ public class StepCounterService extends Service implements SensorEventListener {
             say = store.str("milestoneSay", "{steps} steps").replace("{steps}", nf.format(m)) + ". " + body;
         }
         if (store.pref("vibrate", true)) vibrate(goalNow);
-        if (!appVisible && store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        if (!appVisible) {
+            // 2.5: the goal (and, when switched on, every 1,000 steps) is celebrated outside the
+            // app — a picture notification and a full-screen cheer; otherwise the plain alert.
+            boolean cheer = goalNow ? store.pref("fullCelebrate", true) : store.pref("fullMilestones", false);
+            if (cheer && store.pref("celebrate", true)) Celebration.steps(this, store, goalNow, goalNow ? next : m, body);
+            else if (store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        }
         if (store.pref("voice", false)) speak(goalNow ? say + " " + body : say);
     }
 
@@ -426,6 +462,9 @@ public class StepCounterService extends Service implements SensorEventListener {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try { nm.notify(StepNotifier.LIVE_ID, StepNotifier.build(this, store, sp, mv)); } catch (RuntimeException ignored) { }
+        // 2.6: the water panel follows live steps (the automatic goal grows as you walk) and
+        // the day rolling over — re-posted only when what it shows changed.
+        try { WaterReminder.refreshPanel(this, false); } catch (RuntimeException ignored) { }
     }
 
     private void emit(double sp, boolean mv) {
@@ -444,6 +483,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         // Destroyed while counting is still on (killed by the system or a cleaner, not
         // switched off): come back in a few seconds.
         if (!bailed && store != null && store.running && canCount(this)) Watchdog.kick(this, 5_000);
+        // Not coming back: the water returns to its own panel (no longer merged — instance is gone).
+        else { try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { } }
         super.onDestroy();
     }
 

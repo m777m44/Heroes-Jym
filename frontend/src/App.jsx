@@ -1,14 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
-import { ACCENTS } from './lib/format.js'
-import { setLang, useLang, isRTL } from './lib/i18n.js'
+import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
+import { resolveTheme, applyTheme } from './lib/themes.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
-import { startFlow } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
@@ -24,25 +23,47 @@ import Stats from './views/Stats.jsx'
 import History from './views/History.jsx'
 import Library from './views/Library.jsx'
 import Settings from './views/Settings.jsx'
-import Admin from './views/Admin.jsx'
-import Coach from './views/Coach.jsx'
-import CoachIntake from './views/CoachIntake.jsx'
-import CoachProposal from './views/CoachProposal.jsx'
 import Walking from './views/Walking.jsx'
 import BodyWeight from './views/BodyWeight.jsx'
+import Water from './views/Water.jsx'
+import Themes from './views/Themes.jsx'
+// 4.0: screens you open now and then load on first use (a smaller first start)
+const Admin = lazy(() => import('./views/Admin.jsx'))
+const Coach = lazy(() => import('./views/Coach.jsx'))
+const CoachIntake = lazy(() => import('./views/CoachIntake.jsx'))
+const CoachProposal = lazy(() => import('./views/CoachProposal.jsx'))
+const IdealBody = lazy(() => import('./views/IdealBody.jsx'))
+const Health = lazy(() => import('./views/Health.jsx'))
+const Backups = lazy(() => import('./views/Backups.jsx'))
+const StartWorkout = lazy(() => import('./views/StartWorkout.jsx'))
+const WorkoutSection = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutSection })))
+const WorkoutCategory = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutCategory })))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
+import AccountGate from './components/AccountGate.jsx'
+import { storageChosen, startCloudSync, restoreFromBackup } from './lib/cloud.js'
+import { startAutoSnapshots } from './lib/backups.js'
+import { applyA11y } from './lib/a11y.js'
+import AppLock from './components/AppLock.jsx'
+import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
+import { startWaterSync } from './lib/waterSync.js'
+import { installBackButton } from './lib/backButton.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
-function applyPrefs(theme, accent) {
-  const de = document.documentElement
-  de.dataset.theme = theme === 'light' ? 'light' : 'dark'
-  de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
-  const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+// The phone's light / dark setting, live (2.10: themes can follow it — lib/themes.js).
+const darkQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null
+function useSystemDark() {
+  const [dark, setDark] = useState(() => (darkQuery ? darkQuery.matches : null))
+  useEffect(() => {
+    if (!darkQuery) return
+    const on = e => setDark(e.matches)
+    darkQuery.addEventListener ? darkQuery.addEventListener('change', on) : darkQuery.addListener(on)
+    return () => { darkQuery.removeEventListener ? darkQuery.removeEventListener('change', on) : darkQuery.removeListener(on) }
+  }, [])
+  return dark
 }
 
 function Shell() {
@@ -52,14 +73,18 @@ function Shell() {
   const isGuest = useStore(s => s.isGuest())
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
+  useEffect(() => installBackButton(), [])
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
-  useEffect(() => { applyPrefs(S.theme, S.accent) }, [S.theme, S.accent])
-  useEffect(() => { setLang(S.lang || 'en') }, [S.lang])
+  const systemDark = useSystemDark()
+  useEffect(() => { applyTheme(resolveTheme(S, systemDark), S.accent) }, [S.theme, S.themeSystem, S.accent, systemDark])
+  useEffect(() => { applyA11y(S) }, [S.textScale, S.highContrast, S.reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
+  const lang = langOf(S)                     // 'auto' → the phone's language
+  useEffect(() => { setLang(lang) }, [lang])
   useEffect(() => {
     const de = document.documentElement
-    de.lang = S.lang || 'en'
-    de.dir = isRTL(S.lang) ? 'rtl' : 'ltr'
-  }, [langV, S.lang])
+    de.lang = lang
+    de.dir = isRTL(lang) ? 'rtl' : 'ltr'
+  }, [langV, lang])
   // every tab/route change starts at the top of the page
   useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   // bound to the workout, not to the route — checking Stats mid-session keeps the screen on
@@ -68,6 +93,29 @@ function Shell() {
   const authed = user || isGuest
   // the step counter comes back on by itself if it was on when the app was last closed
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
+  // water: reminders (native on Android) and the two-way sync with the notification buttons
+  useEffect(() => { if (ready && authed) return startWaterSync(useStore) }, [ready, authed])
+  // 2.6: the Google account copy (when signed in) — kept in step while the app runs
+  useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
+  // 4.0: a version of your data once a day, kept on this phone (Settings → Backups & restore)
+  useEffect(() => {
+    if (!ready || !authed || DEMO) return
+    return startAutoSnapshots(() => useStore.getState().S, () => { const st = useStore.getState().S; return { keep: Number(st.backupKeep) || 7, enabled: st.autoBackup !== false } })
+  }, [ready, authed])
+  // first launch on the phone: where should the data live? (then the permissions dialog)
+  const [chosen, setChosen] = useState(() => !MOBILE || storageChosen())
+  // 2.8: installed again / a new phone — Android may have put the account's backup copy back.
+  // Checked before the first-launch question, which is then not needed.
+  const [checked, setChecked] = useState(chosen)
+  useEffect(() => {
+    if (!ready || !authed || checked) return
+    let live = true
+    restoreFromBackup(useStore)
+      .then(ok => { if (live && ok) { setChosen(true); useUI.getState().toast(t('Welcome back — your data was restored from your Google account')) } })
+      .catch(() => {})
+      .finally(() => { if (live) setChecked(true) })
+    return () => { live = false }
+  }, [ready, authed, checked])
   // back from the system settings (e.g. "Physical activity" allowed again): try once more
   useEffect(() => {
     if (!ready || !authed) return
@@ -94,6 +142,7 @@ function Shell() {
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
           {!authed ? <Login /> : (
+            <Suspense fallback={<div className="lazy-wait" aria-busy="true" />}>
             <Routes>
               <Route path="/home" element={<Home />} />
               <Route path="/plan" element={<Plan />} />
@@ -105,6 +154,14 @@ function Shell() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/walk" element={<Walking />} />
               <Route path="/weight" element={<BodyWeight />} />
+              <Route path="/water" element={<Water />} />
+              <Route path="/ideal" element={<IdealBody />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/backups" element={<Backups />} />
+              <Route path="/start" element={<StartWorkout />} />
+              <Route path="/start/:mode" element={<WorkoutSection />} />
+              <Route path="/start/:mode/:cat" element={<WorkoutCategory />} />
+              <Route path="/themes" element={<Themes />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}
@@ -114,15 +171,17 @@ function Shell() {
               <Route path="/admin" element={user?.admin ? <Admin /> : <Navigate to="/home" replace />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
+            </Suspense>
           )}
         </ErrorBoundary>
       </div>
-      <TabBar onStart={startFlow} />
+      <TabBar />
       <RestTimer />
       <Modals />
       <Toast />
       <CelebrationOverlay />
-      {authed && ready && !DEMO && <PermissionGate />}
+      {MOBILE && !DEMO && <AppLock />}
+      {authed && ready && !DEMO && checked && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
     </>
   )
 }

@@ -16,6 +16,7 @@
 import { useRef, useState, useEffect, useCallback, forwardRef } from 'react'
 import Icon from './Icon.jsx'
 import { t, U } from '../lib/i18n.js'
+import { goBack } from '../lib/nav.js'
 
 /* ============================ text ============================ */
 
@@ -292,6 +293,20 @@ export function Button({ variant = 'plain', size, icon, trailingIcon, children, 
       {icon && <Icon name={icon} />}
       {children && <span>{children}</span>}
       {trailingIcon && <Icon name={trailingIcon} />}
+    </button>
+  )
+}
+
+/**
+ * 2.11: the one ‹ back button every screen uses — the screen you came from, else `fallback`
+ * (lib/nav.js goBack). `onClick` replaces that for screens with their own steps (a wizard
+ * going back one step). The chevron mirrors itself right-to-left (Icon DIRECTIONAL).
+ */
+export function BackButton({ fallback = '/home', onClick, label, className = '' }) {
+  return (
+    <button type="button" className={'iconbtn backbtn ' + className} aria-label={label || t('Back')}
+      onClick={onClick || (() => goBack(fallback))}>
+      <Icon name="chevronLeft" />
     </button>
   )
 }

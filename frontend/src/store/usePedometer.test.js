@@ -15,7 +15,9 @@ vi.mock('../lib/pedometer.js', () => ({
   preferredSource: () => 'native',
 }))
 
-const { usePedometer } = await import('./usePedometer.js')
+const { usePedometer, maxStepsIn } = await import('./usePedometer.js')
+const { useStore } = await import('./useStore.js')
+const { todayISO } = await import('../lib/format.js')
 
 const fakeSource = () => ({ kind: 'native', stop: vi.fn() })
 
@@ -88,5 +90,75 @@ describe('usePedometer.start', () => {
     startSource.mockRejectedValue(Object.assign(new Error('x'), { code: 'denied' }))
     expect(await usePedometer.getState().start({ interactive: true })).toBe(false)
     expect(usePedometer.getState().status).toBe('denied')
+  })
+})
+
+// A source that hands its callbacks to the test, so it can play the sensor.
+const startWithHooks = async () => {
+  let hooks
+  startSource.mockImplementation(async opts => { hooks = opts; return fakeSource() })
+  expect(await usePedometer.getState().start({ interactive: true })).toBe(true)
+  return hooks
+}
+const live = () => useStore.getState().S.steps?.[todayISO()]?.n || 0
+const shown = () => live() + usePedometer.getState().pending
+
+describe('step plausibility (no sudden jumps)', () => {
+  it('caps a batch at what a person can walk in the time', () => {
+    expect(maxStepsIn(0)).toBe(40)
+    expect(maxStepsIn(1000)).toBe(44)
+    expect(maxStepsIn(60000)).toBe(280)
+  })
+
+  it('ignores a sensor glitch of thousands of steps — 70 stays 70, not 24,303', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    vi.setSystemTime(new Date('2026-10-10T09:00:00'))
+    const { onSteps } = await startWithHooks()
+    const before = shown()
+    for (let i = 0; i < 7; i++) { vi.setSystemTime(Date.now() + 5000); onSteps(10) }
+    expect(shown() - before).toBe(70)
+    vi.setSystemTime(Date.now() + 1000)
+    onSteps(24233)                                        // the reboot-baseline glitch
+    expect(shown() - before).toBe(70)
+    vi.setSystemTime(Date.now() + 2000)
+    onSteps(3)                                            // and counting goes on normally
+    expect(shown() - before).toBe(73)
+    onSteps(0); onSteps(-5); onSteps(NaN)                 // nonsense is dropped
+    expect(shown() - before).toBe(73)
+  })
+})
+
+describe('reset the step counter', () => {
+  it('resetDay() puts today back to 0 and keeps counting from there', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    vi.setSystemTime(new Date('2026-10-10T10:00:00'))
+    const { onSteps } = await startWithHooks()
+    vi.setSystemTime(Date.now() + 10000); onSteps(30)
+    expect(shown()).toBeGreaterThan(0)
+    expect(await usePedometer.getState().resetDay()).toBe(true)
+    expect(shown()).toBe(0)
+    expect(usePedometer.getState().sessionSteps).toBe(0)
+    expect(usePedometer.getState().status).toBe('tracking')
+    vi.setSystemTime(Date.now() + 3000); onSteps(5)
+    expect(shown()).toBe(5)
+  })
+
+  it('resetDay(day) clears an earlier day only', async () => {
+    useStore.getState().update(s => { s.steps = { ...(s.steps || {}), '2026-10-01': { n: 24303 }, '2026-10-02': { n: 6000 } } })
+    await usePedometer.getState().resetDay('2026-10-01')
+    const steps = useStore.getState().S.steps
+    expect(steps['2026-10-01']).toBeUndefined()
+    expect(steps['2026-10-02'].n).toBe(6000)
+  })
+
+  it('newWalk() restarts the walk counter, not the day', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    vi.setSystemTime(new Date('2026-10-10T11:00:00'))
+    const { onSteps } = await startWithHooks()
+    vi.setSystemTime(Date.now() + 10000); onSteps(20)
+    const day = shown()
+    usePedometer.getState().newWalk()
+    expect(usePedometer.getState().sessionSteps).toBe(0)
+    expect(shown()).toBe(day)
   })
 })

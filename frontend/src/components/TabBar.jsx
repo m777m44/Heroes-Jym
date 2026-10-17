@@ -1,11 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutine } from '../lib/history.js'
-import { todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
-export default function TabBar({ onStart }) {
+export default function TabBar() {
   const nav = useNavigate()
   const loc = useLocation()
   const S = useStore(s => s.S)
@@ -13,15 +11,10 @@ export default function TabBar({ onStart }) {
   const isGuest = useStore(s => s.isGuest())
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
-  const on = k => cur === k || (cur === 'history' && k === 'stats') || (['settings', 'walk', 'weight'].includes(cur) && k === 'home')
+  const on = k => cur === k || (cur === 'history' && k === 'stats') || (cur === 'start' && k === 'start') || (['settings', 'walk', 'weight', 'water', 'themes', 'ideal'].includes(cur) && k === 'home') || (cur === 'coach' && k === 'plan')
 
-  const startWorkout = () => {
-    if (!S.active) {
-      const r = effectiveRoutine(S, todayISO())
-      if (r && r.ex.length) { onStart(r.id); return }
-    }
-    nav('/workout')
-  }
+  // 4.0: Start opens the choice — today's routine / plan, without or with equipment
+  const startWorkout = () => nav(S.active ? '/workout' : '/start')
   const Tab = ({ k, icon, to, label }) => (
     <button className={on(k) ? 'on' : ''} onClick={() => nav(to)}>
       <Icon name={icon} /><span>{label}</span>

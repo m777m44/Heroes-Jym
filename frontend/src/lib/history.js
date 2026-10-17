@@ -1,5 +1,5 @@
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
-import { U } from './i18n.js'
+import { U, t } from './i18n.js'
 import { isoOf, weekKey, fmtNum } from './format.js'
 import { isCardio } from './exercises.js'
 
@@ -64,7 +64,7 @@ export const effortOf = S => {
 // The "(RIR 2)" / "(RPE 8)" tail on a set summary, empty when nothing was logged.
 const effortTail = s => {
   const k = s.rir != null ? 'rir' : s.rpe != null ? 'rpe' : null
-  return k ? ` (${EFFORT[k].hd} ${fmtNum(s[k])})` : ''
+  return k ? ` (${t(EFFORT[k].hd)} ${fmtNum(s[k])})` : ''
 }
 
 // One-line summary of a logged set. `cfg` carries the mode when the caller has it (a routine

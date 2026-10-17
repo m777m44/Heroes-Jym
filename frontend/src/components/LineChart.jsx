@@ -9,10 +9,10 @@ const W = 340   // viewBox width; the svg stretches to its container, height com
 //        more of it). Used for effort on the weight curve, where the two belong on one line:
 //        the same weight with less left in the tank is not the same session.
 //   note extra text for that point's tooltip.
-// opts: { h, unit, color, axes, goal, invert }
+// opts: { h, unit, color, axes, goal, invert, band } — band: [lo, hi] shaded (2.12: your ideal range)
 //   invert flips the y axis, for a scale that counts down as it gets harder (RIR). Without it
 //   a curve of reps-in-reserve reads upside down, with the hardest sets at the floor.
-export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false }) {
+export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null, invert = false, band = null }) {
   const svgRef = useRef(null)
   const wrapRef = useRef(null)
   const tipRef = useRef(null)
@@ -116,6 +116,10 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
           <stop offset="1" stopColor={color} stopOpacity="0" />
         </linearGradient></defs>
         {gridlines}
+        {band && isFinite(band[0]) && isFinite(band[1]) && band[1] > ymin && band[0] < ymax && (() => {
+          const top = Y(Math.min(band[1], ymax)), bot = Y(Math.max(band[0], ymin))
+          return <rect className="lc-band" x={P.l} y={Math.min(top, bot)} width={W - P.l - P.r} height={Math.abs(bot - top)} rx="3" fill="var(--green)" opacity=".12" />
+        })()}
         {goal != null && isFinite(goal) && <>
           <line x1={P.l} y1={Y(goal)} x2={W - P.r} y2={Y(goal)} stroke="var(--yellow)" strokeWidth="1.6" strokeDasharray="7 4" />
           <text x={W - P.r - 2} y={Y(goal) - 5} textAnchor="end" fontSize="9.5" fontWeight="700" fill="var(--yellow)">{fmtNum(goal)}</text>

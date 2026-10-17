@@ -57,6 +57,9 @@ let startInteractive = false
 const START_LIMIT_MS = { tap: 150000, launch: 30000 }
 
 const today = () => todayISO()
+let sourceT = 0               // when the current delta source started
+/** Most steps a person can take in `ms` (mirrors the native StepMath rule). */
+export const maxStepsIn = ms => 40 + Math.floor(Math.max(0, ms) / 1000 * 4)
 const visible = () => typeof document === 'undefined' || document.visibilityState === 'visible'
 
 // Estimated kcal use the latest logged body weight, so the number gets better as you log.
@@ -109,7 +112,9 @@ export const usePedometer = create((set, get) => {
     const iso = today()
     useStore.getState().updateQuiet(s => {
       if (snap && snap.day === iso) {
-        mergeDay(s, iso, snap)
+        // 2.10: save only what the step counter confirmed; the live detector steps on top are
+        // shown (pending) but could still be dropped as a shake, and S.steps only ever rises.
+        mergeDay(s, iso, typeof snap.confirmed === 'number' ? { ...snap, steps: snap.confirmed } : snap)
       } else if (n || ms) {
         // spread the batch over the hours it was walked in (usually just this one)
         let left = n
@@ -127,6 +132,12 @@ export const usePedometer = create((set, get) => {
   // ---- delta sources (iOS app, browsers) ----
   const onSteps = (n, info = {}) => {
     const now = Date.now()
+    n = Math.round(Number(n) || 0)
+    if (n <= 0) return
+    // Never more than a person can walk since the last batch (≤ 4 steps/s + slack): a sensor
+    // glitch must not add thousands of steps at once.
+    const since = now - (lastStepT || sourceT || now)
+    if (n > maxStepsIn(since)) return
     if (lastStepT && now - lastStepT < ACTIVE_GAP) pendingMs += now - lastStepT
     lastStepT = now
     cum += n
@@ -217,6 +228,7 @@ export const usePedometer = create((set, get) => {
   // A source is ready: wire it up.
   const attach = async (source, interactive) => {
     src = source
+    sourceT = Date.now()
     samples = []; cum = 0; pendingMs = 0; pendingH = new Array(24).fill(0); lastStepT = 0; pace = null; lastNote = { t: 0, steps: -1 }
     set(s => ({
       status: s.status === 'paused' && src.kind === 'service' ? 'paused' : 'tracking',
@@ -344,6 +356,32 @@ export const usePedometer = create((set, get) => {
         await syncHistory()
       }
       if (localStorage.getItem(TRACK_KEY) === '1' && !src) get().start({ interactive: false })
+    },
+
+    /**
+     * "Reset and start again" for a day (today by default): the native service forgets it
+     * first — otherwise the next history sync would bring the old number straight back —
+     * then the app's copy. Today keeps counting from this moment, from zero.
+     */
+    async resetDay(iso = today()) {
+      const isToday = iso === today()
+      if (await hasStepService()) {
+        const st = await serviceCall('resetDay', { day: iso })
+        if (isToday && st && serviceMode()) svc = st
+      }
+      if (isToday) {
+        pendingMs = 0; pendingH = new Array(24).fill(0); samples = []; cum = 0; lastStepT = 0; pace = null
+        lastNote = { t: 0, steps: -1 }
+        set({ pending: 0, sessionSteps: 0, sessionStart: Date.now(), liveActiveMs: 0, lastStepAt: 0, speed: 0, moving: false })
+      }
+      useStore.getState().update(s => { if (s.steps && s.steps[iso]) delete s.steps[iso] })
+      if (isToday) note(0, true)
+      return true
+    },
+
+    /** A new walk: the session counter (steps, time, distance) starts again from zero. */
+    newWalk() {
+      set({ sessionSteps: 0, sessionStart: Date.now() })
     },
 
     /** Apply a changed walking preference to a running counter. */
