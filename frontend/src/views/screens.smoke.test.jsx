@@ -236,3 +236,45 @@ describe('4.0 screens render', () => {
     expect(html).toContain('bk-where')
   })
 })
+
+describe('4.2 calorie calculator & burn plan render', () => {
+  const S0 = () => useStore.getInitialState().S
+  const el = async (path, file, name) => {
+    const mod = await import(file)
+    return renderToString(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(mod[name || 'default'])))
+  }
+  it('the calculator works out a plan from the profile', async () => {
+    Object.assign(S0(), { birthYear: 1994, sex: 'male' })
+    const html = await el('/calories', './Calories.jsx')
+    expect(html).toContain('calc-stats')
+    expect(text(html)).toMatch(/kcal/)
+  })
+  it('the calculator shows a clear error for an impossible target', async () => {
+    Object.assign(S0(), { calGoal: { currentKg: 70, targetKg: 120, days: 30, activity: 'light', dietShare: 0 } })
+    const html = await el('/calories', './Calories.jsx')
+    expect(html).toContain('calc-err')
+    delete S0().calGoal
+  })
+  it('picking exercises: home and gym', async () => {
+    const home = await el('/burn/home', './BurnPlan.jsx', 'BurnSelect')
+    expect(home).toContain('burn-grid')
+    expect(text(home)).toMatch(/Running/)
+    expect((home.match(/burn-card/g) || []).length).toBeGreaterThanOrEqual(8)
+  })
+  it('the review has an empty state and a full plan', async () => {
+    delete S0().burnPlan
+    const empty = await el('/burn/review', './BurnPlan.jsx', 'BurnReview')
+    expect(empty).toContain('class="empty"')
+    S0().burnPlan = { mode: 'gym', keys: ['bench', 'row', 'biceps'], target: 400, remind: true, start: '18:00', gap: 30, daily: true }
+    const full = await el('/burn/review', './BurnPlan.jsx', 'BurnReview')
+    expect(full).toContain('timef')
+    expect(text(full)).toMatch(/Bench press/)
+    expect(text(full)).toMatch(/18:00|6:00/)
+    delete S0().burnPlan
+  })
+  it('the section page leads to the burn plan', async () => {
+    const SW = await import('./StartWorkout.jsx')
+    const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/start/home'] }, React.createElement(SW.WorkoutSection)))
+    expect(html).toContain('burn-entry')
+  })
+})

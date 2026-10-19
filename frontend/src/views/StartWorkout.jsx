@@ -21,6 +21,36 @@ import { Thumb } from '../components/Media.jsx'
 import ExName from '../components/ExName.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, BackButton, Segmented, Check } from '../components/ui.jsx'
+import { burnTarget, savedBurnPlan } from '../lib/burnPlan.js'
+import { goalProgress } from '../lib/calorieCalc.js'
+import { bodyKg } from '../lib/water.js'
+
+/** 4.2 — today's calorie burn: the target (from the calculator), the calculator, the burn plan. */
+function BurnCard({ S, nav, mode = null }) {
+  const iso = todayISO()
+  const target = burnTarget(S, iso)
+  const prog = goalProgress(S.calGoal, iso)
+  const live = prog && !prog.over && !prog.before
+  const saved = savedBurnPlan(S, bodyKg(S) || 70)
+  if (mode) return <button className="card startw-today burn-entry" onClick={() => nav('/burn/' + mode)}>
+    <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="flame" /></span>
+    <span className="grow"><b>{t('Burn plan: {0} kcal', fmtNum(target))}</b><span className="small muted">{t('Pick exercises — the minutes are worked out for you')}</span></span>
+    <Icon name="chevronRight" className="chev" />
+  </button>
+  return <div className="card burn-today">
+    <div className="row between">
+      <div className="grow">
+        <div className="lbl2">{t('Today’s calorie burn')}</div>
+        <div className="burn-target-v"><Icon name="flame" /><b>{fmtNum(target)}</b> <span>{t('kcal')}</span></div>
+        <div className="small muted">{live ? t('From your calorie goal — day {0} of {1}', prog.day, prog.days) : t('Set a goal with the calorie calculator')}</div>
+      </div>
+    </div>
+    <div className="burn-today-b">
+      <Button size="sm" variant="tinted" icon="calculator" onClick={() => nav('/calories')}>{t('Calorie calculator')}</Button>
+      <Button size="sm" variant="primary" icon="flame" onClick={() => nav(saved ? '/burn/review' : '/burn/home')}>{saved ? t('My burn plan') : t('Burn plan')}</Button>
+    </div>
+  </div>
+}
 
 const MODE_INFO = {
   home: { title: 'Without equipment', sub: 'At home — no equipment needed', icon: 'house', tags: ['HIIT', 'Cardio', 'Abs & core', 'Stretching & yoga', 'Walk & run'] },
@@ -85,6 +115,8 @@ export default function StartWorkout() {
       </button> })}
     </div>
 
+    <BurnCard S={S} nav={nav} />
+
     {sugCat && sugEx.length > 0 && <>
       <h2 className="startw-h"><Icon name="sparkles" />{t('Suggested for you today')}</h2>
       <div className="card startw-sug">
@@ -118,6 +150,7 @@ export default function StartWorkout() {
 
 /* ------------------------------------------------------------ /start/:mode */
 export function WorkoutSection() {
+  const S = useStore(s => s.S)
   const { mode = 'home' } = useParams()
   const nav = useNavigate()
   const [eq, setEq] = useState('')
@@ -130,6 +163,7 @@ export function WorkoutSection() {
       <BackButton fallback="/start" />
       <div><h1>{t(I.title)}</h1><div className="sub">{t(I.sub)}</div></div>
     </div>
+    <BurnCard S={S} nav={nav} mode={M} />
     {M === 'home' && <button className="card startw-today" onClick={() => nav('/walk')}>
       <span className="startw-ico" style={{ background: 'var(--green)' }}><Icon name="figureRun" /></span>
       <span className="grow"><b>{t('Walk & run')}</b><span className="small muted">{t('Outside or on the spot — the step counter counts')}</span></span>

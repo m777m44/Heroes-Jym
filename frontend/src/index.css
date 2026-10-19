@@ -2043,3 +2043,85 @@ html[data-contrast=more] .muted,html[data-contrast=more] .dim{opacity:1}
   background:var(--surface);color:var(--tint);font:600 13.5px/1 inherit;cursor:pointer}
 .plan-remind svg,.plan-scale-weigh svg{width:17px;height:17px}
 .plan-remind.on{color:var(--green);cursor:default}
+
+/* ---------- 4.2 the calorie calculator ---------- */
+.calc{display:flex;flex-direction:column;gap:12px}
+.calc .hdr{margin-bottom:0;align-items:center}
+.calc .hdr>div{flex:1;min-width:0;margin-inline-start:10px}
+.calc .hdr h1{font-size:30px}
+.calc .section{margin-bottom:0}
+.calc-goal{display:flex;align-items:center;gap:12px}
+.calc-goal .grow{display:flex;flex-direction:column;gap:2px;min-width:0}
+.calc-goal-ico,.burn-ico{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;flex:none;
+  background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
+.calc-goal-ico svg,.burn-ico svg{width:24px;height:24px}
+.calc-chips,.calc-act{display:flex;flex-wrap:wrap;gap:8px;padding:4px 14px 12px}
+.calc-act{padding-top:12px}
+.calc-share{display:flex;flex-direction:column;gap:12px;padding:14px}
+.calc-share .row span{display:inline-flex;align-items:center;gap:5px}
+.calc-share svg{width:16px;height:16px}
+.calc-err,.calc-warn,.calc-okline{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;line-height:1.45}
+.calc-err svg,.calc-warn svg,.calc-okline svg{width:18px;height:18px;flex:none;margin-top:1px}
+.calc-err{color:var(--red)}
+.calc-warn{color:var(--orange);background:color-mix(in srgb,var(--orange) 10%,transparent);border-radius:12px;padding:10px 12px}
+.card.calc-warn{margin:0}
+.calc-okline{color:var(--green)}
+.calc-res{display:flex;flex-direction:column;gap:12px;border:1.5px solid color-mix(in srgb,var(--green) 35%,transparent)}
+.calc-res.warn{border-color:color-mix(in srgb,var(--orange) 40%,transparent)}
+.calc-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px}
+.calc-big svg{width:26px;height:26px;color:var(--orange);align-self:center}
+.calc-big b{font-size:44px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.calc-big span{color:var(--label-2);font-size:14px}
+.calc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.calc-stat{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:14px;background:var(--surface-2)}
+.calc-stat b{font-size:20px;font-variant-numeric:tabular-nums}
+.calc-stat i{font-style:normal;font-size:12px;font-weight:500;color:var(--label-2)}
+.calc-line{line-height:1.45}
+.calc-next{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc-mode{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;border:0;color:var(--label);font:inherit;cursor:pointer}
+.calc-mode>svg{width:26px;height:26px;color:var(--acc)}
+.calc-mode b{font-size:16px}
+.calc-foot{margin:2px 4px 8px;line-height:1.45}
+
+/* ---------- 4.2 the burn plan ---------- */
+.burn-target,.burn-today{display:flex;flex-direction:column;gap:10px}
+.burn-target{flex-direction:row;align-items:center;gap:12px}
+.burn-target .grow{min-width:0}
+.burn-target-v{display:flex;align-items:baseline;gap:6px;margin:2px 0}
+.burn-target-v svg{width:22px;height:22px;color:var(--orange);align-self:center}
+.burn-target-v b{font-size:34px;line-height:1.05;font-variant-numeric:tabular-nums}
+.burn-target-v span{color:var(--label-2);font-size:14px}
+.burn-today-b{display:flex;gap:8px;flex-wrap:wrap}
+.burn-today-b .btn{flex:1}
+.burn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.burn-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;border-radius:18px;text-align:start;
+  border:1.5px solid transparent;background:var(--surface);color:var(--label);font:inherit;cursor:pointer;box-shadow:var(--shadow-sm,none);
+  transition:border-color .2s,background .2s,transform .15s}
+.burn-card:active{transform:scale(.98)}
+.burn-card.on{border-color:var(--orange);background:color-mix(in srgb,var(--orange) 9%,var(--surface))}
+.burn-card .thumb,.burn-card .burn-ico{width:52px;height:52px;border-radius:14px}
+.burn-name{font-weight:650;font-size:15px}
+.burn-kpm{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.burn-kpm svg{width:14px;height:14px;color:var(--orange)}
+.burn-check{position:absolute;top:10px;inset-inline-end:10px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff}
+.burn-check svg{width:15px;height:15px}
+.burn-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.burn-sum-i{display:flex;flex-direction:column;align-items:center;gap:2px}
+.burn-sum-i svg{width:20px;height:20px;color:var(--orange)}
+.burn-sum-i b{font-size:24px;font-variant-numeric:tabular-nums}
+.burn-sum-i span{font-size:12px;color:var(--label-2)}
+.burn-list .item .burn-ico{width:44px;height:44px}
+.burn-time{font:600 13px/1 inherit;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--blue) 12%,transparent);color:var(--blue);font-variant-numeric:tabular-nums}
+.burn-opts{display:flex;flex-direction:column;gap:10px;padding:6px 14px 14px}
+.burn .section{margin-bottom:0}
+
+/* Home: "Start today's workout" shows the minutes and calories under the label */
+.plan-start-l{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2}
+.plan-start-l small{font-size:12px;font-weight:500;opacity:.85}
+.burn-entry{background:linear-gradient(135deg,color-mix(in srgb,var(--orange) 14%,var(--surface)),var(--surface) 70%);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--orange) 30%,transparent)}
+.calc-chips .chip,.calc-act .chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);min-height:34px}
+.calc-chips .chip.on,.calc-act .chip.on{background:var(--acc);color:var(--on-acc)}
+.calc-chips .chip.calc-safe{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green);font-weight:600}
+.burn-target .grow{flex:1}
+.burn-target .stp{flex:none;width:136px}
+.burn-target-v span{white-space:nowrap}

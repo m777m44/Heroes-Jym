@@ -23,7 +23,7 @@ it('the Arabic UI has no stray English', async () => {
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -40,6 +40,22 @@ it('the Arabic UI has no stray English', async () => {
   for (const tab of ['body', 'plan', 'compare']) {
     const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/ideal'] }, React.createElement(IB.default, { initialTab: tab })))
     for (const line of text(html).split('\n').map(s => s.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('IdealBody:' + tab)
+  }
+  // 4.2: the burn plan — picking, and the review with reminders on; a section page with its burn entry
+  {
+    const BP = await import('./BurnPlan.jsx')
+    const SW = await import('./StartWorkout.jsx')
+    const S0 = useStore.getInitialState().S
+    const prev = S0.burnPlan
+    S0.burnPlan = { mode: 'home', keys: ['run', 'walk', 'burpee', 'yoga'], target: 2400, remind: true, gap: 30, start: '18:00', daily: true }
+    S0.calGoal = { currentKg: 90, targetKg: 80, days: 60, activity: 'light', dietShare: 30, exerciseKcal: 900, eatKcal: 2100, dailyDeficit: 1280, from: new Date().toISOString().slice(0, 10) }
+    for (const [name, C, path] of [['BurnSelect', BP.BurnSelect, '/burn/home'], ['BurnReview', BP.BurnReview, '/burn/review'], ['WorkoutSection', SW.WorkoutSection, '/start/home'], ['Calories+goal', (await import('./Calories.jsx')).default, '/calories']]) {
+      let html
+      try { html = renderToString(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(C))) } catch (e) { throw new Error(name + ': ' + e.message) }
+      for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(name)
+    }
+    S0.burnPlan = prev
+    delete S0.calGoal
   }
   // sheets
   const { useUI } = await import('../store/useUI.js')

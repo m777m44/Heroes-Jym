@@ -32,12 +32,14 @@ import io.github.m777m44.mahdijym.R;
 public class WorkoutReminder extends BroadcastReceiver {
     static final String ACTION_FIRE = "io.github.m777m44.mahdijym.workout.FIRE";
     static final String ACTION_LATER = "io.github.m777m44.mahdijym.workout.LATER";
+    // 4.2: the burn plan's per-exercise reminders also have "Skip" (just dismisses it)
+    static final String ACTION_SKIP = "io.github.m777m44.mahdijym.workout.SKIP";
     static final String CH = "mj_workout";
     static final String PREFS = "mj_workout";
     /** Light: two short taps. */
     static final long[] VIBRATION = { 0, 60, 90, 60 };
     static final long LATER_MS = 30 * 60_000L;
-    private static final int REQ_ALARM = 21_000, REQ_START = 22_000, REQ_LATER = 23_000, REQ_OPEN = 24_000;
+    private static final int REQ_ALARM = 21_000, REQ_START = 22_000, REQ_LATER = 23_000, REQ_OPEN = 24_000, REQ_SKIP = 25_000;
     private static final int NOTIF_BASE = 7300;
 
     @Override public void onReceive(Context c, Intent intent) {
@@ -47,6 +49,7 @@ public class WorkoutReminder extends BroadcastReceiver {
         try {
             if (ACTION_FIRE.equals(a)) post(c, id);
             else if (ACTION_LATER.equals(a)) later(c, id);
+            else if (ACTION_SKIP.equals(a)) NotificationManagerCompat.from(c).cancel(slot(item(c, id), id));
         } catch (RuntimeException ignored) { /* never crash in a receiver */ }
     }
 
@@ -132,9 +135,15 @@ public class WorkoutReminder extends BroadcastReceiver {
         }
     }
 
+    /** 4.2: an item may bring its own notification slot ("nid"); else 7300 + id % 100. */
+    private static int slot(JSONObject o, int id) { return o != null && o.has("nid") ? o.optInt("nid", NOTIF_BASE + id % 100) : NOTIF_BASE + id % 100; }
+
     private static void later(Context c, int id) {
-        NotificationManagerCompat.from(c).cancel(NOTIF_BASE + id % 100);
-        arm(c, id, System.currentTimeMillis() + LATER_MS);
+        JSONObject o = item(c, id);
+        NotificationManagerCompat.from(c).cancel(slot(o, id));
+        // 4.2: an item may bring its own snooze ("later", minutes) — the burn plan uses 10
+        long ms = o != null && o.optInt("later", 0) > 0 ? o.optInt("later", 30) * 60_000L : LATER_MS;
+        arm(c, id, System.currentTimeMillis() + ms);
     }
 
     // ---- the notification -------------------------------------------------------------------
@@ -186,9 +195,15 @@ public class WorkoutReminder extends BroadcastReceiver {
             .setTimeoutAfter(3 * 60 * 60_000L)
             .setContentIntent(open(c, REQ_OPEN + id % 1000, route))
             .addAction(0, s.optString("start", "Start"), open(c, REQ_START + id % 1000, startRoute))
-            .addAction(0, s.optString("later", "In 30 min"), laterPi)
+            .addAction(0, o.optString("laterLabel", s.optString("later", "In 30 min")), laterPi)
             .setLocalOnly(true);
-        try { NotificationManagerCompat.from(c).notify(NOTIF_BASE + id % 100, b.build()); }
+        String skip = o.optString("skip", "");
+        if (!skip.isEmpty()) {
+            Intent si = new Intent(c, WorkoutReminder.class).setAction(ACTION_SKIP).putExtra("id", id);
+            b.addAction(0, skip, PendingIntent.getBroadcast(c, REQ_SKIP + id % 1000, si,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+        }
+        try { NotificationManagerCompat.from(c).notify(slot(o, id), b.build()); }
         catch (SecurityException ignored) { /* notifications not allowed */ }
     }
 }

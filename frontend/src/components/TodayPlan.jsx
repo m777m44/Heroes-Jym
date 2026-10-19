@@ -119,6 +119,9 @@ export default function TodayPlan() {
     if (plan.routineId) startFlow(plan.routineId)
     else startFlow(null, planRoutine(plan))
   }
+  // 4.2: the button opens the choice — without / with equipment, today's plan on top, the
+  // calorie burn plan — instead of starting straight away (the reminder's Start still does)
+  const choose = () => (S.active ? nav('/workout') : nav('/start'))
   // 2.10: "Start" on the home-workout reminder opens /home?start=plan — begin right away.
   const loc = useLocation()
   useEffect(() => {
@@ -146,7 +149,7 @@ export default function TodayPlan() {
     <ScaleStrip S={S} plan={plan} iso={iso} />
 
     <div className="plan-goals">
-      <Goal pct={p.workoutPct} color="var(--tint)" icon="dumbbell" onClick={start}
+      <Goal pct={p.workoutPct} color="var(--tint)" icon="dumbbell" onClick={choose}
         value={p.trained ? t('Done') : t('{0} min', plan.minutes)} label={t('Workout')} />
       <Goal pct={p.stepsPct} color="var(--green)" icon="figureWalk" onClick={() => nav('/walk')}
         value={n0(p.steps) + ' / ' + n0(plan.stepsTarget)} label={t('Steps')} />
@@ -180,9 +183,12 @@ export default function TodayPlan() {
       })}
     </ol>}
 
-    <button className={'plan-start' + (p.trained && !S.active ? ' done' : '')} onClick={start}>
+    <button className={'plan-start' + (p.trained && !S.active ? ' done' : '')} onClick={choose}>
       <Icon name={S.active ? 'timer' : p.trained ? 'checkCircle' : 'play'} />
-      <span>{S.active ? t('Resume workout') : p.trained ? t('Workout done — train again?') : t("Start today's workout")}</span>
+      <span className="plan-start-l">
+        <span>{S.active ? t('Resume workout') : p.trained ? t('Workout done — train again?') : t("Start today's workout")}</span>
+        {!S.active && !p.trained && <small>{t('{0} min', plan.minutes)} · {t('≈ {0} kcal', n0(plan.kcalTotal))}</small>}
+      </span>
     </button>
 
     <div className="plan-foot">

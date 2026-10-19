@@ -38,6 +38,10 @@ const Backups = lazy(() => import('./views/Backups.jsx'))
 const StartWorkout = lazy(() => import('./views/StartWorkout.jsx'))
 const WorkoutSection = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutSection })))
 const WorkoutCategory = lazy(() => import('./views/StartWorkout.jsx').then(m => ({ default: m.WorkoutCategory })))
+// 4.2: the calorie calculator and the burn plan
+const Calories = lazy(() => import('./views/Calories.jsx'))
+const BurnSelect = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnSelect })))
+const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnReview })))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
@@ -161,6 +165,9 @@ function Shell() {
               <Route path="/start" element={<StartWorkout />} />
               <Route path="/start/:mode" element={<WorkoutSection />} />
               <Route path="/start/:mode/:cat" element={<WorkoutCategory />} />
+              <Route path="/calories" element={<Calories />} />
+              <Route path="/burn/review" element={<BurnReview />} />
+              <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane

@@ -376,3 +376,12 @@ that would simply install. Your free options:
 | Drive error detail | `lib/cloud.js` `drive()` / `getToken()` | Failures keep `code` + `raw`; a 403 *accessNotConfigured* / *SERVICE_DISABLED* becomes reason `setup`, code `API_DISABLED`. Stored as `driveCode` / `driveMsg` in `mj_cloud`, cleared once Drive works. Explained by `lib/googleErrors.js`. |
 | Sign-in never fails after picking | `components/AccountSection.jsx` | `firstSync` errors fall back to Android Backup (`'backup'`) instead of a toast; Drive actions toast Google's explained reason. |
 | Scale-linked plan | `lib/scaleWorkout.js` → `lib/dailyPlan.js` `planFor()` | Adds `scale`, `energy` (`S.energy[iso]`), `intensity`, `reasons`; sets ±1 by gap and energy. The 14-day reminder planner (`lib/dailyReminder.js`) carries the reason; `planSignature` includes the latest weight, `targetW`, `energy`, `bodyGoal`. |
+
+## Calorie calculator & burn plan (4.2)
+
+| What | Where | Notes |
+|---|---|---|
+| Calculator | `lib/calorieCalc.js`, `views/Calories.jsx` (`/calories`) | `calcCalorieGoal()` — 7700 kcal/kg, Mifflin-St Jeor, activity ×1.2/1.375/1.55/1.725, diet share ≤ 70%. Throws `{ key }` (a locale key) on bad input; returns `warnings[{ key, args }]`, `safeDays` (0.75 kg/week). Saved as `S.calGoal = { currentKg, targetKg, days, activity, dietShare, exerciseKcal, eatKcal, dailyDeficit, from }`; also sets `S.targetW`. |
+| Burn plan | `lib/burnPlan.js`, `views/BurnPlan.jsx` (`/burn/home`, `/burn/gym`, `/burn/review`) | 8 + 8 activities with MET (kcal/min = MET·3.5·kg/200). `buildBurnPlan()` spreads the target over the picked exercises (3–60 min each). Saved as `S.burnPlan = { mode, keys, target, remind, start, gap, daily, from }`, rebuilt for the current weight. `burnTarget()` uses `S.calGoal.exerciseKcal` while the goal runs. |
+| Burn reminders | `burnReminders()` → `lib/mobile.js` `syncReminder()` → `WorkoutReminder.java` | Item ids `1100 + day·10 + i`, notification slots `7600 + day·10 + i`, 7 days. Items carry `nid`, `later` (10 min), `laterLabel` and `skip`; `ACTION_SKIP` just dismisses. Scheduled even when the daily reminder is off. *Start* → `/burn/review?start=all\|<i>` (walking → `/walk`), which starts the session. Fallback: Capacitor local notifications (`extra.route`). |
+

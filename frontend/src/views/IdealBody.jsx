@@ -319,6 +319,13 @@ function PlanTab({ S, update, r, u, w, unit, last, pace, isGoal, setGoal }) {
       <Button variant="primary" icon="flag" onClick={setGoal} disabled={!last}>{isGoal ? t('Restart from today') : t('Start')}</Button>
     </div>}
 
+    {/* 4.2: the calorie calculator */}
+    <button className="card startw-today" onClick={() => nav('/calories')}>
+      <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="calculator" /></span>
+      <span className="grow"><b>{t('Calorie calculator')}</b><span className="small muted">{t('How many calories a day to reach your target')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
+
     {/* the training week */}
     <div className="card">
       <div className="row between"><h2 style={{ margin: 0 }}>{t('Your training week')}</h2><button className="h2link" onClick={() => nav('/home')}>{t('Today')} <Icon name="chevronRight" /></button></div>

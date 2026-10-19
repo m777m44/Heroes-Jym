@@ -56,30 +56,42 @@ async function nativeWorkoutReminders(items) {
 }
 export async function syncReminder(S, interactive = false) {
   try {
-    const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS } = await import('./dailyReminder.js')
-    const sig = planSignature(S)
+    const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS, reminderPrefs } = await import('./dailyReminder.js')
+    // 4.2: the burn plan's reminders ride along (lib/burnPlan.js) — one per exercise at its time
+    const { burnReminders, burnReminderText, burnSignature, BURN_ID_BASE, BURN_DAYS, SNOOZE_MIN } = await import('./burnPlan.js')
+    const { bodyKg } = await import('./water.js')
+    const kg = bodyKg(S)
+    const sig = planSignature(S) + burnSignature(S, kg)
     if (!interactive && sig === lastSig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i)]
+    const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i), ...Array.from({ length: BURN_DAYS * 10 }, (_, i) => BURN_ID_BASE + i)]
     await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
-    const { reminderPrefs } = await import('./dailyReminder.js')
-    if (!reminderPrefs(S).on) { await nativeWorkoutReminders([]); lastSig = sig; return true }
+    const on = reminderPrefs(S).on
+    const burn = burnReminders(S, kg)
+    if (!on && !burn.length) { await nativeWorkoutReminders([]); lastSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
-    const plan = planReminders(S)
+    const plan = on ? planReminders(S) : []
     const routeOf = item => (item.kind === 'walk' ? '/walk' : '/home')
+    const { t } = await import('./i18n.js')
+    const burnItems = burn.map(r => {
+      const tx = burnReminderText(r)
+      // Android: Start opens that exercise, "In 10 min" and "Skip" work without opening the app
+      return { id: r.id, nid: r.nid, at: r.at.getTime(), title: tx.title, body: tx.body, big: tx.big, route: '/burn/review', start: tx.start,
+        later: SNOOZE_MIN, laterLabel: t('In {0} min', SNOOZE_MIN), skip: t('Skip') }
+    })
     // 2.10 Android: scheduled natively — a heads-up banner with a light vibration, "Start" and
     // "In 30 min" buttons, back after a reboot (WorkoutReminder.java).
     if (await nativeWorkoutReminders(plan.map(item => {
       const tx = reminderText(item, S)
       return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
         route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
-    }))) { lastSig = sig; return true }
+    }).concat(burnItems))) { lastSig = sig; return true }
     const notifications = plan.map(item => {
       const { title, body } = reminderText(item, S)
       return { id: item.id, title, body, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
-    })
+    }).concat(burnItems.map(x => ({ id: x.id, title: x.title, body: x.body, schedule: { at: new Date(x.at), allowWhileIdle: true }, extra: { route: x.start } })))
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true

@@ -3,6 +3,57 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v4.2.0 — 2026-10-19
+
+**An interactive daily plan and a calorie calculator: choose how you train today, see how many
+calories you need to burn to reach your target weight, and get a burn plan whose exercises each
+remind you at their own time.**
+*خطة يومية تفاعلية وحاسبة سعرات: اختر طريقة تمرينك اليوم، واعرف كم سعرة تحتاج أن تحرق لتصل إلى وزنك المستهدف، واحصل على خطة حرق يذكّرك كل تمرين فيها في وقته.*
+
+### ▶️ Start today's workout
+- The Home button now shows **how long and how many calories** (e.g. "35 min · ≈ 280 kcal") and
+  opens the choice instead of starting straight away: **🏠 Without equipment** or **🏋️ With
+  equipment**, with today's plan on top. A workout already running opens directly. The
+  reminder's *Start* button still starts today's plan right away.
+- Each section now starts with a **burn plan** card showing today's calorie target.
+
+### 🧮 Calorie calculator (Ideal body → Calorie calculator, or from the burn plan)
+- Enter your **current weight, target weight and number of days**. Height, age and sex come from
+  your profile and can be changed there, and the activity level is guessed from your steps.
+- **7,700 kcal per kg**, resting burn by **Mifflin-St Jeor**, daily use by activity level
+  (×1.2 / 1.375 / 1.55 / 1.725).
+- Results, updated as you type: the **daily deficit**, **kcal to burn from exercise**, **kcal to
+  eat a day**, **weekly loss**, what your body uses and the total.
+- **Food or exercise slider**: how much of the deficit comes from eating less (up to 70%); the
+  rest comes from training.
+- **Honest warnings**: over 1,000 kcal a day from exercise, a deficit above half of what you use,
+  over 1 kg a week or 0.5 kg a day, or eating below your resting burn / 1,200–1,500 kcal. Each
+  one comes with the **healthy number of days** (0.75 kg a week).
+- **Save as my goal** keeps it (day *n* of *N*, and it also sets your target weight). While it
+  runs, the goal's exercise kcal is the daily burn target everywhere.
+- Clear Arabic error messages for an impossible target, height or age.
+
+### 🔥 Burn plan
+- **8 home exercises** (running, brisk walking, abs, burpees, push-ups, squats, yoga, jumping
+  jacks) and **8 gym exercises** (bench press, deadlift, squat, leg press, rows, shoulder press,
+  lat pulldown, biceps curls), each with its kcal per minute **for your weight** (MET).
+- Pick several, then **Build my plan**: the minutes are shared out so the total hits the day's
+  target (3–60 min each), with a note when it runs over 2 hours.
+- **The plan**: every exercise with minutes, kcal and its time; **Start now** (all of them, or a
+  single exercise), tap an icon for the exercise's details, **Change exercises** (the target can
+  be adjusted on the picking screen). It is saved and rebuilt when your weight changes. Brisk walking opens the step counter.
+- **Reminders for each exercise at its own time**: start time (18:00 by default) and the gap
+  between exercises (all together / 30 min / 1 h / 2 h), every day or today only, 7 days ahead.
+  The buttons are **Start now**, **In 10 min** and **Skip**, and they work from the notification. Days
+  you already trained are skipped. Notification permission is asked first, with a clear message
+  if it's off.
+
+### Also
+- New **calculator** and **apple** icons; RTL, dark/light and theme colours throughout.
+- 105 new strings in all 13 languages.
+- Tests: calorie formulas, warnings and errors, plan sizing, reminder times and IDs, screen
+  render, and the Arabic UI check for the new screens (509 tests).
+
 ## v4.1.0 — 2026-10-17
 
 **Google sign-in that never ends in "didn't work", a Google check that shows exactly what Google
