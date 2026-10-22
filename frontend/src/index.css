@@ -2311,3 +2311,52 @@ html[data-contrast=more] .muted,html[data-contrast=more] .dim{opacity:1}
 .food-kitchen-link b{display:block}
 .food-card-acts{display:flex;gap:8px}
 .food-card-acts .btn{flex:1;min-width:0}
+
+/* ---- 6.0 wallpapers ------------------------------------------------------------------------------ */
+html[data-wall]{background-image:none}
+html[data-wall]::before{content:'';position:fixed;inset:calc(var(--wall-blur,0px) * -2);z-index:-2;background:var(--wall-bg);filter:blur(var(--wall-blur,0px));pointer-events:none}
+html[data-wall]::after{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(var(--wall-tint,0,0,0),calc(var(--wall-dim,.35) * .8)),rgba(var(--wall-tint,0,0,0),var(--wall-dim,.35)) 45%,rgba(var(--wall-tint,0,0,0),calc(var(--wall-dim,.35) + .1)));pointer-events:none}
+html[data-wall] .hdr h1,html[data-wall] .hdr .sub,html[data-wall] .h2,html[data-wall] .sect-h{text-shadow:0 1px 10px rgba(var(--wall-tint,0,0,0),.45)}
+.walls .grow{flex:1;min-width:0}
+.wall-tabs{margin-bottom:12px}
+.wall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.wall-tile{position:relative;aspect-ratio:9/16;border:0;border-radius:var(--r-lg);overflow:hidden;cursor:pointer;padding:0;background:var(--surface-2) center/cover no-repeat;box-shadow:0 6px 18px -10px rgba(0,0,0,.6);transition:transform .15s}
+.wall-tile:active{transform:scale(.96)}
+.wall-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.wall-tile.on{outline:3px solid var(--acc);outline-offset:2px}
+.wall-tile .wall-ok{position:absolute;top:6px;inset-inline-end:6px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:var(--on-acc)}
+.wall-tile .wall-ok svg{width:14px;height:14px}
+.wall-tile .wall-del{position:absolute;bottom:6px;inset-inline-end:6px;width:28px;height:28px;border-radius:50%;border:0;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;cursor:pointer}
+.wall-tile .wall-del svg{width:14px;height:14px}
+.wall-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--acc);font-weight:600;font-size:13px;border:2px dashed color-mix(in srgb,var(--acc) 45%,transparent);background:color-mix(in srgb,var(--acc) 8%,var(--surface))}
+.wall-add svg{width:28px;height:28px}
+.wall-now{display:flex;align-items:center;gap:14px}
+.wall-now-p{flex:none;width:64px;height:112px;border-radius:14px;background:var(--surface-2) center/cover no-repeat;box-shadow:0 8px 20px -10px rgba(0,0,0,.6)}
+.wall-sl{display:flex;align-items:center;gap:10px;margin-top:10px}
+.wall-sl>span{flex:none;width:86px;font-size:14px;color:var(--label-2)}
+.wall-sl input{flex:1;min-width:0;accent-color:var(--acc)}
+.wall-sl b{flex:none;width:42px;text-align:end;font-variant-numeric:tabular-nums;font-size:14px}
+.look-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.look-opt{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px 10px;border:0;border-radius:var(--r-lg);background:var(--surface-2);color:var(--label);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.look-opt.on{box-shadow:inset 0 0 0 2px var(--acc);color:var(--acc)}
+.look-sw{width:54px;height:38px;background:var(--surface);display:block}
+
+/* ---- 6.0 shapes ---------------------------------------------------------------------------------- */
+:root[data-shape="soft"]{--r-sm:6px;--r:9px;--r-lg:12px;--r-xl:16px;--r-card:10px}
+:root[data-shape="sharp"]{--r-sm:2px;--r:4px;--r-lg:4px;--r-xl:6px;--r-card:4px}
+:root[data-shape="sharp"] .seg{border-radius:4px}
+:root[data-shape="pill"]{--r-sm:12px;--r:999px;--r-lg:22px;--r-xl:30px;--r-card:24px}
+:root[data-shape="pill"] .input,:root[data-shape="pill"] textarea{border-radius:18px}
+:root[data-shape="pill"] .seg{border-radius:999px}
+:root[data-shape="pill"] .seg>*{border-radius:999px}
+:root[data-shape="leaf"]{--r-sm:8px;--r:14px 4px;--r-lg:18px 5px;--r-xl:24px 6px;--r-card:22px 6px}
+:root[data-shape="leaf"] .iconbtn,:root[data-shape="leaf"] .kit-tick,:root[data-shape="leaf"] .wall-ok{border-radius:50%}
+
+/* ---- 6.0 card styles ----------------------------------------------------------------------------- */
+:root[data-card="glass"] :is(.card,.sect-b,.item){background:color-mix(in srgb,var(--surface) 58%,transparent);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14)}
+:root[data-card="outline"] :is(.card,.sect-b,.item){background:color-mix(in srgb,var(--surface) 35%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--label) 16%,transparent)}
+:root[data-card="shadow"] :is(.card,.sect-b,.item){box-shadow:0 12px 30px -14px rgba(0,0,0,.55),0 2px 6px -2px rgba(0,0,0,.25)}
+:root[data-theme="light"][data-card="shadow"] :is(.card,.sect-b,.item){box-shadow:0 12px 30px -16px rgba(30,30,60,.28),0 2px 6px -2px rgba(30,30,60,.12)}
+:root[data-card="gradient"] :is(.card,.sect-b,.item){background-image:linear-gradient(150deg,color-mix(in srgb,var(--acc) 16%,transparent),transparent 65%)}
+:root[data-card="neon"] :is(.card,.sect-b,.item){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 60%,transparent),0 0 18px -6px color-mix(in srgb,var(--acc) 70%,transparent)}
+:root[data-card="neon"] .btn.primary{box-shadow:0 0 22px -4px var(--acc)}

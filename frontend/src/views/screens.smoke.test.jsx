@@ -279,6 +279,19 @@ describe('4.2 calorie calculator & burn plan render', () => {
   })
 })
 
+describe('6.0 wallpapers render', () => {
+  it('the wallpaper screen, off and on', async () => {
+    const S0 = () => useStore.getInitialState().S
+    const off = await render('/wallpapers', './Wallpapers.jsx')
+    expect((off.match(/class="wall-tile/g) || []).length).toBeGreaterThanOrEqual(10)
+    S0().wall = { id: 'n03', dim: 0.5, blur: 4 }
+    const on = await render('/wallpapers', './Wallpapers.jsx')
+    expect(on).toContain('wall-tile on')
+    expect(on).toContain('type="range"')
+    delete S0().wall
+  })
+})
+
 describe('6.0 kitchen render', () => {
   const S0 = () => useStore.getInitialState().S
   it('the kitchen: recipes, my kitchen and the builder', async () => {

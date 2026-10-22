@@ -12,7 +12,8 @@ const media = process.env.MEDIA_TARGET || 'http://127.0.0.1:8888'
 // Offline web app: after the build, write the list of every built file (and a version derived
 // from their contents) into dist/sw.js. The service worker precaches them at install, so every
 // screen opens without a connection — not only the ones visited before. Exercise media
-// (img/, gif/) are left out: they are saved on demand (Settings → Offline).
+// (img/, gif/) are left out: they are saved on demand (Settings → Offline). Wallpapers too: each
+// is cached the first time it is shown.
 function precacheSW() {
   let outDir = 'dist'
   return {
@@ -27,7 +28,7 @@ function precacheSW() {
         for (const n of readdirSync(d)) {
           const p = join(d, n)
           const rel = relative(outDir, p).split(sep).join('/')
-          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif') walk(p) }
+          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif' && rel !== 'wallpapers') walk(p) }
           else if (rel !== 'sw.js' && !rel.endsWith('.map')) files.push(rel)
         }
       }

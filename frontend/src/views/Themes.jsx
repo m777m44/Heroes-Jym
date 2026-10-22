@@ -20,6 +20,8 @@ import ColorWheel from '../components/ColorWheel.jsx'
 import ColorTools from '../components/ColorTools.jsx'
 import { pushRecent } from '../lib/colorTools.js'
 import Icon from '../components/Icon.jsx'
+import { nav } from '../lib/nav.js'
+import { SHAPES, CARD_STYLES, shapeOf, cardStyleOf } from '../lib/look.js'
 import { Section, Row, Switch, Segmented, Slider, Button, BackButton } from '../components/ui.jsx'
 
 export const MAX_FAVS = 30
@@ -114,6 +116,12 @@ export default function Themes() {
         <Switch checked={follow} onChange={v => update(s => { s.themeSystem = v })} />
       </Row>
     </Section>
+
+    <Section footer={t('A photo or artwork behind the whole app — nature, anime, art or your own pictures.')}>
+      <Row icon="image" iconTint="var(--teal)" title={t('Wallpaper')} subtitle={S.wall && S.wall.id ? t('On') : t('Off')} accessory="chevron" onClick={() => nav('/wallpapers')} />
+    </Section>
+
+    <LookPicker />
 
     <div className="theme-tabs" role="tablist">
       {tabs.map(c => <button key={c.id} role="tab" aria-selected={tab === c.id} className={'theme-tab' + (tab === c.id ? ' on' : '') + (c.id === 'studio' ? ' studio' : '')}
@@ -305,4 +313,35 @@ function ThemeFile({ S, update, pick }) {
     </div>
     <input ref={ref} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={doImport} />
   </Section>
+}
+
+// 6.0 — the shape of corners and the style of cards, on top of any theme
+const SHAPE_R = { round: '12px', soft: '7px', sharp: '2px', pill: '19px', leaf: '16px 4px' }
+const CARD_PREV = {
+  solid: {}, glass: { background: 'color-mix(in srgb, var(--surface) 55%, transparent)', boxShadow: 'inset 0 0 0 .5px rgba(255,255,255,.25)' },
+  outline: { background: 'transparent', boxShadow: 'inset 0 0 0 1.5px color-mix(in srgb, var(--label) 30%, transparent)' },
+  shadow: { boxShadow: '0 8px 16px -8px rgba(0,0,0,.6)' },
+  gradient: { backgroundImage: 'linear-gradient(150deg, color-mix(in srgb, var(--acc) 40%, transparent), transparent 70%)' },
+  neon: { boxShadow: 'inset 0 0 0 1px var(--acc), 0 0 12px -3px var(--acc)' },
+}
+function LookPicker() {
+  const S = useStore(s => s.S)
+  const update = useStore(s => s.update)
+  const sh = shapeOf(S), cs = cardStyleOf(S)
+  return <>
+    <Section title={t('Shape')} footer={t('The corners of cards, buttons and fields.')}>
+      <div className="look-grid" style={{ padding: 12 }}>
+        {SHAPES.map(x => <button key={x.key} className={'look-opt' + (sh === x.key ? ' on' : '')} aria-pressed={sh === x.key} onClick={() => update(s => { s.shape = x.key })}>
+          <span className="look-sw" style={{ borderRadius: SHAPE_R[x.key] }} />{t(x.name)}
+        </button>)}
+      </div>
+    </Section>
+    <Section title={t('Card style')} footer={t('How cards sit on the background — works with every theme and wallpaper.')}>
+      <div className="look-grid" style={{ padding: 12 }}>
+        {CARD_STYLES.map(x => <button key={x.key} className={'look-opt' + (cs === x.key ? ' on' : '')} aria-pressed={cs === x.key} onClick={() => update(s => { s.cardStyle = x.key })}>
+          <span className="look-sw" style={{ borderRadius: 10, ...CARD_PREV[x.key] }} />{t(x.name)}
+        </button>)}
+      </div>
+    </Section>
+  </>
 }

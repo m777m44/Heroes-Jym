@@ -180,6 +180,8 @@ export default function Settings() {
         subtitle={themeName(resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)) + (S.themeSystem !== false ? ' · ' + t('Follow the phone') : '')}>
         <ThemeMock th={resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)} />
       </Row>
+      <Row icon="image" iconTint="var(--teal)" title={t('Wallpaper')} accessory="chevron" onClick={() => nav('/wallpapers')}
+        subtitle={S.wall && S.wall.id ? t('On') : t('Off')} />
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
         <Segmented

@@ -5,6 +5,8 @@ import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
 import { resolveTheme, applyTheme } from './lib/themes.js'
+import { applyWallpaper } from './lib/wallpapers.js'
+import { applyLook } from './lib/look.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -44,6 +46,7 @@ const BurnSelect = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ defaul
 const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnReview })))
 const Food = lazy(() => import('./views/Food.jsx'))
 const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
+const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
@@ -82,7 +85,12 @@ function Shell() {
   useEffect(() => installBackButton(), [])
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   const systemDark = useSystemDark()
-  useEffect(() => { applyTheme(resolveTheme(S, systemDark), S.accent) }, [S.theme, S.themeSystem, S.accent, systemDark])
+  useEffect(() => {
+    const th = resolveTheme(S, systemDark)
+    applyTheme(th, S.accent)
+    applyWallpaper(S.wall, th.mode)     // 6.0: after the theme — it makes the surfaces see-through
+  }, [S.theme, S.themeSystem, S.accent, systemDark, S.wall]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { applyLook(S) }, [S.shape, S.cardStyle]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { applyA11y(S) }, [S.textScale, S.highContrast, S.reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
   const lang = langOf(S)                     // 'auto' → the phone's language
   useEffect(() => { setLang(lang) }, [lang])
@@ -170,6 +178,7 @@ function Shell() {
               <Route path="/calories" element={<Calories />} />
               <Route path="/food" element={<Food />} />
               <Route path="/kitchen" element={<Kitchen />} />
+              <Route path="/wallpapers" element={<Wallpapers />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />

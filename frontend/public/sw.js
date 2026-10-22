@@ -56,7 +56,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || url.origin !== location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname.includes('/api/')) return    // never cache auth/data
 
-  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/')
+  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/') || url.pathname.includes('/wallpapers/')
   const isAsset = url.pathname.includes('/assets/')
   if (isMedia || isAsset) {
     // cache-first: media never change, hashed assets are immutable

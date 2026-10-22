@@ -141,6 +141,10 @@ const P = {
   // 3.0 — glass / minimal themes, the health log
   layers: <><path d="m12 4 8.2 4.4L12 12.8 3.8 8.4 12 4Z" /><path d="m3.8 12.2 8.2 4.4 8.2-4.4" /><path d="m3.8 15.8 8.2 4.4 8.2-4.4" /></>,
   square: <rect x="5" y="5" width="14" height="14" rx="3.2" />,
+  // 6.0 — wallpapers, shapes
+  mountain: <><path d="m3.4 18.8 6-10 3.6 6 2-3.2 5.6 7.2Z" /><circle cx="16.6" cy="6.6" r="1.6" /></>,
+  image: <><rect x="3.8" y="4.8" width="16.4" height="14.4" rx="2.6" /><circle cx="9" cy="10" r="1.6" /><path d="m4.2 17.6 4.6-4.4 3.4 3 3-2.6 4.6 4" /></>,
+  shapes: <><circle cx="8" cy="8" r="3.6" /><rect x="12.8" y="12.8" width="7" height="7" rx="1.4" /><path d="m16.4 3.6 3.6 6.2h-7.2Z" /><path d="M4.4 19.6h7" /></>,
   bed: <><path d="M3.6 18.6V6.4" /><path d="M3.6 14.2h16.8v4.4" /><path d="M20.4 14.2v-2.6a3 3 0 0 0-3-3h-6.2v5.6" /><circle cx="7.4" cy="10.9" r="1.9" /></>,
   smile: <><circle cx="12" cy="12" r="8.2" /><path d="M8.6 14.2a4.2 4.2 0 0 0 6.8 0" /><path d="M9.2 9.6h.01M14.8 9.6h.01" /></>,
   pill: <><rect x="3.6" y="8.6" width="16.8" height="6.8" rx="3.4" transform="rotate(-45 12 12)" /><path d="m9.6 9.6 4.8 4.8" /></>,
