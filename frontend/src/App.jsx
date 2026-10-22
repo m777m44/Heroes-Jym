@@ -48,6 +48,7 @@ const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ defaul
 const Food = lazy(() => import('./views/Food.jsx'))
 const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
 const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
+const Reports = lazy(() => import('./views/Reports.jsx'))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
@@ -181,6 +182,7 @@ function Shell() {
               <Route path="/food" element={<Food />} />
               <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/wallpapers" element={<Wallpapers />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />

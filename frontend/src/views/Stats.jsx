@@ -196,7 +196,14 @@ export default function Stats() {
 
   return <>
     <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
-      <button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button></div>
+      <div className="row" style={{ gap: 4 }}>
+        <button className="iconbtn" onClick={() => nav('/reports')} aria-label={t('Reports')}><Icon name="chart" /></button>
+        <button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button></div></div>
+    <button className="card tappable rp-entry" onClick={() => nav('/reports')}>
+      <span className="rp-ic" style={{ color: 'var(--acc)', background: 'color-mix(in srgb, var(--acc) 16%, transparent)' }}><Icon name="chart" /></span>
+      <span className="grow"><b>{t('Weekly & monthly report')}</b><span className="small muted" style={{ display: 'block' }}>{t('Score, charts, records, weight forecast and smart tips')}</span></span>
+      <Icon name="chevronRight" className="icn-dir" />
+    </button>
 
     <div className="tiles">
       <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Workouts')}</div><div className="v">{S.workouts.length}</div></div>

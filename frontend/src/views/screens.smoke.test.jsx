@@ -292,6 +292,16 @@ describe('6.0 wallpapers render', () => {
   })
 })
 
+describe('7.0 reports render', () => {
+  it('week and month report with score, stats and tips', async () => {
+    const html = await render('/reports', './Reports.jsx')
+    expect(html).toContain('rp-score')
+    expect((html.match(/class="rp-stat"/g) || []).length).toBe(6)
+    expect(html).toContain('rp-bars')
+    expect(html).toContain('rp-tipc')
+  })
+})
+
 describe('6.0 kitchen render', () => {
   const S0 = () => useStore.getInitialState().S
   it('the kitchen: recipes, my kitchen and the builder', async () => {
