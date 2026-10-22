@@ -3,6 +3,57 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v7.0.0 — 2026-10-23
+
+**Motion and feel, advanced workout tools, weekly & monthly reports with a weight forecast, a
+"Today" home-screen widget, and the first anime wallpapers.**
+*حركة وإحساس احترافي، أدوات تمرين متقدّمة، تقارير أسبوعية وشهرية مع توقّع الوزن، ودجت «اليوم» على الشاشة الرئيسية، وأول خلفيات الأنمي.*
+
+### ✨ Motion & feel
+- **Ripple:** buttons, rows and cards answer your finger with a soft ripple from where you touched.
+- **Tap haptics:** a light tick on every press in the Android app (Settings → Vibrate on tap).
+- **Small celebrations:** a burst of colour when you add water, log food or tick off a set, and a
+  bigger one when you set a record.
+- **Elegant loading:** screens slide their cards in one after another, and slow screens show a
+  shimmering skeleton instead of a blank page.
+- Everything turns off with Settings → Reduce motion.
+
+### 🏋️ Workout tools
+- **Live records:** tick a set that beats your best estimated 1RM and you get a 🏆 on the set,
+  a celebration, a success vibration and "New record! Estimated 1RM … (was …)".
+- **Lift tools** (calculator button on every weighted exercise):
+  - **Plate calculator:** what to put on each side for any target weight, with a drawn bar in
+    competition colours. Bar choice is 20 / 15 / 10 kg or none (45 / 35 / 15 lb).
+  - **1RM & %:** an estimated 1RM from weight × reps, plus a 100–50 % table with loads rounded to
+    real plates and the reps to expect. Tap a row to see its plates.
+- **Voice countdown:** "3, 2, 1" out loud at the end of a rest or a timed set, in the app's
+  language (Settings → Voice countdown). Uses the phone's text-to-speech engine.
+
+### 📊 Reports (Stats → Weekly & monthly report)
+- **Periods:** a week (Saturday → Friday) or a month; browse back through earlier ones.
+- **Score:** a 0–100 score ring for the period.
+- **Six stats, each compared with the period before:** workouts and minutes, volume and sets,
+  steps a day, water a day, calories a day and weight change.
+- **Interactive charts:** steps, water and food per day, with a goal line; tap a bar to read it.
+- **Records** set in the period, and your **top exercise**.
+- **Weight forecast:** your weekly trend, and the date you reach your goal weight at this pace.
+- **Smart tips:** up to four specific suggestions from your own numbers.
+
+### 📱 "Today" home-screen widget
+- Steps, water and calories as three rings with big numbers.
+- **+200 / +250 / +500 ml** water buttons and Undo, right on the home screen.
+- Tap a ring to open its screen. It updates with every step and every drink, and the existing
+  steps widget stays.
+
+### 🖼️ Wallpapers
+- **Nature:** now 30 photos, including Erbil citadel, a Tigris sunrise, Gali Ali Beg waterfall,
+  a coral reef, an oasis and a glacier cave.
+- **Anime:** a new category with the first 10 original pictures; more are coming.
+
+### 🔧 Fixes
+- Sub-screen titles now sit next to the back button instead of being pushed to the far edge.
+- Lint clean. 12 locales × 2,763 keys are in sync.
+
 ## v6.0.0 — 2026-10-22
 
 **My kitchen — cook from what you have at home with the calories worked out, per meal; wallpapers
