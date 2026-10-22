@@ -84,6 +84,11 @@ export function serviceStrings() {   // (callers may still pass S — unused sin
     foodLabel: t('Food'),
     foodLeft: t('{0} kcal left', '{n}'),
     foodOver: t('{0} kcal over', '{n}'),
+    // 7.0 — the Today widget
+    wToday: t('Today'),
+    wWater: t('Water'),
+    wMl: t('ml'),
+    wOff: t('Food log off'),
     zoneLabel: '',                       // 2.9: no city name next to the clock
     goalTitle: t('Daily goal reached!') + ' 🎉',
     // 2.5 — the full-screen celebration and its picture notification

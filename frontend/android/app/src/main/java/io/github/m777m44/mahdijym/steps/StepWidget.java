@@ -23,6 +23,7 @@ public class StepWidget extends AppWidgetProvider {
     }
 
     static void updateAll(Context c) {
+        TodayWidget.updateAll(c);   // 7.0: the Today widget follows every step / water change too
         try {
             AppWidgetManager mgr = AppWidgetManager.getInstance(c);
             if (mgr == null) return;

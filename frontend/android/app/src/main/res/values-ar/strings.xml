@@ -3,4 +3,6 @@
     <string name="widget_steps_label">MAHDI-JYM · الخطوات</string>
     <string name="widget_steps_desc">خطوات اليوم والتقدّم نحو الهدف والمسافة والسعرات مع ساعة حيّة.</string>
     <string name="back_again">اضغط رجوع مرة أخرى للخروج</string>
+    <string name="widget_today_label">MAHDI-JYM · اليوم</string>
+    <string name="widget_today_desc">خطوات وماء وسعرات اليوم — أضف الماء بلمسة واحدة.</string>
 </resources>
