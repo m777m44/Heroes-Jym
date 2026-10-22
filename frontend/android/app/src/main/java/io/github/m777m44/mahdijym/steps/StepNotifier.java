@@ -138,7 +138,7 @@ final class StepNotifier {
     }
 
     /**
-     * 2.7.0 — the ONE notification: steps and water together (the separate water panel only
+     * 2.7.0 — the ONE notification: steps and water together (5.0: as two progress rings) (the separate water panel only
      * shows while the step counter is off). Collapsed: steps | water side by side and "+" your
      * usual container. Expanded: date · status · clock · pause, the steps and water cards,
      * km · kcal · km/h · walking time, the four containers with Undo and Edit, the motto and
@@ -166,6 +166,8 @@ final class StepNotifier {
             + " · " + oneDecimal(s, speed) + " " + s.str("kmh", "km/h");
         String wl = waterLine(c);
         if (wl != null) text = text + " · " + wl;
+        int[] food = s.foodToday();
+        if (food != null) text = text + " · \uD83C\uDF7D " + nf.format(food[0]) + (food[1] > 0 ? " / " + nf.format(food[1]) : "") + " " + s.str("kcal", "kcal");
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_LIVE)
             .setSmallIcon(R.drawable.ic_stat_steps)
@@ -190,14 +192,29 @@ final class StepNotifier {
         return b.build();
     }
 
-    /** Collapsed: steps | water, "+" the usual container (or the clock when water is off). */
+    /**
+     * 5.0 — a progress ring: a ProgressBar (max 1000) with a ring drawable. At the goal the
+     * second ring (gold for steps, green for water) takes over, full.
+     */
+    static void ring(RemoteViews v, int ring, int ringOk, long value, long goal) {
+        boolean done = goal > 0 && value >= goal;
+        v.setViewVisibility(ring, done ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(ringOk, done ? View.VISIBLE : View.GONE);
+        int lvl = goal > 0 ? (int) Math.min(1000, value * 1000 / goal) : 0;
+        // a sliver even at 0, so the ring never looks broken
+        if (!done) v.setProgressBar(ring, 1000, Math.max(lvl, value > 0 ? 12 : 0), false);
+        else v.setProgressBar(ringOk, 1000, 1000, false);
+    }
+
+    /** Collapsed: the steps ring | the water ring, "+" the usual container (or the clock when water is off). */
     static void fillLiveSmall(Context c, RemoteViews v, StepStore s, WaterStore w, boolean water,
                               NumberFormat nf, int steps, int goal, int pct, String zone) {
         v.setTextViewText(R.id.n_steps, nf.format(steps));
         v.setTextColor(R.id.n_steps, steps >= goal ? 0xFFFFD60A : 0xFF30D158);
         v.setTextViewText(R.id.n_pct, s.paused ? s.str("paused", "Paused") : "/ " + nf.format(goal) + " · " + pct + "%");
         v.setTextColor(R.id.n_pct, s.paused ? 0xFFFF9F0A : 0xFF8E8E93);
-        v.setProgressBar(R.id.n_progress, Math.max(1, goal), Math.min(steps, goal), false);
+        ring(v, R.id.n_ring, R.id.n_ring_ok, steps, goal);
+        v.setImageViewResource(R.id.n_ring_i, s.paused ? R.drawable.ic_n_pause : steps >= goal ? R.drawable.ic_n_check : R.drawable.ic_stat_steps);
         v.setString(R.id.n_clock, "setTimeZone", zone);
         if (water) {
             int ml = w.todayMl(), wg = w.goal();
@@ -208,7 +225,8 @@ final class StepNotifier {
             v.setTextViewText(R.id.ws_ml, nf.format(ml));
             v.setTextColor(R.id.ws_ml, ml >= wg ? 0xFF30D158 : 0xFF64D2FF);
             v.setTextViewText(R.id.ws_pct, "/ " + nf.format(wg) + " · " + wp + "%");
-            v.setProgressBar(R.id.ws_bar, Math.max(1, wg), Math.min(ml, wg), false);
+            ring(v, R.id.ws_ring, R.id.ws_ring_ok, ml, wg);
+            v.setImageViewResource(R.id.ws_ring_i, ml >= wg ? R.drawable.ic_n_check : R.drawable.ic_w_drop);
             v.setImageViewResource(R.id.ws_icon, WaterReminder.shapeOf(w.unitKey()));
             v.setOnClickPendingIntent(R.id.ws_add, WaterReminder.liveDrink(c));
         } else {
@@ -224,50 +242,57 @@ final class StepNotifier {
         // header
         v.setString(R.id.n_date, "setTimeZone", zone);
         v.setString(R.id.n_clock, "setTimeZone", zone);
-        // 2.9: no city label — the clock simply follows the phone's time zone.
-        v.setTextViewText(R.id.n_status, s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live"));
+        v.setTextViewText(R.id.n_status, (s.paused ? "\u23F8 " : "\u25CF ") + (s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live")));
         v.setTextColor(R.id.n_status, s.paused ? 0xFFFF9F0A : moving ? 0xFF30D158 : 0xFF8E8E93);
         v.setImageViewResource(R.id.n_pause_i, s.paused ? R.drawable.ic_n_play : R.drawable.ic_n_pause);
         v.setOnClickPendingIntent(R.id.n_pause, s.paused
             ? serviceAction(c, StepCounterService.ACTION_RESUME, 11)
             : serviceAction(c, StepCounterService.ACTION_PAUSE, 12));
 
-        // steps card
+        // steps ring
+        boolean stepsDone = steps >= goal;
         v.setTextViewText(R.id.n_label, s.str("stepsLabel", "Steps"));
+        ring(v, R.id.n_ring, R.id.n_ring_ok, steps, goal);
+        v.setImageViewResource(R.id.n_ring_i, stepsDone ? R.drawable.ic_n_check : R.drawable.ic_stat_steps);
         v.setTextViewText(R.id.n_pct, pct + "%");
+        v.setTextColor(R.id.n_pct, stepsDone ? 0xFFFFD60A : 0xFFF2F2F7);
         v.setTextViewText(R.id.n_steps, nf.format(steps));
-        v.setTextColor(R.id.n_steps, steps >= goal ? 0xFFFFD60A : 0xFF30D158);
+        v.setTextColor(R.id.n_steps, stepsDone ? 0xFFFFD60A : 0xFF30D158);
         v.setTextViewText(R.id.n_goal, "/ " + nf.format(goal));
-        v.setProgressBar(R.id.n_progress, Math.max(1, goal), Math.min(steps, goal), false);
-        v.setTextViewText(R.id.n_togo, steps >= goal ? "\u2713 " + s.str("stepsDone", "Goal reached!")
+        v.setTextViewText(R.id.n_togo, stepsDone ? s.str("stepsDone", "Goal reached!")
             : s.str("stepsLeft", "{left} steps to go").replace("{left}", nf.format(goal - steps)));
-        v.setTextColor(R.id.n_togo, steps >= goal ? 0xFFFFD60A : 0xFFC7C7CC);
+        v.setTextColor(R.id.n_togo, stepsDone ? 0xFFFFD60A : 0xFFC7C7CC);
 
-        // water card + containers
+        // water ring + containers
         if (water) {
             int ml = w.todayMl(), wg = w.goal();
             int wp = (int) Math.min(999, (long) ml * 100 / Math.max(1, wg));
+            boolean wDone = ml >= wg;
             v.setViewVisibility(R.id.w_card, View.VISIBLE);
+            v.setViewVisibility(R.id.w_gap, View.VISIBLE);
             v.setViewVisibility(R.id.w_row, View.VISIBLE);
             v.setTextViewText(R.id.w_label, w.str("label", "Water"));
+            ring(v, R.id.w_ring, R.id.w_ring_ok, ml, wg);
+            v.setImageViewResource(R.id.w_ring_i, wDone ? R.drawable.ic_n_check : R.drawable.ic_w_drop);
             v.setTextViewText(R.id.w_pct, wp + "%");
+            v.setTextColor(R.id.w_pct, wDone ? 0xFF30D158 : 0xFFF2F2F7);
             v.setTextViewText(R.id.w_ml, nf.format(ml));
-            v.setTextColor(R.id.w_ml, ml >= wg ? 0xFF30D158 : 0xFF64D2FF);
+            v.setTextColor(R.id.w_ml, wDone ? 0xFF30D158 : 0xFF64D2FF);
             v.setTextViewText(R.id.w_goal, "/ " + nf.format(wg) + " " + w.str("mlUnit", "ml"));
-            v.setProgressBar(R.id.w_bar, Math.max(1, wg), Math.min(ml, wg), false);
-            v.setTextViewText(R.id.w_togo, ml >= wg ? "\u2713 " + w.str("panelDone", "Goal reached — well done!")
+            v.setTextViewText(R.id.w_togo, wDone ? w.str("panelDone", "Goal reached — well done!")
                 : w.fill(w.str("panelLeft", "{left} ml to go"), ml));
-            v.setTextColor(R.id.w_togo, ml >= wg ? 0xFF30D158 : 0xFFC7C7CC);
+            v.setTextColor(R.id.w_togo, wDone ? 0xFF30D158 : 0xFFC7C7CC);
             WaterReminder.fillChips(c, w, v, nf);
             v.setImageViewResource(R.id.w_undo_i, w.canUndo() ? R.drawable.ic_w_undo : R.drawable.ic_w_undo_off);
             v.setOnClickPendingIntent(R.id.w_undo, WaterReminder.undoIntent(c));
             v.setOnClickPendingIntent(R.id.w_edit, WaterReminder.editIntent(c));
         } else {
             v.setViewVisibility(R.id.w_card, View.GONE);
+            v.setViewVisibility(R.id.w_gap, View.GONE);
             v.setViewVisibility(R.id.w_row, View.GONE);
         }
 
-        // stats
+        // stats: km · kcal · walking time · km/h — or kcal eaten when the food log is used today
         v.setTextViewText(R.id.n_km, twoDecimals(s, s.km()));
         v.setTextViewText(R.id.n_kcal, nf.format(s.kcal()));
         v.setTextViewText(R.id.n_speed, oneDecimal(s, moving ? speed : 0));
@@ -276,6 +301,15 @@ final class StepNotifier {
         v.setTextViewText(R.id.l_speed, s.str("kmh", "km/h"));
         v.setTextViewText(R.id.l_active, s.str("active", "active"));
         v.setChronometer(R.id.n_active, SystemClock.elapsedRealtime() - s.activeMs, null, moving && !s.paused);
+        int[] food = s.foodToday();
+        boolean showFood = food != null && !moving;
+        v.setViewVisibility(R.id.n_food_box, showFood ? View.VISIBLE : View.GONE);
+        v.setViewVisibility(R.id.n_speed_box, showFood ? View.GONE : View.VISIBLE);
+        if (showFood) {
+            v.setTextViewText(R.id.n_food, nf.format(food[0]));
+            v.setTextColor(R.id.n_food, food[1] > 0 && food[0] > food[1] ? 0xFFFF9F0A : 0xFFF2F2F7);
+            v.setTextViewText(R.id.l_food, food[1] > 0 ? "/ " + nf.format(food[1]) + " " + s.str("eaten", "eaten") : s.str("eaten", "eaten"));
+        }
 
         // footer
         v.setTextViewText(R.id.n_motto, motto(s, steps, goal));

@@ -273,7 +273,7 @@ function ThemeFile({ S, update, pick }) {
   const doExport = async () => {
     const json = exportThemes(S)
     const name = 'mahdi-jym-themes-' + todayISO() + '.json'
-    if (MOBILE) { try { await shareExport(json, name); toast(t('Themes exported')) } catch (e) { /* dismissed */ } return }
+    if (MOBILE) { try { await shareExport(json, name); toast(t('Themes exported')) } catch { /* dismissed */ } return }
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
     toast(t('Themes exported'))
@@ -294,7 +294,7 @@ function ThemeFile({ S, update, pick }) {
         })
         if (d.current) pick(d.current)
         toast(t('{0} themes added to My themes', added))
-      } catch (e) { toast(t('This is not a MAHDI-JYM theme file')) }
+      } catch { toast(t('This is not a MAHDI-JYM theme file')) }
     }
     rd.readAsText(f)
   }

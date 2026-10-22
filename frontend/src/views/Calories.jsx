@@ -69,6 +69,11 @@ export default function Calories() {
       </div>
       <button className="iconbtn sm" aria-label={t('Clear goal')} onClick={() => update(s => { delete s.calGoal })}><Icon name="trash" /></button>
     </div>}
+    {g && prog && !prog.over && <button className="card startw-today" onClick={() => nav('/food')}>
+      <span className="startw-ico" style={{ background: 'var(--pink)' }}><Icon name="fork" /></span>
+      <span className="grow"><b>{t('Food log')}</b><span className="small muted">{t('Log what you eat against ≈ {0} kcal a day', n0(g.eatKcal))}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>}
 
     <Section title={t('Your numbers')} footer={t('Height, age and sex are the same as on the Ideal body screen.')}>
       <Row icon="scale" iconTint="var(--blue)" title={t('Current weight')}>

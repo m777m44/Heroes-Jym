@@ -45,7 +45,7 @@ export default function CoachProposal() {
 
 /* ============================ a created plan ============================ */
 
-function CreatedPlan({ p, S, update, toast, nav, refresh }) {
+function CreatedPlan({ p, S, update, toast, nav }) {
   const [schedule, setSchedule] = useState(true)
   const [refine, setRefine] = useState('')
   const [busy, setBusy] = useState(false)

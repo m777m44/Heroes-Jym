@@ -3,6 +3,51 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v5.0.0 — 2026-10-22
+
+**A food & calorie log with an offline database of Iraqi and Arab dishes, linked to the calorie
+calculator — and a redesigned notification with elegant progress rings for steps and water.**
+*سجل طعام وسعرات مع قاعدة أكلات عراقية وعربية تعمل بدون إنترنت، مربوط بحاسبة السعرات — وإشعار جديد بحلقات تقدّم أنيقة للخطوات والماء.*
+
+### 🍽️ Food log (Home → Food card, or Calorie calculator → Food log)
+- **118 foods, offline**, in 10 categories: home dishes (dolma, kubba, quzi, tashreeb, masgouf,
+  pacha, kahi with geymar…), bread & grains, meat/chicken/fish, eggs & dairy, vegetables, fruit,
+  legumes & nuts, fast food, sweets and drinks — each with kcal, protein, carbs and fat for a usual
+  serving (plate, piece, glass…), all names translated into the 12 languages.
+- **Four meals** — breakfast, lunch, dinner, snacks; the meal is picked from the time of day.
+- **Search that understands Arabic spelling** (with or without diacritics, ة/ه, أ/ا, ى/ي), plus
+  Recent, All, ★ Favourites, My foods and category chips.
+- **Amounts** from 0.5 to 20 servings with quick ×0.5 … ×3 chips and the totals as you change them;
+  tap an entry to change the amount or meal, or remove it.
+- **Quick calories** (a number from a label or menu) and **Create a food** (your own, per serving,
+  with macros — editable and shown in search and under My foods).
+- **Daily goal**, automatic: the calorie calculator's *eat* number while that goal runs → your
+  Ideal body calories → 2,000; or set your own (±50). The screen shows where it comes from.
+- **Summary ring** (green, orange over 100%, red over 110%) with Goal / Eaten / Left, **macro bars**
+  against your protein / carbs / fat targets, a **7-day chart** with the average, and a streak.
+- **Honest pointers**: over the goal (with how long a brisk walk burns it), low protein in the
+  evening, fat over 40%, sweets and sugary drinks adding up.
+- **Copy from the day before** in one tap; browse past days.
+- **Home card**: the ring, kcal per meal (tap to add to that meal), *Add to {meal}* — it can be
+  hidden from the Food screen (*Show on Home*).
+- Part of the normal app data, so backups, phone storage and Drive carry it.
+
+### 🔔 Notification: progress rings
+- The one merged notification now shows **two rings side by side — steps and water** — with big
+  numbers, the goal under each, and the ring turning **gold** when the steps goal is reached and
+  **blue-check** when the water goal is.
+- Kcal burned, distance and active time with small icons, and **today's food (eaten / goal)**.
+- **Quick water buttons** stay right in the notification (add, undo, container).
+- **Collapsed: one tidy line** — two mini rings with steps and water.
+- The water-only panel uses the same rings.
+
+### 🧹 Fixes & polish
+- Amounts below half a serving no longer jump to 1 serving.
+- 32 lint problems in older code cleaned up (unused variables / parameters) — 0 errors.
+- Demo data includes a week of meals.
+- Tests: 527 (food log, search, goals, insights, render and Arabic-only checks for the new
+  screens and sheets). 12 locales × 2,407 keys.
+
 ## v4.2.0 — 2026-10-19
 
 **An interactive daily plan and a calorie calculator: choose how you train today, see how many

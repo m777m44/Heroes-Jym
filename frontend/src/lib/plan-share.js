@@ -266,14 +266,14 @@ export function printPlan(S, owner) {
   ifr.setAttribute('aria-hidden', 'true')
   ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;'
   document.body.appendChild(ifr)
-  const cleanup = () => { try { ifr.remove() } catch (e) { /* */ } }
+  const cleanup = () => { try { ifr.remove() } catch { /* */ } }
   const run = () => {
     const w = ifr.contentWindow
     if (!w) { cleanup(); return }
     w.onafterprint = cleanup
     setTimeout(cleanup, 60000)   // safety net if afterprint never fires
     w.focus()
-    try { w.print() } catch (e) { cleanup() }
+    try { w.print() } catch { cleanup() }
   }
   const doc = ifr.contentWindow.document
   doc.open(); doc.write(planPrintHTML(S, owner)); doc.close()

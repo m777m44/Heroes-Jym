@@ -18,6 +18,6 @@ export function beep(enabled, freq, dur, when) {
     g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02)
     g.gain.exponentialRampToValueAtTime(0.001, t0 + (dur || 0.18))
     o.start(t0); o.stop(t0 + (dur || 0.18) + 0.05)
-  } catch (e) { /* */ }
+  } catch { /* */ }
 }
-export function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p) } catch (e) { /* */ } }
+export function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p) } catch { /* */ } }

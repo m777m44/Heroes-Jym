@@ -398,8 +398,9 @@ public class WaterReminder extends BroadcastReceiver {
                              int ml, int goal, String sub, String move, boolean alert) {
         v.setTextViewText(R.id.w_amount, amountTxt);
         v.setTextViewText(R.id.w_pct, pct + "%");
-        v.setTextColor(R.id.w_pct, ml >= goal ? 0xFF30D158 : 0xFF64D2FF);
-        v.setProgressBar(R.id.w_bar, Math.max(1, goal), Math.min(ml, goal), false);
+        v.setTextColor(R.id.w_pct, ml >= goal ? 0xFF30D158 : 0xFFF2F2F7);
+        StepNotifier.ring(v, R.id.w_ring, R.id.w_ring_ok, ml, goal);   // 5.0: a ring instead of a bar
+        v.setImageViewResource(R.id.w_ring_i, ml >= goal ? R.drawable.ic_n_check : R.drawable.ic_w_drop);
         v.setTextViewText(R.id.w_sub, sub);
         if (move != null) {
             v.setViewVisibility(R.id.w_move, View.VISIBLE);
@@ -440,7 +441,8 @@ public class WaterReminder extends BroadcastReceiver {
     private static void fillSmall(Context c, WaterStore w, RemoteViews v, NumberFormat nf, String amountTxt, int pct,
                                   int ml, int goal) {
         v.setTextViewText(R.id.ws_amount, amountTxt + " · " + pct + "%");
-        v.setProgressBar(R.id.ws_bar, Math.max(1, goal), Math.min(ml, goal), false);
+        StepNotifier.ring(v, R.id.ws_ring, R.id.ws_ring_ok, ml, goal);
+        v.setImageViewResource(R.id.ws_ring_i, ml >= goal ? R.drawable.ic_n_check : R.drawable.ic_w_drop);
         String unit = w.unitKey();
         int idx = 1;
         for (int i = 0; i < 4; i++) if (KEYS[i].equals(unit)) idx = i;

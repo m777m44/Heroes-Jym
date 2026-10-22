@@ -10,6 +10,7 @@ import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import WaterCard from '../components/WaterCard.jsx'
+import FoodCard from '../components/FoodCard.jsx'
 import { routineLabel, routineColor, colorVar } from '../lib/routines.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { useCoachStatus } from '../lib/coach-api.js'
@@ -174,6 +175,8 @@ export default function Home() {
     <StepsCard nav={nav} />
 
     {S.waterOn !== false && <WaterCard />}
+
+    {S.foodOn !== false && <FoodCard />}
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>

@@ -71,7 +71,7 @@ export async function showOngoing(data) {
     }
     const reg = await swReg()
     if (reg) await reg.showNotification(title, { body, tag: TAG, silent: true, renotify: false, requireInteraction: true, icon: 'icon-512.png', badge: 'icon-180.png', data: { url: './#/walk' } })
-  } catch (e) { /* notifications unavailable — the counter keeps going */ }
+  } catch { /* notifications unavailable — the counter keeps going */ }
 }
 
 export async function clearOngoing() {
@@ -79,7 +79,7 @@ export async function clearOngoing() {
     if (MOBILE) { const { LN } = await native(); await LN.cancel({ notifications: [{ id: ONGOING_ID }] }); return }
     const reg = await swReg()
     if (reg) (await reg.getNotifications({ tag: TAG })).forEach(n => n.close())
-  } catch (e) { /* */ }
+  } catch { /* */ }
 }
 
 /** A milestone reached while the app is in the background — a normal, audible notification. */
@@ -94,5 +94,5 @@ export async function notifyMilestone(steps, kind) {
     }
     const reg = await swReg()
     if (reg) await reg.showNotification(title, { body, tag: TAG + '-milestone', icon: 'icon-512.png', badge: 'icon-180.png', data: { url: './#/walk' } })
-  } catch (e) { /* */ }
+  } catch { /* */ }
 }

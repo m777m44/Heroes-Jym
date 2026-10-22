@@ -278,3 +278,28 @@ describe('4.2 calorie calculator & burn plan render', () => {
     expect(html).toContain('burn-entry')
   })
 })
+
+describe('5.0 food log render', () => {
+  const S0 = () => useStore.getInitialState().S
+  it('the food screen: empty, then a logged day', async () => {
+    const { todayISO } = await import('../lib/format.js')
+    delete S0().food
+    const empty = await render('/food', './Food.jsx')
+    expect(empty).toContain('food-ring')
+    expect((empty.match(/class="card food-meal/g) || []).length).toBe(4)
+    S0().food = { [todayISO()]: [{ id: 'a', f: 'dolma', kcal: 400, p: 12, c: 45, fat: 19, q: 1, m: 'l', t: 1 }, { id: 'b', f: null, n: 'Cake', kcal: 250, q: 1, m: 's', t: 2 }] }
+    S0().foodGoal = 1800
+    const full = text(await render('/food', './Food.jsx'))
+    expect(full).toMatch(/Dolma/)
+    expect(full).toMatch(/Cake/)
+    expect(full).toMatch(/1,150|1150/)
+    expect(full).toMatch(/650/)
+  })
+  it('the Home card shows the day', async () => {
+    const C = await import('../components/FoodCard.jsx')
+    const html = renderToString(React.createElement(MemoryRouter, null, React.createElement(C.default)))
+    expect(html).toContain('food-card')
+    expect(text(html)).toMatch(/650/)
+    delete S0().food; delete S0().foodGoal
+  })
+})

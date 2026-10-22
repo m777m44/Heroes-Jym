@@ -15,7 +15,7 @@ export async function milestoneHaptic() {
       const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
       for (let i = 0; i < 3; i++) { await Haptics.impact({ style: ImpactStyle.Medium }); await wait(140) }
       return
-    } catch (e) { /* plugin missing on this platform — fall through */ }
+    } catch { /* plugin missing on this platform — fall through */ }
   }
   vibrate([70, 110, 70, 110, 70])
 }
@@ -29,7 +29,7 @@ export async function goalHaptic() {
       await wait(250)
       await Haptics.vibrate({ duration: 400 })
       return
-    } catch (e) { /* fall through */ }
+    } catch { /* fall through */ }
   }
   vibrate([90, 80, 90, 80, 400])
 }

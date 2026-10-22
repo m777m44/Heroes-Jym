@@ -21,7 +21,6 @@ import { Section, Row, Button, TextArea, SelectRow, BackButton } from '../compon
    switch that turns it off. Deliberately one screen — a feature that edits your training plan
    should not scatter its controls, least of all the ones that stop it. */
 
-const GOALS = ['strength', 'muscle', 'general fitness', 'fat loss', 'endurance']
 
 // Rendered from the same list the server builds payloads from (GET /api/coach/disclosure),
 // so the promise on screen cannot drift from what actually leaves the box.
@@ -68,7 +67,7 @@ export default function Coach() {
     message: t('Any pending suggestion is discarded and scheduled reviews stop. Your Coach history stays, and you can turn it back on anytime.'),
     confirmText: t('Turn off'), danger: true,
     onConfirm: async () => {
-      try { await forgetCoach() } catch (e) { /* server-side copy goes on the next call */ }
+      try { await forgetCoach() } catch { /* server-side copy goes on the next call */ }
       update(s => { s.coach = { ...(s.coach || emptyCoach()), consent: null, cadence: 'off' } })
       toast(t('The Coach is off'))
       nav('/home')
@@ -275,7 +274,7 @@ function LogCard({ coach }) {
   const log = [...(coach.log || [])].reverse()
   if (!log.length) return null
 
-  const detail = e => openSheet(close => <>
+  const detail = e => openSheet(() => <>
     <h3>{e.kind === 'create' ? t('Plan from the Coach') : e.kind === 'revert' ? t('Undo') : t('Coach review')}</h3>
     <div className="dim small" style={{ marginBottom: 10 }}>{fmtDate(new Date(e.at).toISOString().slice(0, 10), true)}</div>
     {e.summary && <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>{e.summary}</div>}

@@ -52,7 +52,7 @@ export const dateLocale = () => DATE_LOCALES[lang] || 'en-GB'
 
 // Unit labels. English abbreviations everywhere except Arabic, which has its own (كغ، كم…).
 // 'mn' is the minutes part of "1h 5m" (written 'm' outside Arabic, so it can't clash with metres).
-const UNIT_AR = { kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث', ml: 'مل', GMT: 'غرينتش' }
+const UNIT_AR = { kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث', ml: 'مل', g: 'غ', GMT: 'غرينتش' }
 export const U = u => lang === 'ar' ? (UNIT_AR[u] || u) : (u === 'mn' ? 'm' : u)
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).
@@ -90,7 +90,7 @@ export async function setLang(l) {
     instr = l === 'en' || !INSTR_LANGS.includes(l) ? null : (await instrPacks['../instr/' + l + '.js']()).default
     const np = namePacks['../exnames/' + l + '.js']
     names = np ? (await np()).default : null
-  } catch (e) { dict = {}; instr = null; names = null }
+  } catch { dict = {}; instr = null; names = null }
   notify()
 }
 

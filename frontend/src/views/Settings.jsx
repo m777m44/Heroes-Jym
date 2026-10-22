@@ -40,7 +40,7 @@ export default function Settings() {
     const name = 'mahdi-jym-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
-      try { await shareExport(json, name); toast(t('Backup exported')) } catch (e) { /* share sheet dismissed */ }
+      try { await shareExport(json, name); toast(t('Backup exported')) } catch { /* share sheet dismissed */ }
       return
     }
     const blob = new Blob([json], { type: 'application/json' })
@@ -73,7 +73,7 @@ export default function Settings() {
     confirmText: t('Sign out everywhere'), danger: true,
     onConfirm: async () => {
       try { await signOutAll(); nav('/home'); toast(t('Signed out on all devices')) }
-      catch (e) { toast(t('Could not sign out everywhere — you are still signed in.')) }
+      catch { toast(t('Could not sign out everywhere — you are still signed in.')) }
     },
   })
 
@@ -267,7 +267,7 @@ const EFFORT_ROWS = [
 const EFFORT_TYPICAL = 2
 
 function effortHelpSheet() {
-  useUI.getState().openSheet(close => <>
+  useUI.getState().openSheet(() => <>
     <h3>{t('Effort per set')}</h3>
     <div className="muted small" style={{ lineHeight: 1.5 }}>
       {t('How hard a set was, logged next to weight and reps. Two scales for the same judgement, counted from opposite ends.')}

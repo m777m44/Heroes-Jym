@@ -1,692 +1,200 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 2.7.0 — THE notification (expanded): steps and water in one bar instead of two.
-       header   today's date · status · live clock · pause/resume
-       cards    steps (green) | water (blue): number, goal, %, bar, what's left
-       stats    km · kcal · km/h · walking time
+<!-- 5.0 — THE notification (expanded): steps and water as two progress rings in one bar.
+       header   today's date · status pill · live clock · pause/resume
+       rings    steps (green → gold at the goal) | water (blue → green): ring with %, number, goal, what's left
+       stats    km · kcal · walking time · km/h (or kcal eaten, when the food log is used today)
        water    glass · cup · can · bottle (tap to add) · Undo · Edit
        footer   the motto · the day ends in …
-     Kept under ~230dp, the room Android 12+ gives a custom expanded notification. The
-     clocks and timers are ticked by the system. Only views and setters RemoteViews allows.
-     Filled by StepNotifier.fillLive(); the chip ids are shared with notif_water.xml. -->
+     About 222dp — under the ~252dp Android 12+ gives a custom expanded notification. Clocks and
+     timers are ticked by the system. Only views and setters RemoteViews allows; the rings are
+     ProgressBars with a level-driven ring drawable. Filled by StepNotifier.fillLive(); the chip
+     ids are shared with notif_water.xml (WaterReminder.fillChips). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/notif_live_card"
-    android:orientation="vertical"
-    android:paddingStart="12dp"
-    android:paddingTop="8dp"
-    android:paddingEnd="12dp"
-    android:paddingBottom="8dp">
-
-    <!-- header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="22dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextClock
-            android:id="@+id/n_date"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:format12Hour="EEEE d MMMM"
-            android:format24Hour="EEEE d MMMM"
-            android:maxLines="1"
-            android:textColor="#FFC7C7CC"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/n_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:maxLines="1"
-            android:textColor="#FF30D158"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <TextClock
-            android:id="@+id/n_clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFeatureSettings="tnum"
-            android:format12Hour="hh:mm:ss a"
-            android:format24Hour="HH:mm:ss"
-            android:maxLines="1"
-            android:textColor="#FFF2F2F7"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/n_pause"
-            android:layout_width="26dp"
-            android:layout_height="22dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/notif_icon_btn"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/n_pause_i"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_n_pause" />
-        </LinearLayout>
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/notif_live_card" android:paddingStart="12dp" android:paddingTop="8dp" android:paddingEnd="12dp" android:paddingBottom="8dp"
+    android:orientation="vertical">
+<LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center_vertical" android:orientation="horizontal">
+    <TextClock android:id="@+id/n_date" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end"
+        android:format12Hour="EEEE d MMMM" android:format24Hour="EEEE d MMMM" android:maxLines="1" android:textColor="#FFC7C7CC" android:textSize="12sp" android:textStyle="bold" />
+    <TextView android:id="@+id/n_status" android:layout_width="wrap_content" android:layout_height="18dp" android:layout_marginEnd="6dp" android:background="@drawable/notif_pill"
+        android:gravity="center" android:includeFontPadding="false" android:maxLines="1" android:paddingStart="7dp" android:paddingEnd="7dp" android:textColor="#FF30D158" android:textSize="10.5sp" android:textStyle="bold" />
+    <TextClock android:id="@+id/n_clock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFeatureSettings="tnum"
+        android:format12Hour="hh:mm:ss a" android:format24Hour="HH:mm:ss" android:maxLines="1" android:textColor="#FFF2F2F7" android:textSize="13sp" android:textStyle="bold" />
+    <LinearLayout android:id="@+id/n_pause" android:layout_width="28dp" android:layout_height="22dp" android:layout_marginStart="8dp" android:background="@drawable/notif_icon_btn" android:gravity="center">
+        <ImageView android:id="@+id/n_pause_i" android:layout_width="14dp" android:layout_height="14dp" android:contentDescription="@null" android:src="@drawable/ic_n_pause" />
     </LinearLayout>
-
-    <!-- steps | water -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:orientation="horizontal">
-
-        <LinearLayout
-            android:id="@+id/n_card"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/notif_sec_steps"
-            android:orientation="vertical"
-            android:paddingStart="10dp"
-            android:paddingTop="7dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="7dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="13dp"
-                    android:layout_height="13dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_stat_steps"
-                    android:tint="#FF30D158" />
-
-                <TextView
-                    android:id="@+id/n_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="#FFA4F06B"
-                    android:textSize="10.5sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/n_pct"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFeatureSettings="tnum"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="bottom"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/n_steps"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF30D158"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/n_goal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:fontFeatureSettings="tnum"
-                    android:maxLines="1"
-                    android:paddingBottom="2dp"
-                    android:textColor="#FF8E8E93"
-                    android:textSize="10.5sp" />
-            </LinearLayout>
-
-            <ProgressBar
-                android:id="@+id/n_progress"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="6dp"
-                android:layout_marginTop="5dp"
-                android:indeterminate="false"
-                android:max="100"
-                android:progressDrawable="@drawable/notif_progress" />
-
-            <TextView
-                android:id="@+id/n_togo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFC7C7CC"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_card"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/notif_sec_water"
-            android:orientation="vertical"
-            android:paddingStart="10dp"
-            android:paddingTop="7dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="7dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="13dp"
-                    android:layout_height="13dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_w_drop" />
-
-                <TextView
-                    android:id="@+id/w_label"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="#FF9FD8FF"
-                    android:textSize="10.5sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_pct"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFeatureSettings="tnum"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="bottom"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/w_ml"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF64D2FF"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_goal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:fontFeatureSettings="tnum"
-                    android:maxLines="1"
-                    android:paddingBottom="2dp"
-                    android:textColor="#FF8E8E93"
-                    android:textSize="10.5sp" />
-            </LinearLayout>
-
-            <ProgressBar
-                android:id="@+id/w_bar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="6dp"
-                android:layout_marginTop="5dp"
-                android:indeterminate="false"
-                android:max="100"
-                android:progressDrawable="@drawable/notif_progress_water" />
-
-            <TextView
-                android:id="@+id/w_togo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFC7C7CC"
-                android:textSize="10sp" />
-        </LinearLayout>
+</LinearLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal">
+    <LinearLayout android:id="@+id/n_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+    android:background="@drawable/notif_sec_steps" android:gravity="center_vertical" android:orientation="horizontal"
+    android:paddingStart="8dp" android:paddingTop="7dp" android:paddingEnd="8dp" android:paddingBottom="7dp">
+    <FrameLayout android:layout_width="58dp" android:layout_height="58dp">
+    <ProgressBar android:id="@+id/n_ring" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="58dp" android:maxHeight="58dp" android:minWidth="58dp" android:maxWidth="58dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_steps" />
+    <ProgressBar android:id="@+id/n_ring_ok" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="58dp" android:maxHeight="58dp" android:minWidth="58dp" android:maxWidth="58dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_gold" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+        <ImageView android:id="@+id/n_ring_i" android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_stat_steps" android:tint="#FF30D158" />
+<TextView android:id="@+id/n_pct" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="11.5sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
-
-    <!-- km · kcal · km/h · walking time -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/notif_stats"
-        android:orientation="horizontal"
-        android:paddingTop="5dp"
-        android:paddingBottom="5dp">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/n_km"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFeatureSettings="tnum"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFF2F2F7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/l_km"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:maxLines="1"
-                android:textColor="#FF8E8E93"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/n_kcal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFeatureSettings="tnum"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFF2F2F7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/l_kcal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:maxLines="1"
-                android:textColor="#FF8E8E93"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/n_speed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFeatureSettings="tnum"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFF2F2F7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/l_speed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:maxLines="1"
-                android:textColor="#FF8E8E93"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <Chronometer
-                android:id="@+id/n_active"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFeatureSettings="tnum"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#FFF2F2F7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/l_active"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:maxLines="1"
-                android:textColor="#FF8E8E93"
-                android:textSize="10sp" />
-        </LinearLayout>
+</FrameLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:orientation="vertical">
+        <TextView android:id="@+id/n_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFA4F06B" android:textSize="10.5sp" android:textStyle="bold" android:letterSpacing="0.02"/>
+        <TextView android:id="@+id/n_steps" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF30D158" android:textSize="19sp" android:textStyle="bold" android:layout_marginTop="2dp" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/n_goal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="10.5sp" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/n_togo" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFC7C7CC" android:textSize="10sp" android:layout_marginTop="3dp"/>
     </LinearLayout>
-
-    <!-- the containers · Undo · Edit (hidden when water isn't in the bar) -->
-    <LinearLayout
-        android:id="@+id/w_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <LinearLayout
-            android:id="@+id/w_c0"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:background="@drawable/notif_chip"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp">
-
-            <ImageView
-                android:id="@+id/w_i0"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/w_n0"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_m0"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF64D2FF"
-                    android:textSize="9.5sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_c1"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/notif_chip"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp">
-
-            <ImageView
-                android:id="@+id/w_i1"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/w_n1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_m1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF64D2FF"
-                    android:textSize="9.5sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_c2"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/notif_chip"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp">
-
-            <ImageView
-                android:id="@+id/w_i2"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/w_n2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_m2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF64D2FF"
-                    android:textSize="9.5sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_c3"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/notif_chip"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp">
-
-            <ImageView
-                android:id="@+id/w_i3"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:contentDescription="@null" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/w_n3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FFF2F2F7"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/w_m3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:fontFeatureSettings="tnum"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FF64D2FF"
-                    android:textSize="9.5sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_undo"
-            android:layout_width="34dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/notif_icon_btn"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/w_undo_i"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_w_undo" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/w_edit"
-            android:layout_width="34dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="5dp"
-            android:background="@drawable/notif_icon_btn"
-            android:gravity="center">
-
-            <ImageView
-                android:layout_width="17dp"
-                android:layout_height="17dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_w_edit" />
-        </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/w_gap" android:layout_width="8dp" android:layout_height="1dp" />
+    <LinearLayout android:id="@+id/w_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+    android:background="@drawable/notif_sec_water" android:gravity="center_vertical" android:orientation="horizontal"
+    android:paddingStart="8dp" android:paddingTop="7dp" android:paddingEnd="8dp" android:paddingBottom="7dp">
+    <FrameLayout android:layout_width="58dp" android:layout_height="58dp">
+    <ProgressBar android:id="@+id/w_ring" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="58dp" android:maxHeight="58dp" android:minWidth="58dp" android:maxWidth="58dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_water" />
+    <ProgressBar android:id="@+id/w_ring_ok" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="58dp" android:maxHeight="58dp" android:minWidth="58dp" android:maxWidth="58dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_water_ok" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+        <ImageView android:id="@+id/w_ring_i" android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_w_drop" android:tint="#FF64D2FF" />
+<TextView android:id="@+id/w_pct" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="11.5sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
-
-    <!-- footer -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/n_motto"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="#FFF2F2F7"
-            android:textSize="11.5sp" />
-
-        <LinearLayout
-            android:id="@+id/n_left_box"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/l_left"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textColor="#FF8E8E93"
-                android:textSize="10.5sp" />
-
-            <Chronometer
-                android:id="@+id/n_left"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:fontFeatureSettings="tnum"
-                android:textColor="#FFFFD60A"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+</FrameLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10.5sp" android:textStyle="bold" android:letterSpacing="0.02"/>
+        <TextView android:id="@+id/w_ml" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="19sp" android:textStyle="bold" android:layout_marginTop="2dp" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/w_goal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="10.5sp" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/w_togo" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFC7C7CC" android:textSize="10sp" android:layout_marginTop="3dp"/>
     </LinearLayout>
+</LinearLayout>
+</LinearLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="32dp" android:layout_marginTop="6dp" android:background="@drawable/notif_stats" android:orientation="horizontal">
+    <LinearLayout android:id="@+id/n_km_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:gravity="center" android:orientation="horizontal">
+    <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_route" android:tint="#FF64D2FF" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:orientation="vertical">
+        <TextView android:id="@+id/n_km" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="12sp" android:textStyle="bold" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/l_km" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="9sp" android:layout_marginTop="1dp"/>
+    </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/n_kcal_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:gravity="center" android:orientation="horizontal">
+    <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_flame" android:tint="#FFFF9F0A" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:orientation="vertical">
+        <TextView android:id="@+id/n_kcal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="12sp" android:textStyle="bold" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/l_kcal" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="9sp" android:layout_marginTop="1dp"/>
+    </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/n_active_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:gravity="center" android:orientation="horizontal">
+    <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_timer" android:tint="#FFBF5AF2" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:orientation="vertical">
+        <Chronometer android:id="@+id/n_active" android:layout_width="wrap_content" android:layout_height="wrap_content" android:includeFontPadding="false"
+            android:fontFeatureSettings="tnum" android:maxLines="1" android:textColor="#FFF2F2F7" android:textSize="12sp" android:textStyle="bold" />
+        <TextView android:id="@+id/l_active" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="9sp" android:layout_marginTop="1dp"/>
+    </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/n_speed_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:gravity="center" android:orientation="horizontal">
+    <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_bolt" android:tint="#FFFFD60A" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:orientation="vertical">
+        <TextView android:id="@+id/n_speed" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="12sp" android:textStyle="bold" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/l_speed" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="9sp" android:layout_marginTop="1dp"/>
+    </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/n_food_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:gravity="center" android:orientation="horizontal" android:visibility="gone">
+    <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_food" android:tint="#FFFF6482" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:orientation="vertical">
+        <TextView android:id="@+id/n_food" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="12sp" android:textStyle="bold" android:fontFeatureSettings="tnum"/>
+        <TextView android:id="@+id/l_food" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="9sp" android:layout_marginTop="1dp"/>
+    </LinearLayout>
+</LinearLayout>
+</LinearLayout>
+<LinearLayout android:id="@+id/w_row" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+    <LinearLayout android:id="@+id/w_c0" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+    android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
+    android:paddingStart="4dp" android:paddingEnd="4dp">
+    <ImageView android:id="@+id/w_i0" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_n0" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/w_m0" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+    </LinearLayout>
+</LinearLayout><LinearLayout android:id="@+id/w_c1" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+    android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
+    android:paddingStart="4dp" android:paddingEnd="4dp">
+    <ImageView android:id="@+id/w_i1" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_n1" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/w_m1" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+    </LinearLayout>
+</LinearLayout><LinearLayout android:id="@+id/w_c2" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+    android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
+    android:paddingStart="4dp" android:paddingEnd="4dp">
+    <ImageView android:id="@+id/w_i2" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_n2" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/w_m2" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+    </LinearLayout>
+</LinearLayout><LinearLayout android:id="@+id/w_c3" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+    android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
+    android:paddingStart="4dp" android:paddingEnd="4dp">
+    <ImageView android:id="@+id/w_i3" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_n3" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/w_m3" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
+    </LinearLayout>
+</LinearLayout>
+    <LinearLayout android:id="@+id/w_undo" android:layout_width="34dp" android:layout_height="38dp" android:layout_marginStart="5dp"
+    android:background="@drawable/notif_icon_btn" android:gravity="center">
+    <ImageView android:id="@+id/w_undo_i" android:layout_width="18dp" android:layout_height="18dp" android:contentDescription="@null" android:src="@drawable/ic_w_undo" />
+</LinearLayout><LinearLayout android:id="@+id/w_edit" android:layout_width="34dp" android:layout_height="38dp" android:layout_marginStart="5dp"
+    android:background="@drawable/notif_icon_btn" android:gravity="center">
+    <ImageView android:layout_width="17dp" android:layout_height="17dp" android:contentDescription="@null" android:src="@drawable/ic_w_edit" />
+</LinearLayout>
+</LinearLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="16dp" android:layout_marginTop="5dp" android:gravity="center_vertical" android:orientation="horizontal">
+    <TextView android:id="@+id/n_motto" android:layout_width="0dp" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFAEAEB2" android:textSize="10.5sp" android:layout_weight="1"/>
+    <LinearLayout android:id="@+id/n_left_box" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:gravity="center_vertical" android:orientation="horizontal">
+        <TextView android:id="@+id/l_left" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF8E8E93" android:textSize="10sp" />
+        <Chronometer android:id="@+id/n_left" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false" android:maxLines="1" android:textColor="#FFC7C7CC" android:textSize="10.5sp" android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
 </LinearLayout>

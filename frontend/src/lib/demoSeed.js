@@ -3,6 +3,7 @@
 import { isoOf, uid } from './format.js'
 import { starterRoutines } from './starter.js'
 import { modeOf } from './history.js'
+import { FOOD_BY_ID } from './foodDb.js'
 
 // Starting weight and weekly increment per exercise of the starter plan (kg).
 // Chest dips are body-weight only here, so they log reps at 0 added weight.
@@ -167,11 +168,27 @@ export function buildDemoState() {
     { id: 'demo-d3', name: 'Vitamin D', kind: 'vit', dose: '1000 IU', times: ['08:00'], on: true, remind: true },
     { id: 'demo-mg', name: 'Magnesium', kind: 'vit', dose: '200 mg', times: ['21:00'], on: true, remind: true },
   ]
+  // 5.0: a week of food log — today has breakfast and lunch (and a snack later in the day)
+  const DAY_MENUS = [
+    [['egg', 2, 'b'], ['khubz', 1, 'b'], ['teasugar', 1, 'b'], ['dolma', 1, 'l'], ['laban', 1, 'l'], ['dates', 3, 's'], ['tikka', 1.5, 'd'], ['salad', 1, 'd']],
+    [['omelette', 1, 'b'], ['khubz', 1, 'b'], ['rice', 1, 'l'], ['kebab', 2, 'l'], ['salad', 1, 'l'], ['banana', 1, 's'], ['lentilsoup', 1, 'd'], ['khubz', 0.5, 'd']],
+    [['geymar', 1, 'b'], ['khubz', 1, 'b'], ['teasugar', 2, 'b'], ['tikka', 2, 'l'], ['rice', 1, 'l'], ['apple', 1, 's'], ['hummus', 1, 'd'], ['salad', 1, 'd']],
+  ]
+  const food = {}
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const menu = DAY_MENUS[i % DAY_MENUS.length].filter(([, , m]) => i > 0 || m === 'b' || m === 'l' || (m === 's' && nowH >= 16))
+    food[isoOf(d)] = menu.map(([f, q, m], k) => {
+      const x = FOOD_BY_ID[f]
+      return { id: 'demo-fe' + i + '-' + k, f, kcal: x.kcal, p: x.p, c: x.c, fat: x.f, q, m, t: at(d, { b: 8, l: 14, s: 17, d: 20 }[m], 5 + k) }
+    })
+  }
+
   const planFrom = bodyweight.find(b => (today - new Date(b.d + 'T12:00:00')) / 86400000 <= 42) || bodyweight[0]
   const bodyPlan = planFrom ? { start: planFrom.d, fromKg: planFrom.w, toKg: TARGET_W, weeklyKg: 0.5 } : null
 
   return {
-    health, meds, medLog, bodyPlan,
+    health, meds, medLog, bodyPlan, food, foodFav: ['dolma', 'tikka', 'dates'],
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,

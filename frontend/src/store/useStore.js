@@ -50,7 +50,7 @@ function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) return Object.assign(clone(DEF), JSON.parse(raw))
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   return clone(DEF)
 }
 
@@ -152,7 +152,7 @@ export const useStore = create((set, get) => {
       clearTimeout(pushTm)
       pushTm = null
       try { await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: get().S }) }); localStorage.removeItem('gym_dirty') }
-      catch (e) { localStorage.setItem('gym_dirty', '1') }
+      catch { localStorage.setItem('gym_dirty', '1') }
     },
     async pullState() {
       try {
@@ -165,11 +165,11 @@ export const useStore = create((set, get) => {
           if (active) next.active = active
           persist(next, false)
         } else if (hasData(S)) { await get().pushState() }
-      } catch (e) { /* offline — keep local */ }
+      } catch { /* offline — keep local */ }
     },
 
     async signOut() {
-      try { await get().pushState(); await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { /* */ }
+      try { await get().pushState(); await api('/api/logout', { method: 'POST', body: '{}' }) } catch { /* */ }
       clearLocalSession()
     },
 
@@ -221,7 +221,7 @@ export const useStore = create((set, get) => {
         return
       }
       // Instance capabilities are public and needed whether or not anyone is signed in.
-      try { set({ config: await api('/api/config') }) } catch (e) { /* offline — assume nothing extra */ }
+      try { set({ config: await api('/api/config') }) } catch { /* offline — assume nothing extra */ }
       try {
         const me = await api('/api/me')
         get().setUser(me.user)

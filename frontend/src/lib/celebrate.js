@@ -160,5 +160,5 @@ export function playCheer(enabled, kind = 'milestone') {
     sp.forEach((f, i) => bell(ctx, bus, f, hit + 0.18 + i * 0.07, 0.9, 0.035, 'triangle'))
     // the crowd
     applause(ctx, bus, hit + 0.15, big ? 2.4 : 1.5, big ? 0.075 : 0.055)
-  } catch (e) { /* no audio on this device — the overlay still shows */ }
+  } catch { /* no audio on this device — the overlay still shows */ }
 }

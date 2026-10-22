@@ -392,6 +392,20 @@ final class StepStore {
 
     synchronized String locale() { return config.optString("locale", ""); }
 
+    /**
+     * 5.0 — the food log's today, sent by the app: { eaten, goal } kcal, or null when nothing
+     * was logged today (or the numbers are from another day).
+     */
+    synchronized int[] foodToday() {
+        JSONObject f = config.optJSONObject("food");
+        if (f == null) return null;
+        String day = f.optString("day", "");
+        if (!day.equals(today())) return null;
+        int eaten = f.optInt("eaten", 0);
+        if (eaten <= 0) return null;
+        return new int[] { eaten, Math.max(0, f.optInt("goal", 0)) };
+    }
+
     synchronized String clockZone() {
         // 2.9: always the phone's own zone. Configs saved by older versions may still carry a
         // fixed city zone; it is ignored so the clock never shows a city's time.

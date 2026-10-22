@@ -23,14 +23,14 @@ export async function nativeLoad() {
     const read = path => Filesystem.readFile({ path, directory: Directory.Data, encoding: Encoding.UTF8 })
     const r = await read(FILE).catch(() => read(LEGACY_FILE))
     return JSON.parse(r.data)
-  } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
+  } catch { return null }   // first launch, or unreadable — localStorage copy takes over
 }
 
 export async function nativeSave(state) {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
-  } catch (e) { /* keep the localStorage copy */ }
+  } catch { /* keep the localStorage copy */ }
 }
 
 // (Re)schedule the daily reminders as concrete calendar dates for the next two weeks
@@ -95,7 +95,7 @@ export async function syncReminder(S, interactive = false) {
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true
-  } catch (e) { return false }
+  } catch { return false }
 }
 
 // 3.0 — medicine & vitamin reminders from the health log: one daily repeating local

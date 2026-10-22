@@ -12,6 +12,8 @@ import { MOBILE } from './mobile.js'
 import { t, U, getLang, dateLocale } from './i18n.js'
 import { goalOf, strideMeters, walkPrefs } from './stepMetrics.js'
 import { clockZoneOf } from './liveClock.js'
+import { foodNative } from './food.js'
+import { todayISO } from './format.js'
 
 // IMPORTANT: a Capacitor plugin proxy answers *every* property — `then` included — so it
 // looks like a promise. Returning it from an async function (or resolving any promise with
@@ -78,6 +80,7 @@ export function serviceStrings() {   // (callers may still pass S — unused sin
     kmh: U('km/h'),
     active: t('active'),
     dayLeft: t('Day ends in'),
+    eaten: t('eaten'),
     zoneLabel: '',                       // 2.9: no city name next to the clock
     goalTitle: t('Daily goal reached!') + ' 🎉',
     // 2.5 — the full-screen celebration and its picture notification
@@ -123,6 +126,8 @@ export function serviceConfig(S, weightKg) {
     locale: dateLocale(),
     clockZone: clockZoneOf(),
     strings: serviceStrings(S),
+    // 5.0: today's food log for the notification (kcal eaten / goal)
+    food: S && S.foodOn !== false ? foodNative(S, todayISO()) : null,
   }
 }
 
