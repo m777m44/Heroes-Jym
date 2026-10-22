@@ -44,7 +44,7 @@ export function periodStats(S, p, today) {
   const waterGoals = p.days.map(d => waterGoalMlOf(S, d))
   const kcal = p.days.map(d => dayTotals(S, d).kcal)
   const kGoal = foodGoalOf(S, today).kcal
-  const logged = lived.filter((d, i) => kcal[p.days.indexOf(d)] > 0)
+  const logged = lived.filter(d => kcal[p.days.indexOf(d)] > 0)
   const bw = (S.bodyweight || []).filter(b => b.d >= p.from && b.d <= p.to)
   return {
     days: p.days, lived: lived.length,
@@ -104,7 +104,7 @@ const pct = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null)
  * Plain, specific tips — each { icon, tone, key, args } so the screen translates them.
  * At most four, most useful first.
  */
-export function smartTips(S, cur, prev, today) {
+export function smartTips(S, cur, prev) {
   const tips = []
   const n = Math.max(1, cur.lived)
   if (cur.lived >= 3 && cur.stepsAvg < cur.stepGoal * 0.7) tips.push({ icon: 'figureWalk', tone: 'green', key: 'You average {0} steps a day — a 15-minute walk after a meal adds about 1,500.', args: [cur.stepsAvg] })
@@ -146,7 +146,7 @@ export function buildReport(S, kind, today, offset = 0) {
     period: p, cur, prev,
     score: periodScore(cur), prevScore: periodScore(prev),
     records: periodRecords(S, p),
-    tips: smartTips(S, cur, prev, today),
+    tips: smartTips(S, cur, prev),
     forecast: weightForecast(S),
     delta: {
       workouts: cur.workouts - prev.workouts,

@@ -52,6 +52,6 @@ describe('report', () => {
     const fc = weightForecast(S)
     expect(fc.rate).toBeLessThan(0)
     expect(fc.eta > '2026-10-20').toBe(true)
-    expect(smartTips({ bodyweight: [] }, { lived: 0, stepGoal: 1, waterDays: 0, foodDays: 0 }, {}, '2026-10-21')[0].icon).toBe('star')
+    expect(smartTips({ bodyweight: [] }, { lived: 0, stepGoal: 1, waterDays: 0, foodDays: 0 }, {})[0].icon).toBe('star')
   })
 })
