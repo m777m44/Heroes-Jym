@@ -6,6 +6,7 @@
 //                     log it and/or save it as your own food
 // ?m=b|l|d|s opens on a meal, ?tab=pantry|build on a tab.
 import { useMemo, useState } from 'react'
+import { burst, lastTap } from '../lib/motion.js'
 import { useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -52,6 +53,7 @@ function RecipeView({ id, meal: meal0, close }) {
   const match = recipeMatch(r, pantry)
   const log = () => {
     const e = recipeEntry(r, { servings: sv, meal, pantry, withOptional: opt })
+    burst(lastTap(), { count: 12, spread: 60, colors: ['#FF6482', '#FF375F', '#FFD60A', '#FF9F0A'] })
     update(s => { addEntry(s, todayISO(), e) })
     close()
     toast(t('Added {0} · {1} kcal', t(r.name), n0(e.kcal * e.q)))

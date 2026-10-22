@@ -7,6 +7,7 @@ import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
 import { resolveTheme, applyTheme } from './lib/themes.js'
 import { applyWallpaper } from './lib/wallpapers.js'
 import { applyLook } from './lib/look.js'
+import { installTouchFeedback } from './lib/motion.js'
 import { setNav, nav } from './lib/nav.js'
 import { onNotificationTap } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
@@ -83,6 +84,7 @@ function Shell() {
   const langV = useLang()   // re-renders the whole shell when the language (pack) changes
   useEffect(() => { setNav(navigate) }, [navigate])
   useEffect(() => installBackButton(), [])
+  useEffect(() => installTouchFeedback(() => useStore.getState().S), [])   // 7.0: ripple + tap haptics
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   const systemDark = useSystemDark()
   useEffect(() => {

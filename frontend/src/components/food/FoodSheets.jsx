@@ -6,6 +6,7 @@
 //   customFoodSheet  create / edit your own food
 //   foodGoalSheet    the daily calorie goal: automatic or set by hand
 import { useMemo, useState } from 'react'
+import { burst, lastTap } from '../../lib/motion.js'
 import { useStore } from '../../store/useStore.js'
 import { useUI } from '../../store/useUI.js'
 import { t, U, dateLocale } from '../../lib/i18n.js'
@@ -132,6 +133,7 @@ function Amount({ food, iso, meal: meal0, close, entry }) {
       update(s => { editEntry(s, iso, entry.id, { q, m: meal }) })
       toast(t('Saved'))
     } else {
+      burst(lastTap(), { count: 12, spread: 60, colors: ['#FF6482', '#FF375F', '#FFD60A', '#FF9F0A'] })
       update(s => { addEntry(s, iso, makeEntry(food, { q, m: meal })) })
       toast(t('Added {0} · {1} kcal', foodName(S(), food), n0(k)))
     }

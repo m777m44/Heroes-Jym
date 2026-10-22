@@ -151,6 +151,9 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
         <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
       </Row>
+      <Row icon="timer" iconTint="var(--teal)" title={t('Voice countdown')} subtitle={t('Says 3, 2, 1 at the end of a rest or a timed set')}>
+        <Switch checked={S.voiceCount !== false} onChange={v => update(s => { s.voiceCount = v })} />
+      </Row>
       {/* Two names for the same judgement, so the column asks in the scale you already think in.
           The (i) sits before the control — you read it on the way to the choice, not after it. */}
       <Row icon="target" iconTint="var(--purple)" title={t('Effort per set')}>
@@ -202,6 +205,9 @@ export default function Settings() {
       </Row>
       <Row icon="eye" iconTint="var(--teal)" title={t('Reduce motion')} subtitle={t('No animations or confetti')}>
         <Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} />
+      </Row>
+      <Row icon="bolt" iconTint="var(--orange)" title={t('Vibrate on tap')} subtitle={t('A light tick when you press a button')}>
+        <Switch checked={S.tapHaptics !== false} onChange={v => update(s => { s.tapHaptics = v })} />
       </Row>
     </Section>
 

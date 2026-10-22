@@ -8,6 +8,7 @@ import { walkPrefs } from '../../lib/stepMetrics.js'
 import { celebrate, playCheer } from '../../lib/celebrate.js'
 import { goalHaptic } from '../../lib/hapticFeedback.js'
 import { CONTAINER_NAME, addMl, mlOn, waterGoalMlOf } from '../../lib/water.js'
+import { burst, lastTap } from '../../lib/motion.js'
 
 export const fmtMl = n => Math.round(n).toLocaleString(dateLocale())
 
@@ -87,6 +88,7 @@ export const useWaterUndo = create(() => ({ stack: [] }))
 /** One container: logs it, confirms with a toast, remembers it for Undo. */
 export function drink(c) {
   logWater(c.ml)
+  burst(lastTap(), { count: 12, spread: 60, colors: ['#64D2FF', '#0A84FF', '#5AC8FA', '#BFEFFF'] })
   const day = todayISO()
   useWaterUndo.setState(s => ({ stack: [...s.stack.filter(x => x.day === day), { ml: c.ml, day }].slice(-20) }))
   useUI.getState().toast('💧 +' + fmtMl(c.ml) + ' ' + t('ml') + ' · ' + t(CONTAINER_NAME[c.key]))

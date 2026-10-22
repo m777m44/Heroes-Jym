@@ -1,5 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
+import { useStore } from '../store/useStore.js'
+import { speak, countdownWord } from '../lib/voice.js'
 import { t } from '../lib/i18n.js'
 import { Button } from './ui.jsx'
 
@@ -20,6 +22,16 @@ export default function RestTimer() {
     document.body.classList.toggle('resting', !!on)
     return () => document.body.classList.remove('resting')
   }, [!!on])
+  // 7.0: "3… 2… 1…" out loud for the last seconds of a rest or a timed hold (S.voiceCount)
+  const voiceOn = useStore(s => s.S.voiceCount !== false)
+  const said = useRef(null)
+  const left = on ? on.left : null
+  useEffect(() => {
+    if (!voiceOn || left == null) return
+    const w = countdownWord(left)
+    if (w && said.current !== left) { said.current = left; speak(w) }
+    if (left > 3) said.current = null
+  }, [left, voiceOn])
   if (!on) return null
   const pct = (on.left / on.total) * 100
 

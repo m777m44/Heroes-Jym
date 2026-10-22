@@ -16,6 +16,10 @@ import { nextPrescription, applyPrescription } from '../lib/progression.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { routineLabel, routineColor, colorVar } from '../lib/routines.js'
 import ExName from '../components/ExName.jsx'
+import { estimate1RM, best1RM } from '../lib/onerm.js'
+import { burst, lastTap } from '../lib/motion.js'
+import { goalHaptic } from '../lib/hapticFeedback.js'
+import { liftToolsSheet } from '../components/workout/LiftTools.jsx'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -104,7 +108,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
     <Media ex={ex} key={entry.id} compact={compact} minimizable />
     <div className="row between" style={{ marginBottom: 6 }}>
       <div style={{ fontSize: compact ? 17 : 20, fontWeight: 600, letterSpacing: '-.02em', textTransform: 'capitalize', lineHeight: 1.2 }}><ExName ex={ex} /></div>
-      <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+      <div className="row" style={{ gap: 4 }}>
+        {!cardio && !timed && <button className="iconbtn" aria-label={t('Lift tools')} onClick={() => { const nx = entry.sets.find(x => !x.done) || entry.sets[entry.sets.length - 1] || {}; liftToolsSheet({ w0: nx.w || undefined, r0: nx.r || undefined, exId: entry.id }) }}><Icon name="calculator" /></button>}
+        <button className="iconbtn" aria-label={t('Details')} onClick={() => exerciseDetailSheet(ex)}><Icon name="info" /></button>
+      </div>
     </div>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
       {cardio && <span className="tag acc"><Icon name="figureRun" />{t('Cardio')}</span>}
@@ -121,7 +128,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onAddSet, onRemov
       {/* the header carries the same eff3 sizing as the rows, or the labels drift off their columns */}
       <div className={'sethead' + (col3 ? ' eff3' : '')}><span className="n-sp" /><span className="w-sp">{col1.hd}</span><span className="r-sp">{col2.hd}</span>{col3 && <span className="eff-sp">{col3.hd}</span>}{timed && <span className="ck-sp" />}<span className="ck-sp" /></div>
       {entry.sets.map((s, i) => <div key={i} className={'setrow' + (s.done ? ' done' : '') + (col3 ? ' eff3' : '')}>
-        <div className="n">{i + 1}</div>
+        <div className={'n' + (s.pr ? ' pr pop-in' : '')}>{s.pr ? <Icon name="trophy" /> : i + 1}</div>
         {cell(s, i, col1, 'w')}
         {cell(s, i, col2, 'r')}
         {col3 && cell(s, i, col3, 'eff')}
@@ -188,10 +195,21 @@ function ActiveWorkout() {
     const m = modeAt(idx)
     const cardioEntry = m === 'cardio'
     const isLastUnit = unitIdx >= units.length - 1
-    let askTop = false, exJustDone = false, workoutDone = false
+    let askTop = false, exJustDone = false, workoutDone = false, record = null
     mutEntry(idx, e => {
       e.sets[i].done = !e.sets[i].done
+      if (!e.sets[i].done) delete e.sets[i].pr
       if (e.sets[i].done) {
+        // 7.0: a live record — this set's estimated 1RM beats every workout before and every
+        // set already ticked today
+        if (m === 'reps') {
+          const est = estimate1RM(e.sets[i].w, e.sets[i].r)
+          if (est) {
+            const prev = best1RM(S, e.id)
+            const today = Math.max(0, ...e.sets.filter((x, k) => k !== i && x.done).map(x => estimate1RM(x.w, x.r) || 0))
+            if (prev && est > prev.est && est > today) { e.sets[i].pr = true; record = { est, prev: prev.est } }
+          }
+        }
         beep(S.sound, 1040, 0.12); vibrate(30)
         const isLastExInUnit = idx === unit[unit.length - 1]
         const unitDone = unit.every(ui => (ui === idx ? e : A.entries[ui]).sets.every(x => x.done))
@@ -205,6 +223,12 @@ function ActiveWorkout() {
     })
     // reps: topWeight first (it chains into the finish/continue prompt on the last unit).
     // cardio/timed or already-confirmed: go straight to the prompt.
+    const at = lastTap()
+    if (record) {
+      burst(at, { count: 26, spread: 120 })
+      goalHaptic()
+      useUI.getState().toast('🏆 ' + t('New record! Estimated 1RM {0} {1} (was {2})', fmtNum(record.est), U(S.unit), fmtNum(record.prev)))
+    } else if (A.entries[idx] && A.entries[idx].sets[i] && !A.entries[idx].sets[i].done) burst(at, { count: 8, spread: 38 })
     if (askTop) topWeightSheet(idx)
     else if (workoutDone) workoutCompleteSheet()
     else if (exJustDone && cardioEntry) useUI.getState().toast(t('Cardio logged'))
