@@ -12,7 +12,7 @@ export default function IdealChip({ onOpen }) {
   const r = idealBody({ heightCm: S.heightCm, age: ageOf(S), sex: sexOf(S), weightKg: last ? toKg(last.w, S.unit) : null })
   const w = v => fmtNum(Math.round(fromKg(v, S.unit) * 10) / 10) + ' ' + U(S.unit)
   let text
-  if (!r || !r.adult || !r.ideal) text = t('Find your ideal weight by height and age')
+  if (!r || !r.ideal) text = t('Find your ideal weight by height and age')
   else if (r.toIdeal == null) text = t('Ideal weight {0}', w(r.ideal))
   else text = t('Ideal weight {0}', w(r.ideal)) + ' · ' + (r.goal === 'keep' ? t('you are there') : t(r.goal === 'lose' ? '{0} to lose' : '{0} to gain', w(Math.abs(r.toIdeal))))
   return <button className={'ideal-chip' + (r && r.goal ? ' ' + r.goal : '')} onClick={onOpen}>

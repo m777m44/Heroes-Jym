@@ -391,3 +391,12 @@ that would simply install. Your free options:
 | Burn plan | `lib/burnPlan.js`, `views/BurnPlan.jsx` (`/burn/home`, `/burn/gym`, `/burn/review`) | 8 + 8 activities with MET (kcal/min = MET·3.5·kg/200). `buildBurnPlan()` spreads the target over the picked exercises (3–60 min each). Saved as `S.burnPlan = { mode, keys, target, remind, start, gap, daily, from }`, rebuilt for the current weight. `burnTarget()` uses `S.calGoal.exerciseKcal` while the goal runs. |
 | Burn reminders | `burnReminders()` → `lib/mobile.js` `syncReminder()` → `WorkoutReminder.java` | Item ids `1100 + day·10 + i`, notification slots `7600 + day·10 + i`, 7 days. Items carry `nid`, `later` (10 min), `laterLabel` and `skip`; `ACTION_SKIP` just dismisses. Scheduled even when the daily reminder is off. *Start* → `/burn/review?start=all\|<i>` (walking → `/walk`), which starts the session. Fallback: Capacitor local notifications (`extra.route`). |
 
+## Ideal body for every age & "Your day" (7.1)
+
+| What | Where | Notes |
+|---|---|---|
+| Children 2–17 | `lib/idealBody.js` `childBody()` | CDC BMI-for-age P5/P50/P85/P95 interpolated by age (`childBmiCurve`, `bmiPercentile`); Schofield BMR (`childBmr`); water by age (`childWaterMl`); Deurenberg child body fat. Under 13 no deficit (`growInto`), 13–17 −250 kcal / 0.25 kg a week. `MIN_AGE` 2, heights 70–250 cm. `planFor()` swaps gym days for the body-weight week under 16. |
+| Pace & goal | `PACES`, `goalPlan(r, targetKg)`, `goalPlanOf(S)` | `S.bodyPace` slow / normal / fast. `foodGoalOf()` uses `goalPlanOf` when `S.targetW` is set and the programme is automatic. |
+| Your day | `lib/daySchedule.js` → `components/body/DaySchedule.jsx`, Home `DayNext.jsx` | `S.day = { wake, sleep, workout: 'auto' \| 'HH:MM', remind }`. Meals 25/35/10/30 % of `foodGoalOf().kcal`, dishes from `kitchen.js`; water slots sum to the water goal (children: `r.waterMl`). |
+| Day reminders | `lib/mobile.js` `syncDayReminders()` (store save + resume) | Capacitor local notifications, channel `mj_day`, ids **7500–7529**, daily repeating at each meal / workout / walk time, re-made when the day's dishes or workout change. Water keeps its own reminders. |
+

@@ -25,6 +25,7 @@ import TodayPlan from '../components/TodayPlan.jsx'
 import { planFor, planRoutine } from '../lib/dailyPlan.js'
 import IdealChip from '../components/IdealChip.jsx'
 import HealthCard from '../components/HealthCard.jsx'
+import DayNext from '../components/body/DayNext.jsx'
 
 // Today's steps at a glance, with the live clock; the whole card opens the walking screen.
 function StepsCard({ nav }) {
@@ -153,6 +154,7 @@ export default function Home() {
     </div>
 
     {S.planOn !== false && <TodayPlan />}
+    {S.planOn !== false && <DayNext />}
 
     {coachOn && <CoachCard nav={nav} />}
 

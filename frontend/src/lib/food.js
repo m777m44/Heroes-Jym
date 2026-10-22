@@ -11,7 +11,7 @@
 // the Ideal body screen's calories → 2,000.
 import { t } from './i18n.js'
 import { isoOf, uid } from './format.js'
-import { idealBodyOf, macrosFor } from './idealBody.js'
+import { idealBodyOf, macrosFor, goalPlanOf } from './idealBody.js'
 import { bodyKg } from './water.js'
 import { FOODS, FOOD_BY_ID } from './foodDb.js'
 import { RECIPE_BY_ID } from './kitchen.js'
@@ -92,7 +92,12 @@ export function foodGoalOf(S, iso) {
   let kcal, source
   if (S && S.foodGoal >= MIN_GOAL) { kcal = r0(S.foodGoal); source = 'manual' }
   else if (calGoalOn(S, iso)) { kcal = r0(S.calGoal.eatKcal); source = 'calc' }
-  else if (ideal && ideal.kcal > 0) { kcal = r0(ideal.kcal); source = 'ideal' }
+  else if (ideal && ideal.kcal > 0) {
+    // 7.1: toward your own target weight when you set one (same pace as the Ideal body screen)
+    let g = null
+    try { g = S.targetW != null && (S.bodyGoal || 'auto') === 'auto' ? goalPlanOf(S) : null } catch { g = null }
+    kcal = r0(g && g.kcal > 0 ? g.kcal : ideal.kcal); source = 'ideal'
+  }
   else { kcal = DEFAULT_GOAL; source = 'default' }
   const program = source === 'calc' ? 'lose' : ideal && ideal.program ? ideal.program : 'keep'
   const ref = ideal && ideal.refKg ? ideal.refKg : bodyKg(S) || 70

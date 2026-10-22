@@ -3,6 +3,56 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v7.1.0 — 2026-10-23
+
+**Ideal body for every age, the three numbers that start it all (age → height → weight), your
+goal at the pace you pick, and "Your day": workouts, meals with calories and water, with times.**
+*الجسم المثالي لكل الأعمار، ثلاثة أرقام تبدأ كل شيء (العمر ← الطول ← الوزن)، هدفك بالسرعة التي تختارها، و«يومك»: التمارين والوجبات بسعراتها والماء بأوقاتها.*
+
+### 🧍 Ideal body for every age (2–100)
+- **Children and teens (2–17)** get a real ideal weight now, from the CDC BMI-for-age growth
+  charts: the 50th percentile for the height today is the ideal, the 5th–85th the healthy range.
+  Their percentile shows on the BMI tile and the method on "How it is worked out".
+- Child-safe numbers: Schofield resting energy, water by age, protein 1.1–1.3 g/kg, body fat
+  from BMI and age. **No diets for children:** under 13 a heavy child keeps the weight steady and
+  grows into it; 13–17 at most −250 kcal a day and 0.25 kg a week. No barbell days under 16.
+- The "adults only — ask a doctor" text and the bare BMI line are gone. The tabs (Overview,
+  Body, Plan, Compare) work for every age.
+
+### 1 · 2 · 3 — the three numbers
+- **Waist is replaced by Weight** under "About you". You type **age → height → weight**: each
+  step lights up, ticks itself off and moves you to the next, with a 0/3 → 3/3 ring and bar.
+- The weight is saved as today's weigh-in (it replaces one already made today). Waist stays in
+  Body → Tape measurements.
+- When all three are in, **your ideal weight counts up by itself**, then it becomes your goal
+  (once, if you had none). Your details then fold into one line with an edit button.
+
+### 🎯 Your goal
+- **Ideal weight or your own target**, a track with Now · Ideal · Goal, and **Pace**: Gentle /
+  Normal / Faster (−250 / −500 / −750 kcal, or +200 / +300 / +450 to gain).
+- Weeks, kg a week, finish date and calories a day, never under a safe minimum (you are told
+  when that slows the pace). A warning with "Use the ideal" if a target is outside the healthy
+  range for your height. "Start the plan" starts the week-by-week road.
+- The food log's daily goal now follows your own target and pace too.
+
+### 🗓 Your day
+- A **timeline from your wake-up to your bedtime** (changeable, plus a workout time):
+  - water on waking and through the day, adding up exactly to your water goal;
+  - **breakfast, lunch, snack and dinner** with their calories (25 / 35 / 10 / 30 % of the
+    day) and **dishes from the kitchen that fit**, changing every day;
+  - today's workout and an evening walk with the step goal; then sleep.
+- Live status: done ✓, **next** (pulsing, with "in 1 h 20 min"), late. A progress ring and a
+  calorie split bar.
+- **One tap:** drink the water, log the meal (or open a dish), start the workout, open the walk.
+- **Reminders** (switch in the schedule settings): meals with the calories and a dish idea,
+  the workout and the walk at their times, every day.
+- **Home:** a new card with what's next in your day and the two after it.
+
+### Under the hood
+- `lib/daySchedule.js` (+ tests), `goalPlan()` / `PACES` / the child growth curves in
+  `lib/idealBody.js`, `components/body/` (BodyFlow, DaySchedule, DayNext), `syncDayReminders()`.
+- +55 strings in 12 languages (2,818 keys each).
+
 ## v7.0.0 — 2026-10-23
 
 **Motion and feel, advanced workout tools, weekly & monthly reports with a weight forecast, a

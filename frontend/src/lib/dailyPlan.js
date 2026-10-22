@@ -17,7 +17,7 @@
 import { goalOf, stepsOn, caloriesFor, strideMeters } from './stepMetrics.js'
 import { waterGoalMlOf, bodyKg, workoutMinutesOn, mlOn } from './water.js'
 import { effectiveRoutine } from './history.js'
-import { idealBodyOf } from './idealBody.js'
+import { idealBodyOf, ageOf } from './idealBody.js'
 import { scaleStatus, energyOn, intensityFor, setDelta, scaleReasons } from './scaleWorkout.js'
 
 // [id, sets, reps] — reps for holds are seconds (`hold`).
@@ -173,7 +173,10 @@ export function planFor(S, iso) {
   // A day you marked as rest becomes the gentle mobility & recovery session.
   const rest = S && S.dayPlan && S.dayPlan[iso] === 'rest'
   const program = programOf(S)
-  const kind = own && own.ex && own.ex.length ? 'routine' : rest ? 'recover' : (PROGRAM_WEEKS[program] || WEEK_KINDS)[wd]
+  let kind = own && own.ex && own.ex.length ? 'routine' : rest ? 'recover' : (PROGRAM_WEEKS[program] || WEEK_KINDS)[wd]
+  // 7.1: under 16 no barbell days — the body-weight week instead (bones are still growing)
+  const age = ageOf(S || {})
+  if (age != null && age < 16 && PLAN_DAYS[kind] && PLAN_DAYS[kind].gym) kind = WEEK_KINDS[wd]
   const spec = PLAN_DAYS[kind] || { title: 'Your routine', icon: 'dumbbell', color: 'acc', met: 5, rest: 60 }
   // 4.1 — linked to the scale: how far you are from your ideal / target weight and today's
   // energy size the sets (lib/scaleWorkout.js)

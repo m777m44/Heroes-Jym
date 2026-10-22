@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { ageOf, birthYearFor, sexOf, healthyBmi, idealBmiBand, formulas, idealBody, fatRange, activityOf, stepsAverage, paceCheck, bmiPos } from './idealBody.js'
+import { ageOf, birthYearFor, sexOf, healthyBmi, idealBmiBand, formulas, idealBody, fatRange, activityOf, stepsAverage, paceCheck, bmiPos, goalPlan, goalPlanOf, childBmiCurve, bmiPercentile, childBmr } from './idealBody.js'
 
 const NOW = new Date(2026, 9, 17)
 
 describe('idealBody — age, sex, bands', () => {
-  it('keeps the age from the birth year, inside 13–100', () => {
+  it('keeps the age from the birth year, inside 2–100', () => {
     expect(ageOf({ birthYear: 1996 }, NOW)).toBe(30)
     expect(ageOf({ birthYear: null }, NOW)).toBeNull()
-    expect(ageOf({ birthYear: 2020 }, NOW)).toBeNull()
+    expect(ageOf({ birthYear: 2020 }, NOW)).toBe(6)
+    expect(ageOf({ birthYear: 2025 }, NOW)).toBeNull()
     expect(birthYearFor(30, NOW)).toBe(1996)
-    expect(birthYearFor(5, NOW)).toBeNull()
+    expect(birthYearFor(5, NOW)).toBe(2021)
+    expect(birthYearFor(1, NOW)).toBeNull()
     expect(birthYearFor(null, NOW)).toBeNull()
   })
   it('reads the sex, falling back to the body diagram', () => {
@@ -44,12 +46,48 @@ describe('idealBody — age, sex, bands', () => {
 })
 
 describe('idealBody — the numbers', () => {
-  it('needs a height, and gives no ideal weight to under-18s', () => {
+  it('needs a height, and reads under-18s on the growth charts', () => {
     expect(idealBody({ heightCm: null, age: 30 })).toBeNull()
     const teen = idealBody({ heightCm: 170, age: 15, weightKg: 60 })
     expect(teen.adult).toBe(false)
+    expect(teen.child).toBe(true)
     expect(teen.bmi).toBeCloseTo(20.8, 1)
-    expect(teen.ideal).toBeUndefined()
+    expect(teen.ideal).toBeCloseTo(19.9 * 1.7 * 1.7, 0)
+    expect(teen.bmiCat).toBe('normal')
+    expect(teen.bmiPct).toBeGreaterThan(50)
+    expect(teen.bmiPct).toBeLessThan(85)
+    expect(teen.formulas).toBeNull()
+    expect(teen.goal).toBe('keep')
+  })
+  it('gives every child age a full, gentle plan', () => {
+    for (const sex of ['male', 'female']) for (const age of [2, 5, 8, 11, 13, 15, 17]) {
+      const h = 85 + age * 5.5
+      for (const bmi of [13, 16, 20, 26]) {
+        const w = bmi * (h / 100) ** 2
+        const r = idealBody({ heightCm: h, age, sex, weightKg: w })
+        expect(r.ideal).toBeGreaterThanOrEqual(r.idealKg[0])
+        expect(r.ideal).toBeLessThanOrEqual(r.idealKg[1])
+        expect(r.idealKg[0]).toBeGreaterThanOrEqual(r.healthyKg[0])
+        expect(r.idealKg[1]).toBeLessThanOrEqual(r.healthyKg[1])
+        for (const k of ['bmr', 'tdee', 'kcal', 'waterMl', 'bodyFat']) expect(Number.isFinite(r[k])).toBe(true)
+        expect(r.macros.protein).toBeGreaterThan(0)
+        expect(r.kcal).toBeGreaterThanOrEqual(Math.min(r.tdee, r.floor))
+        expect(r.kcal).toBeGreaterThanOrEqual(r.tdee - 250)
+        expect(['lose', 'muscle', 'keep']).toContain(r.program)
+        if (age < 13) expect(r.program).not.toBe('lose')
+        expect(r.weeklyKg).toBeLessThanOrEqual(0.25)
+      }
+    }
+  })
+  it('places a BMI on the child percentiles', () => {
+    const heavy = idealBody({ heightCm: 140, age: 10, sex: 'male', weightKg: 50 })
+    expect(heavy.bmiCat).toBe('obese')
+    expect(heavy.growInto).toBe(true)
+    expect(heavy.program).toBe('keep')
+    const teen = idealBody({ heightCm: 165, age: 15, sex: 'male', weightKg: 80 })
+    expect(teen.program).toBe('lose')
+    expect(teen.weeks).toBeGreaterThan(0)
+    expect(teen.kcal).toBe(Math.max(teen.floor, teen.tdee - 250))
   })
   it('puts the ideal weight inside the age band and the healthy range', () => {
     for (const sex of ['male', 'female']) for (const h of [150, 165, 180, 200]) for (const age of [18, 30, 45, 60, 75]) {
@@ -195,5 +233,56 @@ describe('idealBody 3.0 — formulas, frame, composition, plan', async () => {
     const S = { heightCm: 178, birthYear: 1995, sex: 'male', unit: 'lb', bodyweight: [{ d: '2026-10-01', w: 176.4 }], waistCm: 90, neckCm: 38, bodyGoal: 'auto', frame: 'auto' }
     const r = idealBodyOf(S, NOW)
     expect(r.weightKg).toBeCloseTo(80, 0); expect(r.age).toBe(31); expect(r.bodyFatMethod).toBe('navy')
+  })
+})
+
+describe('idealBody 7.1 — pace, goal plan, children', () => {
+  const adult = (pace) => idealBody({ heightCm: 175, age: 30, sex: 'male', weightKg: 95, pace, stepsAvg: 6000 })
+  it('a faster pace eats less and gets there sooner, never under the floor', () => {
+    const s = adult('slow'), n = adult('normal'), f = adult('fast')
+    expect(s.kcal).toBeGreaterThan(n.kcal)
+    expect(n.kcal).toBeGreaterThanOrEqual(f.kcal)
+    expect(s.weeks).toBeGreaterThan(n.weeks)
+    expect(f.kcal).toBeGreaterThanOrEqual(f.floor)
+    expect(adult(undefined).kcal).toBe(n.kcal)
+  })
+  it('plans to the ideal or to your own target', () => {
+    const r = adult('normal')
+    const g = goalPlan(r, null, new Date(2026, 9, 23))
+    expect(g.ideal).toBe(true)
+    expect(g.dir).toBe('lose')
+    expect(g.toKg).toBe(r.ideal)
+    expect(g.weeks).toBe(Math.ceil(g.diffKg / g.rate))
+    expect(g.etaIso > '2026-10-23').toBe(true)
+    const own = goalPlan(r, 90)
+    expect(own.ideal).toBe(false)
+    expect(own.weeks).toBeLessThan(g.weeks)
+    const up = goalPlan(r, 100)
+    expect(up.dir).toBe('gain')
+    expect(up.kcal).toBeGreaterThan(r.tdee)
+    expect(goalPlan(r, 95.2).dir).toBe('keep')
+    expect(goalPlan(null, 80)).toBeNull()
+  })
+  it('reads the target from the app state in the right unit', () => {
+    const S = { heightCm: 175, birthYear: 1996, sex: 'male', unit: 'lb', bodyweight: [{ d: '2026-10-20', w: 209.4 }], targetW: 176.4 }
+    const g = goalPlanOf(S, NOW)
+    expect(g.toKg).toBeCloseTo(80, 0)
+  })
+  it('never puts a young child on a diet', () => {
+    const r = idealBody({ heightCm: 130, age: 9, sex: 'male', weightKg: 40 })
+    const g = goalPlan(r, null)
+    expect(g.grow).toBe(true)
+    expect(g.kcal).toBe(r.tdee)
+    expect(g.weeks).toBe(0)
+    const teen = idealBody({ heightCm: 165, age: 16, sex: 'female', weightKg: 75 })
+    expect(goalPlan(teen, null).kcal).toBe(Math.max(teen.floor, teen.tdee - 250))
+  })
+  it('interpolates the growth curves and the percentile', () => {
+    const c = childBmiCurve(8.5, 'male')
+    expect(c[1]).toBeCloseTo((15.8 + 16.1) / 2, 1)
+    expect(bmiPercentile(c[1], 8.5, 'male')).toBe(50)
+    expect(bmiPercentile(c[2], 8.5, 'male')).toBe(85)
+    expect(bmiPercentile(10, 8.5, 'male')).toBe(1)
+    expect(childBmr(30, 8, 'male')).toBe(Math.round(22.7 * 30 + 495))
   })
 })

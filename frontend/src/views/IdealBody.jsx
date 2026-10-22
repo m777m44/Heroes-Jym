@@ -1,14 +1,15 @@
 // "Ideal body" (2.12, rebuilt in 3.0): a healthy weight for YOUR height, age, sex and frame,
 // what your body is made of, a plan with a programme, calories, macros and a week-by-week road,
 // and a dashboard comparing now, before, your ideal and your goal. The maths is in
-// lib/idealBody.js.
-import { useState } from 'react'
+// lib/idealBody.js. 7.1: every age from 2 (children on the growth charts), the three numbers
+// age → height → weight, the ideal weight counting up by itself, your goal and your day.
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { fmtNum, fmtDate, todayISO } from '../lib/format.js'
 import { fromKg, goalStart } from '../lib/weightTracker.js'
-import { idealBody, bodyInputs, birthYearFor, paceCheck, adaptKcal, weightRoad, bmiPos, FORMULA_ORDER, ADULT_AGE, MIN_AGE, MAX_AGE } from '../lib/idealBody.js'
+import { idealBody, bodyInputs, paceCheck, adaptKcal, weightRoad, bmiPos, goalPlan, FORMULA_ORDER } from '../lib/idealBody.js'
 import { weekPlan } from '../lib/dailyPlan.js'
 import { DAYS } from '../lib/format.js'
 import Icon from '../components/Icon.jsx'
@@ -17,6 +18,8 @@ import LineChart from '../components/LineChart.jsx'
 import { Section, Row, Segmented, Button, BackButton } from '../components/ui.jsx'
 import { bwSheet } from '../sheets.jsx'
 import { nav } from '../lib/nav.js'
+import { AboutYou, RevealSoon, GoalCard, useCountUp } from '../components/body/BodyFlow.jsx'
+import DaySchedule from '../components/body/DaySchedule.jsx'
 
 const BMI_CAT = { under: 'Underweight', normal: 'Healthy weight', over: 'Overweight', obese: 'Obesity' }
 const BMI_COL = { under: 'var(--blue)', normal: 'var(--green)', over: 'var(--orange)', obese: 'var(--red)' }
@@ -68,6 +71,21 @@ export default function IdealBody({ initialTab } = {}) {
     useUI.getState().toast(t('Goal set to {0} {1}', fmtNum(goalNow), u))
   }
   const ctx = { S, update, r, u, w, unit, last, age, sex, pace, isGoal, goalNow, setGoal }
+  const [editing, setEditing] = useState(false)
+  const done = [age != null, !!S.heightCm, !!last].filter(Boolean).length
+  const ready = !!(r && r.ideal && r.bmi != null)
+  // 7.1: once the three numbers are in, the ideal weight becomes your goal by itself (once)
+  const auto = useRef(false)
+  useEffect(() => {
+    if (!ready || auto.current || S.targetW != null) return
+    auto.current = true
+    const g = goalPlan(r, null)
+    update(s => {
+      s.targetW = goalNow; s.targetFrom = last ? last.w : null
+      s.bodyPlan = g && g.weeks > 0 ? { start: todayISO(), fromKg: r.weightKg, toKg: g.toKg, weeklyKg: g.rate } : null
+    })
+    useUI.getState().toast(t('Your goal: {0} {1} — your ideal weight', fmtNum(goalNow), u))
+  }, [ready])                                      // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div className="narrow ideal">
     <div className="hdr">
@@ -75,83 +93,55 @@ export default function IdealBody({ initialTab } = {}) {
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Ideal body')}</h1><div className="sub">{t('By your height, age and sex')}</div></div>
     </div>
 
-    <Hero {...ctx} />
+    <AboutYou {...ctx} editing={editing} setEditing={setEditing} />
+    {!ready && <RevealSoon done={done} />}
+    {ready && <>
+      <Hero {...ctx} />
+      <GoalCard {...ctx} />
+      <DaySchedule r={r} />
 
-    {r && r.adult && <Segmented className="ideal-tabs" value={tab} onChange={setTab}
-      options={[{ value: 'overview', label: t('Overview') }, { value: 'body', label: t('Body') }, { value: 'plan', label: t('Plan') }, { value: 'compare', label: t('Compare') }]} />}
+      <Segmented className="ideal-tabs" value={tab} onChange={setTab}
+        options={[{ value: 'overview', label: t('Overview') }, { value: 'body', label: t('Body') }, { value: 'plan', label: t('Plan') }, { value: 'compare', label: t('Compare') }]} />
+      <div key={tab} className="ib-tab">
+        {tab === 'overview' && <Overview {...ctx} />}
+        {tab === 'body' && <BodyTab {...ctx} />}
+        {tab === 'plan' && <PlanTab {...ctx} />}
+        {tab === 'compare' && <CompareTab {...ctx} />}
+      </div>
+    </>}
 
-    {(!r || !r.adult || tab === 'overview') && <Overview {...ctx} />}
-    {r && r.adult && tab === 'body' && <BodyTab {...ctx} />}
-    {r && r.adult && tab === 'plan' && <PlanTab {...ctx} />}
-    {r && r.adult && tab === 'compare' && <CompareTab {...ctx} />}
-
-    <div className="small dim ideal-note"><Icon name="info" /> {t('Estimates for healthy adults, not medical advice. Pregnancy, athletes with a lot of muscle and some illnesses need a doctor’s view.')}</div>
+    <div className="small dim ideal-note"><Icon name="info" /> {t('Estimates to guide you, not medical advice.')}</div>
     <div className="small dim" style={{ textAlign: 'center', marginBottom: 20 }}>{t('Last weigh-in: {0}', last ? fmtDate(last.d, true) : '—')}{last && last.d !== todayISO() ? ' · ' : ''}
       {last && last.d !== todayISO() && <button className="h2link" onClick={() => bwSheet()}>{t('Weigh in today')}</button>}</div>
   </div>
 }
 
 /* ---------------------------------------------------------------- the answer */
-function Hero({ r, u, w, age, isGoal, goalNow, setGoal, S }) {
-  if (!(r && r.adult && r.ideal)) return <div className="card ideal-hero">
-    <div className="ideal-empty-i"><Icon name="person" /></div>
-    <div className="ideal-empty-t">{!S.heightCm || !age ? t('Add your height and age below to see your ideal weight.')
-      : t('Ideal-weight formulas are for adults ({0}+). For children and teens, BMI is read on growth charts by age — ask a doctor.', ADULT_AGE)}</div>
-    {r && r.bmi != null && <div className="small muted" style={{ marginTop: 8 }}>{t('BMI {0}', fmtNum(r.bmi))}</div>}
-  </div>
-  return <div className="card ideal-hero">
+function Hero({ r, u, w, unit }) {
+  const big = useCountUp(Math.round(fromKg(r.ideal, unit) * 10) / 10)
+  return <div className="card ideal-hero ib-hero">
+    <div className="ib-glow" aria-hidden="true" />
     <div className="lbl2">{t('Your ideal weight')}</div>
-    <div className="ideal-big">{w(r.ideal)}<span>{u}</span></div>
-    <div className="small muted">{t('Ideal range for your age: {0}–{1} {2}', w(r.idealKg[0]), w(r.idealKg[1]), u)}</div>
+    <div className="ideal-big">{fmtNum(big)}<span>{u}</span></div>
+    <div className="small muted">{r.child ? t('Ideal range for your height and age: {0}–{1} {2}', w(r.idealKg[0]), w(r.idealKg[1]), u) : t('Ideal range for your age: {0}–{1} {2}', w(r.idealKg[0]), w(r.idealKg[1]), u)}</div>
     <div className="small dim">{t('Healthy range for your height: {0}–{1} {2}', w(r.healthyKg[0]), w(r.healthyKg[1]), u)}{r.frame !== 'medium' ? ' · ' + t(FRAME_NAME[r.frame]) : ''}</div>
-    {r.bmi != null && <div className={'ideal-gap ' + r.goal}>
+    <div className={'ideal-gap ' + r.goal}>
       <Icon name={r.goal === 'keep' ? 'checkCircle' : r.goal === 'lose' ? 'arrowDown' : 'arrowUp'} />
       <span>{r.goal === 'keep' ? t('You are in your ideal range — keep it up!')
         : r.goal === 'lose' ? t('{0} {1} to lose to reach it', w(Math.abs(r.toIdeal)), u)
           : t('{0} {1} to gain to reach it', w(Math.abs(r.toIdeal)), u)}</span>
-    </div>}
-    {r.bmi != null && <BmiGauge r={r} />}
-    <div className="ideal-acts">
-      {r.bmi == null
-        ? <Button variant="primary" icon="scale" onClick={() => bwSheet()}>{t('Log your weight to compare')}</Button>
-        : <Button variant={isGoal ? 'plain' : 'primary'} icon={isGoal ? 'checkCircle' : 'target'} disabled={isGoal} onClick={setGoal}>
-          {isGoal ? t('This is your goal') : t('Make {0} {1} my goal', fmtNum(goalNow), u)}
-        </Button>}
     </div>
+    <BmiGauge r={r} />
   </div>
 }
 
 /* ---------------------------------------------------------------- overview */
-function Overview({ S, update, r, u, w, age, sex, pace }) {
-  const eta = r && r.weeks ? (() => { const d = new Date(); d.setDate(d.getDate() + r.weeks * 7); return d.toISOString().slice(0, 10) })() : null
+function Overview({ r, u, w, age, pace }) {
   return <>
-    <Section title={t('About you')} footer={t('Used only on this phone to work out your numbers.')}>
-      <Row icon="person" iconTint="var(--indigo)" title={t('Sex')}>
-        <Segmented className="seg-inline" value={sex} onChange={v => update(s => { s.sex = v })}
-          options={[{ value: 'male', label: t('Male') }, { value: 'female', label: t('Female') }]} />
-      </Row>
-      <Row icon="calendar" iconTint="var(--orange)" title={t('Age')}>
-        <CommitNumber className="rowfield" value={age} placeholder="30"
-          onCommit={v => update(s => { s.birthYear = birthYearFor(v) })} aria-label={t('Age')} />
-        <span className="muted small">{t('years')}</span>
-      </Row>
-      <Row icon="ruler" iconTint="var(--teal)" title={t('Height')}>
-        <CommitNumber className="rowfield" value={S.heightCm} placeholder="175"
-          onCommit={v => update(s => { s.heightCm = v && v >= 100 && v <= 250 ? v : null })} aria-label={t('Height')} />
-        <span className="muted small">{U('cm')}</span>
-      </Row>
-      <Row icon="target" iconTint="var(--pink)" title={t('Waist')} subtitle={t('Optional — at the navel')}>
-        <CommitNumber className="rowfield" value={S.waistCm} placeholder="85"
-          onCommit={v => update(s => { s.waistCm = v && v >= 40 && v <= 200 ? v : null })} aria-label={t('Waist')} />
-        <span className="muted small">{U('cm')}</span>
-      </Row>
-    </Section>
-    {age == null && S.birthYear != null && <div className="small" style={{ color: 'var(--orange)', margin: '-8px 4px 14px' }}>{t('Enter an age from {0} to {1}.', MIN_AGE, MAX_AGE)}</div>}
-
     {r && r.bmi != null && <>
       <h4 className="sec">{t('Your numbers')}</h4>
       <div className="ideal-tiles">
-        <Tile icon="scale" tint={BMI_COL[r.bmiCat]} label={t('BMI')} value={fmtNum(r.bmi)} sub={t(BMI_CAT[r.bmiCat])} />
+        <Tile icon="scale" tint={BMI_COL[r.bmiCat]} label={t('BMI')} value={fmtNum(r.bmi)} sub={r.child && r.bmiPct != null ? t(BMI_CAT[r.bmiCat]) + ' · ' + t('{0}th percentile', r.bmiPct) : t(BMI_CAT[r.bmiCat])} />
         {r.bodyFat != null && <Tile icon="person" tint={FAT_COL[r.bodyFatCat]} label={t('Body fat (estimate)')} value={fmtNum(r.bodyFat) + '%'}
           sub={t(FAT_CAT[r.bodyFatCat]) + ' · ' + r.bodyFatRange[0] + '–' + r.bodyFatRange[1] + '%'} />}
         {r.bmr != null && <Tile icon="heartPulse" tint="var(--red)" label={t('Resting burn')} value={fmtNum(r.bmr)} unit={t('kcal / day')} sub={t('what your body uses at rest')} />}
@@ -161,23 +151,28 @@ function Overview({ S, update, r, u, w, age, sex, pace }) {
         {r.proteinG != null && <Tile icon="dumbbell" tint="var(--indigo)" label={t('Protein')} value={fmtNum(r.proteinG)} unit={t('g / day')} sub={t('keeps muscle while you train')} />}
         {r.waterMl != null && <Tile icon="drop" tint="var(--blue)" label={t('Water')} value={fmtNum(r.waterMl)} unit={U('ml')} sub={t('a day, before workouts')} />}
         {r.whtr != null ? <Tile icon="ruler" tint={WHTR_COL[r.whtrCat]} label={t('Waist ÷ height')} value={r.whtr.toLocaleString(dateLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sub={t(WHTR_CAT[r.whtrCat]) + ' · ' + t('keep it under 0.5', 0.5)} />
-          : <Tile icon="ruler" tint="var(--label-3)" label={t('Waist ÷ height')} value="—" sub={t('add your waist above')} />}
+          : null}
       </div>
     </>}
 
-    {r && r.weeks > 0 && <div className="card ideal-road">
-      <h2><Icon name="flag" /> {t('Your road to {0} {1}', w(r.ideal), u)}</h2>
-      <div className="ideal-road-row">
-        <div><b>{r.weeks}</b><span>{t(r.weeks === 1 ? 'week' : 'weeks')}</span></div>
-        <div><b>{w(r.weeklyKg)}</b><span>{t('{0} a week', u)}</span></div>
-        <div><b>{fmtDate(eta, true)}</b><span>{t('around')}</span></div>
-      </div>
-      <div className="small dim">{t('At a safe pace of {0} {1} a week with {2} kcal a day and your usual walking.', w(r.weeklyKg), u, fmtNum(r.kcal))}</div>
-    </div>}
     {pace && <PaceCard pace={pace} w={w} u={u} />}
 
-    {r && r.adult && r.formulas && <FormulaList r={r} w={w} u={u} age={age} />}
+    {r && r.formulas && <FormulaList r={r} w={w} u={u} age={age} />}
+    {r && r.child && <GrowthMethod r={r} w={w} u={u} age={age} />}
   </>
+}
+
+/** 7.1: how a child's ideal weight is worked out — the growth-chart percentiles for the age. */
+function GrowthMethod({ r, w, u, age }) {
+  const m2 = (r.heightCm / 100) ** 2
+  const rows = [['p5', '5', 'var(--blue)'], ['p50', '50', 'var(--green)'], ['p85', '85', 'var(--orange)'], ['p95', '95', 'var(--red)']]
+  return <Section title={t('How it is worked out')} footer={t('For under-18s the healthy weight follows the growth charts for the age: the middle (50th percentile) is the ideal, the 5th–85th the healthy range. It grows with you every year.')}>
+    {rows.map(([k, n, c]) => <div key={k} className="lrow ideal-f">
+      <span className="ideal-f-n"><i className="ib-pdot" style={{ background: c }} />{t('{0}th percentile', n)}</span>
+      <b className="ideal-f-v">{w(r.curve[k] * m2)} {u}</b>
+    </div>)}
+    <div className="lrow ideal-f"><span className="grow">{t('Age {0}', age)}</span><b>{w(r.healthyKg[0])}–{w(r.healthyKg[1])} {u}</b></div>
+  </Section>
 }
 
 function PaceCard({ pace, w, u }) {
@@ -243,7 +238,7 @@ function BodyTab({ S, update, r, u, w, sex }) {
       <div className="small dim" style={{ marginTop: 10 }}>{t('At your ideal weight with {0}% fat: about {1} {2} of fat and {3} {2} lean.', Math.round(fatMid), w(r.ideal * fatMid / 100), u, w(r.ideal * (1 - fatMid / 100)))}</div>
     </div> : <div className="card small muted">{t('Log your weight to see what your body is made of.')}</div>}
 
-    <Section title={t('Body fat')} footer={r.bodyFatMethod === 'navy' ? t('Measured with the US-Navy tape method (waist, neck{0}) — usually closer than BMI alone.', sex === 'female' ? ', ' + t('hips') : '') : t('Add your neck{0} below for the more accurate US-Navy tape method.', sex === 'female' ? ' ' + t('and hips') : '')}>
+    <Section title={t('Body fat')} footer={r.child ? t('For children and teens body fat is estimated from BMI and age.') : r.bodyFatMethod === 'navy' ? t('Measured with the US-Navy tape method (waist, neck{0}) — usually closer than BMI alone.', sex === 'female' ? ', ' + t('hips') : '') : t('Add your neck{0} below for the more accurate US-Navy tape method.', sex === 'female' ? ' ' + t('and hips') : '')}>
       {r.bodyFatNavy != null && <div className="lrow"><span className="grow">{t('US-Navy tape method')}</span><b>{fmtNum(r.bodyFatNavy)}%</b></div>}
       {r.bodyFatBmi != null && <div className="lrow"><span className="grow">{t('From BMI and age (Deurenberg)')}</span><b>{fmtNum(r.bodyFatBmi)}%</b></div>}
       <div className="lrow"><span className="grow">{t('Healthy for your age and sex')}</span><b>{r.bodyFatRange[0]}–{r.bodyFatRange[1]}%</b></div>
@@ -251,14 +246,14 @@ function BodyTab({ S, update, r, u, w, sex }) {
 
     <Section title={t('Tape measurements')} footer={t('Measure in the morning, relaxed, tape snug but not tight.')}>
       {tape('waistCm', t('Waist'), t('Optional — at the navel'), 40, 200, '85', 'target', 'var(--pink)')}
-      {tape('neckCm', t('Neck'), t('Below the Adam’s apple'), 20, 70, '38', 'person', 'var(--orange)')}
-      {sex === 'female' && tape('hipCm', t('Hips'), t('At the widest point'), 50, 200, '98', 'person', 'var(--purple)')}
-      {tape('wristCm', t('Wrist'), t('Just above the wrist bone — for your frame'), 10, 30, '17', 'ruler', 'var(--teal)')}
+      {!r.child && tape('neckCm', t('Neck'), t('Below the Adam’s apple'), 20, 70, '38', 'person', 'var(--orange)')}
+      {!r.child && sex === 'female' && tape('hipCm', t('Hips'), t('At the widest point'), 50, 200, '98', 'person', 'var(--purple)')}
+      {!r.child && tape('wristCm', t('Wrist'), t('Just above the wrist bone — for your frame'), 10, 30, '17', 'ruler', 'var(--teal)')}
     </Section>
 
-    <Section title={t('Frame size')} footer={r.frameAuto ? t('From your height and wrist: {0}.', t(FRAME_NAME[r.frameAuto])) : t('Add your wrist to find your frame, or pick it yourself.')}>
+    {!r.child && <Section title={t('Frame size')} footer={r.frameAuto ? t('From your height and wrist: {0}.', t(FRAME_NAME[r.frameAuto])) : t('Add your wrist to find your frame, or pick it yourself.')}>
       <div className="lrow"><Segmented value={S.frame || 'auto'} onChange={v => update(s => { s.frame = v })} options={frameOpts} /></div>
-    </Section>
+    </Section>}
   </>
 }
 
@@ -273,7 +268,7 @@ function PlanTab({ S, update, r, u, w, unit, last, pace, isGoal, setGoal }) {
   const week = weekPlan(S, todayISO())
   const today = todayISO()
   return <>
-    <Section title={t('Your programme')} footer={t(PROGRAM[r.program][2])}>
+    <Section title={t('Your programme')} footer={r.child ? t('Gentle for a growing body: at most 250 kcal less a day from age 13, none before — more play and movement instead.') : t(PROGRAM[r.program][2])}>
       <div className="lrow"><Segmented value={S.bodyGoal || 'auto'} onChange={v => update(s => { s.bodyGoal = v })}
         options={[{ value: 'auto', label: t('Auto') }, { value: 'lose', label: t('Lose') }, { value: 'muscle', label: t('Muscle') }, { value: 'keep', label: t('Keep') }]} /></div>
       <div className="lrow"><span className="lrow-i" style={{ '--tint': 'var(--acc)' }}><Icon name={PROGRAM[r.program][1]} /></span>
@@ -291,7 +286,7 @@ function PlanTab({ S, update, r, u, w, unit, last, pace, isGoal, setGoal }) {
             <b>{fmtNum(m[k])} {t('g')}</b><span>{label}</span>
           </div>)}
       </div>}
-      <div className="small dim">{t('Protein {0} g per kg · fat about a quarter of the calories · carbs the rest.', r.program === 'lose' ? '1.8' : r.program === 'muscle' ? '2' : '1.6')}</div>
+      <div className="small dim">{r.child ? t('Protein {0} g per kg · fat about a third of the calories · carbs the rest.', r.age < 13 ? '1.1' : '1.3') : t('Protein {0} g per kg · fat about a quarter of the calories · carbs the rest.', r.program === 'lose' ? '1.8' : r.program === 'muscle' ? '2' : '1.6')}</div>
     </div>}
 
     {/* the road, week by week */}
@@ -407,12 +402,13 @@ function Tile({ icon, tint, label, value, unit, sub }) {
 function BmiGauge({ r }) {
   const m2 = (r.heightCm / 100) ** 2
   const lo = bmiPos(r.idealKg[0] / m2), hi = bmiPos(r.idealKg[1] / m2)
-  const h = r.age >= 65 ? [22, 27] : [18.5, 24.9]
-  return <div className="bmig" aria-label={t('BMI {0}', fmtNum(r.bmi))}>
-    <div className="bmig-bar" style={{ '--a': bmiPos(h[0]) + '%', '--b': bmiPos(h[1]) + '%', '--c': bmiPos(30) + '%' }}>
+  const h = r.child ? [r.curve.p5, r.curve.p85] : r.age >= 65 ? [22, 27] : [18.5, 24.9]
+  const ob = r.child ? r.curve.p95 : 30
+  return <div className="bmig" aria-label={t('BMI') + ' ' + fmtNum(r.bmi)}>
+    <div className="bmig-bar" style={{ '--a': bmiPos(h[0]) + '%', '--b': bmiPos(h[1]) + '%', '--c': bmiPos(ob) + '%' }}>
       <span className="bmig-ideal" style={{ left: lo + '%', width: (hi - lo) + '%' }} />
       <span className="bmig-me" style={{ left: bmiPos(r.bmi) + '%' }}><b>{fmtNum(r.bmi)}</b></span>
     </div>
-    <div className="bmig-l">{[15, h[0], h[1], 30, 40].map(v => <span key={v} style={{ left: bmiPos(v) + '%' }}>{fmtNum(v)}</span>)}</div>
+    <div className="bmig-l">{[15, h[0], h[1], ob, 40].map(v => <span key={v} style={{ left: bmiPos(v) + '%' }}>{fmtNum(v)}</span>)}</div>
   </div>
 }

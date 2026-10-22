@@ -78,6 +78,29 @@ describe('2.0 screens render', () => {
     expect(html).toContain('not medical advice')
     expect(html).toContain('ideal-tabs')                       // 3.0: Overview · Body · Plan · Compare
     for (const x of ['Overview', 'Body', 'Plan', 'Compare']) expect(html).toContain('>' + x + '<')
+    // 7.1: you in one line (age · height · weight), the goal card and the timed day
+    expect(html).toContain('ib-me')
+    expect(html).toContain('ib-goal')
+    expect(html).toContain('ds-tl')
+    expect((html.match(/class="ds-it /g) || []).length).toBeGreaterThanOrEqual(2)   // the rows around now
+    expect(html).not.toContain('for adults')
+  })
+  it('Ideal body for a child and before the three numbers (7.1)', async () => {
+    const S0 = useStore.getInitialState().S
+    const keep = { birthYear: S0.birthYear, bodyweight: S0.bodyweight, heightCm: S0.heightCm }
+    Object.assign(S0, { birthYear: new Date().getFullYear() - 9, heightCm: 135, bodyweight: [{ d: '2026-10-01', w: 31 }] })
+    let html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ideal-big')
+    expect(html).toContain('th percentile')
+    expect(html).not.toContain('Devine formula')
+    expect(html).not.toContain('growth charts by age — ask a doctor')
+    Object.assign(S0, { bodyweight: [] })
+    html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ib-setup')
+    expect((html.match(/class="ib-step[" ]/g) || []).length).toBe(3)
+    expect(html).toContain('ib-soon')
+    expect(html).not.toContain('>Waist<')
+    Object.assign(S0, keep)
   })
   it('Health log (3.0)', async () => {
     const iso = new Date().toISOString().slice(0, 10)

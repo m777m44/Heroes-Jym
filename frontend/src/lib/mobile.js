@@ -130,6 +130,53 @@ export async function syncMedReminders(S, interactive = false) {
   } catch { return false }
 }
 
+// 7.1 — "Your day" on the Ideal body screen: meals (with the calories and a dish), the workout
+// and the evening walk at their times, every day (ids 7500–7529, channel mj_day). Re-made each
+// new day, so the dish ideas and today's workout stay current. Water keeps its own reminders.
+let lastDaySig = ''
+export async function syncDayReminders(S, interactive = false) {
+  if (!MOBILE) return false
+  try {
+    const [{ dayReminderItems, DAY_ID_BASE }, { idealBodyOf }, { isoOf }] = await Promise.all([import('./daySchedule.js'), import('./idealBody.js'), import('./format.js')])
+    const iso = isoOf(new Date())
+    const r = idealBodyOf(S)
+    const items = dayReminderItems(S, r, iso)
+    const sig = JSON.stringify([items.map(x => [x.id, x.hour, x.minute, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
+    if (!interactive && sig === lastDaySig) return true
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    await LocalNotifications.cancel({ notifications: Array.from({ length: 30 }, (_, i) => ({ id: DAY_ID_BASE + i })) }).catch(() => {})
+    if (!items.length) { lastDaySig = sig; return true }
+    let perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
+    if (perm.display !== 'granted') return false
+    const { t } = await import('./i18n.js')
+    const { MEALS } = await import('./food.js')
+    const meal = k => t((MEALS.find(m => m.key === k) || MEALS[3]).name)
+    await LocalNotifications.createChannel({ id: 'mj_day', name: t('Your day'), description: t('Meals, workout and walk at their times'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.schedule({
+      notifications: items.map(({ id, hour, minute, item: x }) => {
+        let title, body, route
+        if (x.kind === 'meal') {
+          title = '🍽 ' + meal(x.meal) + (x.kcal ? ' · ' + t('{0} kcal', x.kcal) : '')
+          body = (x.ideas && x.ideas[0] ? t('For example: {0}', t(x.ideas[0].name)) + ' — ' : '') + t('Tap to log what you eat.')
+          route = '/food'
+        } else if (x.kind === 'workout') {
+          title = '💪 ' + t(x.plan.title)
+          body = t('{0} min', x.plan.minutes) + ' · ' + t('about {0} kcal', x.plan.kcal) + ' — ' + t('Tap to start.')
+          route = '/home'
+        } else {
+          title = '🚶 ' + t('Evening walk')
+          body = t('{0} steps today', x.steps) + ' · ' + t('{0} min', x.min)
+          route = '/walk'
+        }
+        return { id, channelId: 'mj_day', title, body, schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true }, extra: { route } }
+      }),
+    })
+    lastDaySig = sig
+    return true
+  } catch { return false }
+}
+
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet
 // (Files, AirDrop, mail, …) from a temp file instead.
 // Tapping a local notification (reminder or step counter) opens the screen it is about.

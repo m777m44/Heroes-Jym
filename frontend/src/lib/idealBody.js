@@ -25,12 +25,15 @@
 // - Lean mass: Boer (1984). Skeletal muscle: Lee et al. (2000). Body water: Watson (1980).
 // - Resting energy: Mifflin–St Jeor (1990). Waist-to-height: Ashwell's 0.5 boundary.
 //
-// These are estimates for adults (18+). For children and teenagers BMI is read on growth
-// charts by age, so the screen says so instead of giving an ideal weight.
+// 7.1 — every age from 2 to 100. Under 18 the healthy weight comes from BMI-for-age on the
+// CDC (2000) growth charts: the 5th–85th percentile band for the height today, the 50th as the
+// ideal. Resting energy for children uses Schofield (WHO 1985), water the IOM drinking amounts,
+// body fat Deurenberg's child equation. Children never get a crash diet: under 13 a heavy
+// child keeps the weight steady and grows into it; 13–17 at most −250 kcal and 0.25 kg a week.
 import { toKg, weeklyRate } from './weightTracker.js'
 import { stepsOn } from './stepMetrics.js'
 
-export const MIN_AGE = 13, ADULT_AGE = 18, MAX_AGE = 100
+export const MIN_AGE = 2, ADULT_AGE = 18, MAX_AGE = 100
 const r1 = v => Math.round(v * 10) / 10
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 const fin = v => typeof v === 'number' && Number.isFinite(v)
@@ -45,7 +48,8 @@ export function ageOf(S, now = new Date()) {
 /** The birth year to store for an age typed in today. */
 export const birthYearFor = (age, now = new Date()) => (Number.isFinite(age) && age >= MIN_AGE && age <= MAX_AGE ? now.getFullYear() - Math.round(age) : null)
 export const sexOf = S => (S && (S.sex === 'female' || S.sex === 'male') ? S.sex : S && S.body === 'female' ? 'female' : 'male')
-const okHeight = h => fin(h) && h >= 100 && h <= 250
+export const MIN_HEIGHT = 70, MAX_HEIGHT = 250
+const okHeight = h => fin(h) && h >= MIN_HEIGHT && h <= MAX_HEIGHT
 /** A tape measurement in range, else null. */
 export const okCm = (v, lo, hi) => (fin(v) && v >= lo && v <= hi ? v : null)
 
@@ -148,12 +152,104 @@ export function macrosFor(kcal, program, refKg) {
   return { protein, fat, carbs, pct: { protein: Math.round(protein * 400 / total), fat: Math.round(fat * 900 / total), carbs: Math.round(carbs * 400 / total) } }
 }
 
+
+// ---- 7.1: children and teenagers (2–17) ------------------------------------------------------
+// CDC BMI-for-age, by whole year: [P5, P50, P85, P95]
+const CDC = {
+  male: { 2: [14.7, 16.6, 18.2, 19.3], 3: [14.4, 16.0, 17.4, 18.3], 4: [14.0, 15.6, 16.9, 17.8], 5: [13.8, 15.4, 16.8, 18.0], 6: [13.8, 15.4, 17.0, 18.4], 7: [13.8, 15.5, 17.4, 19.1], 8: [13.9, 15.8, 18.0, 20.0], 9: [14.1, 16.1, 18.6, 21.0], 10: [14.4, 16.6, 19.4, 22.0], 11: [14.8, 17.2, 20.2, 23.1], 12: [15.2, 17.8, 21.0, 24.2], 13: [15.7, 18.5, 21.8, 25.1], 14: [16.3, 19.2, 22.6, 26.0], 15: [16.9, 19.9, 23.4, 26.8], 16: [17.5, 20.5, 24.2, 27.5], 17: [18.0, 21.1, 24.9, 28.2], 18: [18.6, 21.7, 25.6, 28.9] },
+  female: { 2: [14.4, 16.4, 18.0, 19.1], 3: [14.0, 15.7, 17.2, 18.3], 4: [13.7, 15.3, 16.8, 18.0], 5: [13.5, 15.2, 16.8, 18.3], 6: [13.4, 15.2, 17.1, 18.8], 7: [13.4, 15.4, 17.6, 19.7], 8: [13.6, 15.8, 18.3, 20.7], 9: [13.9, 16.3, 19.1, 21.8], 10: [14.2, 16.9, 19.9, 22.9], 11: [14.6, 17.5, 20.8, 24.0], 12: [15.1, 18.1, 21.7, 25.2], 13: [15.6, 18.7, 22.5, 26.2], 14: [16.1, 19.4, 23.3, 27.2], 15: [16.6, 19.9, 24.0, 28.1], 16: [17.0, 20.4, 24.7, 28.9], 17: [17.4, 20.8, 25.2, 29.6], 18: [17.8, 21.3, 25.6, 30.3] },
+}
+/** BMI-for-age percentiles for a child (age may be fractional): [P5, P50, P85, P95]. */
+export function childBmiCurve(age, sex) {
+  const t = CDC[sex === 'female' ? 'female' : 'male']
+  const a = clamp(age, 2, 18), lo = Math.floor(a), hi = Math.min(18, lo + 1), f = a - lo
+  return t[lo].map((v, i) => r1(v + (t[hi][i] - v) * f))
+}
+/** Roughly which percentile a BMI sits on (1–99), by straight lines between P5/P50/P85/P95. */
+export function bmiPercentile(bmi, age, sex) {
+  if (!fin(bmi) || !fin(age)) return null
+  const [p5, p50, p85, p95] = childBmiCurve(age, sex)
+  const seg = (v, a, b, pa, pb) => pa + (v - a) / (b - a) * (pb - pa)
+  const p = bmi < p50 ? (bmi < p5 ? seg(bmi, p5 - (p50 - p5) / 2, p5, 1, 5) : seg(bmi, p5, p50, 5, 50))
+    : bmi < p85 ? seg(bmi, p50, p85, 50, 85) : bmi < p95 ? seg(bmi, p85, p95, 85, 95) : seg(bmi, p95, p95 + (p95 - p85), 95, 99)
+  return Math.round(clamp(p, 1, 99))
+}
+/** Schofield (WHO 1985) resting energy for under-18s, kcal/day. */
+export function childBmr(weightKg, age, sex) {
+  const f = sex === 'female'
+  if (age < 3) return Math.round(f ? 58.317 * weightKg - 31.1 : 59.512 * weightKg - 30.4)
+  if (age < 10) return Math.round(f ? 22.5 * weightKg + 499 : 22.7 * weightKg + 495)
+  return Math.round(f ? 12.2 * weightKg + 746 : 17.5 * weightKg + 651)
+}
+/** Drinking water a day for a child (IOM total water, about 80 % of it as drinks). */
+export function childWaterMl(age, sex) {
+  if (age < 4) return 1000
+  if (age < 9) return 1300
+  if (age < 14) return sex === 'female' ? 1700 : 1900
+  return sex === 'female' ? 1800 : 2500
+}
+/** A healthy body-fat range for a child. */
+export const childFatRange = (age, sex) => (sex === 'female' ? (age < 10 ? [14, 24] : [16, 28]) : (age < 10 ? [12, 22] : [10, 21]))
+
+function childBody(out, { heightCm, age, sex, weightKg, goalPref, stepsAvg }) {
+  const m2 = (heightCm / 100) ** 2
+  const [p5, p50, p85, p95] = childBmiCurve(age, sex)
+  out.child = true
+  out.curve = { p5, p50, p85, p95 }
+  out.healthyKg = [r1(p5 * m2), r1(p85 * m2)]
+  out.idealKg = [r1((p50 - (p50 - p5) * 0.4) * m2), r1((p50 + (p85 - p50) * 0.5) * m2)]
+  out.ideal = r1(p50 * m2)
+  out.formulas = null
+  out.frame = 'medium'
+  out.bodyFatRange = childFatRange(age, sex)
+  if (out.bmi == null) return out
+  out.bmiPct = bmiPercentile(out.bmi, age, sex)
+  out.bmiCat = out.bmi < p5 ? 'under' : out.bmi <= p85 ? 'normal' : out.bmi < p95 ? 'over' : 'obese'
+  out.bodyFatBmi = r1(clamp(1.51 * out.bmi - 0.70 * age - 3.6 * (sex === 'female' ? 0 : 1) + 1.4, 5, 50))
+  out.bodyFatNavy = null
+  out.bodyFat = out.bodyFatBmi
+  out.bodyFatMethod = 'bmi'
+  out.bodyFatCat = out.bodyFat < out.bodyFatRange[0] ? 'low' : out.bodyFat <= out.bodyFatRange[1] ? 'healthy' : out.bodyFat <= out.bodyFatRange[1] + 6 ? 'high' : 'veryHigh'
+  out.comp = composition({ weightKg, heightCm, age: Math.max(age, 18), sex, bodyFat: out.bodyFat })
+  out.bmr = childBmr(weightKg, age, sex)
+  out.activity = activityOf(stepsAvg)
+  out.tdee = Math.round(out.bmr * Math.max(ACTIVITY.light, ACTIVITY[out.activity] + 0.1))   // children move more
+  out.toIdeal = r1(weightKg - out.ideal)
+  out.floor = age < 9 ? 1100 : age < 13 ? 1400 : sex === 'female' ? 1500 : 1700
+  const inBand = weightKg >= out.healthyKg[0] && weightKg <= out.healthyKg[1]
+  out.goal = inBand || Math.abs(out.toIdeal) < 0.5 ? 'keep' : out.toIdeal > 0 ? 'lose' : 'gain'
+  out.growInto = out.goal === 'lose' && age < 13                // no diets for children: grow into it
+  const auto = out.goal === 'gain' ? 'muscle' : out.growInto ? 'keep' : out.goal
+  out.program = PROGRAMS.includes(goalPref) && !(goalPref === 'lose' && age < 13) ? goalPref : auto
+  out.kcal = out.program === 'lose' ? Math.max(out.floor, out.tdee - 250) : out.program === 'muscle' ? out.tdee + 250 : out.tdee
+  out.weeklyKg = out.goal === 'keep' || out.growInto ? 0 : 0.25
+  const heads = (out.goal === 'lose' && out.program === 'lose') || (out.goal === 'gain' && out.program === 'muscle')
+  out.weeks = !out.weeklyKg || !heads ? 0 : Math.min(104, Math.ceil(Math.abs(out.toIdeal) / out.weeklyKg))
+  out.refKg = Math.max(out.ideal, Math.min(weightKg, out.healthyKg[1]))
+  const protein = Math.round((age < 13 ? 1.1 : 1.3) * out.refKg)
+  const fat = Math.round(out.kcal * 0.3 / 9)
+  const carbs = Math.max(0, Math.round((out.kcal - protein * 4 - fat * 9) / 4))
+  const total = protein * 4 + fat * 9 + carbs * 4 || 1
+  out.macros = { protein, fat, carbs, pct: { protein: Math.round(protein * 400 / total), fat: Math.round(fat * 900 / total), carbs: Math.round(carbs * 400 / total) } }
+  out.proteinG = protein
+  out.waterMl = childWaterMl(age, sex)
+  return out
+}
+
+// 7.1 — how fast: the daily deficit / surplus and the weekly gain for each pace (adults)
+export const PACES = {
+  slow: { cut: 250, add: 200, gain: 0.15 },
+  normal: { cut: 500, add: 300, gain: 0.25 },
+  fast: { cut: 750, add: 450, gain: 0.35 },
+}
+
 /**
  * Everything the screen shows. `weightKg` = the latest weigh-in in kg (or null).
- * Returns null until height is known; `adult: false` for under-18s (BMI only, no ideal).
+ * Returns null until height is known. Under 18 (`child: true`) the growth-chart method is used.
  */
-export function idealBody({ heightCm, age, sex = 'male', weightKg = null, waistCm = null, neckCm = null, hipCm = null, wristCm = null, frame = 'auto', goal: goalPref = 'auto', stepsAvg = null } = {}) {
+export function idealBody({ heightCm, age, sex = 'male', weightKg = null, waistCm = null, neckCm = null, hipCm = null, wristCm = null, frame = 'auto', goal: goalPref = 'auto', stepsAvg = null, pace = 'normal' } = {}) {
   if (!okHeight(heightCm)) return null
+  const P = PACES[pace] || PACES.normal
   const m2 = (heightCm / 100) ** 2
   const bmi = fin(weightKg) && weightKg > 0 ? r1(weightKg / m2) : null
   const out = { heightCm, age, sex, weightKg, bmi, bmiCat: bmiCat(bmi, age), adult: Number.isFinite(age) ? age >= ADULT_AGE : null }
@@ -162,6 +258,7 @@ export function idealBody({ heightCm, age, sex = 'male', weightKg = null, waistC
     out.whtr = whtr
     out.whtrCat = whtr < 0.4 ? 'low' : whtr < 0.5 ? 'healthy' : whtr < 0.6 ? 'raised' : 'high'
   }
+  if (out.adult === false) return childBody(out, { heightCm, age, sex, weightKg, goalPref, stepsAvg })
   if (!out.adult) return out
 
   const healthy = healthyBmi(age), band = idealBmiBand(age)
@@ -198,8 +295,9 @@ export function idealBody({ heightCm, age, sex = 'male', weightKg = null, waistC
     out.floor = sex === 'female' ? 1200 : 1500
     out.goal = Math.abs(out.toIdeal) < 0.5 || (weightKg >= out.idealKg[0] && weightKg <= out.idealKg[1]) ? 'keep' : out.toIdeal > 0 ? 'lose' : 'gain'
     out.program = PROGRAMS.includes(goalPref) ? goalPref : out.goal === 'gain' ? 'muscle' : out.goal
-    out.kcal = out.program === 'lose' ? Math.max(out.floor, out.tdee - 500) : out.program === 'muscle' ? out.tdee + (out.goal === 'gain' ? 300 : 250) : out.tdee
-    out.weeklyKg = out.goal === 'keep' ? 0 : out.goal === 'lose' ? r1(Math.min(0.5, Math.max(0.25, (out.tdee - Math.max(out.floor, out.tdee - 500)) * 7 / 7700))) : 0.25
+    out.pace = PACES[pace] ? pace : 'normal'
+    out.kcal = out.program === 'lose' ? Math.max(out.floor, out.tdee - P.cut) : out.program === 'muscle' ? out.tdee + (out.goal === 'gain' ? P.add : 250) : out.tdee
+    out.weeklyKg = out.goal === 'keep' ? 0 : out.goal === 'lose' ? r1(Math.min(P.cut / 1000, Math.max(0.2, (out.tdee - Math.max(out.floor, out.tdee - P.cut)) * 7 / 7700))) : P.gain
     // weeks to the ideal weight only when the programme heads that way
     const heads = (out.goal === 'lose' && out.program === 'lose') || (out.goal === 'gain' && out.program === 'muscle')
     out.weeks = out.goal === 'keep' || !heads ? 0 : Math.ceil(Math.abs(out.toIdeal) / out.weeklyKg)
@@ -224,7 +322,7 @@ export function bodyInputs(S, now = new Date()) {
   return {
     heightCm: S.heightCm, age: ageOf(S, now), sex: sexOf(S), weightKg: last ? toKg(last.w, S.unit) : null,
     waistCm: S.waistCm, neckCm: S.neckCm, hipCm: S.hipCm, wristCm: S.wristCm,
-    frame: S.frame || 'auto', goal: S.bodyGoal || 'auto', stepsAvg: stepsAverage(S, now),
+    frame: S.frame || 'auto', goal: S.bodyGoal || 'auto', stepsAvg: stepsAverage(S, now), pace: S.bodyPace || 'normal',
   }
 }
 /** idealBody() for the app state. */
@@ -318,3 +416,38 @@ export function milestoneCrossed(before, after) {
 
 /** Where `v` sits on the BMI scale 15–40, as 0–100 % (for the gauge). */
 export const bmiPos = v => clamp((v - 15) / 25 * 100, 0, 100)
+
+/**
+ * 7.1 — the plan to a target weight (the ideal one, or your own): which way, how far, how many
+ * weeks, the finish date and the calories a day. Children: at most −250 kcal from 13, none
+ * before (they grow into their weight), +250 to gain.
+ */
+export function goalPlan(r, targetKg, now = new Date()) {
+  if (!r || !fin(r.weightKg) || !fin(r.tdee)) return null
+  const to = fin(targetKg) && targetKg > 0 ? targetKg : r.ideal
+  if (!fin(to)) return null
+  const diff = r1(r.weightKg - to)                      // + to lose
+  const P = PACES[r.pace] || PACES.normal
+  const dir = Math.abs(diff) < 0.5 ? 'keep' : diff > 0 ? 'lose' : 'gain'
+  let kcal = r.tdee, rate = 0, capped = false
+  if (r.child) {
+    if (dir === 'lose' && r.age >= 13) { kcal = Math.max(r.floor, r.tdee - 250); rate = 0.25 }
+    else if (dir === 'gain') { kcal = r.tdee + 250; rate = 0.25 }
+  } else if (dir === 'lose') {
+    kcal = Math.max(r.floor, r.tdee - P.cut); capped = kcal > r.tdee - P.cut
+    rate = r1(Math.max(0.1, (r.tdee - kcal) * 7 / 7700))
+  } else if (dir === 'gain') { kcal = r.tdee + P.add; rate = P.gain }
+  const weeks = rate > 0 ? Math.min(156, Math.ceil(Math.abs(diff) / rate)) : 0
+  const eta = weeks ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + weeks * 7) : null
+  const etaIso = eta ? eta.getFullYear() + '-' + String(eta.getMonth() + 1).padStart(2, '0') + '-' + String(eta.getDate()).padStart(2, '0') : null
+  const grow = r.child && dir === 'lose' && r.age < 13
+  return { toKg: r1(to), diffKg: diff, dir, rate, weeks, etaIso, kcal: Math.round(kcal), capped, grow, ideal: Math.abs(to - r.ideal) < 0.05 }
+}
+
+/** The goal plan for the app state (your target weight if you set one, else the ideal). */
+export function goalPlanOf(S, now = new Date()) {
+  const r = idealBodyOf(S, now)
+  if (!r || !r.ideal) return null
+  const t = Number(S && S.targetW)
+  return goalPlan(r, Number.isFinite(t) && t > 0 ? toKg(t, S.unit) : null, now)
+}

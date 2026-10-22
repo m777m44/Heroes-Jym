@@ -3,7 +3,7 @@ import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders } from '../lib/mobile.js'
+import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders, syncDayReminders } from '../lib/mobile.js'
 
 const KEY = 'gym_state_v1'
 // 2.10: a fresh install follows the phone — its language ('auto', see langOf in lib/i18n.js) and
@@ -64,7 +64,7 @@ export const useStore = create((set, get) => {
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
   const nativePersist = () => {
     clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S); syncMedReminders(get().S) }, 800)
+    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S); syncMedReminders(get().S); syncDayReminders(get().S) }, 800)
   }
 
   const persist = (S, push = true) => {
@@ -207,6 +207,7 @@ export const useStore = create((set, get) => {
         get().setGuest(true)
         syncReminder(get().S)
         syncMedReminders(get().S)
+        syncDayReminders(get().S)
         set({ ready: true })
         return
       }
