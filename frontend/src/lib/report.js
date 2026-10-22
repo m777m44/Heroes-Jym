@@ -107,7 +107,7 @@ const pct = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null)
 export function smartTips(S, cur, prev) {
   const tips = []
   const n = Math.max(1, cur.lived)
-  if (cur.lived >= 3 && cur.stepsAvg < cur.stepGoal * 0.7) tips.push({ icon: 'figureWalk', tone: 'green', key: 'You average {0} steps a day — a 15-minute walk after a meal adds about 1,500.', args: [cur.stepsAvg] })
+  if (cur.lived >= 3 && cur.stepsAvg > 0 && cur.stepsAvg < cur.stepGoal * 0.7) tips.push({ icon: 'figureWalk', tone: 'green', key: 'You average {0} steps a day — a 15-minute walk after a meal adds about 1,500.', args: [cur.stepsAvg] })
   else if (prev.stepsAvg > 0 && pct(cur.stepsAvg, prev.stepsAvg) >= 10) tips.push({ icon: 'figureWalk', tone: 'green', key: 'Steps up {0}% on last time — keep that rhythm.', args: [pct(cur.stepsAvg, prev.stepsAvg)] })
   if (cur.lived >= 2 && cur.waterDays / n < 0.5) tips.push({ icon: 'drop', tone: 'teal', key: 'You hit your water goal on {0} of {1} days. Keep a bottle in sight and drink one glass with every meal.', args: [cur.waterDays, cur.lived] })
   if (cur.foodDays >= 2 && cur.kcalAvg > cur.kGoal * 1.08) tips.push({ icon: 'flame', tone: 'orange', key: 'You eat about {0} kcal over your goal on average. Swap one sweet or fried item a day.', args: [cur.kcalAvg - cur.kGoal] })

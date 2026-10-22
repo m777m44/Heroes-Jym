@@ -2463,3 +2463,8 @@ button.lt-tr:active{background:var(--surface-2)}
 html[data-motion=reduce] .rp-bar i,html[data-motion=reduce] .rp-score-fg,html[data-motion=reduce] .rp-stat,html[data-motion=reduce] .rp-fc-bar i,html[data-motion=reduce] #app.vfade :is(.card,.sect,.list>.item),html[data-motion=reduce] .lt-plate,html[data-motion=reduce] .pop-in{animation:none!important}
 html[data-motion=reduce] .lazy-wait::before,html[data-motion=reduce] .lazy-wait::after{animation:none}
 .rp-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:start;border:0;color:inherit;font:inherit}
+/* 7.0: a sub-screen title sits next to its back button, not pushed to the far edge */
+.hdr>.backbtn+div:not([style*="flex"]){flex:1;min-width:0}
+.hdr:has(>.backbtn){align-items:center}
+.rp-row b{white-space:nowrap}
+.rp-score-n{direction:ltr}

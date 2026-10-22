@@ -19,7 +19,7 @@ function BarView({ side, unit }) {
   </div>
 }
 
-function LiftTools({ close, w0, r0, exId, tab0 }) {
+function LiftTools({ w0, r0, exId, tab0 }) {
   const S = useStore(s => s.S)
   const unit = S.unit === 'lb' ? 'lb' : 'kg'
   const best = exId ? best1RM(S, exId) : null
@@ -32,10 +32,7 @@ function LiftTools({ close, w0, r0, exId, tab0 }) {
   const est = estimate1RM(w, r)
   const rows = pctTable(est || 0, unit)
   return <div className="lt">
-    <div className="row between" style={{ marginBottom: 12 }}>
-      <h3 className="row" style={{ gap: 8, margin: 0 }}><Icon name="calculator" style={{ color: 'var(--acc)' }} />{t('Lift tools')}</h3>
-      <button className="iconbtn" aria-label={t('Close')} onClick={close}><Icon name="xmark" /></button>
-    </div>
+    <h3 className="row" style={{ gap: 8, margin: '0 0 12px' }}><Icon name="calculator" style={{ color: 'var(--acc)' }} />{t('Lift tools')}</h3>
     <Segmented value={tab} onChange={setTab} options={[{ value: 'plates', label: t('Plates') }, { value: 'pct', label: t('1RM & %') }]} />
     {tab === 'plates' ? <div style={{ marginTop: 14 }}>
       <Stepper label={t('Target weight')} value={tw} step={unit === 'lb' ? 5 : 2.5} onChange={setTw} unit={unit} />
@@ -69,4 +66,4 @@ function LiftTools({ close, w0, r0, exId, tab0 }) {
   </div>
 }
 
-export const liftToolsSheet = (opts = {}) => useUI.getState().openSheet(close => <LiftTools close={close} {...opts} />)
+export const liftToolsSheet = (opts = {}) => useUI.getState().openSheet(() => <LiftTools {...opts} />)
