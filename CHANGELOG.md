@@ -3,6 +3,57 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v6.0.0 — 2026-10-22
+
+**My kitchen — cook from what you have at home with the calories worked out, per meal; wallpapers
+(nature photos, 80 generated artworks, your own gallery photos); new shapes and card styles; a
+card-style notification; and 64 more foods.**
+*مطبخي — اطبخ من الموجود في بيتك والسعرات محسوبة لكل وجبة؛ خلفيات (صور طبيعة، 80 لوحة فنية، وصورك من المعرض)؛ أشكال وأنماط بطاقات جديدة؛ إشعار ببطاقات؛ و64 أكلة إضافية.*
+
+### 🍳 My kitchen (Food log → My kitchen, Home food card → What can I cook?, Add food → What can I cook?)
+- **Recipes:** 44 home recipes — eggs with tomato, tahini with date syrup (راشي ودبس), shakshuka,
+  ijja, baqilla bil-dihin, geymar with honey, foul, lentil soup, dolma, tashreeb, biryani, tepsi,
+  maqluba, kebab, falafel, hummus, salads, snacks… Pick the meal (breakfast / lunch / dinner /
+  snack); what you can cook now comes first, the rest say exactly what is missing. Each shows
+  kcal per serving, protein / carbs / fat, minutes, ingredients and numbered steps, and goes into
+  today's log in one tap (servings 0.5–8, any meal).
+- **My kitchen:** 56 ingredients in 7 groups; tick what you have or add the basics in one tap.
+- **Shopping list:** a recipe's missing ingredients go onto it; tick one when you buy it and it
+  moves into your kitchen.
+- **Build a meal:** put a meal together from ingredients by weight, see the calories and macros
+  live, split into servings, log it — or save it as your own food and edit it later.
+- Calories are calculated from typical values per 100 g of each ingredient.
+
+### 🖼️ Wallpapers (Themes → Wallpaper, or Settings → Wallpaper)
+- **Nature:** 20 photos that come with the app (marshes, palm groves, a Kurdistan valley, aurora,
+  desert, lavender, snowy pines…). More nature and anime pictures come in the next updates.
+- **Art:** 80 generated artworks (8 styles × 10 palettes) that take no space.
+- **My photos:** add up to 40 pictures from the gallery; they are resized and kept on this phone
+  only (never uploaded, not part of backups).
+- **Dim** and **blur** sliders keep text readable; cards turn frosted so the picture shows through.
+
+### 🔷 Shapes and card styles (Themes)
+- **5 shapes** for cards, buttons and fields: round, soft, sharp, pill, leaf.
+- **6 card styles:** solid, frosted glass, outline, floating, gradient, neon — with every theme
+  and wallpaper.
+
+### 🔔 Notification — cards
+- The expanded bar is now a card per section — **steps, water and food** — each with a coloured
+  icon, a big number, its goal and a slim progress bar; tap a card to open its screen.
+- New **food card**: eaten against today's goal, with kcal left (or over, in orange).
+
+### 🍽️ Food database: 118 → 182 foods
+- Breakfasts first: eggs with tomato, tahini with date syrup, shakshuka, ijja, eggs with potato,
+  baqilla with egg, geymar with honey, scrambled eggs, egg whites, cheese omelette.
+- Kubba Mosul, Kubba Halab, tbeet, harissa, qorma sabzi, kofta, mujaddara, vermicelli soup,
+  manakish, lahm bi ajeen, sambusa, kaak, shish tawook, basterma, turshi, jajik, zalabia,
+  mann al-sama, basbousa, muhallabia, rice pudding, karkade and more — in all 12 languages.
+
+### Checks
+- vitest 39 files / 543 tests (new: kitchen, wallpapers & look, kitchen and wallpaper screens);
+  every new screen and all 44 recipe sheets are checked for stray English in the Arabic UI.
+- 12 locales × 2,706 keys in sync.
+
 ## v5.0.0 — 2026-10-22
 
 **A food & calorie log with an offline database of Iraqi and Arab dishes, linked to the calorie

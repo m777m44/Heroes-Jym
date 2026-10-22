@@ -52,7 +52,7 @@ export default {
           cwd: jobDir,
           // `env` replaces rather than extends the SDK subprocess environment. config.jobEnv()
           // creates it from scratch, so this adds no server secrets to the model process.
-          env: { ...env, CLAUDE_AGENT_SDK_CLIENT_APP: 'mahdi-jym-coach/5.0.0' },
+          env: { ...env, CLAUDE_AGENT_SDK_CLIENT_APP: 'mahdi-jym-coach/6.0.0' },
           model: model || undefined,
           maxTurns: 1,
           tools: [],
