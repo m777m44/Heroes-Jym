@@ -14,6 +14,7 @@ import { isoOf, uid } from './format.js'
 import { idealBodyOf, macrosFor } from './idealBody.js'
 import { bodyKg } from './water.js'
 import { FOODS, FOOD_BY_ID } from './foodDb.js'
+import { RECIPE_BY_ID } from './kitchen.js'
 
 export const MEALS = [
   { key: 'b', name: 'Breakfast', icon: 'sun', color: 'var(--orange)' },
@@ -49,6 +50,7 @@ export function foodOf(S, id) {
 export function foodName(S, x) {
   if (!x) return ''
   if (x.f) { const f = foodOf(S, x.f); if (f) return f.custom || !FOOD_BY_ID[f.id] ? f.n : t(f.name) }
+  if (x.r && RECIPE_BY_ID[x.r]) return t(RECIPE_BY_ID[x.r].name)
   if (x.name) return t(x.name)
   return x.n || t('Quick calories')
 }

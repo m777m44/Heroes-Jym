@@ -81,6 +81,9 @@ export function serviceStrings() {   // (callers may still pass S — unused sin
     active: t('active'),
     dayLeft: t('Day ends in'),
     eaten: t('eaten'),
+    foodLabel: t('Food'),
+    foodLeft: t('{0} kcal left', '{n}'),
+    foodOver: t('{0} kcal over', '{n}'),
     zoneLabel: '',                       // 2.9: no city name next to the clock
     goalTitle: t('Daily goal reached!') + ' 🎉',
     // 2.5 — the full-screen celebration and its picture notification

@@ -115,13 +115,19 @@ export default function Food() {
             const f = foodOf(S, e.f)
             return <div key={e.id} className="item" role="button" tabIndex={0} onClick={() => entrySheet(iso, e)} onKeyDown={ev => { if (ev.key === 'Enter') entrySheet(iso, e) }}>
               <FoodBubble food={f} size={32} />
-              <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{f ? servingText(f, U) : t('Quick calories')}</div></div>
+              <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{f ? servingText(f, U) : e.r ? t('Home recipe') : t('Quick calories')}</div></div>
               <b className="food-kcal">{n0(entryKcal(e))}</b>
             </div>
           })}
         </div> : <button className="food-empty" onClick={() => addFoodSheet({ iso, meal: m.key })}>{t('Nothing yet — tap to add')}</button>}
       </div>
     })}
+
+    <button className="card food-kitchen-link" onClick={() => nav('/kitchen')}>
+      <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
+      <span className="grow"><b>{t('My kitchen')}</b><span className="small muted">{t('Recipes from what you have at home, a meal builder and a shopping list')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
 
     <div className="card food-week">
       <div className="row between" style={{ marginBottom: 10 }}>

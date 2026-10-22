@@ -23,7 +23,7 @@ it('the Arabic UI has no stray English', async () => {
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -66,6 +66,8 @@ it('the Arabic UI has no stray English', async () => {
   const isoToday = new Date().toISOString().slice(0, 10)
   const FS = await import('../components/food/FoodSheets.jsx')
   const { FOOD_BY_ID } = await import('../lib/foodDb.js')
+  const K = await import('./Kitchen.jsx')
+  const { RECIPES } = await import('../lib/kitchen.js')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -77,6 +79,8 @@ it('the Arabic UI has no stray English', async () => {
     foodEntry: () => FS.entrySheet(isoToday, { id: 'x', f: 'kubba', kcal: 190, q: 2, m: 'b' }), foodQuick: () => FS.quickSheet({ iso: isoToday, meal: 's' }),
     foodCustom: () => FS.customFoodSheet(null, { iso: isoToday, meal: 'd' }), foodCustomEdit: () => FS.customFoodSheet({ id: 'cf1', n: 'سلطة البيت', kcal: 150, p: 3, c: 10, f: 9 }),
     foodGoal: () => FS.foodGoalSheet(isoToday),
+    ingPick: () => K.ingPickSheet(() => {}),
+    ...Object.fromEntries(RECIPES.map(r => ['recipe_' + r.id, () => K.recipeSheet(r.id, 'l')])),
     bp: () => H.bpSheet(isoToday), sugar: () => H.sugarSheet(isoToday, 'mmol'), med: () => H.medSheet(), medEdit: () => H.medSheet(st.meds[0]),
   }
   for (const [name, open] of Object.entries(calls)) {

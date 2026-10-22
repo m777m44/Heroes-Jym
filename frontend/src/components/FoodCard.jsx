@@ -37,6 +37,9 @@ export default function FoodCard() {
       </div>
     </div>
     <div style={{ height: 10 }} />
-    <Button variant="tinted" icon="plus" onClick={() => addFoodSheet({ iso, meal: next })}>{t('Add to {0}', mealName(next))}</Button>
+    <div className="food-card-acts">
+      <Button variant="tinted" icon="plus" onClick={() => addFoodSheet({ iso, meal: next })}>{t('Add to {0}', mealName(next))}</Button>
+      <Button variant="tinted" icon="fork" onClick={() => nav('/kitchen?m=' + next)}>{t('What can I cook?')}</Button>
+    </div>
   </div>
 }

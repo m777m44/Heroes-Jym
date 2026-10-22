@@ -189,6 +189,9 @@ export function buildDemoState() {
 
   return {
     health, meds, medLog, bodyPlan, food, foodFav: ['dolma', 'tikka', 'dates'],
+    // 6.0: a stocked kitchen and a short shopping list
+    pantry: ['egg', 'tomato', 'onion', 'potato', 'bread', 'samoon', 'rice', 'oil', 'tomatopaste', 'garlic', 'lemon', 'cucumber', 'yogurt', 'tahini', 'dibis', 'chicken', 'milk', 'banana', 'dates', 'oats', 'whitecheese', 'parsley', 'lettuce', 'honey'],
+    shopping: [{ id: 'minced', done: false }, { id: 'eggplant', done: false }, { id: 'walnuts', done: true }],
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,

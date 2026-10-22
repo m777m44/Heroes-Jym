@@ -2236,3 +2236,78 @@ html[data-contrast=more] .muted,html[data-contrast=more] .dim{opacity:1}
 .food-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .food-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--label-2)}
 .food-auto{background:var(--surface-2);margin:0}
+
+/* ---- 6.0 my kitchen ---------------------------------------------------------------------------- */
+.kitchen .grow,.kit-recipe .grow,.food-kitchen-link .grow,.kit-picklist .grow{flex:1;min-width:0}
+.kitchen>.card,.kitchen>.seg,.kitchen>.kit-bar,.kitchen>.food-search,.kitchen>.kit-grid{margin-bottom:12px}
+.kit-hero{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--orange) 26%,var(--surface)),color-mix(in srgb,var(--pink) 18%,var(--surface)))}
+.kit-hero b{display:block;font-size:17px}
+.kit-hero-i{flex:none;width:52px;height:52px;border-radius:17px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,var(--orange),var(--pink));box-shadow:0 8px 20px -10px var(--orange)}
+.kit-hero-i svg{width:28px;height:28px}
+.kit-tabs{margin-bottom:12px}
+.kit-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:10px 0}
+.kit-bar .chip,.kit-cat-h .chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2)}
+.kit-bar .chip svg,.kit-cat-h .chip svg{width:14px;height:14px}
+.kit-bar .chip.on{background:var(--acc);color:var(--on-acc)}
+.kit-empty{display:flex;align-items:center;gap:12px;margin-top:10px}
+.kit-empty>svg{flex:none;width:26px;height:26px;color:var(--yellow)}
+.kit-grid{display:flex;flex-direction:column;gap:10px}
+.kit-card{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:start;font:inherit;color:inherit;cursor:pointer;margin:0;transition:transform .15s}
+.kit-card:active{transform:scale(.985)}
+.kit-card.ready{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--green) 55%,transparent)}
+.kit-card-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.kit-card-b b{font-size:15.5px}
+.kit-card .chev,.food-kitchen-link .chev{flex:none;width:16px;height:16px;color:var(--label-3)}
+[dir=rtl] .kit-card .chev,[dir=rtl] .food-kitchen-link .chev{transform:scaleX(-1)}
+.kit-badge{align-self:flex-start;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kit-badge.ok{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.kit-badge.near{background:color-mix(in srgb,var(--orange) 18%,transparent);color:var(--orange)}
+.kit-badge.far{background:var(--surface-2);color:var(--label-2)}
+.kit-bub{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--tint);background:color-mix(in srgb,var(--tint) 18%,var(--surface-2))}
+.kit-bub svg{width:22px;height:22px}
+.kit-bub.sm{width:34px;height:34px;border-radius:11px}
+.kit-bub.sm svg{width:17px;height:17px}
+.kit-status{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;font-size:14px;font-weight:600;margin:8px 0 12px}
+.kit-status svg{flex:none;width:18px;height:18px}
+.kit-status.ok{background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green)}
+.kit-status.miss{background:color-mix(in srgb,var(--orange) 15%,transparent);color:var(--orange)}
+.kit-macros{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 12px}
+.kit-mt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:color-mix(in srgb,var(--tint) 13%,var(--surface-2))}
+.kit-mt b{font-size:18px;color:var(--tint);font-variant-numeric:tabular-nums}
+.kit-mt span{font-size:11px;color:var(--label-2);text-align:center}
+.kit-recipe .lbl2,.kitchen .lbl2{margin:12px 0 6px}
+.kit-ing{cursor:pointer}
+.kit-ing.off{opacity:.5}
+.kit-opt{font-weight:400;color:var(--label-3);font-size:12px}
+.kit-tick{flex:none;width:28px;height:28px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--surface-2);color:var(--label-2);cursor:pointer;padding:0}
+.kit-tick svg{width:15px;height:15px}
+.kit-tick.on{background:var(--green);color:#fff}
+.kit-hint{margin:6px 2px 0}
+.kit-steps{margin:0 0 12px;padding:0;list-style:none;counter-reset:ks}
+.kit-steps li{counter-increment:ks;position:relative;padding:8px 0;padding-inline-start:38px;line-height:1.5;font-size:14.5px;border-bottom:.5px solid var(--sep)}
+.kit-steps li:last-child{border-bottom:0}
+.kit-steps li::before{content:counter(ks);position:absolute;inset-inline-start:0;top:7px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(140deg,var(--orange),var(--pink))}
+.kit-sv{display:flex;align-items:center;gap:10px;margin:12px 0;flex-wrap:wrap}
+.kit-sv>span:first-child{flex:1;min-width:110px;font-weight:600}
+.kit-svc{display:flex;align-items:center;gap:6px;flex:none}
+.kit-svc>b{min-width:30px;text-align:center;font-size:18px;font-variant-numeric:tabular-nums}
+.kit-svk{color:var(--orange)}
+.kit-cat-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kit-cat-h>b{flex:1;min-width:0}
+.kit-chips{display:flex;flex-wrap:wrap;gap:7px}
+.kit-chip{display:inline-flex;align-items:center;gap:5px;border:0;border-radius:99px;padding:7px 12px;font:inherit;font-size:13.5px;background:var(--surface-2);color:var(--label);cursor:pointer;transition:background .15s,transform .1s}
+.kit-chip:active{transform:scale(.95)}
+.kit-chip svg{width:14px;height:14px}
+.kit-chip.on{background:color-mix(in srgb,var(--green) 22%,var(--surface-2));color:var(--green);font-weight:600;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 50%,transparent)}
+.kit-shop-i.done .tt{text-decoration:line-through;color:var(--label-3)}
+.kit-shop .list,.kit-build .list{margin:0 0 10px}
+.kit-name{width:100%;margin-bottom:10px;font-size:16px;font-weight:600}
+.kit-item{gap:8px}
+.kit-g{width:52px;text-align:center;border:0;border-radius:10px;padding:6px 4px;background:var(--surface-2);color:var(--label);font:inherit;font-variant-numeric:tabular-nums}
+.iconbtn.sm{width:30px;height:30px}
+.iconbtn.sm svg{width:15px;height:15px}
+.kit-picklist{max-height:52vh;overflow:auto;margin-top:10px}
+.food-kitchen-link{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:start;font:inherit;color:inherit;cursor:pointer;margin:10px 0}
+.food-kitchen-link b{display:block}
+.food-card-acts{display:flex;gap:8px}
+.food-card-acts .btn{flex:1;min-width:0}

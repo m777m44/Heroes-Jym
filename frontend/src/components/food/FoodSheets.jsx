@@ -109,6 +109,11 @@ function AddFood({ iso, meal: meal0, close }) {
       <Button variant="tinted" icon="bolt" onClick={() => quickSheet({ iso, meal })}>{t('Quick calories')}</Button>
       <Button variant="tinted" icon="plus" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Create a food')}</Button>
     </div>
+    <button className="card food-kitchen-link" onClick={() => { close(); nav('/kitchen?m=' + meal) }}>
+      <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
+      <span className="grow"><b>{t('What can I cook?')}</b><span className="small muted">{t('Recipes from what you have at home')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
     <div style={{ height: 8 }} />
     <Button variant="primary" icon="check" onClick={close}>{t('Done')}</Button>
   </div>
@@ -143,7 +148,7 @@ function Amount({ food, iso, meal: meal0, close, entry }) {
   return <div className="food-amount">
     <div className="row" style={{ gap: 12, marginBottom: 10 }}>
       <FoodBubble food={f} size={44} />
-      <div className="grow"><h3 style={{ margin: 0 }}>{name}</h3><div className="small muted">{f ? servingText(f, U) : t('Quick calories')}</div></div>
+      <div className="grow"><h3 style={{ margin: 0 }}>{name}</h3><div className="small muted">{f ? servingText(f, U) : entry && entry.r ? t('Home recipe') : t('Quick calories')}</div></div>
     </div>
     <div className="food-qty">
       <button className="food-qty-b" aria-label={t('Less')} disabled={q <= QTY_STEP} onClick={() => step(-QTY_STEP)}><Icon name="minus" /></button>

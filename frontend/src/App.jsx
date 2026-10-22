@@ -43,6 +43,7 @@ const Calories = lazy(() => import('./views/Calories.jsx'))
 const BurnSelect = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnSelect })))
 const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnReview })))
 const Food = lazy(() => import('./views/Food.jsx'))
+const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
@@ -168,6 +169,7 @@ function Shell() {
               <Route path="/start/:mode/:cat" element={<WorkoutCategory />} />
               <Route path="/calories" element={<Calories />} />
               <Route path="/food" element={<Food />} />
+              <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />

@@ -406,6 +406,16 @@ final class StepStore {
         return new int[] { eaten, Math.max(0, f.optInt("goal", 0)) };
     }
 
+    /** 6.0: the food card — { eaten, goal } (eaten 0 on a new day), or null when the food log is off. */
+    synchronized int[] foodCard() {
+        JSONObject f = config.optJSONObject("food");
+        if (f == null) return null;
+        int goal = Math.max(0, f.optInt("goal", 0));
+        if (goal <= 0) return null;
+        int eaten = f.optString("day", "").equals(today()) ? Math.max(0, f.optInt("eaten", 0)) : 0;
+        return new int[] { eaten, goal };
+    }
+
     synchronized String clockZone() {
         // 2.9: always the phone's own zone. Configs saved by older versions may still carry a
         // fixed city zone; it is ignored so the clock never shows a city's time.

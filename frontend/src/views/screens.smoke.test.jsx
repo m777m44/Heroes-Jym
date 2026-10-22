@@ -279,6 +279,23 @@ describe('4.2 calorie calculator & burn plan render', () => {
   })
 })
 
+describe('6.0 kitchen render', () => {
+  const S0 = () => useStore.getInitialState().S
+  it('the kitchen: recipes, my kitchen and the builder', async () => {
+    S0().pantry = ['egg', 'tomato', 'onion', 'oil', 'tahini', 'dibis', 'bread']
+    S0().shopping = [{ id: 'minced', done: false }]
+    const cook = await render('/kitchen?m=b', './Kitchen.jsx')
+    expect(cook).toContain('kit-card ready')
+    expect(cook).toContain('Eggs with tomato')
+    const pantry = await render('/kitchen?tab=pantry', './Kitchen.jsx')
+    expect((pantry.match(/kit-chip on/g) || []).length).toBe(7)
+    expect(pantry).toContain('kit-shop-i')
+    const build = await render('/kitchen?tab=build', './Kitchen.jsx')
+    expect(build).toContain('kit-build')
+    delete S0().pantry; delete S0().shopping
+  })
+})
+
 describe('5.0 food log render', () => {
   const S0 = () => useStore.getInitialState().S
   it('the food screen: empty, then a logged day', async () => {

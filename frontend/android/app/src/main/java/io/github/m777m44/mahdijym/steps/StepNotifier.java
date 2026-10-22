@@ -98,6 +98,14 @@ final class StepNotifier {
         return PendingIntent.getActivity(c, req, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
+    /** 6.0: open the app on a screen (a card in the notification). */
+    static PendingIntent openRoute(Context c, int req, String route) {
+        Intent i = new Intent(c, MainActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        i.putExtra(StepServicePlugin.EXTRA_ROUTE, route);
+        return PendingIntent.getActivity(c, req, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
     static PendingIntent serviceAction(Context c, String action, int req) {
         Intent i = new Intent(c, StepCounterService.class).setAction(action);
         return PendingIntent.getService(c, req, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -301,15 +309,41 @@ final class StepNotifier {
         v.setTextViewText(R.id.l_speed, s.str("kmh", "km/h"));
         v.setTextViewText(R.id.l_active, s.str("active", "active"));
         v.setChronometer(R.id.n_active, SystemClock.elapsedRealtime() - s.activeMs, null, moving && !s.paused);
-        int[] food = s.foodToday();
-        boolean showFood = food != null && !moving;
-        v.setViewVisibility(R.id.n_food_box, showFood ? View.VISIBLE : View.GONE);
-        v.setViewVisibility(R.id.n_speed_box, showFood ? View.GONE : View.VISIBLE);
-        if (showFood) {
-            v.setTextViewText(R.id.n_food, nf.format(food[0]));
-            v.setTextColor(R.id.n_food, food[1] > 0 && food[0] > food[1] ? 0xFFFF9F0A : 0xFFF2F2F7);
-            v.setTextViewText(R.id.l_food, food[1] > 0 ? "/ " + nf.format(food[1]) + " " + s.str("eaten", "eaten") : s.str("eaten", "eaten"));
+        // 6.0: food has its own card now — the stats row keeps km/h
+        v.setViewVisibility(R.id.n_food_box, View.GONE);
+        v.setViewVisibility(R.id.n_speed_box, View.VISIBLE);
+        int[] fc = s.foodCard();
+        if (fc != null) {
+            int eaten = fc[0], fg = fc[1];
+            boolean over = eaten > fg;
+            int fp = (int) Math.min(999, (long) eaten * 100 / Math.max(1, fg));
+            v.setViewVisibility(R.id.f_card, View.VISIBLE);
+            v.setViewVisibility(R.id.f_gap, View.VISIBLE);
+            v.setTextViewText(R.id.f_label, s.str("foodLabel", "Food"));
+            if (over) {
+                v.setViewVisibility(R.id.f_ring, View.GONE);
+                v.setViewVisibility(R.id.f_ring_ok, View.VISIBLE);
+                v.setProgressBar(R.id.f_ring_ok, 1000, 1000, false);
+            } else {
+                v.setViewVisibility(R.id.f_ring_ok, View.GONE);
+                v.setViewVisibility(R.id.f_ring, View.VISIBLE);
+                v.setProgressBar(R.id.f_ring, 1000, (int) Math.max(eaten > 0 ? 12 : 0, Math.min(1000, (long) eaten * 1000 / Math.max(1, fg))), false);
+            }
+            v.setTextViewText(R.id.f_pct, fp + "%");
+            v.setTextViewText(R.id.f_kcal, nf.format(eaten));
+            v.setTextColor(R.id.f_kcal, over ? 0xFFFF9F0A : 0xFFFF6482);
+            v.setTextViewText(R.id.f_goal, "/ " + nf.format(fg) + " " + s.str("kcal", "kcal"));
+            v.setTextViewText(R.id.f_togo, over
+                ? s.str("foodOver", "{n} kcal over").replace("{n}", nf.format(eaten - fg))
+                : s.str("foodLeft", "{n} kcal left").replace("{n}", nf.format(fg - eaten)));
+            v.setTextColor(R.id.f_togo, over ? 0xFFFF9F0A : 0xFFC7C7CC);
+            v.setOnClickPendingIntent(R.id.f_card, openRoute(c, 23, "/food"));
+        } else {
+            v.setViewVisibility(R.id.f_card, View.GONE);
+            v.setViewVisibility(R.id.f_gap, View.GONE);
         }
+        v.setOnClickPendingIntent(R.id.n_card, openRoute(c, 21, "/walk"));
+        if (water) v.setOnClickPendingIntent(R.id.w_card, openRoute(c, 22, "/water"));
 
         // footer
         v.setTextViewText(R.id.n_motto, motto(s, steps, goal));
