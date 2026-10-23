@@ -20,10 +20,14 @@ it('the Arabic UI has no stray English', async () => {
   const st = buildDemoState()
   // medicine names / doses are what the user typed — an Arabic user types them in Arabic
   st.meds = st.meds.map((m, i) => ({ ...m, name: ['فيتامين د', 'مغنيسيوم'][i], dose: ['1000 وحدة', '200 ملغ'][i] }))
+  // 8.0: a fast in progress (Home card, the live tool strip, the fasting screen) and a finished one
+  const H8 = 3600000, t8 = Date.now()
+  st.fasting = { plan: 'custom', custom: 18, active: { start: t8 - 13 * H8, goalH: 16, plan: '16' }, log: [{ start: t8 - 40 * H8, end: t8 - 23 * H8, goalH: 16, plan: '16', hit: true }] }
+  st.intervals = [{ d: new Date().toISOString().slice(0, 10), at: t8 - H8, preset: 'tabata', name: 'Tabata', sec: 230, work: 160, rounds: 8, kcal: 30, done: true }]
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -68,6 +72,10 @@ it('the Arabic UI has no stray English', async () => {
   const { FOOD_BY_ID } = await import('../lib/foodDb.js')
   const K = await import('./Kitchen.jsx')
   const { RECIPES } = await import('../lib/kitchen.js')
+  const HZ = await import('../components/HrZonesSheet.jsx')
+  const WN = await import('../components/WhatsNew.jsx')
+  const PF = await import('../components/ProfileSheet.jsx')
+  const QS = await import('../components/QuickSearch.jsx')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -82,6 +90,8 @@ it('the Arabic UI has no stray English', async () => {
     ingPick: () => K.ingPickSheet(() => {}),
     ...Object.fromEntries(RECIPES.map(r => ['recipe_' + r.id, () => K.recipeSheet(r.id, 'l')])),
     bp: () => H.bpSheet(isoToday), sugar: () => H.sugarSheet(isoToday, 'mmol'), med: () => H.medSheet(), medEdit: () => H.medSheet(st.meds[0]),
+    // 8.0
+    zones: () => HZ.zonesSheet(), whatsNew: () => WN.whatsNewSheet(), profile: () => PF.profileSheet(), search: () => QS.quickSearchSheet(() => {}),
   }
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })
@@ -117,7 +127,8 @@ it('the Arabic UI has no stray English', async () => {
     scan(renderToString(React.createElement(MemoryRouter, null, React.createElement(card.default))), 'AccountSection:in')
     localStorage.removeItem('mj_cloud')
   }
-  const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/]
+  // 8.0: Google's own product names stay Latin in Arabic too (as on the account screens)
+  const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
   const stray = Object.entries(found).filter(([l]) => !ALLOWED.some(r => r.test(l))).map(([l, s]) => `${[...s].join(',')}\t${l}`).sort()
   expect(stray).toEqual([])
 })

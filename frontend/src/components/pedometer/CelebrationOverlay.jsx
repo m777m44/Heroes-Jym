@@ -17,6 +17,8 @@ const KINDS = {
   plan: { c1: '#bf5af2', c2: '#ff375f', icon: 'crown' },
   body: { c1: '#30d158', c2: '#ffd60a', icon: 'flag' },      // 3.0: a milestone to the ideal weight
   workout: { c1: '#ff9f0a', c2: '#ff375f', icon: 'trophy' },  // 7.2: a workout finished (the number = minutes)
+  fast: { c1: '#ff9f0a', c2: '#bf5af2', icon: 'moon' },       // 8.0: a fast reached its goal (the number = hours)
+  hiit: { c1: '#ff375f', c2: '#ffd60a', icon: 'bolt' },       // 8.0: an interval timer finished (the number = minutes)
 }
 const PAPER = ['#ffd60a', '#ff375f', '#64d2ff', '#30d158', '#bf5af2', '#ff9f0a', '#ffffff']
 const reduced = () => motionReduced()   // the phone's setting, or Settings → Reduce motion (4.0)
@@ -133,9 +135,13 @@ function Scene({ cur, onClose }) {
   const plan = cur.kind === 'plan'            // today's plan: workout + steps + water all done
   const body = cur.kind === 'body'
   const workout = cur.kind === 'workout'
-  const kicker = workout ? t('Workout complete!') : body ? (cur.steps >= 100 ? t('Ideal weight reached!') : t('Milestone on the road to your ideal weight')) : plan ? t("Today's plan complete!") : water ? t('Water goal reached!') : goal ? t('Daily goal reached!') : t('Milestone')
-  const unit = workout ? t('min') : plan || body ? '%' : water ? t('ml') : t('steps')
-  const sub = workout ? t('Strong work — every set counts. Rest, drink water and refuel.') : body ? (cur.steps >= 100 ? t('You did it — now keep it. Your plan switches to keeping your weight.') : t('of the way to your ideal weight — keep going!'))
+  const fast = cur.kind === 'fast'
+  const hiit = cur.kind === 'hiit'
+  const kicker = fast ? t('Fast complete!') : hiit ? t('Timer complete!') : workout ? t('Workout complete!') : body ? (cur.steps >= 100 ? t('Ideal weight reached!') : t('Milestone on the road to your ideal weight')) : plan ? t("Today's plan complete!") : water ? t('Water goal reached!') : goal ? t('Daily goal reached!') : t('Milestone')
+  const unit = fast ? t('hours') : workout || hiit ? t('min') : plan || body ? '%' : water ? t('ml') : t('steps')
+  const sub = fast ? t('Discipline pays off. Break your fast gently — water first, then a light meal.')
+    : hiit ? t('Heart pumping, calories burning — great intervals!')
+    : workout ? t('Strong work — every set counts. Rest, drink water and refuel.') : body ? (cur.steps >= 100 ? t('You did it — now keep it. Your plan switches to keeping your weight.') : t('of the way to your ideal weight — keep going!'))
     : plan ? t('Workout, steps and water — all done. A great day for your body!')
     : water ? t('{0} ml today — your body thanks you.', fmt(cur.steps))
     : goal ? t('{0} steps today — well done.', fmt(cur.steps)) : t('steps — keep it up!')

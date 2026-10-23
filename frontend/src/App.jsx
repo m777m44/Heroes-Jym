@@ -49,6 +49,12 @@ const Food = lazy(() => import('./views/Food.jsx'))
 const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
 const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
 const Reports = lazy(() => import('./views/Reports.jsx'))
+// 8.0
+const Tools = lazy(() => import('./views/Tools.jsx'))
+const Timer = lazy(() => import('./views/Timer.jsx'))
+const Breathe = lazy(() => import('./views/Breathe.jsx'))
+const Fasting = lazy(() => import('./views/Fasting.jsx'))
+const Recovery = lazy(() => import('./views/Recovery.jsx'))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import StartCountdown from './components/workout/StartCountdown.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
@@ -184,6 +190,11 @@ function Shell() {
               <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/wallpapers" element={<Wallpapers />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/tools" element={<Tools />} />
+              <Route path="/timer" element={<Timer />} />
+              <Route path="/breathe" element={<Breathe />} />
+              <Route path="/fasting" element={<Fasting />} />
+              <Route path="/recovery" element={<Recovery />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />

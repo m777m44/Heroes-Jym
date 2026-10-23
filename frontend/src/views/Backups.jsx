@@ -11,9 +11,11 @@ import {
   onSnapshotsChange, KEEP_OPTS, DEFAULT_KEEP,
 } from '../lib/backups.js'
 import {
-  cloudMeta, onCloudChange, signedInGoogle, onDrive, lastSavedAt,
+  cloudMeta, onCloudChange, signedInGoogle, onDrive, lastSavedAt, fileLinked,
   listDriveVersions, uploadDriveVersion, readDriveVersion, deleteDriveVersion, upgradeToDrive, googleDiagnostics,
 } from '../lib/cloud.js'
+import { driveFileAvailable } from '../lib/driveFile.js'
+import { DriveFileRows, DriveMark, placeName } from '../components/DriveFileUI.jsx'
 import { explainDrive, sameSha1 } from '../lib/googleErrors.js'
 import { MOBILE } from '../lib/mobile.js'
 import { copyText } from '../lib/clipboard.js'
@@ -62,9 +64,12 @@ export default function Backups() {
   const [meta, setMeta] = useState(cloudMeta)
   const [dv, setDv] = useState(null)              // Drive versions: null = not loaded, 'error', or a list
   const [busy, setBusy] = useState(false)
+  const [fileOk, setFileOk] = useState(false)
   const keep = Number(S.backupKeep) || DEFAULT_KEEP
   const signed = signedInGoogle()
   const drive = signed && onDrive()
+  const linked = fileLinked(meta)
+  useEffect(() => { driveFileAvailable().then(setFileOk).catch(() => setFileOk(false)) }, [])
 
   useEffect(() => onSnapshotsChange(() => setList(snapshotIndex())), [])
   useEffect(() => onCloudChange(setMeta), [])
@@ -88,7 +93,8 @@ export default function Backups() {
   })
   const askDelete = (v, del) => confirmSheet({ title: t('Delete this version?'), message: when(v.at), confirmText: t('Delete'), danger: true, onConfirm: del })
 
-  const where = !signed ? { icon: 'phone', name: t('This phone only'), sub: t('No account — the versions below and Export keep you safe.') }
+  const where = !signed && linked ? { icon: 'cloudCheck', name: placeName(meta.file), sub: meta.file.name }
+    : !signed ? { icon: 'phone', name: t('This phone only'), sub: t('No account — the versions below and Export keep you safe.') }
     : drive ? { icon: 'cloudCheck', name: t('Google Drive'), sub: t('Private app folder · synced within seconds') }
       : { icon: 'shield', name: t('Android Backup'), sub: t('Through your Google account · no setup needed') }
 
@@ -104,9 +110,13 @@ export default function Backups() {
         <div className="lbl2">{t('Your account copy')}</div>
         <b>{where.name}</b>
         <div className="small muted">{where.sub}</div>
-        {signed && <div className="small muted">{t('Last saved {0}', agoLabel(lastSavedAt(meta)))}</div>}
+        {signed && linked && <div className="small muted bk-also"><DriveMark size={13} /> {t('Also in your Google Drive: {0}', meta.file.name)}</div>}
+        {(signed || linked) && <div className="small muted">{t('Last saved {0}', agoLabel(lastSavedAt(meta)))}</div>}
       </div>
     </div>
+    {MOBILE && fileOk && <Section title={t('Google Drive — no setup')} footer={t('One file in your own Google Drive, chosen once in Android’s file picker. Every change is written to it, and on a new phone you pick it to get everything back. Works with or without signing in.')}>
+      <DriveFileRows meta={meta} ago={agoLabel} />
+    </Section>}
     {signed && !drive && meta.driveWhy === 'setup' && <div className="card bk-note">
       <Icon name="info" />
       <div className="grow">

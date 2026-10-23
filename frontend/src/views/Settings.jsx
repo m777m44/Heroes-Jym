@@ -21,6 +21,11 @@ import Icon from '../components/Icon.jsx'
 import OfflineSection from '../components/OfflineSection.jsx'
 import AccountSection from '../components/AccountSection.jsx'
 import SecuritySection from '../components/SecuritySection.jsx'
+import { linkGoogleSheet, GoogleWebButton, signInWithGoogleToken } from '../components/GoogleWebButton.jsx'
+import { GoogleG } from '../components/AccountGate.jsx'
+import { googleUnlink } from '../lib/googleWeb.js'
+import { profileSheet, profileOf, ProfileAvatar } from '../components/ProfileSheet.jsx'
+import { whatsNewSheet } from '../components/WhatsNew.jsx'
 import { TEXT_SIZES, textScaleOf } from '../lib/a11y.js'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, BackButton } from '../components/ui.jsx'
 
@@ -93,13 +98,31 @@ export default function Settings() {
         <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host MAHDI-JYM')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
           onClick={() => window.open(REPO, '_blank', 'noopener')} />
       </> : user ? <>
-        <Row icon="personCircle" iconTint="var(--grey)" title={user.name} subtitle={t('Signed in with passkey — data syncs to this profile.')} />
+        <Row icon="personCircle" iconTint="var(--grey)" title={user.name} subtitle={user.google && !user.passkeys ? t('Signed in with Google — data syncs to this profile.') : t('Signed in with passkey — data syncs to this profile.')} />
+        {/* 8.0: Sign in with Google (instance with GOOGLE_CLIENT_ID) */}
+        {config && config.google_client_id && (user.google
+          ? <div className="lrow gw-linked">
+            {user.google.picture ? <img className="acc-avatar" src={user.google.picture} alt="" referrerPolicy="no-referrer" /> : <span className="acc-g"><GoogleG /></span>}
+            <div className="lrow-t grow"><div>{t('Google account')}</div><div className="small muted" dir="ltr">{user.google.email}</div></div>
+            {user.passkeys > 0 && <Button size="sm" variant="tinted" onClick={() => confirmSheet({
+              title: t('Unlink Google?'), message: t('You then sign in to this profile with your passkey only.'), confirmText: t('Unlink'), danger: true,
+              onConfirm: () => googleUnlink().then(r => { setUser(r.user); toast(t('Google account unlinked')) }).catch(e => toast(e.message)),
+            })}>{t('Unlink')}</Button>}
+          </div>
+          : <Row icon="link" iconTint="var(--blue)" title={t('Link your Google account')} subtitle={t('Sign in to this profile with Google on any device')} accessory="chevron" onClick={() => linkGoogleSheet(config.google_client_id)} />)}
         {user.admin && <Row icon="wrench" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
         <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your data is synced to your profile first, then cleared from this device.'), confirmText: t('Sign out'), danger: true, onConfirm: () => { signOut(); nav('/home') } })} />
         <Row icon="shield" iconTint="var(--red)" title={t('Sign out everywhere')} subtitle={t('Ends this profile’s sessions on all your devices.')} danger onClick={signOutEverywhere} />
-      </> : webauthnOK() ? <>
-        <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />
-        <Row icon="person" iconTint="var(--blue)" title={t('Sign in with passkey')} accessory="chevron" onClick={signInHere} />
+      </> : webauthnOK() || (config && config.google_client_id) ? <>
+        {config && config.google_client_id && <Row icon="personCircle" iconTint="var(--blue)" title={t('Sign in with Google')} subtitle={t('Your profile and its data on every device')} accessory="chevron"
+          onClick={() => useUI.getState().openSheet(close => <div className="gw-sheet">
+            <div className="gw-sheet-ic"><GoogleG size={30} /></div>
+            <h3>{t('Sign in with Google')}</h3>
+            <p className="muted small">{t('A new profile is created the first time; data from this browser moves into it.')}</p>
+            <GoogleWebButton clientId={config.google_client_id} onCredential={c => { close(); signInWithGoogleToken(c) }} />
+          </div>)} />}
+        {webauthnOK() && <Row icon="sparkles" iconTint="var(--acc)" title={t('Create passkey profile')} subtitle={t('Keeps your data safe and separate per person.')} accessory="chevron" onClick={registerHere} />}
+        {webauthnOK() && <Row icon="person" iconTint="var(--blue)" title={t('Sign in with passkey')} accessory="chevron" onClick={signInHere} />}
       </> : (
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
@@ -108,6 +131,12 @@ export default function Settings() {
 
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
+      {/* 8.0: your name and avatar for the Home header */}
+      <button className="lrow tap pf-row" onClick={profileSheet}>
+        <ProfileAvatar S={S} size={30} />
+        <span className="lrow-m"><span className="lrow-t">{profileOf(S).name || t('Your profile')}</span><span className="lrow-s">{t('Name and avatar')}</span></span>
+        <Icon name="chevronRight" className="lrow-c" />
+      </button>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang && LANGS[S.lang] ? S.lang : 'auto'} onChange={v => update(s => { s.lang = v })}
@@ -134,6 +163,15 @@ export default function Settings() {
       <Row icon="target" iconTint="var(--orange)" title={t("Today's plan on Home")} subtitle={t('A daily workout, steps and water target for losing weight')}>
         <Switch checked={S.planOn !== false} onChange={v => update(s => { s.planOn = v })} />
       </Row>
+    </Section>
+
+    {/* ---------- 8.0: tools ---------- */}
+    <Section title={t('Tools')}>
+      <Row icon="timer" iconTint="var(--red)" title={t('Interval timer')} subtitle={t('Tabata, HIIT, EMOM and your own')} accessory="chevron" onClick={() => nav('/timer')} />
+      <Row icon="wind" iconTint="var(--teal)" title={t('Breathe')} subtitle={t('Box, 4-7-8, coherent')} accessory="chevron" onClick={() => nav('/breathe')} />
+      <Row icon="moon" iconTint="var(--purple)" title={t('Fasting tracker')} subtitle={t('Intermittent fasting and Ramadan')} accessory="chevron" onClick={() => nav('/fasting')} />
+      <Row icon="heartPulse" iconTint="var(--green)" title={t('Recovery')} subtitle={t('Which muscles are ready again')} accessory="chevron" onClick={() => nav('/recovery')} />
+      <Row icon="widget" iconTint="var(--acc)" title={t('All tools')} accessory="chevron" onClick={() => nav('/tools')} />
     </Section>
 
     {/* ---------- during a workout ---------- */}
@@ -242,6 +280,10 @@ export default function Settings() {
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
         subtitle={t('to install MAHDI-JYM as a full-screen app.') + ' ' + (user ? t('Your data syncs with your profile — sign in anywhere to see it.') : t('Guest data stays on this device — export a backup now and then!'))} />
     </Section>}
+
+    <Section>
+      <Row icon="sparkles" iconTint="var(--yellow)" title={t('What’s new')} subtitle={t('Version {0}', __APP_VERSION__)} accessory="chevron" onClick={whatsNewSheet} />
+    </Section>
 
     <button className="app-sign" onClick={aboutSheet}>MAHDI-JYM</button>
   </div>

@@ -146,4 +146,11 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <!-- 8.0 — "Google Drive, no setup" (DriveFilePlugin): lets the app see whether the Google
+         Drive app is installed (Android 11+ hides other apps unless they are named here), so it
+         can suggest installing it instead of showing a picker without Drive in it. -->
+    <queries>
+        <package android:name="com.google.android.apps.docs" />
+    </queries>
 </manifest>

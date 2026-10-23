@@ -27,7 +27,7 @@ const capacitorProxy = impl => new Proxy({}, {
 })
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => 'android', isPluginAvailable: () => true },
-  registerPlugin: () => capacitorProxy(plug),
+  registerPlugin: name => capacitorProxy(name === 'DriveFile' ? {} : plug),
 }))
 
 let file = null        // { id, ts, body }

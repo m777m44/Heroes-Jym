@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { t, useLang } from '../lib/i18n.js'
-import { googleAvailable, signInGoogle, firstSync, resolveChoice, choosePhone } from '../lib/cloud.js'
+import { googleAvailable, signInGoogle, firstSync, resolveChoice, choosePhone, linkDriveFile, resolveFileChoice, cloudMeta } from '../lib/cloud.js'
+import { driveFileAvailable, DRIVE_PLAY } from '../lib/driveFile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
+import { DriveMark, DriveSteps, fileError, useDriveApp } from './DriveFileUI.jsx'
 
 /** Google's "G" mark, as on Google's own sign-in buttons. */
 export function GoogleG({ size = 20 }) {
@@ -28,18 +30,26 @@ export function accountError(reason) {
 
 // First launch (mobile): where should your data live? Google (the accounts on this phone, no
 // password) · this phone · skip. Shown once, before the permissions dialog.
+//
+// 8.0: when the Drive API isn't set up for the app (the usual case), signing in goes on to
+// "Save to your Google Drive too" — one file in the user's own Drive through Android's file
+// picker, no setup — and "Restore from Google Drive" brings a backup file back on a new phone.
 export default function AccountGate({ onDone }) {
   useLang()
   const [g, setG] = useState(null)              // Google sign-in available here (null = checking)
-  const [phase, setPhase] = useState('ask')     // ask | busy | choose | done
+  const [fileOk, setFileOk] = useState(false)   // the Drive-file feature (Android app 8.0+)
+  const driveApp = useDriveApp()
+  const [phase, setPhase] = useState('ask')     // ask | busy | choose | drive | filebusy | filechoose | done
   const [err, setErr] = useState(null)
   const [account, setAccount] = useState(null)
   const [result, setResult] = useState(null)
+  const [fileMode, setFileMode] = useState('create')   // what the file picker is for right now
 
   const [slow, setSlow] = useState(false)       // still busy after a while → say so
   const run = useRef(0)                          // bumps on Cancel: a late answer is ignored
 
   useEffect(() => { googleAvailable().then(setG).catch(() => setG(false)) }, [])
+  useEffect(() => { driveFileAvailable().then(setFileOk).catch(() => setFileOk(false)) }, [])
   useEffect(() => {
     if (phase !== 'busy') { setSlow(false); return }
     const tm = setTimeout(() => setSlow(true), 15000)
@@ -59,7 +69,8 @@ export default function AccountGate({ onDone }) {
       if (my !== run.current) return
       if (r === 'choose') { setPhase('choose'); return }
       setResult(r)
-      setPhase('done')
+      // the Drive API isn't available: offer the file in the user's own Drive instead
+      setPhase((r === 'backup' || r === 'later') && fileOk ? 'drive' : 'done')
     } catch (e) {
       if (my !== run.current) return
       setPhase('ask')
@@ -75,6 +86,30 @@ export default function AccountGate({ onDone }) {
   }
   const phone = skip => { choosePhone(skip); onDone && onDone() }
 
+  // 8.0 — the Drive file: 'create' after signing in, 'open' to restore on a new phone
+  const driveFile = async mode => {
+    const back = phase
+    setErr(null)
+    setFileMode(mode)
+    setPhase('filebusy')
+    try {
+      const r = await linkDriveFile(useStore, mode)
+      if (r === 'choose') { setPhase('filechoose'); return }
+      setResult(r === 'restored' ? 'filerestored' : 'drive')
+      setPhase('done')
+    } catch (e) {
+      setPhase(back)
+      if (e && e.reason === 'cancelled') return
+      setErr(fileError(e && e.reason))
+    }
+  }
+  const pickFile = async which => {
+    setPhase('filebusy')
+    try { const r = await resolveFileChoice(useStore, which); setResult(r === 'restored' ? 'filerestored' : 'drive') } catch (e) { setErr(fileError(e && e.reason)); setResult('later') }
+    setPhase('done')
+  }
+  const fileName = (cloudMeta().file || {}).name
+
   return <div className="pg-back" role="dialog" aria-modal="true" aria-labelledby="ag-title">
     <div className="pg-card acc-card">
       {phase === 'ask' && <>
@@ -89,6 +124,11 @@ export default function AccountGate({ onDone }) {
           <span className="acc-g"><GoogleG /></span>
           <span className="acc-gt"><b>{t('Continue with Google')}</b><small>{g === false ? t('Google Play services aren’t available on this phone.') : t('Choose one of the accounts on this phone')}</small></span>
         </button>
+        {fileOk && <button className="acc-opt" onClick={() => driveFile('open')}>
+          <span className="pg-ic df-ic"><DriveMark size={18} /></span>
+          <span className="pg-t"><b>{t('Restore from Google Drive')}</b><span>{t('Used MAHDI-JYM before? Pick your backup file.')}</span></span>
+          <Icon name="chevronRight" className="icn-dir acc-chev" />
+        </button>}
         <button className="acc-opt" onClick={() => phone(false)}>
           <span className="pg-ic" style={{ '--tint': 'var(--acc)' }}><Icon name="phone" /></span>
           <span className="pg-t"><b>{t('Save on this phone')}</b><span>{t('Nothing leaves the phone. Back up anytime from Settings.')}</span></span>
@@ -113,15 +153,49 @@ export default function AccountGate({ onDone }) {
         <Button className="pg-go" icon="upload" onClick={() => pick('phone')}>{t('Keep this phone’s data')}</Button>
         <p className="acc-fine" style={{ marginTop: 10 }}>{t('The copy you don’t pick is replaced.')}</p>
       </>}
+      {phase === 'drive' && <>
+        <div className="acc-hero" aria-hidden="true">
+          <span className="acc-orb df-orb"><DriveMark size={34} /></span>
+          <span className="acc-orb sm ok"><Icon name="check" /></span>
+        </div>
+        <h2 id="ag-title">{t('Save to your Google Drive too')}</h2>
+        <p className="pg-lead">{account ? <><b>{account.email}</b><br /></> : null}{t('Your data is already saved to your Google account through Android Backup. Add a file in your own Google Drive that you can see, and that is updated with every change — no setup.')}</p>
+        <DriveSteps />
+        {driveApp === false && <p className="pg-lead acc-slow small">{t('The Google Drive app isn’t installed — install it to see Drive in the window.')}{' '}
+          <button className="linkbtn" onClick={() => { try { window.open(DRIVE_PLAY, '_blank', 'noopener') } catch { /* no browser */ } }}>{t('Get Google Drive')}</button></p>}
+        {err && <p className="pg-lead pg-warn">{err}</p>}
+        <Button variant="primary" className="pg-go" icon="cloud" onClick={() => driveFile('create')}>{t('Choose Google Drive')}</Button>
+        <button className="pg-later" onClick={() => setPhase('done')}>{t('Not now')}</button>
+      </>}
+      {phase === 'filebusy' && <>
+        <div className="acc-hero" aria-hidden="true"><span className="acc-orb spin"><DriveMark size={28} /></span></div>
+        <h2 id="ag-title">{t('Google Drive')}</h2>
+        <p className="pg-lead">{t('Choose the place in the window that appears.')}</p>
+        <DriveSteps open={fileMode === 'open'} />
+      </>}
+      {phase === 'filechoose' && <>
+        <div className="acc-hero" aria-hidden="true"><span className="acc-orb"><Icon name="shuffle" /></span></div>
+        <h2 id="ag-title">{t('Data found in the file')}</h2>
+        <p className="pg-lead">{t('The file has MAHDI-JYM data, and this phone has some too. Which one do you want to keep?')}</p>
+        <Button variant="primary" className="pg-go" icon="download" onClick={() => pickFile('file')}>{t('Use the file’s data')}</Button>
+        <div style={{ height: 8 }} />
+        <Button className="pg-go" icon="upload" onClick={() => pickFile('phone')}>{t('Keep this phone’s data')}</Button>
+        <p className="acc-fine" style={{ marginTop: 10 }}>{t('The copy you don’t pick is replaced.')}</p>
+      </>}
       {phase === 'done' && <>
         <div className="acc-hero" aria-hidden="true">
           {account && account.photo
             ? <img className="acc-avatar lg" src={account.photo} alt="" referrerPolicy="no-referrer" />
-            : <span className="acc-orb ok"><Icon name="check" /></span>}
+            : result === 'drive' || result === 'filerestored'
+              ? <span className="acc-orb df-orb ok-ring"><DriveMark size={34} /></span>
+              : <span className="acc-orb ok"><Icon name="check" /></span>}
         </div>
-        <h2 id="ag-title">{t('Signed in')}</h2>
-        <p className="pg-lead"><b>{account && account.name}</b><br />{account && account.email}</p>
+        <h2 id="ag-title">{account ? t('Signed in') : result === 'filerestored' ? t('Welcome back') : t('All set')}</h2>
+        {account && <p className="pg-lead"><b>{account.name}</b><br />{account.email}</p>}
+        {err && <p className="pg-lead pg-warn">{err}</p>}
         <p className="pg-lead">{result === 'restored' ? t('Your data was restored from the account.')
+          : result === 'filerestored' ? t('Your data was restored from Google Drive. Every change is saved back to the same file.')
+          : result === 'drive' ? t('Saved to your Google Drive in {0}. Every change is saved there automatically.', fileName || 'MAHDI-JYM-backup.json')
           : result === 'later' ? t('Signed in — the first save happens as soon as there’s a connection.')
           : result === 'backup' ? t('Everything is saved to your Google account automatically through Android Backup, and comes back when you install MAHDI-JYM again.')
           : t('Everything is saved to your account from now on, automatically.')}</p>

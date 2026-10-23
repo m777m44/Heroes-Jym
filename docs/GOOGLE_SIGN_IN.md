@@ -1,6 +1,80 @@
-# Sign in with Google: saving to the account (2.6, reworked in 2.8)
+# Sign in with Google: saving to the account (2.6, reworked in 2.8 and 8.0)
 
 *تسجيل الدخول بحساب Google وحفظ كل البيانات في الحساب. خطوات الإعداد بالعربية في آخر الصفحة.*
+
+> **8.0: Google Drive with no setup.** The app can now save to **a real file in the user's own
+> Google Drive**, chosen once in Android's file picker — no Google Cloud project, no OAuth client,
+> no Drive API. This is the recommended way to keep data in Google Drive. See
+> [Google Drive — no setup](#google-drive--no-setup-80) below. The web/self-hosted app can also
+> offer **Sign in with Google** — see [Sign in with Google on the web](#sign-in-with-google-on-the-web-self-hosted-80).
+
+## Google Drive — no setup (8.0)
+
+| | |
+|---|---|
+| Setup | **none** — works on every Android phone with the Google Drive app |
+| Where | one file, `MAHDI-JYM-backup.json`, wherever the user saves it (normally their Google Drive) |
+| When | a few seconds after each change (and when the app goes to the background); the Drive app uploads it |
+| Comes back | on a new phone: first screen → **Restore from Google Drive** → pick the file |
+| Sign-in | not required — works signed in to Google or not |
+
+How it works:
+
+1. **Choosing the file.** After *Continue with Google* (when the Drive API isn't set up) the app
+   offers *Save to your Google Drive too*; it is also in **Settings → Google account / Your data**
+   and **Backups & restore**. Android's own file picker opens with the name filled in:
+   **☰ → Drive → Save**. If the Google Drive app isn't installed, the app says so and links to it.
+2. **Saving.** The app keeps a *persistable* permission for that one document (Storage Access
+   Framework). It can read and write **only that file** — nothing else in the user's Drive. Every
+   change is written a moment later (mode `wt`; providers without truncation get a padded write
+   that the reader trims). The Google Drive app uploads it in the background.
+3. **Restoring.** *Restore from Google Drive* opens the picker in "open" mode. A MAHDI-JYM file is
+   restored straight away on an empty phone; if the phone has data too, the app asks which to
+   keep and **writes nothing until the user chooses**. A file that isn't MAHDI-JYM data is never
+   touched. The phone's previous data is kept and can be put back once (*Undo the last restore*).
+4. **Several phones.** When another phone wrote the file since (its last-modified moved and its
+   data is newer than what this phone last wrote), the file's data is taken in — unless this
+   phone has newer changes of its own, which then win. As with Drive sync, the newer copy wins.
+5. **Things that can go wrong** are shown in plain words in Settings:
+   - *MAHDI-JYM may no longer write to the file* (a reinstall drops the permission — the file
+     name is remembered through Android Backup, so Settings offers **Reconnect Google Drive**);
+   - *The file is gone* (deleted or moved — choose it again or make a new one);
+   - a passing error (offline, provider busy) is retried automatically on the next round.
+
+The file format is the same JSON the app exports (`{ app, v, kind, savedAt, S }`); a plain
+*Export backup* file can also be picked to restore.
+
+| Piece | Where |
+|---|---|
+| Native plugin `DriveFile` (`pick`, `info`, `write`, `read`, `unlink`, `driveApp`) | `frontend/android/app/src/main/java/io/github/m777m44/mahdijym/account/DriveFilePlugin.java` (+ `DriveFileMath`, tested in `DriveFileMathTest`) |
+| JS wrapper, file parsing | `frontend/src/lib/driveFile.js` |
+| Linking, rounds, conflicts, choice, undo | `frontend/src/lib/cloud.js` (tested in `cloudFile.test.js`) |
+| Picker hint, rows, flows | `frontend/src/components/DriveFileUI.jsx` |
+
+## Sign in with Google on the web (self-hosted, 8.0)
+
+The web app's own accounts are passkeys. An instance can **also** offer Google's official
+*Sign in with Google* button:
+
+1. Google Cloud → **APIs & Services → Credentials → Create credentials → OAuth client ID →
+   Web application**. Under **Authorized JavaScript origins** add your `ORIGIN`
+   (e.g. `https://gym.example.com`; `http://localhost:8080` for local testing).
+2. Put the client ID in `.env`: `GOOGLE_CLIENT_ID=…apps.googleusercontent.com`, then
+   `docker compose up -d`. No client secret is needed.
+3. The login screen now shows **Sign in with Google** above the passkey buttons, and
+   **Settings → Account** can **link** Google to an existing passkey profile (or unlink it, as long
+   as a passkey remains to sign in with).
+
+What the server does (`api/google.js`): the browser gets an ID token from Google Identity Services
+and posts it to `POST /api/google/login`. The server checks the RS256 signature against Google's
+published keys (cached per their `Cache-Control`, refetched once on an unknown key id), the
+audience (= `GOOGLE_CLIENT_ID`), the issuer, the expiry (±5 min) and a verified email — with
+`node:crypto` only. The profile is found by the Google account's stable `sub`; the first sign-in
+creates one (data already in the browser moves into it, `INVITE_ONLY` still asks for a code). Then
+the usual session cookie is set. Without `GOOGLE_CLIENT_ID` there are no Google routes and the
+button never appears — and the browser never loads anything from Google.
+
+---
 
 The Android app can keep a copy of **everything** (workouts, plan, routines, steps, water,
 body weight and settings) in the user's Google account. Progress photos stay on the phone.
@@ -141,6 +215,24 @@ access token); no other dependencies. The web/self-hosted build keeps its own ac
 (passkeys + server sync) and does not show these screens.
 
 ---
+
+## Google Drive بدون أي إعداد (8.0)
+
+منذ 8.0 يستطيع التطبيق الحفظ في **ملف حقيقي داخل Google Drive الخاص بك** — دون مشروع Google Cloud ودون أي Client ID:
+
+1. بعد «المتابعة باستخدام Google» (أو من الإعدادات ← حساب Google، أو من النسخ الاحتياطية والاستعادة) اختر **«اختر Google Drive»**.
+2. في النافذة التي تظهر: **☰ (القائمة) ← Drive ← حفظ**. يُنشأ الملف `MAHDI-JYM-backup.json`.
+3. من الآن يُكتب كل تغيير في هذا الملف بعد لحظات، ويرفعه تطبيق Google Drive. يعمل مع تسجيل الدخول أو بدونه.
+4. **على هاتف جديد:** في أول شاشة اختر **«الاستعادة من Google Drive»** ثم اختر الملف — فتعود كل بياناتك.
+   إن كان على الهاتف بيانات أيضًا يسألك التطبيق أيّها تريد، ولا يكتب شيئًا قبل اختيارك.
+5. بعد إعادة تثبيت التطبيق يُطلب منك فقط **«أعد ربط Google Drive»** واختيار الملف نفسه مرة أخرى.
+
+## تسجيل الدخول بحساب Google على الويب (للخوادم الخاصة، 8.0)
+
+أنشئ في Google Cloud معرّف **OAuth client ID** من نوع **Web application**، وأضف عنوان موقعك (`ORIGIN`) في
+**Authorized JavaScript origins**، ثم ضع المعرّف في ملف `.env`:
+`GOOGLE_CLIENT_ID=...apps.googleusercontent.com`. يظهر بعدها زر **«تسجيل الدخول باستخدام Google»** في شاشة الدخول،
+ويتحقق الخادم بنفسه من توقيع Google. لا حاجة لأي كلمة سر.
 
 ## الإعداد بالعربية (مرة واحدة، لصاحب التطبيق)
 

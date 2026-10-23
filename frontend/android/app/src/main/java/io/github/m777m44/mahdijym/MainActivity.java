@@ -9,6 +9,7 @@ import androidx.activity.OnBackPressedCallback;
 
 import com.getcapacitor.BridgeActivity;
 
+import io.github.m777m44.mahdijym.account.DriveFilePlugin;
 import io.github.m777m44.mahdijym.account.GoogleAccountPlugin;
 import io.github.m777m44.mahdijym.lock.AppLockPlugin;
 import io.github.m777m44.mahdijym.steps.StepServicePlugin;
@@ -23,6 +24,7 @@ public class MainActivity extends BridgeActivity {
         // In-app plugins must be registered before the bridge starts.
         registerPlugin(StepServicePlugin.class);
         registerPlugin(GoogleAccountPlugin.class);
+        registerPlugin(DriveFilePlugin.class);       // 8.0: Google Drive with no setup
         registerPlugin(AppLockPlugin.class);
         super.onCreate(savedInstanceState);
 

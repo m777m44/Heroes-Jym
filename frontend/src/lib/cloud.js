@@ -14,6 +14,20 @@
 //
 // While signed in, the backup copy is written in both cases, as a second safety net.
 //
+// 8.0 adds a third way that needs no setup and no sign-in at all — "Google Drive, no setup":
+//
+//   'file'    ONE file the user picks once in Android's own file picker, normally in their
+//             Google Drive (any other place works too). The app keeps the right to rewrite it
+//             and Google Drive's app uploads each new version — so the data is visibly in the
+//             user's own Drive within moments, without any Google Cloud project. Restoring on a
+//             new phone = picking that file. See lib/driveFile.js and DriveFilePlugin.java.
+//
+//     meta.file  = { name, drive, place, at }   the linked file (null = none)
+//     meta.fileTs, fileAt                     S._ts of what is in the file, and when it was written
+//     meta.fileMod                            the file's last-modified time after our write: a
+//                                             newer one means another phone wrote it
+//     meta.fileErr                            'revoked' | 'missing' | 'io' | null
+//
 //   meta (localStorage 'mj_cloud') = {
 //     mode: 'google' | 'phone' | 'skip',  chosen on first launch (AccountGate) or in Settings
 //     account: { email, name, photo },
@@ -30,6 +44,7 @@
 // background.
 import { MOBILE } from './mobile.js'
 import { DEF } from '../store/useStore.js'
+import * as df from './driveFile.js'
 
 const META = 'mj_cloud'
 const PREV = 'mj_cloud_prev'
@@ -59,7 +74,12 @@ export const signedInGoogle = () => cloudMeta().mode === 'google' && !!(cloudMet
 /** Saving to Google Drive (true) or through Android Backup (false). */
 export const onDrive = () => cloudMeta().backend === 'drive'
 /** When the account copy was last saved, whichever way. */
-export const lastSavedAt = (m = cloudMeta()) => (m.backend === 'drive' ? m.at : Math.max(m.backupAt || 0, m.at || 0)) || 0
+export const lastSavedAt = (m = cloudMeta()) => Math.max((m.backend === 'drive' ? m.at : Math.max(m.backupAt || 0, m.at || 0)) || 0, (m.file && m.fileAt) || 0)
+/** 8.0: a file is linked (Google Drive, no setup) — and whether writing to it still works. */
+export const fileLinked = (m = cloudMeta()) => !!(m.file && m.file.at)
+export const fileBroken = (m = cloudMeta()) => m.fileErr === 'revoked' || m.fileErr === 'missing'
+/** Something saves this phone's data off the phone: the Google account, a linked file, or both. */
+export const savingAnywhere = (m = cloudMeta()) => (m.mode === 'google' && !!(m.account || {}).email) || (fileLinked(m) && !fileBroken(m))
 export function choosePhone(skip = false) { setMeta({ mode: skip ? 'skip' : 'phone' }) }
 export function setAutoSave(v) { setMeta({ auto: !!v }) }
 export const autoSaveOn = () => cloudMeta().auto !== false
@@ -130,12 +150,15 @@ export async function signInGoogle() {
   return account
 }
 
-export async function signOutGoogle(revoke = false) {
+export async function signOutGoogle(revoke = false, { dropDriveFile = false } = {}) {
   const h = await holder()
   token = null
   try { if (h) await withTimeout(revoke ? h.p.disconnect() : h.p.signOut(), 10000) } catch { /* */ }
   // No longer saved to the account: the Android Backup copy goes too (a Drive copy stays).
   try { if (h) await withTimeout(h.p.clearBackup(), 10000) } catch { /* */ }
+  // 8.0: a file in Google Drive is part of "the account" for most people — Settings asks to
+  // stop that too (the file itself stays in Drive). A file elsewhere (the phone) is kept.
+  if (dropDriveFile && fileLinked() && cloudMeta().file.drive) await unlinkDriveFile()
   setMeta({ mode: 'phone', account: null, backend: null, fileId: null, syncedTs: 0, remoteTs: 0, at: 0, backupTs: 0, backupAt: 0, driveWhy: null, driveAt: 0 })
 }
 
@@ -230,7 +253,7 @@ function backupBody(S) {
   return JSON.stringify({
     app: 'MAHDI-JYM', v: 1, savedAt: new Date().toISOString(),
     version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
-    meta: { mode: m.mode, account: m.account || null, auto: m.auto !== false },
+    meta: { mode: m.mode, account: m.account || null, auto: m.auto !== false, file: m.file ? { name: m.file.name, drive: !!m.file.drive } : null },
     S,
   })
 }
@@ -272,7 +295,10 @@ export async function restoreFromBackup(store) {
   const m = b.meta || {}
   const google = !!(m.account && m.account.email)
   setMeta({ mode: google ? 'google' : 'phone', account: google ? m.account : null, auto: m.auto !== false,
-    backend: 'backup', backupTs: Number(S._ts) || 0, backupAt: b.savedAt || Date.now(), driveAt: 0, driveWhy: null, restoredAt: Date.now() })
+    backend: 'backup', backupTs: Number(S._ts) || 0, backupAt: b.savedAt || Date.now(), driveAt: 0, driveWhy: null, restoredAt: Date.now(),
+    // 8.0: the Drive file that was linked before — a reinstall loses the permission, so Settings
+    // offers to pick it again
+    fileHint: m.file && m.file.name ? m.file : null })
   return true
 }
 
@@ -367,11 +393,16 @@ async function push(store, id) {
   setMeta({ fileId: r.id, syncedTs: Number(S._ts) || 0, remoteTs: r.ts, at: Date.now(), error: null })
 }
 
-async function pull(store, remote) {
-  const file = await download(remote.id)
+/** Replace this phone's data with a copy from elsewhere — what it replaces stays restorable. */
+function replaceFrom(store, S) {
   const cur = store.getState().S
   try { localStorage.setItem(PREV, JSON.stringify({ at: Date.now(), S: cur })) } catch { /* too big */ }
-  store.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), file.S), false)
+  store.getState().replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), S), false)
+}
+
+async function pull(store, remote) {
+  const file = await download(remote.id)
+  replaceFrom(store, file.S)
   const S = store.getState().S
   setMeta({ fileId: remote.id, syncedTs: Number(S._ts) || 0, remoteTs: remote.ts, at: Date.now(), error: null })
 }
@@ -396,37 +427,164 @@ async function backupRound(store) {
   return (Number(store.getState().S._ts) || 0) !== before ? 'uploaded' : 'idle'
 }
 
+/** One round for the Google account: Drive when it works, else Android Backup. */
+async function googleRound(store) {
+  const m = cloudMeta()
+  if (m.backend !== 'drive') {
+    // Drive now and then (never pops a screen; a declined consent waits for Settings).
+    if (m.driveWhy !== 'consent' && Date.now() - (m.driveAt || 0) > DRIVE_RETRY_MS) {
+      try { return await upgradeToDrive(store, false) } catch { /* still Android Backup */ }
+    }
+    return await backupRound(store)
+  }
+  try {
+    const r = await driveRound(store)
+    backupIfChanged(store).catch(() => {})
+    dailyDriveVersion(store).catch(() => {})
+    return r
+  } catch (e) {
+    const why = e && e.reason
+    if (why === 'setup' || why === 'consent' || why === 'signedout') { toBackup(e); return await backupRound(store) }
+    throw e
+  }
+}
+
 let running = null
-/** One sync round (see the rules at the top). Resolves 'idle' | 'uploaded' | 'restored' | 'off'. */
+/**
+ * One sync round (see the rules at the top) — the linked file first (if another phone wrote it,
+ * that is taken before anything goes up), then the Google account.
+ * Resolves 'idle' | 'uploaded' | 'restored' | 'off'.
+ */
 export function syncNow(store) {
   if (running) return running
-  if (!signedInGoogle()) return Promise.resolve('off')   // (outside: a stuck `running` would block every later round)
+  const google = signedInGoogle()
+  const file = fileLinked() && !fileBroken() && !cloudMeta().fileChoose
+  if (!google && !file) return Promise.resolve('off')   // (outside: a stuck `running` would block every later round)
   running = (async () => {
+    let out = 'idle', gErr = null, fErr = null
+    const merge = r => { if (r === 'restored' || (r === 'uploaded' && out !== 'restored')) out = r }
     try {
-      const m = cloudMeta()
-      if (m.backend !== 'drive') {
-        // Drive now and then (never pops a screen; a declined consent waits for Settings).
-        if (m.driveWhy !== 'consent' && Date.now() - (m.driveAt || 0) > DRIVE_RETRY_MS) {
-          try { return await upgradeToDrive(store, false) } catch { /* still Android Backup */ }
-        }
-        return await backupRound(store)
+      if (file) { try { merge(await fileRound(store)) } catch (e) { fErr = e } }
+      if (google) {
+        try { merge(await googleRound(store)) } catch (e) { gErr = e; setMeta({ error: (e && e.reason) || 'failed' }) }
       }
-      try {
-        const r = await driveRound(store)
-        backupIfChanged(store).catch(() => {})
-        dailyDriveVersion(store).catch(() => {})
-        return r
-      } catch (e) {
-        const why = e && e.reason
-        if (why === 'setup' || why === 'consent' || why === 'signedout') { toBackup(e); return await backupRound(store) }
-        throw e
-      }
-    } catch (e) {
-      setMeta({ error: (e && e.reason) || 'failed' })
-      throw e
+      if (gErr) throw gErr
+      if (fErr && !google) throw fErr
+      return out
     } finally { running = null }
   })()
   return running
+}
+
+// ---- 8.0: Google Drive with no setup — one file you pick once ------------------------------
+
+function fileBody(S) {
+  const m = cloudMeta()
+  return JSON.stringify({
+    app: 'MAHDI-JYM', v: 1, kind: 'live', savedAt: new Date().toISOString(),
+    version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '',
+    meta: { account: m.account ? { email: m.account.email, name: m.account.name } : null },
+    S,
+  }, null, 0)
+}
+
+async function writeLinked(store) {
+  const S = store.getState().S
+  try {
+    const r = await df.writeFile(fileBody(S))
+    setMeta({ fileTs: Number(S._ts) || 0, fileAt: Date.now(), fileMod: Number(r && r.modified) || 0, fileErr: null })
+  } catch (e) {
+    const why = (e && e.reason) || 'io'
+    setMeta({ fileErr: why === 'revoked' || why === 'missing' ? why : 'io' })
+    throw e
+  }
+}
+
+/** The data in the linked file → parseDataFile() result (throws { reason } when unreadable). */
+async function readLinked() {
+  const r = await df.readFile()
+  return { ...df.parseDataFile(r && r.data), modified: Number(r && r.modified) || 0 }
+}
+
+/** Take the file's data: this phone's copy is kept for "Undo the last restore". */
+function applyFile(store, got) {
+  replaceFrom(store, got.S)
+  setMeta({ fileTs: Number(store.getState().S._ts) || 0, fileAt: Date.now(), fileMod: got.modified || cloudMeta().fileMod || 0, fileErr: null, restoredAt: Date.now() })
+}
+
+/**
+ * Link a file — normally in Google Drive — and keep saving to it. `mode`:
+ *   'create'  a new file (the picker suggests MAHDI-JYM-backup.json) → 'uploaded'
+ *   'open'    a file that already has data, e.g. on a new phone → 'restored', 'choose' (this
+ *             phone has data too: call resolveFileChoice) or 'uploaded' (the file was empty)
+ * Throws { reason: 'cancelled' } when the picker is closed, { reason: 'notours' } for a file
+ * that isn't MAHDI-JYM data (it is left untouched and not linked).
+ */
+export async function linkDriveFile(store, mode = 'create') {
+  const info = await df.pickFile(mode)
+  setMeta({
+    file: { name: (info && info.name) || df.FILE_NAME, drive: !!(info && info.drive), place: (info && info.place) || 'other', at: Date.now() },
+    fileTs: 0, fileAt: 0, fileMod: 0, fileErr: null, fileChoose: false,
+  })
+  // linked and working: the first-launch question counts as answered (signed in stays signed in)
+  const done = r => { const m = cloudMeta(); setMeta({ mode: m.mode === 'google' ? 'google' : 'phone', fileHint: null }); return r }
+  if (mode === 'open') {
+    let got
+    try { got = await readLinked() } catch (e) { await unlinkDriveFile(); throw e }
+    if (got.bad) { await unlinkDriveFile(); throw Object.assign(new Error('not MAHDI-JYM data'), { reason: 'notours' }) }
+    if (got.S && hasData(got.S)) {
+      if (!hasData(store.getState().S)) { applyFile(store, got); return done('restored') }
+      // nothing is written until the choice is made — not even by a background round
+      setMeta({ fileChoose: true })
+      return done('choose')
+    }
+  }
+  try { await writeLinked(store) } catch (e) { if (mode === 'create') await unlinkDriveFile(); throw e }
+  return done('uploaded')
+}
+
+/** Both the file and this phone have data: 'file' takes the file's copy, 'phone' writes this one. */
+export async function resolveFileChoice(store, which) {
+  setMeta({ fileChoose: false })
+  if (which === 'file') {
+    const got = await readLinked()
+    if (got.S && hasData(got.S)) { applyFile(store, got); return 'restored' }
+  }
+  await writeLinked(store)
+  return 'uploaded'
+}
+
+/** Stop saving to the file (the file itself stays where it is). */
+export async function unlinkDriveFile() {
+  try { await df.unlinkFile() } catch { /* already gone */ }
+  setMeta({ file: null, fileTs: 0, fileAt: 0, fileMod: 0, fileErr: null, fileChoose: false })
+}
+
+/**
+ * One round for the linked file. Another phone wrote it since (its last-modified moved past
+ * ours and its data is newer than what we last wrote) → take it, unless this phone has newer
+ * changes of its own; otherwise write when something changed here.
+ */
+async function fileRound(store) {
+  const m = cloudMeta()
+  const localTs = Number(store.getState().S._ts) || 0
+  let info = null
+  try { info = await df.fileInfo() } catch { info = null }
+  if (info && info.linked === false) { setMeta({ file: null }); return 'idle' }        // app data was cleared
+  // (a file that is gone or no longer allowed is only believed when WRITING fails — some
+  // providers answer a metadata query with nothing even though the file is fine)
+  const mod = Number(info && info.modified) || 0
+  if (mod && m.fileMod && mod > m.fileMod + 2000) {
+    const got = await readLinked().catch(() => null)
+    const remoteTs = got && got.S ? Number(got.S._ts) || 0 : 0
+    if (got && got.S && remoteTs > (m.fileTs || 0)) {
+      const localChanged = localTs > (m.fileTs || 0)
+      if (!localChanged || remoteTs > localTs) { applyFile(store, { ...got, modified: mod }); return 'restored' }
+    }
+    setMeta({ fileMod: mod })
+  }
+  if (localTs !== (m.fileTs || 0) || !m.fileAt) { await writeLinked(store); return 'uploaded' }
+  return 'idle'
 }
 
 // ---- 4.0: dated versions in Drive ------------------------------------------------------------
@@ -496,15 +654,15 @@ export function startCloudSync(store) {
   started = true
   let tm = null
   let last = 0
-  const quiet = () => { if (signedInGoogle() && autoSaveOn()) syncNow(store).catch(() => {}) }
+  const on = () => savingAnywhere() && autoSaveOn()
+  const quiet = () => { if (on()) syncNow(store).catch(() => {}) }
   const schedule = () => {
-    if (!signedInGoogle() || !autoSaveOn()) return
+    if (!on()) return
     if (tm) return
     const wait = Math.max(5000, THROTTLE_MS - (Date.now() - last))
     tm = setTimeout(() => { tm = null; last = Date.now(); quiet() }, wait)
   }
-  const savedTs = () => (onDrive() ? cloudMeta().syncedTs : cloudMeta().backupTs)
-  const unsub = store.subscribe((st, prev) => { if (st.S !== prev.S && st.S._ts !== savedTs()) schedule() })
+  const unsub = store.subscribe((st, prev) => { if (st.S !== prev.S) schedule() })
   const onVis = () => {
     if (document.visibilityState === 'hidden') { clearTimeout(tm); tm = null; last = Date.now(); quiet() }
     else if (Date.now() - last > 60000) { last = Date.now(); quiet() }

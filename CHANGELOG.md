@@ -3,6 +3,69 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v8.0.0 — 2026-10-23
+
+**Google Drive that works with no setup, direct "Sign in with Google" on the web too, and a new
+Tools hub: an interval timer, guided breathing, a fasting tracker with Ramadan mode, muscle
+recovery on the body map and heart-rate zones — plus quick search, your own profile and avatar,
+and a "What's new" tour.**
+*Google Drive يعمل دون أي إعداد، وتسجيل دخول مباشر بحساب Google على الويب أيضًا، ومركز أدوات جديد: مؤقّت فترات (تاباتا وهيت وإيموم)، وتنفّس موجَّه، ومتتبّع صيام مع وضع رمضان، وتعافي العضلات على خريطة الجسم، ومناطق نبض القلب — مع بحث سريع، وملف شخصي وصورة رمزية، وجولة «ما الجديد».*
+
+### ☁️ Google Drive — no setup (the fix for saving to the Google account)
+- Until now, saving to Google Drive needed a one-time Google Cloud registration of the app; without
+  it the data only went through Android Backup, which uploads slowly and can't be seen. **8.0 saves
+  to a real file in your own Google Drive** — picked once in Android's file picker
+  (*☰ → Drive → Save*), then rewritten a moment after every change. It works **with or without**
+  signing in, and needs no Google Cloud project, client ID or Drive API.
+- **Restore from Google Drive** on the first screen (and in Settings / Backups) brings everything
+  back on a new phone: pick the file and it's restored. If both the file and the phone have data,
+  the app asks which to keep — and writes nothing until you choose. A file that isn't MAHDI-JYM
+  data is never touched.
+- Several phones can share the file: a newer copy written by another phone is taken in, while
+  this phone's own newer changes win. Whatever a restore replaces can be undone once.
+- Clear states for everything that can go wrong: the permission gone after a reinstall
+  (*Reconnect Google Drive* — the file name is remembered through Android Backup), the file
+  deleted or moved, a passing write error (retried automatically).
+- After signing in with Google, if the Drive API isn't set up the app goes straight on to
+  *Save to your Google Drive too*, with the three taps shown. **Settings → Google account** lists
+  every place your data is saved: Android Backup, the Google Drive file, the Drive app folder.
+- Android: a new `DriveFile` plugin (Storage Access Framework, persistable permissions, truncating
+  writes with a safe fallback), unit-tested in `DriveFileMathTest`.
+
+### 🔑 Sign in with Google on the web (self-hosted)
+- Set `GOOGLE_CLIENT_ID` (a Web OAuth client) and the login screen gets Google's official
+  **Sign in with Google** button next to passkeys. The server verifies Google's signed ID token
+  itself (RS256 against Google's published keys, audience, issuer, expiry, verified email) with
+  `node:crypto` only — no new dependency, no client secret.
+- The first Google sign-in creates a profile (data already in the browser moves into it;
+  `INVITE_ONLY` still asks for a code); later sign-ins find it by the Google account's stable id.
+  **Settings → Account** can link or unlink Google (unlinking only while a passkey remains).
+
+### 🧰 Tools hub — new
+- **Interval timer**: Tabata, HIIT 40/20 and 30/30, EMOM, sprints, boxing rounds or your own
+  (work, rest, rounds, sets, set breaks, get-ready, cool-down). A big ring, the phase in colour,
+  3-2-1 beeps, voice cues ("Last round!", "Halfway"), haptics, the screen kept on, pause / skip,
+  and a log with calories. Time is derived from the start, so it stays exact with the screen locked.
+- **Breathe**: box breathing, 4-7-8, coherent breathing and a quick recovery breath, with an orb
+  that grows and shrinks with your breath (drawn per frame), a soft tick or voice at each step,
+  1–10 minute sessions and your practice time.
+- **Fasting tracker**: 12:12 to one meal a day, your own length, or **Ramadan** (from suhoor to
+  iftar at your times). A live ring with stage markers, the stage your body is roughly in, a
+  timeline, "I started earlier", streaks, the last 7 days, and a notification when it's done
+  (on the phone). A running fast shows on Home.
+- **Muscle recovery**: how ready each muscle is from your last five days of sets, on the body map
+  (red → ready), the hours until each is ready, and the routine of your plan that fits best today.
+- **Heart-rate zones**: your five zones from your age (Tanaka max HR) and, with a resting pulse
+  (taken from the health log when there is one), the Karvonen method.
+
+### ✨ Everywhere else
+- **Home**: your avatar and name in a new header ("Good morning · Friday 23 October"), a row of
+  quick tools, and the 🔍 **quick search** — screens, tools, settings, your routines and all 1,300+
+  exercises, in your language or English, ignoring accents and Arabic diacritics.
+- **Profile**: your name, an icon avatar and a colour (or your Google photo).
+- **What's new** opens once after updating; new celebrations for a finished fast and timer.
+- 266 new strings in all 13 languages; the Arabic guard test now also covers every new screen.
+
 ## v7.2.0 — 2026-10-23
 
 **A timer for every workout with a 3 · 2 · 1 countdown, a finish with a medium vibration and a
