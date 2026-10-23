@@ -11,6 +11,10 @@
 // web bundles; the Capacitor plugins are only ever imported behind it.
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
+// 9.0: reminders carry the theme's accent as their icon colour (Android)
+async function accentColor() {
+  try { return (await import('./themes.js')).themeAccent() } catch { return undefined }
+}
 
 const FILE = 'mahdi-jym-state.json'
 // Name of the mirror before the MAHDI-JYM rebrand — read once as a fallback so an existing
@@ -23,14 +27,14 @@ export async function nativeLoad() {
     const read = path => Filesystem.readFile({ path, directory: Directory.Data, encoding: Encoding.UTF8 })
     const r = await read(FILE).catch(() => read(LEGACY_FILE))
     return JSON.parse(r.data)
-  } catch (e) { return null }   // first launch, or unreadable — localStorage copy takes over
+  } catch { return null }   // first launch, or unreadable — localStorage copy takes over
 }
 
 export async function nativeSave(state) {
   try {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({ path: FILE, directory: Directory.Data, data: JSON.stringify(state), encoding: Encoding.UTF8 })
-  } catch (e) { /* keep the localStorage copy */ }
+  } catch { /* keep the localStorage copy */ }
 }
 
 // (Re)schedule the daily reminders as concrete calendar dates for the next two weeks
@@ -41,28 +45,156 @@ export async function nativeSave(state) {
 // are saved every few seconds on a walk. `interactive` gates the OS permission prompt to the
 // Settings toggle; a background resync never pops a dialog.
 let lastSig = null
+// true when the Android step service took the list (it replaces whatever was scheduled before).
+async function nativeWorkoutReminders(items) {
+  try {
+    const { hasStepService, call } = await import('./stepService.js')
+    if (!(await hasStepService())) return false
+    const { t } = await import('./i18n.js')
+    const r = await call('scheduleWorkoutReminders', {
+      items,
+      strings: { channel: t('Workout reminders'), channelDesc: t('Your workout and home-workout reminders'), start: t('Start'), later: t('In 30 min') },
+    })
+    return !!r && typeof r.scheduled === 'number'
+  } catch { return false }
+}
 export async function syncReminder(S, interactive = false) {
   try {
-    const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS } = await import('./dailyReminder.js')
-    const sig = planSignature(S)
+    const { planReminders, reminderText, planSignature, ID_BASE, PLAN_DAYS, LEGACY_IDS, reminderPrefs } = await import('./dailyReminder.js')
+    // 4.2: the burn plan's reminders ride along (lib/burnPlan.js) — one per exercise at its time
+    const { burnReminders, burnReminderText, burnSignature, BURN_ID_BASE, BURN_DAYS, SNOOZE_MIN } = await import('./burnPlan.js')
+    const { bodyKg } = await import('./water.js')
+    const kg = bodyKg(S)
+    const sig = planSignature(S) + burnSignature(S, kg)
     if (!interactive && sig === lastSig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i)]
+    const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i), ...Array.from({ length: BURN_DAYS * 10 }, (_, i) => BURN_ID_BASE + i)]
     await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
-    if (!S.reminder?.on) { lastSig = sig; return true }
+    const on = reminderPrefs(S).on
+    const burn = burnReminders(S, kg)
+    if (!on && !burn.length) { await nativeWorkoutReminders([]); lastSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
-    const notifications = planReminders(S).map(item => ({
-      id: item.id,
-      ...reminderText(item, S),
-      schedule: { at: item.at, allowWhileIdle: true },
-      extra: { route: item.kind === 'walk' ? '/walk' : '/home' },
-    }))
+    const plan = on ? planReminders(S) : []
+    const routeOf = item => (item.kind === 'walk' ? '/walk' : '/home')
+    const { t } = await import('./i18n.js')
+    const burnItems = burn.map(r => {
+      const tx = burnReminderText(r)
+      // Android: Start opens that exercise, "In 10 min" and "Skip" work without opening the app
+      return { id: r.id, nid: r.nid, at: r.at.getTime(), title: tx.title, body: tx.body, big: tx.big, route: '/burn/review', start: tx.start,
+        later: SNOOZE_MIN, laterLabel: t('In {0} min', SNOOZE_MIN), skip: t('Skip') }
+    })
+    // 2.10 Android: scheduled natively — a heads-up banner with a light vibration, "Start" and
+    // "In 30 min" buttons, back after a reboot (WorkoutReminder.java).
+    if (await nativeWorkoutReminders(plan.map(item => {
+      const tx = reminderText(item, S)
+      return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
+        route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
+    }).concat(burnItems))) { lastSig = sig; return true }
+    const color = await accentColor()
+    const notifications = plan.map(item => {
+      const { title, body } = reminderText(item, S)
+      return { id: item.id, title, body, iconColor: color, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
+    }).concat(burnItems.map(x => ({ id: x.id, title: x.title, body: x.body, iconColor: color, schedule: { at: new Date(x.at), allowWhileIdle: true }, extra: { route: x.start } })))
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true
-  } catch (e) { return false }
+  } catch { return false }
+}
+
+// 3.0 — medicine & vitamin reminders from the health log: one daily repeating local
+// notification per dose time (ids 7400–7459, then 8000–8059 — health.js), on their own channel
+// with vibration. Re-run only when the list changes.
+let lastMedSig = null
+export async function syncMedReminders(S, interactive = false) {
+  try {
+    const { medReminders, medReminderIds } = await import('./health.js')
+    const items = medReminders(S)
+    const sig = JSON.stringify([items, S.lang])
+    if (!interactive && sig === lastMedSig) return true
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    await LocalNotifications.cancel({ notifications: medReminderIds().map(id => ({ id })) }).catch(() => {})
+    if (!items.length) { lastMedSig = sig; return true }
+    let perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
+    if (perm.display !== 'granted') return false
+    const { t } = await import('./i18n.js')
+    await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    const color = await accentColor()
+    await LocalNotifications.schedule({
+      notifications: items.map(m => ({
+        id: m.id, channelId: 'mj_meds', iconColor: color,
+        title: (m.kind === 'vit' ? '💊 ' + t('Vitamin time: {0}', m.name) : '💊 ' + t('Medicine time: {0}', m.name)),
+        body: (m.dose ? m.dose + ' · ' : '') + t('Tap to mark it as taken.'),
+        schedule: { on: { hour: m.hour, minute: m.minute }, repeats: true, allowWhileIdle: true },
+        extra: { route: '/health' },
+      })),
+    })
+    lastMedSig = sig
+    return true
+  } catch { return false }
+}
+
+// 7.1 — "Your day" on the Ideal body screen: meals (with the calories and a dish), the workout
+// and the evening walk at their times (channel mj_day). 9.0 (review on PR #11): no longer
+// repeating notifications that kept showing the day they were made — each one is for one date,
+// worked out for that date: today's still-ahead ones and the next six days' (ids in
+// daySchedule.js), so they keep coming while the app stays closed, made again whenever the app
+// opens or the plan changes. Water keeps its own reminders.
+let lastDaySig = ''
+export async function syncDayReminders(S, interactive = false) {
+  if (!MOBILE) return false
+  try {
+    const [{ dayReminderItems, dayReminderId, dayReminderIds, DAY_REMIND_DAYS, DAY_REMIND_PER_DAY }, { idealBodyOf }, { isoOf }] = await Promise.all([import('./daySchedule.js'), import('./idealBody.js'), import('./format.js')])
+    const now = new Date()
+    const days = Array.from({ length: DAY_REMIND_DAYS }, (_, off) => off).map(off => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off)
+      return { off, d, iso: isoOf(d) }
+    })
+    const r = idealBodyOf(S)
+    const items = []
+    for (const day of days) {
+      dayReminderItems(S, r, day.iso).slice(0, DAY_REMIND_PER_DAY).forEach((x, i) => {
+        const at = new Date(day.d.getFullYear(), day.d.getMonth(), day.d.getDate(), x.hour, x.minute)
+        if (at.getTime() > now.getTime() + 30000) items.push({ ...x, id: dayReminderId(day.off, i), at })
+      })
+    }
+    const sig = JSON.stringify([days.map(d => d.iso), items.map(x => [x.id, +x.at, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
+    if (!interactive && sig === lastDaySig) return true
+    const { LocalNotifications } = await import('@capacitor/local-notifications')
+    await LocalNotifications.cancel({ notifications: dayReminderIds().map(id => ({ id })) }).catch(() => {})
+    if (!items.length) { lastDaySig = sig; return true }
+    let perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
+    if (perm.display !== 'granted') return false
+    const { t } = await import('./i18n.js')
+    const { MEALS } = await import('./food.js')
+    const meal = k => t((MEALS.find(m => m.key === k) || MEALS[3]).name)
+    const color = await accentColor()
+    await LocalNotifications.createChannel({ id: 'mj_day', name: t('Your day'), description: t('Meals, workout and walk at their times'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.schedule({
+      notifications: items.map(({ id, at, item: x }) => {
+        let title, body, route
+        if (x.kind === 'meal') {
+          title = '🍽 ' + meal(x.meal) + (x.kcal ? ' · ' + t('{0} kcal', x.kcal) : '')
+          body = (x.ideas && x.ideas[0] ? t('For example: {0}', t(x.ideas[0].name)) + ' — ' : '') + t('Tap to log what you eat.')
+          route = '/food'
+        } else if (x.kind === 'workout') {
+          title = '💪 ' + t(x.plan.title)
+          body = t('{0} min', x.plan.minutes) + ' · ' + t('about {0} kcal', x.plan.kcal) + ' — ' + t('Tap to start.')
+          route = '/home'
+        } else {
+          title = '🚶 ' + t('Evening walk')
+          body = t('{0} steps today', x.steps) + ' · ' + t('{0} min', x.min)
+          route = '/walk'
+        }
+        return { id, channelId: 'mj_day', title, body, iconColor: color, schedule: { at, allowWhileIdle: true }, extra: { route } }
+      }),
+    })
+    lastDaySig = sig
+    return true
+  } catch { return false }
 }
 
 // WKWebView can't do blob-URL downloads, so the backup goes out through the OS share sheet

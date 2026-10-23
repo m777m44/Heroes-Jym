@@ -1,14 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../store/useStore.js'
+import { useStore, hasData } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { fmtNum, fmtDate, todayISO, isoOf, weekId, weekStartOf, startOfWeek, DAYS } from '../lib/format.js'
 import { t, dateLocale, U } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
+import { normPlan, isLive, liveState, dayRec, KINDS as PLAN_KINDS } from '../lib/dayPlan.js'
+import { useVisibleInterval } from '../lib/battery.js'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
+import WaterCard from '../components/WaterCard.jsx'
+import FoodCard from '../components/FoodCard.jsx'
+import { routineLabel, routineColor, colorVar } from '../lib/routines.js'
 import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { useCoachStatus } from '../lib/coach-api.js'
 import { DEMO } from '../lib/demo.js'
@@ -18,6 +23,88 @@ import { goalOf, stepsOn, strideMeters, distanceKm } from '../lib/stepMetrics.js
 import StepRing from '../components/pedometer/StepRing.jsx'
 import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
+import TodayPlan from '../components/TodayPlan.jsx'
+import { planFor, planRoutine } from '../lib/dailyPlan.js'
+import IdealChip from '../components/IdealChip.jsx'
+import HealthCard from '../components/HealthCard.jsx'
+import DayNext from '../components/body/DayNext.jsx'
+// 8.0
+import { ProfileAvatar, profileSheet, profileOf } from '../components/ProfileSheet.jsx'
+import { quickSearchSheet } from '../components/QuickSearch.jsx'
+import { whatsNewSheet, WHATS_NEW } from '../components/WhatsNew.jsx'
+import { zonesSheet } from '../components/HrZonesSheet.jsx'
+import { normFasting, fastStatus, hmText } from '../lib/fasting.js'
+import { cloudMeta } from '../lib/cloud.js'
+
+// 8.0: one row of shortcuts to the tools — a running fast shows its time live.
+function QuickTools({ nav }) {
+  const S = useStore(s => s.S)
+  const fast = fastStatus(normFasting(S.fasting).active)
+  const items = [
+    ['/dayplan', 'calendar', t('Day plan'), '#5e5ce6'],
+    ['/drinks', 'cup', t('Drinks'), '#30d158'],
+    ['/timer', 'timer', t('Timer'), '#ff375f'],
+    ['/breathe', 'wind', t('Breathe'), '#30b0c7'],
+    ['/fasting', 'moon', fast ? hmText(fast.elapsedMs) : t('Fasting tracker'), '#bf5af2', !!fast],
+    ['/recovery', 'heartPulse', t('Recovery'), '#30d158'],
+    ['/tools', 'widget', t('All tools'), 'var(--acc)'],
+  ]
+  return <div className="qt-strip" role="list">
+    {items.map(([to, icon, label, c, live], i) => <button key={to} role="listitem" className={'qt' + (live ? ' live' : '')} style={{ '--c': c, '--i': i }} onClick={() => nav(to)}>
+      <span className="qt-ic"><Icon name={icon} /></span><span className="qt-l" dir="auto">{label}</span>
+    </button>)}
+  </div>
+}
+
+// 9.0: the day plan while it runs — what is on now, what comes next.
+function DayPlanCard({ nav }) {
+  const S = useStore(s => s.S)
+  const [now, setNow] = useState(() => new Date())
+  useVisibleInterval(() => setNow(new Date()), 30000)
+  const plan = normPlan(S.planner)
+  const iso = todayISO()
+  if (!plan || !isLive(plan, iso)) return null
+  const live = liveState(plan, dayRec(plan, iso), now)
+  const b = live.cur ? live.cur.b : live.next ? live.next.b : null
+  if (!b) return null
+  const K = PLAN_KINDS[b.k]
+  const left = live.cur ? Math.max(0, Math.round(live.cur.left)) : Math.max(1, Math.round(live.next.inMin))
+  return <div className="card tappable dp-home" style={{ '--c': K.color }} onClick={() => nav('/dayplan')}>
+    <span className="dp-home-ic"><Icon name={K.icon} /></span>
+    <div className="grow">
+      <div className="lbl2">{live.cur ? t('Now') : t('Up next')} · {t('{0} of {1} done', live.done, live.total)}</div>
+      <b>{b.n ? t(b.n) : t(K.name)}</b>
+      <div className="small muted">{live.cur ? t('{0} min left', left) : t('In {0} min', left)}</div>
+    </div>
+    <div className="dp-home-bar"><i style={{ width: Math.round(live.pct * 100) + '%' }} /></div>
+    <Icon name="chevronRight" className="chev" />
+  </div>
+}
+
+// 8.0: a fast in progress, on Home — ring, time, stage.
+function FastingCard({ nav }) {
+  const S = useStore(s => s.S)
+  const [, tick] = useState(0)
+  useEffect(() => { const id = setInterval(() => tick(x => x + 1), 30000); return () => clearInterval(id) }, [])
+  const st = fastStatus(normFasting(S.fasting).active)
+  if (!st) return null
+  const R = 15.9, C = 2 * Math.PI * R
+  return <div className={'card tappable fs-card' + (st.done ? ' done' : '')} onClick={() => nav('/fasting')}>
+    <svg className="fs-mini" viewBox="0 0 36 36" aria-hidden="true">
+      <circle cx="18" cy="18" r={R} className="fs-ring-bg" />
+      <circle cx="18" cy="18" r={R} className="fs-ring-fg" strokeDasharray={C} strokeDashoffset={C * (1 - st.pct)} />
+    </svg>
+    <div className="grow" style={{ minWidth: 0 }}>
+      <div className="lbl2">{st.done ? t('Goal reached!') : t('Fasting for')}</div>
+      <div className="ttl">{hmText(st.elapsedMs)}</div>
+      <div className="small muted">{t(st.stage.name)} · {st.done ? t('Time to break your fast') : t('{0} to go', hmText(st.leftMs))}</div>
+    </div>
+    <Icon name="chevronRight" className="chev" />
+  </div>
+}
+
+const greetingFor = (h = new Date().getHours()) =>
+  h < 5 ? t('Good evening') : h < 12 ? t('Good morning') : h < 18 ? t('Good afternoon') : t('Good evening')
 
 // Today's steps at a glance, with the live clock; the whole card opens the walking screen.
 function StepsCard({ nav }) {
@@ -79,6 +166,13 @@ export default function Home() {
   const config = useStore(s => s.config)
   const [weekOffset, setWeekOffset] = useState(0)
   const coachOn = coachAvailable(config, user, { demo: DEMO, mobile: MOBILE })
+  // 8.0: "What's new" once after updating; a fresh install just starts on the current version
+  const update = useStore(s => s.update)
+  useEffect(() => {
+    if (S.seenWhatsNew === WHATS_NEW) return
+    if (hasData(S)) { const tm = setTimeout(whatsNewSheet, 900); return () => clearTimeout(tm) }
+    update(s => { s.seenWhatsNew = WHATS_NEW })
+  }, [])                                                      // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = new Date()
   const routine = effectiveRoutine(S, todayISO())
@@ -87,7 +181,8 @@ export default function Home() {
   const prevBW = S.bodyweight.length > 1 ? S.bodyweight[S.bodyweight.length - 2] : null
   const delta = bw && prevBW ? bw.w - prevBW.w : null
 
-  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + weekOffset * 7)
+  const ws = weekStartOf(S)
+  const monday = startOfWeek(today, ws); monday.setDate(monday.getDate() + weekOffset * 7)   // first day of the shown week
   const doneDays = new Set(S.workouts.map(w => w.d))
   const strip = []
   for (let i = 0; i < 7; i++) {
@@ -101,16 +196,33 @@ export default function Home() {
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
   const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
-  const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
+  const wThisWeek = S.workouts.filter(w => weekId(w.d, ws) === weekId(todayISO(), ws)).length
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
-  const onToday = () => { if (S.active) nav('/workout'); else if (routine) startFlow(routine.id); else dayOverrideSheet(todayISO()) }
+  // 2.9: with no routine today, the row offers today's plan instead of a bare "Rest day".
+  const todayPlan = !routine && S.planOn !== false ? planFor(S, todayISO()) : null
+  const onToday = () => {
+    if (S.active) nav('/workout')
+    else if (routine) startFlow(routine.id)
+    else if (todayPlan) startFlow(null, planRoutine(todayPlan))
+    else dayOverrideSheet(todayISO())
+  }
+
+  const name = profileOf(S).name || (user && user.name) || ''
+  const photo = MOBILE ? (cloudMeta().account || {}).photo : user && user.google && user.google.picture
+  const searchExtra = { zones: zonesSheet, whatsnew: whatsNewSheet, profile: profileSheet }
 
   return <div className="narrow">
-    <div className="hdr">
-      <div><h1>{user ? t('Hi {0}', user.name) : 'MAHDI-JYM'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+    <div className="hdr home-hdr">
+      <ProfileAvatar S={S} photo={photo} size={42} onClick={profileSheet} label={t('Profile')} />
+      <div className="grow" style={{ minWidth: 0 }}>
+        {/* 8.0: a small line (greeting · date) over a big name */}
+        <div className="home-kick">{name ? greetingFor() + ' · ' : ''}{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        <h1 dir="auto">{name || 'MAHDI-JYM'}</h1>
+      </div>
+      <button className="iconbtn" onClick={() => quickSearchSheet(nav, searchExtra)} aria-label={t('Search')}><Icon name="magnifier" /></button>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
@@ -123,19 +235,26 @@ export default function Home() {
       <div className="week">{strip}</div>
       <div className="today-row" onClick={onToday}>
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : 'moon'} />
+          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : routine ? colorVar(routineColor(routine)) : todayPlan ? colorVar(todayPlan.color) : 'var(--surface-3)' }}>
+            <Icon name={S.active ? 'timer' : routine ? glyphOf(routine.emoji) : todayPlan ? todayPlan.icon : 'moon'} />
           </span>
           <div style={{ minWidth: 0 }}>
             <div className="lbl2">{t('Today')}</div>
-            <div className="ttl">{S.active ? t('{0} — in progress', S.active.name) : routine ? routine.name : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
+            <div className="ttl">{S.active ? t('{0} — in progress', routineLabel(S.active.name)) : routine ? routineLabel(routine.name) : todayPlan ? routineLabel(todayPlan.title) : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{t('Resume')}</span>
-          : routine ? <span className="tag acc">{t('Start')}</span>
+          : routine || todayPlan ? <span className="tag acc">{t('Start')}</span>
           : <Icon name="plus" className="chev" />}
       </div>
     </div>
+
+    <QuickTools nav={nav} />
+    <DayPlanCard nav={nav} />
+    <FastingCard nav={nav} />
+
+    {S.planOn !== false && <TodayPlan />}
+    {S.planOn !== false && <DayNext />}
 
     {coachOn && <CoachCard nav={nav} />}
 
@@ -156,6 +275,10 @@ export default function Home() {
     )}
 
     <StepsCard nav={nav} />
+
+    {S.waterOn !== false && <WaterCard />}
+
+    {S.foodOn !== false && <FoodCard />}
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
@@ -185,7 +308,10 @@ export default function Home() {
         )}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
       </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
+      <IdealChip onOpen={() => nav('/ideal')} />
     </div>
+
+    <HealthCard />
 
     <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>
       <div className="row between">

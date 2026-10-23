@@ -1,38 +1,79 @@
 import { useEffect, useRef } from 'react'
 import { useUI } from '../store/useUI.js'
+import { t } from '../lib/i18n.js'
+import Icon from './Icon.jsx'
 
-// One bottom sheet (or centered dialog) with swipe-to-dismiss.
-function Sheet({ sheet }) {
-  const { closeSheet } = useUI()
+// How far (px) or how fast (px/ms) a downward swipe has to go to dismiss a sheet.
+export const SWIPE_CLOSE_PX = 110
+export const SWIPE_CLOSE_SPEED = 0.55
+export const SWIPE_MIN_PX = 28
+
+/** Pure: does a swipe of `dy` px over `ms` milliseconds dismiss the sheet? */
+export function swipeCloses(dy, ms) {
+  if (!(dy > SWIPE_MIN_PX)) return false
+  return dy > SWIPE_CLOSE_PX || dy / Math.max(1, ms) > SWIPE_CLOSE_SPEED
+}
+
+// One bottom sheet (or centered dialog).
+//
+// 2.11 — every bottom sheet can be dismissed three ways, all ending in the same slide-down:
+//   · the ✕ button at the top right of the sheet
+//   · a swipe down — the sheet follows the finger and the backdrop fades with it; a long pull
+//     or a quick flick closes it, anything less springs back
+//   · a tap outside it (and the phone's Back button, lib/backButton.js)
+// A `locked` sheet (a flow that must be answered) has no ✕ and doesn't move.
+function Sheet({ sheet, top }) {
+  const closeSheet = useUI(s => s.closeSheet)
   const ref = useRef(null)
-  const drag = useRef({ startY: null, delta: 0 })
+  const backRef = useRef(null)
+  const drag = useRef({ startY: null, delta: 0, t0: 0 })
+  const lockedRef = useRef(sheet.locked)
+  lockedRef.current = sheet.locked
+
+  const close = () => closeSheet(sheet.id)
+  const dismiss = () => { if (!sheet.locked) close() }
+
+  const setBack = v => { if (backRef.current) backRef.current.style.opacity = v }
 
   const onTouchStart = e => {
     const el = ref.current
     // a gesture that begins on a slider (or opted-out control) belongs to that control,
     // not to the sheet's swipe-to-dismiss — so it keeps working while you drag
-    if (e.target.closest && e.target.closest('input[type=range], [data-nodrag]')) {
-      drag.current = { startY: null, delta: 0 }
+    if (lockedRef.current || (e.target.closest && e.target.closest('input[type=range], [data-nodrag]'))) {
+      drag.current = { startY: null, delta: 0, t0: 0 }
       return
     }
-    drag.current = { startY: el.scrollTop <= 0 ? e.touches[0].clientY : null, delta: 0 }
+    // the handle bar always drags; the content only when it is scrolled to the top
+    const onHead = !!(e.target.closest && e.target.closest('.sheet-head'))
+    drag.current = { startY: onHead || el.scrollTop <= 0 ? e.touches[0].clientY : null, delta: 0, t0: performance.now() }
   }
   const onTouchMove = e => {
     const el = ref.current, d = drag.current
     if (d.startY === null) return
     d.delta = e.touches[0].clientY - d.startY
-    if (d.delta > 0 && el.scrollTop <= 0) {
+    if (d.delta > 0 && (el.scrollTop <= 0 || e.target.closest('.sheet-head'))) {
       e.preventDefault()
       el.style.transition = 'none'
       el.style.transform = `translateY(${d.delta}px)`
-    } else d.delta = 0
+      setBack(Math.max(0.15, 1 - d.delta / (el.offsetHeight || 600)))
+    } else if (d.delta <= 0) {
+      d.delta = 0
+      el.style.transform = ''
+    }
   }
   const onTouchEnd = () => {
     const el = ref.current, d = drag.current
     if (d.startY === null) return
-    el.style.transition = 'transform .2s'
-    if (d.delta > 90 && !sheet.locked) { el.style.transform = 'translateY(110%)'; setTimeout(() => closeSheet(sheet.id), 180) }
-    else el.style.transform = ''
+    const ms = performance.now() - d.t0
+    el.style.transition = ''
+    if (swipeCloses(d.delta, ms)) {
+      // keep the sheet where the finger let go — the exit animation only has an end frame,
+      // so it slides on from there instead of jumping back first
+      close()
+    } else {
+      el.style.transform = ''
+      setBack('')
+    }
     d.startY = null
   }
 
@@ -44,20 +85,34 @@ function Sheet({ sheet }) {
     return () => el.removeEventListener('touchmove', onTouchMove)
   }, [])
 
-  const close = () => closeSheet(sheet.id)
+  // Escape closes the top sheet on a keyboard (desktop browsers, tablets with a keyboard)
+  useEffect(() => {
+    if (!top || sheet.locked || sheet.closing) return
+    const onKey = e => { if (e.key === 'Escape') close() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [top, sheet.locked, sheet.closing])
+
+  const out = sheet.closing ? ' out' : ''
   if (sheet.kind === 'center') {
     return (
-      <div>
-        <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-        <div className="center">{sheet.render(close)}</div>
+      <div className={'mlayer' + out}>
+        <div className={'mback' + out} onClick={dismiss} />
+        <div className={'center' + out} role="dialog" aria-modal="true">{sheet.render(close)}</div>
       </div>
     )
   }
   return (
-    <div>
-      <div className="mback" onClick={() => { if (!sheet.locked) close() }} />
-      <div className="sheet" ref={ref} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <div className="grab" />
+    <div className={'mlayer' + out}>
+      <div className={'mback' + out} ref={backRef} onClick={dismiss} />
+      <div className={'sheet' + out + (sheet.locked ? ' locked' : '')} ref={ref} role="dialog" aria-modal="true"
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+        <div className="sheet-head">
+          <div className="grab" />
+          {!sheet.locked && <button type="button" className="sheet-x" onClick={close} aria-label={t('Close')}>
+            <Icon name="xmark" />
+          </button>}
+        </div>
         {sheet.render(close)}
       </div>
     </div>
@@ -80,9 +135,11 @@ export default function Modals() {
   }, [sheets.length > 0])
 
   if (!sheets.length) return null
+  const live = sheets.filter(s => !s.closing)
+  const topId = live.length ? live[live.length - 1].id : null
   return (
-    <div id="modal-root" className="open">
-      {sheets.map(s => <Sheet key={s.id} sheet={s} />)}
+    <div id="modal-root" className={'open' + (live.length ? '' : ' leaving')}>
+      {sheets.map(s => <Sheet key={s.id} sheet={s} top={s.id === topId} />)}
     </div>
   )
 }

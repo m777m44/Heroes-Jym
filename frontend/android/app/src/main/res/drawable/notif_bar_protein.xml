@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 7.2 — a slim macro bar (protein) for the expanded notification. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background"><shape android:shape="rectangle"><corners android:radius="2dp" /><solid android:color="#33FF453A" /></shape></item>
+    <item android:id="@android:id/progress"><clip><shape android:shape="rectangle"><corners android:radius="2dp" />
+        <gradient android:angle="0" android:startColor="#FFFF453A" android:endColor="#FFFF7A70" /></shape></clip></item>
+</layer-list>

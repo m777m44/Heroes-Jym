@@ -31,7 +31,7 @@ import { uid } from './format.js'
 export function parseCSV(text) {
   const rows = []
   let row = [], field = '', quoted = false
-  const s = String(text).replace(/^﻿/, '')
+  const s = String(text).replace(/^\uFEFF/, '')
   for (let i = 0; i < s.length; i++) {
     const c = s[i]
     if (quoted) {

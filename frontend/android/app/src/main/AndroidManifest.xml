@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 2.8 — Android Backup (key/value): MjBackupAgent backs up only the data copy that the
+         app writes while you're signed in with Google, to the phone's Google account, and it
+         comes back when the app is installed again or on a new phone. No key is needed any
+         more; the placeholder below is for older devices that still look for one. -->
     <application
         android:allowBackup="true"
+        android:backupAgent=".account.MjBackupAgent"
+        android:restoreAnyVersion="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <meta-data android:name="com.google.android.backup.api_key" android:value="unused" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
             android:name=".MainActivity"
@@ -44,6 +52,30 @@
             android:name=".steps.Watchdog"
             android:exported="false" />
 
+        <!-- MAHDI-JYM 2.5 — water reminders with a short exercise, scheduled natively so they
+             arrive (and "Drank it" works) with the app closed. -->
+        <receiver
+            android:name=".steps.WaterReminder"
+            android:exported="false" />
+
+        <!-- MAHDI-JYM 2.10 — workout / home-workout reminders: heads-up with a light vibration. -->
+        <receiver
+            android:name=".steps.WorkoutReminder"
+            android:exported="false" />
+
+        <!-- The full-screen celebration: over the lock screen (full-screen intent) and, with
+             "Display over other apps", on top of whatever is open. Own task, no recents entry. -->
+        <activity
+            android:name=".steps.CelebrationActivity"
+            android:exported="false"
+            android:theme="@style/CelebrationTheme"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden" />
+
         <receiver
             android:name=".steps.StepWidget"
             android:exported="true"
@@ -54,6 +86,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_steps_info" />
+        </receiver>
+
+        <!-- 7.0: the Today widget — steps, water and food rings with quick water buttons -->
+        <receiver
+            android:name=".steps.TodayWidget"
+            android:exported="true"
+            android:label="@string/widget_today_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_info" />
         </receiver>
 
         <provider
@@ -94,6 +139,18 @@
          on the device to compute speed and are never stored or sent anywhere. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- 2.5 — the goal celebration may cover the lock screen (Android 14+ lets the user turn
+         this off per app), and — only if the user allows "Display over other apps" in
+         Settings — open on top of another app. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <!-- 8.0 — "Google Drive, no setup" (DriveFilePlugin): lets the app see whether the Google
+         Drive app is installed (Android 11+ hides other apps unless they are named here), so it
+         can suggest installing it instead of showing a picker without Drive in it. -->
+    <queries>
+        <package android:name="com.google.android.apps.docs" />
+    </queries>
 </manifest>

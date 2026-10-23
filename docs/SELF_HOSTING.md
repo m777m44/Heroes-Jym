@@ -127,6 +127,19 @@ is gated by your passkey and enforced server-side, so it needs no separate login
 Prefer to keep the whole thing off the open internet? A VPN or an auth proxy (Authelia, Cloudflare
 Access…) in front still works, and composes with the above.
 
+### Sign in with Google (optional, 8.0)
+
+Passkeys stay the default. To also offer Google's **Sign in with Google** button:
+
+1. In Google Cloud create an **OAuth client ID → Web application** and add your `ORIGIN` under
+   **Authorized JavaScript origins**.
+2. Add `GOOGLE_CLIENT_ID=<that client id>` to `.env` and run `docker compose up -d`.
+
+The API verifies Google's signed ID token itself (no client secret, no extra dependency) and
+signs the user in to the profile linked to that Google account — or creates one, honouring
+`INVITE_ONLY`. Users can link/unlink Google under **Settings → Account**. Details:
+[GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md#sign-in-with-google-on-the-web-self-hosted-80).
+
 ## 5. Backups
 
 Everything is in `./data`:

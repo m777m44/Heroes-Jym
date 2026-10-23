@@ -16,7 +16,7 @@ import { useCoachStatus, resolvePending, refinePlan } from '../lib/coach-api.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import BodyMap from '../components/BodyMap.jsx'
-import { Button, Check, Switch, TextArea } from '../components/ui.jsx'
+import { Button, Check, Switch, TextArea, BackButton } from '../components/ui.jsx'
 
 /* Reviewing what the Coach came back with.
  *
@@ -45,7 +45,7 @@ export default function CoachProposal() {
 
 /* ============================ a created plan ============================ */
 
-function CreatedPlan({ p, S, update, toast, nav, refresh }) {
+function CreatedPlan({ p, S, update, toast, nav }) {
   const [schedule, setSchedule] = useState(true)
   const [refine, setRefine] = useState('')
   const [busy, setBusy] = useState(false)
@@ -216,7 +216,7 @@ function ChangeSet({ p, S, update, toast, nav }) {
 
 function Header({ title, sub, nav }) {
   return <div className="hdr">
-    <button className="iconbtn" onClick={() => nav('/coach')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
+    <BackButton onClick={() => nav('/coach')} />
     <div style={{ flex: 1, marginLeft: 10 }}>
       <h1>{title}</h1>
       {sub && <div className="sub">{sub}</div>}

@@ -7,6 +7,7 @@ import { DEMO, REPO } from '../lib/demo.js'
 import { useState, useRef, useEffect } from 'react'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
+import { GoogleWebButton, signInWithGoogleToken } from '../components/GoogleWebButton.jsx'
 
 // Inside an iframe (an embedded preview) browsers refuse passkeys outright unless the parent
 // page allows it, and the refusal looks exactly like the user pressing Cancel. Detect it and
@@ -60,6 +61,8 @@ function RegisterSheet({ close }) {
 
 export default function Login() {
   const { setUser, pullState, setGuest } = useStore()
+  // 8.0: the instance has a Google client ID → Google's own "Sign in with Google" button first
+  const googleId = useStore(s => s.config && s.config.google_client_id)
   const signIn = async () => {
     try { const u = await passkeyLogin(); setUser(u); await pullState(); useUI.getState().toast(t('Welcome back, {0}', u.name)) }
     catch (e) { useUI.getState().toast(passkeyError(e, t('Sign-in failed'))) }
@@ -93,6 +96,10 @@ export default function Login() {
         <div style={{ marginBottom: 8 }}>{t('This page is shown inside a preview frame, where browsers block passkeys. Open it in its own tab to sign in or create a profile — or continue without an account.')}</div>
         <Button variant="primary" size="sm" icon="link" onClick={openOwnTab}>{t('Open in a new tab')}</Button>
       </div>}
+      {googleId && <>
+        <GoogleWebButton clientId={googleId} onCredential={c => signInWithGoogleToken(c)} />
+        <div className="gw-or"><span>{t('or')}</span></div>
+      </>}
       {webauthnOK() ? <>
         <Button variant="primary" icon="person" onClick={signIn}>{t('Sign in with passkey')}</Button>
         <div style={{ height: 10 }} />
@@ -100,7 +107,7 @@ export default function Login() {
         <div style={{ height: 10 }} />
       </> : <div className="card small muted" style={{ textAlign: 'left' }}>{t("This browser doesn't support passkeys — you can still use MAHDI-JYM locally on this device.")}</div>}
       <Button variant="ghost" className="dim" onClick={() => setGuest(true)}>{t('Continue without account')}</Button>
-      <div className="dim small" style={{ marginTop: 26, lineHeight: 1.5 }}>{t('Passkeys use {0} — no passwords.', BIO)}<br />{t('Each profile keeps its own plan, workouts & body weight.')}</div>
+      <div className="dim small" style={{ marginTop: 26, lineHeight: 1.5 }}>{googleId ? t('Sign in with Google, or with a passkey ({0}) — no passwords.', BIO) : t('Passkeys use {0} — no passwords.', BIO)}<br />{t('Each profile keeps its own plan, workouts & body weight.')}</div>
     </div>
   )
 }

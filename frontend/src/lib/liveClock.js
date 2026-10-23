@@ -1,22 +1,18 @@
 // Time helpers for the live clock and the walking countdowns.
 //
-// The clock is shown in Iraq time (Asia/Baghdad) by default — the app's home — or in the
-// device's own zone if the user picks that. Steps are still filed by the device's calendar day
-// (todayISO), which for a phone in Iraq is the same thing; the countdown to "the end of the
-// day" therefore uses the device's local midnight, so it always matches when the step count
-// resets.
+// The clock always follows the phone's own time zone (2.9 — there is no fixed city any more),
+// the same calendar day the steps are filed under (todayISO); the countdown to "the end of the
+// day" uses the device's local midnight, so it always matches when the step count resets.
 //
 // Pure functions of a Date (plus Intl), so they're unit-tested; useNow() is the one hook.
 import { useEffect, useState } from 'react'
 
-export const IRAQ_TZ = 'Asia/Baghdad'
-
 export function deviceZone() {
-  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || IRAQ_TZ } catch { return IRAQ_TZ }
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
-/** The zone the clock shows: S.clockZone 'device' → the phone's zone, anything else → Baghdad. */
-export const clockZoneOf = S => (S && S.clockZone === 'device' ? deviceZone() : IRAQ_TZ)
+/** The zone the clock shows: always the phone's (an old saved `clockZone` is ignored). */
+export const clockZoneOf = () => deviceZone()
 
 const pad = n => String(n).padStart(2, '0')
 

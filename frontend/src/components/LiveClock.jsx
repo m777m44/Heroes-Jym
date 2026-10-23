@@ -1,7 +1,6 @@
-import { useStore } from '../store/useStore.js'
-import { t, dateLocale } from '../lib/i18n.js'
+import { t, U, dateLocale } from '../lib/i18n.js'
 import {
-  useNow, clockZoneOf, timeIn, dateLine, hijriLine, msToMidnight, dayProgress, splitDuration, zoneOffsetLabel, IRAQ_TZ,
+  useNow, clockZoneOf, timeIn, dateLine, hijriLine, msToMidnight, dayProgress, splitDuration, zoneOffsetLabel,
 } from '../lib/liveClock.js'
 import Icon from './Icon.jsx'
 
@@ -14,18 +13,17 @@ function Digits({ v, cls = '' }) {
 }
 
 /**
- * The live clock: Baghdad time (or the device's) to the second, the weekday with the Gregorian
+ * The live clock: the phone's local time to the second, the weekday with the Gregorian
  * and Hijri dates, and how long is left of today — the window to reach the step goal — with a
  * bar showing how much of the day has gone. `compact` is the one-line version for Home.
  */
 export default function LiveClock({ compact = false, children }) {
-  const S = useStore(s => s.S)
   const now = useNow(1000)
-  const zone = clockZoneOf(S)
+  const zone = clockZoneOf()
   const loc = dateLocale()
   const { h, m, s } = timeIn(now, zone)
   const left = splitDuration(msToMidnight(now))
-  const label = zone === IRAQ_TZ ? t('Baghdad time') : t('Device time')
+  const label = t('Local time')
   if (compact) {
     return <div className="lc lc-compact" aria-label={label}>
       <Icon name="clock" />
@@ -36,7 +34,7 @@ export default function LiveClock({ compact = false, children }) {
   const hijri = hijriLine(now, zone, loc)
   return <div className="card lc" role="timer" aria-label={label}>
     <div className="lc-top">
-      <span className="lc-zone"><Icon name="clock" /> {label} <span className="lc-off">{zoneOffsetLabel(now, zone)}</span></span>
+      <span className="lc-zone"><Icon name="clock" /> {label} <span className="lc-off" dir="ltr">{zoneOffsetLabel(now, zone).replace('GMT', U('GMT'))}</span></span>
       {children}
     </div>
     <div className="lc-time big" dir="ltr">

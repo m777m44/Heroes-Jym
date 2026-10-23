@@ -3,15 +3,17 @@
 // On Android the counting no longer happens in the WebView at all: a foreground service reads
 // the hardware step counter all day — app closed, screen off, phone locked — and draws its own
 // live notification (and home-screen widget) with the steps, a progress bar, distance, kcal,
-// speed, a walking timer, a seconds-ticking clock in Baghdad time and a countdown to midnight.
+// speed, a walking timer, a seconds-ticking clock in the phone's time and a countdown to midnight.
 // The web app only configures it (goal, stride, weight, switches, and every text it shows, in
 // the app's language) and reads its numbers back into the synced state.
 //
 // Everything here is behind MOBILE + platform checks; web bundles never load the plugin.
 import { MOBILE } from './mobile.js'
-import { t, getLang, dateLocale } from './i18n.js'
+import { t, U, getLang, dateLocale } from './i18n.js'
 import { goalOf, strideMeters, walkPrefs } from './stepMetrics.js'
-import { IRAQ_TZ, clockZoneOf } from './liveClock.js'
+import { clockZoneOf } from './liveClock.js'
+import { foodNative } from './food.js'
+import { todayISO } from './format.js'
 
 // IMPORTANT: a Capacitor plugin proxy answers *every* property — `then` included — so it
 // looks like a promise. Returning it from an async function (or resolving any promise with
@@ -53,8 +55,7 @@ const ASK_MS = 120000           // the system permission dialog waits for the us
 export async function hasStepService() { return !!(await box()) }
 
 /** The texts the service shows, in the app's language. {steps} / {left} are filled natively. */
-export function serviceStrings(S) {
-  const zone = clockZoneOf(S)
+export function serviceStrings() {   // (callers may still pass S — unused since 2.9)
   return {
     channelLive: t('Live step counter'),
     channelLiveDesc: t('Your steps today, updated as you walk — also on the lock screen.'),
@@ -62,6 +63,10 @@ export function serviceStrings(S) {
     channelAlertDesc: t('Every 1,000 steps and your daily goal, with a sound.'),
     channelAlertQuiet: t('Walking milestones (silent)'),
     todayTitle: t('Steps today'),
+    // 2.7.0 — steps and water in one notification
+    stepsLabel: t('Steps'),
+    stepsLeft: t('{0} steps to go', '{left}'),
+    stepsDone: t('Goal reached!'),
     live: t('Live'),
     walking: t('Walking'),
     paused: t('Paused'),
@@ -70,13 +75,37 @@ export function serviceStrings(S) {
     pause: t('Pause'),
     resume: t('Resume'),
     open: t('Open'),
-    km: 'km',
-    kcal: 'kcal',
-    kmh: 'km/h',
+    km: U('km'),
+    kcal: U('kcal'),
+    kmh: U('km/h'),
     active: t('active'),
     dayLeft: t('Day ends in'),
-    zoneLabel: zone === IRAQ_TZ ? t('Baghdad') : '',
+    eaten: t('eaten'),
+    foodLabel: t('Food'),
+    foodLeft: t('{0} kcal left', '{n}'),
+    foodOver: t('{0} kcal over', '{n}'),
+    // 7.2 — the redesigned notification: macros, net kcal, units in the collapsed view
+    ml: U('ml'),
+    g: U('g'),
+    protein: t('Protein'),
+    carbs: t('Carbs'),
+    fat: t('Fat'),
+    net: t('net kcal'),
+    workoutNow: t('Workout'),
+    // 7.0 — the Today widget
+    wToday: t('Today'),
+    wWater: t('Water'),
+    wMl: t('ml'),
+    wOff: t('Food log off'),
+    zoneLabel: '',                       // 2.9: no city name next to the clock
     goalTitle: t('Daily goal reached!') + ' 🎉',
+    // 2.5 — the full-screen celebration and its picture notification
+    goalKicker: t('Daily goal reached!'),
+    milestoneKicker: t('Milestone'),
+    stepsUnit: t('steps'),
+    celebrateOpen: t('Open app'),
+    celebrateHint: t('Tap anywhere to close'),
+    channelCelebrate: t('Celebrations'),
     goalBody: [t('{0} steps today — well done.', '{steps}'), t('Champion! {0} steps today.', '{steps}')],
     goalSay: t('Goal reached. Well done!'),
     milestoneTitle: t('{0} steps!', '{steps}'),
@@ -106,10 +135,20 @@ export function serviceConfig(S, weightKg) {
     alerts: !!p.notify,
     sound: S.sound !== false && p.alertSound !== false,
     voice: !!p.voice,
+    celebrate: p.celebrate !== false,
+    fullCelebrate: p.celebrate !== false && p.fullCelebrate !== false,
+    fullMilestones: p.celebrate !== false && !!p.fullMilestones,
     lang: getLang(),
     locale: dateLocale(),
-    clockZone: clockZoneOf(S),
+    clockZone: clockZoneOf(),
     strings: serviceStrings(S),
+    // 5.0: today's food log for the notification (kcal eaten / goal)
+    food: S && S.foodOn !== false ? foodNative(S, todayISO()) : null,
+    // 7.2: the running workout — the notification's header shows its timer
+    workout: S && S.active && S.active.start > 0 ? { start: S.active.start } : null,
+    // 9.0: the celebration sound pack (lib/celebrate.js) for the lock-screen celebration
+    soundPack: S && ['champion', 'epic', 'neon', 'royal', 'arcade', 'zen', 'classic'].includes(S.soundPack) ? S.soundPack : 'champion',
+    soundVol: S && Number.isFinite(+S.soundVol) ? Math.max(0, Math.min(1, +S.soundVol)) : 0.9,
   }
 }
 

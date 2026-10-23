@@ -27,6 +27,31 @@ export class PedometerError extends Error {
 
 export const preferredSource = () => (MOBILE ? 'native' : 'motion')
 
+/**
+ * Turns a cumulative step count into increments.
+ * - The first reading is the baseline: a plugin that kept counting from an earlier session must
+ *   not hand its whole total over as new steps (only a small first batch is credited).
+ * - A lower reading is first treated as a glitch: the baseline stays, so when the count comes
+ *   back the steps are not counted twice — and a stray 0 can't make the next normal reading
+ *   count in full (70 → 24,303). Low twice in a row means the counter really restarted: counting
+ *   continues from there.
+ */
+export function stepDeltas() {
+  let last = null, dip = null
+  return n => {
+    if (!Number.isFinite(n) || n < 0) return 0
+    if (last === null) { last = n; return n > 0 && n <= 40 ? n : 0 }
+    if (n < last) {
+      if (dip === null || n < dip) { dip = n; return 0 }
+      last = dip
+    }
+    dip = null
+    const d = n - last
+    last = n
+    return d > 0 ? d : 0
+  }
+}
+
 async function nativeSource({ onSteps, onTotal }) {
   const { CapacitorPedometer } = await import('@capgo/capacitor-pedometer')
   // Bounded: a native call that never answers must not leave the counter "Starting…".
@@ -37,13 +62,9 @@ async function nativeSource({ onSteps, onTotal }) {
   if (!perm || perm.activityRecognition !== 'granted') throw new PedometerError('denied')
 
   // numberOfSteps is cumulative since startMeasurementUpdates — emit the difference.
-  let last = 0
+  const step = stepDeltas()
   const handle = await CapacitorPedometer.addListener('measurement', m => {
-    const n = Number(m && m.numberOfSteps)
-    if (!Number.isFinite(n)) return
-    if (n < last) { last = n; return }        // counter restarted under us — rebase quietly
-    const d = n - last
-    last = n
+    const d = step(Number(m && m.numberOfSteps))
     if (d > 0) onSteps(d, { pace: m.currentPace })
   })
   try { await withTimeout(CapacitorPedometer.startMeasurementUpdates(), 8000) } catch (e) {

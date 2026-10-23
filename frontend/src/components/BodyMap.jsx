@@ -49,9 +49,11 @@ function View({ view, levels, onMuscle, selected }) {
  * `load` is effective sets per muscle (see lib/muscles.js); shading is relative to
  * the hardest-worked muscle in that same load, so it always reads as a balance.
  */
-export default function BodyMap({ load = {}, body = 'male', onMuscle, selected, className = '' }) {
+export default function BodyMap({ load = {}, levels: given, body = 'male', onMuscle, selected, className = '' }) {
   const paths = useBodyPaths()
-  const levels = levelsOf(load)
+  // 8.0: `levels` (0–4 per muscle) can be given directly — the recovery map shades by how
+  // tired a muscle still is, not by a relative load
+  const levels = given || levelsOf(load)
   const g = paths && (paths[body] || paths.male)
   return (
     <div className={'bodymap ' + className}>

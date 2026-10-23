@@ -1,5 +1,5 @@
 import { fmtNum, fmtDate } from '../../lib/format.js'
-import { t } from '../../lib/i18n.js'
+import { t, U } from '../../lib/i18n.js'
 import { compareLatest, goalProgress, goalStart, bmi, bmiCategory } from '../../lib/weightTracker.js'
 import { bwDeltaColor } from '../../sheets.jsx'
 import Icon from '../Icon.jsx'
@@ -10,14 +10,14 @@ const BMI_TINT = { under: 'var(--blue)', normal: 'var(--acc)', over: 'var(--oran
 /** Previous vs current vs goal, the progress bar between start and goal, and BMI. */
 export default function WeightComparison({ S }) {
   const { current, previous, delta } = compareLatest(S.bodyweight)
-  const u = S.unit
+  const u = U(S.unit)          // label only — the math uses S.unit
   if (!current) return null
   const target = S.targetW
   const start = goalStart(S)
   const prog = target ? goalProgress(start, current.w, target) : null
   const left = target ? target - current.w : null
   const reached = target && Math.abs(left) < 0.05
-  const b = bmi(current.w, u, S.heightCm)
+  const b = bmi(current.w, S.unit, S.heightCm)
   const cat = bmiCategory(b)
   return (
     <div className="card wcmp">

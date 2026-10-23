@@ -17,6 +17,9 @@ let workInt = null
 let workTick = null
 let workDone = null
 
+/** How long a sheet's exit animation runs before it leaves the stack (matches index.css). */
+export const SHEET_OUT_MS = 220
+
 export const useUI = create((set, get) => ({
   sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center', locked }
   toastMsg: '',
@@ -29,7 +32,15 @@ export const useUI = create((set, get) => ({
     const close = () => get().closeSheet(id)
     return { id, close, lock: v => set(s => ({ sheets: s.sheets.map(x => x.id === id ? { ...x, locked: v } : x) })) }
   },
-  closeSheet(id) { set(s => ({ sheets: s.sheets.filter(x => x.id !== id) })) },
+  // 2.11: a closing sheet first slides down / fades out (`closing`, see components/Modals.jsx)
+  // and leaves the stack SHEET_OUT_MS later — the same smooth exit for the ✕ button, a swipe,
+  // a tap outside, the phone's Back button and every close() in a flow.
+  closeSheet(id) {
+    const sh = get().sheets.find(x => x.id === id)
+    if (!sh || sh.closing) return
+    set(s => ({ sheets: s.sheets.map(x => x.id === id ? { ...x, closing: true } : x) }))
+    setTimeout(() => set(s => ({ sheets: s.sheets.filter(x => x.id !== id) })), SHEET_OUT_MS)
+  },
   closeAll() { set({ sheets: [] }) },
 
   toast(msg) {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5.0 — a progress ring for the notification (a ProgressBar's progressDrawable: RemoteViews
+     can't draw arcs, but a level-driven ring shape can). Starts at 12 o'clock. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="ring" android:innerRadiusRatio="2.55" android:thicknessRatio="8.5" android:useLevel="false">
+            <solid android:color="#2E30D158" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <rotate android:fromDegrees="270" android:toDegrees="270" android:pivotX="50%" android:pivotY="50%">
+            <shape android:shape="ring" android:innerRadiusRatio="2.55" android:thicknessRatio="8.5" android:useLevel="true">
+                <gradient android:type="sweep" android:startColor="#FF0A84FF" android:endColor="#FF30D158" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

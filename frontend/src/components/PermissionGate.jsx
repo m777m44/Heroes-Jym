@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { usePedometer } from '../store/usePedometer.js'
-import { t, useLang, LANGS } from '../lib/i18n.js'
+import { t, useLang, LANGS, langOf } from '../lib/i18n.js'
 import {
   consentGiven, saveConsent, platform, deviceInfo, requestRuntime, requestBattery, openAutostart, openAppSettings, ok,
 } from '../lib/permissions.js'
@@ -40,7 +40,7 @@ export default function PermissionGate() {
   const mark = (k, v) => setSt(s => ({ ...s, [k]: v }))
   const setLang = l => update(s => { s.lang = l })
   // Arabic / English, plus the phone's own language when it's another one (each in its own script).
-  const cur = S.lang || 'en'
+  const cur = langOf(S)
   const langOpts = [...new Set(['ar', 'en', cur])].map(l => ({ value: l, label: LANGS[l] || l }))
   const stop = () => cancelled.current || skipped.current
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5.0 — the water panel (collapsed): the water ring · amount and % · "+" your usual container · Undo. Filled by WaterReminder.fillSmall(). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:minHeight="44dp"
+    android:orientation="horizontal">
+<FrameLayout android:layout_width="36dp" android:layout_height="36dp">
+    <ProgressBar android:id="@+id/ws_ring" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="36dp" android:maxHeight="36dp" android:minWidth="36dp" android:maxWidth="36dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_water" />
+    <ProgressBar android:id="@+id/ws_ring_ok" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:indeterminate="false" android:max="1000"
+        android:minHeight="36dp" android:maxHeight="36dp" android:minWidth="36dp" android:maxWidth="36dp"
+        android:mirrorForRtl="false" android:progressDrawable="@drawable/notif_ring_water_ok" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+        <ImageView android:id="@+id/ws_ring_i" android:layout_width="13dp" android:layout_height="13dp" android:contentDescription="@null" android:src="@drawable/ic_w_drop" android:tint="#FF64D2FF" />
+    </LinearLayout>
+</FrameLayout>
+<TextView android:id="@+id/ws_amount" android:layout_width="0dp" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFF2F2F7" android:textSize="14sp" android:textStyle="bold" android:layout_weight="1" android:layout_marginStart="8dp" android:fontFeatureSettings="tnum"/>
+<LinearLayout android:id="@+id/ws_add" android:layout_width="wrap_content" android:layout_height="34dp" android:layout_marginStart="6dp" android:background="@drawable/notif_add_btn"
+    android:gravity="center" android:orientation="horizontal" android:paddingStart="10dp" android:paddingEnd="10dp">
+    <ImageView android:id="@+id/ws_icon" android:layout_width="16dp" android:layout_height="16dp" android:contentDescription="@null" />
+    <TextView android:id="@+id/ws_add_t" android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFFFFFFF" android:textSize="12sp" android:textStyle="bold" android:layout_marginStart="4dp" android:fontFeatureSettings="tnum"/>
+</LinearLayout>
+<LinearLayout android:id="@+id/ws_undo" android:layout_width="34dp" android:layout_height="34dp" android:layout_marginStart="6dp" android:background="@drawable/notif_icon_btn" android:gravity="center">
+    <ImageView android:layout_width="17dp" android:layout_height="17dp" android:contentDescription="@null" android:src="@drawable/ic_w_undo" />
+</LinearLayout>
+</LinearLayout>

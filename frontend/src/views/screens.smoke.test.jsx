@@ -40,15 +40,81 @@ describe('2.0 screens render', () => {
     expect(html).toContain('stepring')
     if (process.env.DUMP) console.log(text(html))
     expect(html).toMatch(/8[,.\u202f\u00a0]?000/)   // the goal, localized
-    // 2.1: live clock (Baghdad by default) with the midnight countdown, hourly chart, mottos
+    // live clock (the phone's local time — no city since 2.9) with the midnight countdown, hourly chart, mottos
     expect(html).toContain('lc-time big')
-    expect(html).toContain('Baghdad time')
-    expect(html).toContain('GMT+3')
+    expect(html).toContain('Local time')
+    expect(html).not.toMatch(/Baghdad|بغداد/)
+    expect(html).toContain('GMT')
     expect(html).toContain('Day ends in')
     expect(html).toContain('hourchart')
     expect(html).toContain('walk-motto')
     expect(html).toContain('Milestone sound')
     expect(html).not.toContain('Voice coach')       // native TTS — Android app only
+    // 2.10: the 2.8 layout again, refined — one wide start button, reset as a chip
+    expect(html).toContain('walk-ctl')
+    expect((html.match(/class="wbtn wbtn-go/g) || []).length).toBe(1)   // idle: one wide start button
+    expect(html).toContain('walk-reset')
+  })
+  it('Themes (2.12: categories + Studio)', async () => {
+    const html = await render('/themes', './Themes.jsx')
+    // opens on the category of the theme in use (Classic: 7 families × 7 styles — 4.0 added Retro)
+    expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(49)
+    expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
+    expect(html).toContain('Follow the phone')
+    expect(html).toContain('2,722,930 themes in all')
+    expect(html).toContain('>Glass style<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
+    for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
+    expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(15)
+    expect(html).toContain('swatch-theme')
+  })
+  it('Ideal body (2.12)', async () => {
+    Object.assign(useStore.getInitialState().S, { sex: 'male', birthYear: new Date().getFullYear() - 34, waistCm: 88 })
+    const html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ideal-big')
+    expect(html).toContain('bmig-me')
+    expect((html.match(/class="ideal-tile"/g) || []).length).toBe(8)
+    expect(html).toContain('Devine formula')
+    expect(html).toContain('Lorentz formula')
+    expect(html).toContain('not medical advice')
+    expect(html).toContain('ideal-tabs')                       // 3.0: Overview · Body · Plan · Compare
+    for (const x of ['Overview', 'Body', 'Plan', 'Compare']) expect(html).toContain('>' + x + '<')
+    // 7.1: you in one line (age · height · weight), the goal card and the timed day
+    expect(html).toContain('ib-me')
+    expect(html).toContain('ib-goal')
+    expect(html).toContain('ds-tl')
+    expect((html.match(/class="ds-it /g) || []).length).toBeGreaterThanOrEqual(2)   // the rows around now
+    expect(html).not.toContain('for adults')
+  })
+  it('Ideal body for a child and before the three numbers (7.1)', async () => {
+    const S0 = useStore.getInitialState().S
+    const keep = { birthYear: S0.birthYear, bodyweight: S0.bodyweight, heightCm: S0.heightCm }
+    Object.assign(S0, { birthYear: new Date().getFullYear() - 9, heightCm: 135, bodyweight: [{ d: '2026-10-01', w: 31 }] })
+    let html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ideal-big')
+    expect(html).toContain('th percentile')
+    expect(html).not.toContain('Devine formula')
+    expect(html).not.toContain('growth charts by age — ask a doctor')
+    Object.assign(S0, { bodyweight: [] })
+    html = await render('/ideal', './IdealBody.jsx')
+    expect(html).toContain('ib-setup')
+    expect((html.match(/class="ib-step[" ]/g) || []).length).toBe(3)
+    expect(html).toContain('ib-soon')
+    expect(html).not.toContain('>Waist<')
+    Object.assign(S0, keep)
+  })
+  it('Health log (3.0)', async () => {
+    const iso = new Date().toISOString().slice(0, 10)
+    Object.assign(useStore.getInitialState().S, {
+      health: { [iso]: { mood: 4, sleepH: 7.5, bp: [{ t: Date.now(), sys: 185, dia: 100 }], sugar: [{ t: Date.now() + 1, v: 95, ctx: 'fasting' }] } },
+      meds: [{ id: 'm1', name: 'Vitamin D', kind: 'vit', dose: '1000 IU', times: ['08:00'], on: true, remind: true }], medLog: {},
+    })
+    const html = await render('/health', './Health.jsx')
+    expect(html).toContain('Health log')
+    expect(html).toContain('hl-alert')                         // 185 / 100 is in the crisis range
+    expect(html).toContain('185 / 100')
+    expect(html).toContain('Vitamin D')
+    expect((html.match(/class="hl-dot[" ]/g) || []).length).toBe(20)   // mood, energy, stress, sleep quality × 5
+    expect(html).toContain('not a diagnosis')
   })
   it('BodyWeight', async () => {
     const html = await render('/weight', './BodyWeight.jsx')
@@ -64,6 +130,11 @@ describe('2.0 screens render', () => {
     expect(html).toContain('h2link')
     expect(html).toContain('lc-compact')           // 2.1: the live clock line
     expect(html).toContain('steps-bar')
+    // 2.9: today's plan — workout + steps + water, with a start button and a tip
+    expect(html).toContain('plan-card')
+    expect((html.match(/class="plan-goal[" ]/g) || []).length).toBe(3)
+    expect(html).toContain('plan-start')
+    expect(html).toContain('plan-tip')
   })
   it('Settings (reminder extras + walking section)', async () => {
     const html = await render('/settings', './Settings.jsx')
@@ -75,8 +146,46 @@ describe('2.0 screens render', () => {
     expect(useCelebration.getState().current).toBeTruthy()
     useCelebration.getInitialState().current = useCelebration.getState().current   // SSR snapshot, see above
     const html = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
-    expect(html).toContain('celebrate goal')
-    expect(html).toContain('cheer-arm-l')
+    // 2.5: full screen — confetti canvas, rings, badge, count-up, no bouncing figure
+    expect(html).toContain('celebrate kind-goal')
+    expect(html).toContain('celebrate-confetti')
+    expect(html).toContain('celebrate-badge')
+    expect(html).toContain('Daily goal reached!')
+    expect(html).not.toContain('cheer-fig')
+    celebrate(2000, 'water')
+    useCelebration.getInitialState().current = useCelebration.getState().current
+    const w = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
+    expect(w).toContain('kind-water')
+    expect(w).toContain('Water goal reached!')
+    celebrate(100, 'plan')                           // 2.9: the whole day's plan done
+    useCelebration.getInitialState().current = useCelebration.getState().current
+    const pl = await render('/home', '../components/pedometer/CelebrationOverlay.jsx')
+    expect(pl).toContain('kind-plan')
+    expect(pl).toContain('Today’s plan complete!'.replace('’', "'").replace("'", '&#x27;'))
+    useCelebration.getInitialState().current = null
+  })
+  it('Water (2.5: containers, goal, reminders, history)', async () => {
+    const st = useStore.getInitialState().S
+    Object.assign(st, { waterAuto: false, waterUnit: 'can', waterGoalMl: 2500, waterRemind: { on: true, every: 90, from: '08:00', to: '22:00' } })
+    const html = await render('/water', './Water.jsx')
+    expect(html).toContain('vessel')
+    expect(html).toContain('wcont')
+    expect(html).toContain('Remind me to drink')
+    expect(html).toContain('How often')
+    expect(html).toContain('type="time"')
+    expect(html).toContain('2,500')
+    expect(html).toContain('Last 14 days')
+    expect(html).toContain('wsched')                 // 2.9: today's drinking schedule
+    expect(html).toContain('Today&#x27;s schedule')
+    const home = await render('/home', '../components/WaterCard.jsx')
+    expect(home).toContain('water-chips')
+    expect(home).toMatch(/wchip sel[^>]*>.*?Can/)
+    const { setLang } = await import('../lib/i18n.js')
+    await setLang('ar')
+    try {
+      const ar = await render('/water', './Water.jsx')
+      for (const w of ['كلاص', 'كوب', 'علبة', 'قنينة', 'ذكّرني بشرب الماء', 'التذكيرات']) expect(ar).toContain(w)
+    } finally { await setLang('en') }
   })
   it('Walking in Arabic (RTL language, translated)', async () => {
     const { setLang, isRTL, dateLocale } = await import('../lib/i18n.js')
@@ -87,7 +196,8 @@ describe('2.0 screens render', () => {
       const html = await render('/walk', './Walking.jsx')
       expect(html).toContain('المشي')
       expect(html).toContain('icn-dir')            // the back chevron is the mirrored kind
-      expect(html).toContain('توقيت بغداد')         // 2.1: the clock label, translated
+      expect(html).toContain('التوقيت المحلي')       // the clock label, translated
+      expect(html).not.toContain('بغداد')           // 2.9: no city anywhere
       expect(html).toContain('ينتهي اليوم بعد')
       expect(html).toContain('dir="ltr"')          // digits of the clock stay left-to-right
     } finally { await setLang('en') }
@@ -123,5 +233,136 @@ describe('2.0 screens render', () => {
     expect(html).toContain('app-sign')
     expect(html).not.toContain('AGPL')
     expect(html).not.toContain('exercises-dataset')
+  })
+})
+
+describe('4.0 screens render', () => {
+  const at = async (path, El) => { const R = await import('react-router-dom'); return renderToString(React.createElement(MemoryRouter, { initialEntries: [path] },
+    React.createElement(R.Routes, null, React.createElement(R.Route, { path: '/start/:mode/:cat', element: React.createElement(El) }), React.createElement(R.Route, { path: '/start/:mode', element: React.createElement(El) })))) }
+  it('Start: two sections', async () => {
+    const html = await render('/start', './StartWorkout.jsx')
+    expect(html).toContain('wmode-home'); expect(html).toContain('wmode-gym')
+  })
+  it('Start: each section lists its categories, the gym has the equipment filter', async () => {
+    const m = await import('./StartWorkout.jsx')
+    const home = await at('/start/home', m.WorkoutSection)
+    expect((home.match(/class="wcat"/g) || []).length).toBe(8)
+    const gym = await at('/start/gym', m.WorkoutSection)
+    expect((gym.match(/class="wcat"/g) || []).length).toBe(8)
+    const cat = await at('/start/gym/chest?eq=dumbbell', m.WorkoutCategory)
+    expect(cat).toContain('startw-eq'); expect(cat).toContain('startw-quick')
+    const run = await at('/start/home/run', m.WorkoutCategory)
+    expect(run).toContain('startw-ql')
+  })
+  it('Backups & restore', async () => {
+    const html = await render('/backups', './Backups.jsx')
+    expect(html).toContain('bk-where')
+  })
+})
+
+describe('4.2 calorie calculator & burn plan render', () => {
+  const S0 = () => useStore.getInitialState().S
+  const el = async (path, file, name) => {
+    const mod = await import(file)
+    return renderToString(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(mod[name || 'default'])))
+  }
+  it('the calculator works out a plan from the profile', async () => {
+    Object.assign(S0(), { birthYear: 1994, sex: 'male' })
+    const html = await el('/calories', './Calories.jsx')
+    expect(html).toContain('calc-stats')
+    expect(text(html)).toMatch(/kcal/)
+  })
+  it('the calculator shows a clear error for an impossible target', async () => {
+    Object.assign(S0(), { calGoal: { currentKg: 70, targetKg: 120, days: 30, activity: 'light', dietShare: 0 } })
+    const html = await el('/calories', './Calories.jsx')
+    expect(html).toContain('calc-err')
+    delete S0().calGoal
+  })
+  it('picking exercises: home and gym', async () => {
+    const home = await el('/burn/home', './BurnPlan.jsx', 'BurnSelect')
+    expect(home).toContain('burn-grid')
+    expect(text(home)).toMatch(/Running/)
+    expect((home.match(/burn-card/g) || []).length).toBeGreaterThanOrEqual(8)
+  })
+  it('the review has an empty state and a full plan', async () => {
+    delete S0().burnPlan
+    const empty = await el('/burn/review', './BurnPlan.jsx', 'BurnReview')
+    expect(empty).toContain('class="empty"')
+    S0().burnPlan = { mode: 'gym', keys: ['bench', 'row', 'biceps'], target: 400, remind: true, start: '18:00', gap: 30, daily: true }
+    const full = await el('/burn/review', './BurnPlan.jsx', 'BurnReview')
+    expect(full).toContain('timef')
+    expect(text(full)).toMatch(/Bench press/)
+    expect(text(full)).toMatch(/18:00|6:00/)
+    delete S0().burnPlan
+  })
+  it('the section page leads to the burn plan', async () => {
+    const SW = await import('./StartWorkout.jsx')
+    const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/start/home'] }, React.createElement(SW.WorkoutSection)))
+    expect(html).toContain('burn-entry')
+  })
+})
+
+describe('6.0 wallpapers render', () => {
+  it('the wallpaper screen, off and on', async () => {
+    const S0 = () => useStore.getInitialState().S
+    const off = await render('/wallpapers', './Wallpapers.jsx')
+    expect((off.match(/class="wall-tile/g) || []).length).toBeGreaterThanOrEqual(10)
+    S0().wall = { id: 'n03', dim: 0.5, blur: 4 }
+    const on = await render('/wallpapers', './Wallpapers.jsx')
+    expect(on).toContain('wall-tile on')
+    expect(on).toContain('type="range"')
+    delete S0().wall
+  })
+})
+
+describe('7.0 reports render', () => {
+  it('week and month report with score, stats and tips', async () => {
+    const html = await render('/reports', './Reports.jsx')
+    expect(html).toContain('rp-score')
+    expect((html.match(/class="rp-stat"/g) || []).length).toBe(6)
+    expect(html).toContain('rp-bars')
+    expect(html).toContain('rp-tipc')
+  })
+})
+
+describe('6.0 kitchen render', () => {
+  const S0 = () => useStore.getInitialState().S
+  it('the kitchen: recipes, my kitchen and the builder', async () => {
+    S0().pantry = ['egg', 'tomato', 'onion', 'oil', 'tahini', 'dibis', 'bread']
+    S0().shopping = [{ id: 'minced', done: false }]
+    const cook = await render('/kitchen?m=b', './Kitchen.jsx')
+    expect(cook).toContain('kit-card ready')
+    expect(cook).toContain('Eggs with tomato')
+    const pantry = await render('/kitchen?tab=pantry', './Kitchen.jsx')
+    expect((pantry.match(/kit-chip on/g) || []).length).toBe(7)
+    expect(pantry).toContain('kit-shop-i')
+    const build = await render('/kitchen?tab=build', './Kitchen.jsx')
+    expect(build).toContain('kit-build')
+    delete S0().pantry; delete S0().shopping
+  })
+})
+
+describe('5.0 food log render', () => {
+  const S0 = () => useStore.getInitialState().S
+  it('the food screen: empty, then a logged day', async () => {
+    const { todayISO } = await import('../lib/format.js')
+    delete S0().food
+    const empty = await render('/food', './Food.jsx')
+    expect(empty).toContain('food-ring')
+    expect((empty.match(/class="card food-meal/g) || []).length).toBe(4)
+    S0().food = { [todayISO()]: [{ id: 'a', f: 'dolma', kcal: 400, p: 12, c: 45, fat: 19, q: 1, m: 'l', t: 1 }, { id: 'b', f: null, n: 'Cake', kcal: 250, q: 1, m: 's', t: 2 }] }
+    S0().foodGoal = 1800
+    const full = text(await render('/food', './Food.jsx'))
+    expect(full).toMatch(/Dolma/)
+    expect(full).toMatch(/Cake/)
+    expect(full).toMatch(/1,150|1150/)
+    expect(full).toMatch(/650/)
+  })
+  it('the Home card shows the day', async () => {
+    const C = await import('../components/FoodCard.jsx')
+    const html = renderToString(React.createElement(MemoryRouter, null, React.createElement(C.default)))
+    expect(html).toContain('food-card')
+    expect(text(html)).toMatch(/650/)
+    delete S0().food; delete S0().foodGoal
   })
 })

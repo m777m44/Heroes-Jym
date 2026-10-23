@@ -68,8 +68,7 @@
             android:format24Hour="HH:mm:ss"
             android:textColor="#FFF2F2F7"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:timeZone="Asia/Baghdad" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- steps / goal / percent -->
@@ -253,8 +252,7 @@
             android:format24Hour="EEEE d MMMM"
             android:maxLines="1"
             android:textColor="#FFC7C7CC"
-            android:textSize="12sp"
-            android:timeZone="Asia/Baghdad" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:id="@+id/n_left_box"
@@ -281,6 +279,37 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- 2.5: water today (hidden when the water tracker is off) -->
+    <LinearLayout
+        android:id="@+id/n_water_box"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/n_water"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="#FF64D2FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/n_water_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="5dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/notif_progress_water" />
     </LinearLayout>
 
     <TextView

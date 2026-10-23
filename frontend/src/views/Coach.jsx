@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
-import { fmtDate } from '../lib/format.js'
+import { fmtDate, DAYN, weekOrder, weekStartOf } from '../lib/format.js'
 import { DEMO } from '../lib/demo.js'
 import { MOBILE } from '../lib/mobile.js'
 import {
@@ -15,13 +15,12 @@ import {
 } from '../lib/coach-api.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Button, TextArea, SelectRow } from '../components/ui.jsx'
+import { Section, Row, Button, TextArea, SelectRow, BackButton } from '../components/ui.jsx'
 
 /* The Coach's home: what it's doing, what it's proposing, what it has done before, and every
    switch that turns it off. Deliberately one screen — a feature that edits your training plan
    should not scatter its controls, least of all the ones that stop it. */
 
-const GOALS = ['strength', 'muscle', 'general fitness', 'fat loss', 'endurance']
 
 // Rendered from the same list the server builds payloads from (GET /api/coach/disclosure),
 // so the promise on screen cannot drift from what actually leaves the box.
@@ -68,7 +67,7 @@ export default function Coach() {
     message: t('Any pending suggestion is discarded and scheduled reviews stop. Your Coach history stays, and you can turn it back on anytime.'),
     confirmText: t('Turn off'), danger: true,
     onConfirm: async () => {
-      try { await forgetCoach() } catch (e) { /* server-side copy goes on the next call */ }
+      try { await forgetCoach() } catch { /* server-side copy goes on the next call */ }
       update(s => { s.coach = { ...(s.coach || emptyCoach()), consent: null, cadence: 'off' } })
       toast(t('The Coach is off'))
       nav('/home')
@@ -88,7 +87,7 @@ export default function Coach() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/plan')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/plan" />
       <div style={{ flex: 1, marginLeft: 10 }}>
         <h1>{t('Coach')}</h1>
         <div className="sub">{t('Plan design and reviews, from your own training')}</div>
@@ -255,7 +254,7 @@ function CadenceCard({ coach, update }) {
       <SelectRow icon="calendar" iconTint="var(--orange)" title={t('Day')}
         value={cadence.weekly.day}
         onChange={v => patch(c => { c.cadence = { weekly: { ...c.cadence.weekly, day: v } } })}
-        options={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => ({ value: i, label: t(d) }))} />
+        options={weekOrder(weekStartOf(useStore.getState().S)).map(i => ({ value: i, label: t(DAYN[i]) }))} />
       <Row icon="clock" iconTint="var(--purple)" title={t('Time')}>
         <input type="time" className="timef" value={cadence.weekly.time || '18:00'}
           onChange={e => patch(c => { c.cadence = { weekly: { ...c.cadence.weekly, time: e.target.value } } })} />
@@ -275,7 +274,7 @@ function LogCard({ coach }) {
   const log = [...(coach.log || [])].reverse()
   if (!log.length) return null
 
-  const detail = e => openSheet(close => <>
+  const detail = e => openSheet(() => <>
     <h3>{e.kind === 'create' ? t('Plan from the Coach') : e.kind === 'revert' ? t('Undo') : t('Coach review')}</h3>
     <div className="dim small" style={{ marginBottom: 10 }}>{fmtDate(new Date(e.at).toISOString().slice(0, 10), true)}</div>
     {e.summary && <div className="muted small" style={{ lineHeight: 1.5, marginBottom: 12 }}>{e.summary}</div>}

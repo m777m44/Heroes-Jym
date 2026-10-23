@@ -22,7 +22,7 @@ async function acquire() {
     if (!wanted) { s.release().catch(() => {}); return }   // released while we were awaiting
     sentinel = s
     s.addEventListener('release', () => { if (sentinel === s) sentinel = null })
-  } catch (e) {
+  } catch {
     // iOS refuses in Low Power Mode, and some browsers refuse on low battery. Nothing to
     // do about it and nothing the user could act on — stay quiet and try again next time
     // the document becomes visible.

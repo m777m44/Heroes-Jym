@@ -1,32 +1,33 @@
 import { describe, it, expect } from 'vitest'
 import {
-  IRAQ_TZ, clockZoneOf, timeIn, hhmmss, dateLine, hijriLine, zoneOffsetLabel, msToMidnight, dayProgress,
+  clockZoneOf, deviceZone, timeIn, hhmmss, dateLine, hijriLine, zoneOffsetLabel, msToMidnight, dayProgress,
   splitDuration, fmtDuration, stepsPerHourNeeded, motivationTier,
 } from './liveClock.js'
 
+const UTC3 = 'Asia/Riyadh'   // a fixed UTC+3 zone (no DST) for the formatting tests
+
 describe('liveClock', () => {
-  it('defaults the clock to Baghdad, device only when chosen', () => {
-    expect(clockZoneOf({})).toBe(IRAQ_TZ)
-    expect(clockZoneOf(null)).toBe(IRAQ_TZ)
-    expect(clockZoneOf({ clockZone: 'iraq' })).toBe(IRAQ_TZ)
-    expect(typeof clockZoneOf({ clockZone: 'device' })).toBe('string')
+  it('always follows the phone time zone (old saved settings are ignored)', () => {
+    expect(clockZoneOf()).toBe(deviceZone())
+    expect(clockZoneOf({ clockZone: 'iraq' })).toBe(deviceZone())
+    expect(typeof deviceZone()).toBe('string')
   })
 
-  it('reads the wall time in Baghdad (UTC+3, no DST)', () => {
+  it('reads the wall time in a fixed UTC+3 zone (no DST)', () => {
     const d = new Date(Date.UTC(2026, 9, 10, 21, 4, 7))   // 21:04:07 UTC
-    expect(timeIn(d, IRAQ_TZ)).toEqual({ h: 0, m: 4, s: 7 }) // just past midnight in Baghdad
-    expect(hhmmss(timeIn(d, IRAQ_TZ))).toBe('00:04:07')
+    expect(timeIn(d, UTC3)).toEqual({ h: 0, m: 4, s: 7 }) // just past midnight at UTC+3
+    expect(hhmmss(timeIn(d, UTC3))).toBe('00:04:07')
     const summer = new Date(Date.UTC(2026, 6, 1, 12, 0, 0))
-    expect(timeIn(summer, IRAQ_TZ).h).toBe(15)
+    expect(timeIn(summer, UTC3).h).toBe(15)
     expect(timeIn(d, 'UTC')).toEqual({ h: 21, m: 4, s: 7 })
-    expect(zoneOffsetLabel(d, IRAQ_TZ)).toBe('GMT+3')
+    expect(zoneOffsetLabel(d, UTC3)).toBe('GMT+3')
   })
 
   it('formats the date lines in the requested locale and zone', () => {
-    const d = new Date(Date.UTC(2026, 9, 10, 21, 30, 0))   // already Sunday 11 October in Baghdad
-    expect(dateLine(d, IRAQ_TZ, 'en-GB')).toMatch(/Sunday.*11 October 2026/)
+    const d = new Date(Date.UTC(2026, 9, 10, 21, 30, 0))   // already Sunday 11 October at UTC+3
+    expect(dateLine(d, UTC3, 'en-GB')).toMatch(/Sunday.*11 October 2026/)
     expect(dateLine(d, 'UTC', 'en-GB')).toMatch(/Saturday.*10 October 2026/)
-    const h = hijriLine(d, IRAQ_TZ, 'en')
+    const h = hijriLine(d, UTC3, 'en')
     if (h) expect(h).toMatch(/AH|144[78]/)   // engines without the calendar return ''
   })
 

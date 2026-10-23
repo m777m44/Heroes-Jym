@@ -24,5 +24,10 @@ public class BootReceiver extends BroadcastReceiver {
             }
             StepWidget.updateAll(c);
         } catch (RuntimeException ignored) { /* never crash at boot */ }
+        try { WaterReminder.refreshPanel(c, true); } catch (RuntimeException ignored) { }
+        try { WaterReminder.schedule(c); }   // alarms don't survive a reboot
+        catch (RuntimeException ignored) { }
+        try { WorkoutReminder.schedule(c); }
+        catch (RuntimeException ignored) { }
     }
 }

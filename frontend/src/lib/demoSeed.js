@@ -3,6 +3,7 @@
 import { isoOf, uid } from './format.js'
 import { starterRoutines } from './starter.js'
 import { modeOf } from './history.js'
+import { FOOD_BY_ID } from './foodDb.js'
 
 // Starting weight and weekly increment per exercise of the starter plan (kg).
 // Chest dips are body-weight only here, so they log reps at 0 added weight.
@@ -148,12 +149,55 @@ export function buildDemoState() {
     dayPlan[tIso] = order[(order.findIndex(r => r.name === lastName) + 1) % order.length].id
   }
 
+  // 3.0: three weeks of health log, two medicines with today's morning dose taken, and a plan
+  // to the goal weight that started six weeks ago (so the road has weeks on target and behind)
+  const health = {}, medLog = {}
+  for (let i = 20; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const iso = isoOf(d), k = 20 - i
+    health[iso] = {
+      sleepH: 6 + ((k * 7) % 6) / 2, sleepQ: 2 + (k % 4), mood: 3 + (k % 3 === 0 ? 1 : 0) + (k % 7 === 6 ? 1 : 0), energy: 2 + ((k * 3) % 4), stress: 1 + ((k * 5) % 4),
+      rhr: 62 - Math.round(k / 4) + (k % 3),
+      ...(k % 2 === 0 ? { bp: [{ t: at(d, 7, 40), sys: 128 - Math.round(k / 3) + (k % 4), dia: 82 - Math.round(k / 5) + (k % 3), pulse: 66 + (k % 5) }] } : {}),
+      ...(k % 3 === 0 ? { sugar: [{ t: at(d, 7, 10), v: 96 - (k % 5) + Math.round(k / 7), ctx: 'fasting' }] } : {}),
+    }
+    if (i > 0) medLog[iso] = { 'demo-d3@08:00': true, ...(k % 5 ? { 'demo-mg@21:00': true } : {}) }
+  }
+  medLog[isoOf(today)] = { 'demo-d3@08:00': true }
+  const meds = [
+    { id: 'demo-d3', name: 'Vitamin D', kind: 'vit', dose: '1000 IU', times: ['08:00'], on: true, remind: true },
+    { id: 'demo-mg', name: 'Magnesium', kind: 'vit', dose: '200 mg', times: ['21:00'], on: true, remind: true },
+  ]
+  // 5.0: a week of food log — today has breakfast and lunch (and a snack later in the day)
+  const DAY_MENUS = [
+    [['egg', 2, 'b'], ['khubz', 1, 'b'], ['teasugar', 1, 'b'], ['dolma', 1, 'l'], ['laban', 1, 'l'], ['dates', 3, 's'], ['tikka', 1.5, 'd'], ['salad', 1, 'd']],
+    [['omelette', 1, 'b'], ['khubz', 1, 'b'], ['rice', 1, 'l'], ['kebab', 2, 'l'], ['salad', 1, 'l'], ['banana', 1, 's'], ['lentilsoup', 1, 'd'], ['khubz', 0.5, 'd']],
+    [['geymar', 1, 'b'], ['khubz', 1, 'b'], ['teasugar', 2, 'b'], ['tikka', 2, 'l'], ['rice', 1, 'l'], ['apple', 1, 's'], ['hummus', 1, 'd'], ['salad', 1, 'd']],
+  ]
+  const food = {}
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i)
+    const menu = DAY_MENUS[i % DAY_MENUS.length].filter(([, , m]) => i > 0 || m === 'b' || m === 'l' || (m === 's' && nowH >= 16))
+    food[isoOf(d)] = menu.map(([f, q, m], k) => {
+      const x = FOOD_BY_ID[f]
+      return { id: 'demo-fe' + i + '-' + k, f, kcal: x.kcal, p: x.p, c: x.c, fat: x.f, q, m, t: at(d, { b: 8, l: 14, s: 17, d: 20 }[m], 5 + k) }
+    })
+  }
+
+  const planFrom = bodyweight.find(b => (today - new Date(b.d + 'T12:00:00')) / 86400000 <= 42) || bodyweight[0]
+  const bodyPlan = planFrom ? { start: planFrom.d, fromKg: planFrom.w, toKg: TARGET_W, weeklyKg: 0.5 } : null
+
   return {
+    health, meds, medLog, bodyPlan, food, foodFav: ['dolma', 'tikka', 'dates'],
+    // 6.0: a stocked kitchen and a short shopping list
+    pantry: ['egg', 'tomato', 'onion', 'potato', 'bread', 'samoon', 'rice', 'oil', 'tomatopaste', 'garlic', 'lemon', 'cucumber', 'yogurt', 'tahini', 'dibis', 'chicken', 'milk', 'banana', 'dates', 'oats', 'whitecheese', 'parsley', 'lettuce', 'honey'],
+    shopping: [{ id: 'minced', done: false }, { id: 'eggplant', done: false }, { id: 'walnuts', done: true }],
     routines: [push, pull, legs],
     week: { 1: push.id, 3: pull.id, 5: legs.id },
     dayPlan,
     workouts, bodyweight, exWeights,
     targetW: TARGET_W,
+    heightCm: 178, sex: 'male', birthYear: new Date().getFullYear() - 31, waistCm: 90,
     // The history is rated, so the demo turns the column on and the stats get a scale to
     // label their aggregates with instead of guessing one (see displayScale).
     effort: 'rir'

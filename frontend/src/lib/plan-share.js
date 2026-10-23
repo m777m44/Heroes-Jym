@@ -10,11 +10,12 @@
 
 import { EXIDX } from './exercises.js'
 import { modeOf, fmtSec } from './history.js'
-import { uid, todayISO, DAYN, fmtNum, exCount } from './format.js'
+import { routineLabel } from './routines.js'
+import { uid, todayISO, DAYN, fmtNum, exCount, weekOrder, weekStartOf } from './format.js'
 import { t, exName, U } from './i18n.js'
 
 const PLAN_FMT = 1
-const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]   // Mon-first, matching the Plan screen
+const WEEK_ORDER = [0, 1, 2, 3, 4, 5, 6]   // every weekday (order doesn't matter here)
 
 // Keep only the meaningful config fields, so the file stays small and readable.
 function cleanEx(e) {
@@ -117,7 +118,7 @@ export function mergePlan(s, bundle, { schedule } = {}) {
     ridMap[r.id] = nid
     s.routines.push({
       id: nid,
-      name: r.name || t('Shared routine'),
+      name: r.name || 'Shared routine',
       emoji: r.emoji,
       ...(r.prog ? { prog: r.prog } : {}),
       ex: (r.ex || []).map(e => ({ ...e, id: exIdMap[e.id] || e.id }))
@@ -175,15 +176,15 @@ function routineHTML(r, unit) {
   }).join('')
   const count = exCount(r.ex.length)
   return `<section class="routine">
-    <div class="r-head"><h2>${esc(r.name)}</h2><span class="r-count">${esc(count)}</span></div>
+    <div class="r-head"><h2>${esc(routineLabel(r.name))}</h2><span class="r-count">${esc(count)}</span></div>
     <div class="ex-list">${rows || `<div class="ex empty">${esc(t('No exercises yet.'))}</div>`}</div>
   </section>`
 }
 
 function weekHTML(S) {
-  const rows = WEEK_ORDER.map(d => {
+  const rows = weekOrder(weekStartOf(S)).map(d => {
     const r = S.routines.find(x => x.id === S.week?.[d])
-    const val = r ? esc(r.name) : `<span class="rest">${esc(t('Rest'))}</span>`
+    const val = r ? esc(routineLabel(r.name)) : `<span class="rest">${esc(t('Rest'))}</span>`
     return `<div class="w-row"><div class="w-day">${esc(t(DAYN[d]))}</div><div class="w-r">${val}</div></div>`
   }).join('')
   return `<div class="week">${rows}</div>`
@@ -265,14 +266,14 @@ export function printPlan(S, owner) {
   ifr.setAttribute('aria-hidden', 'true')
   ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;'
   document.body.appendChild(ifr)
-  const cleanup = () => { try { ifr.remove() } catch (e) { /* */ } }
+  const cleanup = () => { try { ifr.remove() } catch { /* */ } }
   const run = () => {
     const w = ifr.contentWindow
     if (!w) { cleanup(); return }
     w.onafterprint = cleanup
     setTimeout(cleanup, 60000)   // safety net if afterprint never fires
     w.focus()
-    try { w.print() } catch (e) { cleanup() }
+    try { w.print() } catch { cleanup() }
   }
   const doc = ifr.contentWindow.document
   doc.open(); doc.write(planPrintHTML(S, owner)); doc.close()

@@ -3,25 +3,15 @@ import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
-import { MOBILE, nativeLoad, nativeSave, syncReminder } from '../lib/mobile.js'
-import { LANGS } from '../lib/i18n.js'
+import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders, syncDayReminders } from '../lib/mobile.js'
+import { hasData } from '../lib/hasData.js'
 
 const KEY = 'gym_state_v1'
-// A fresh install starts in the phone's / browser's language when we have it (an Arabic phone
-// opens in Arabic), else English. Saved profiles keep whatever they chose.
-function deviceLang() {
-  try {
-    for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])) {
-      const k = String(l || '').toLowerCase().split('-')[0]
-      if (LANGS[k]) return k
-    }
-  } catch { /* no navigator (SSR, tests) */ }
-  return 'en'
-}
-
+// 2.10: a fresh install follows the phone — its language ('auto', see langOf in lib/i18n.js) and
+// its light / dark setting (themeSystem, lib/themes.js). Saved profiles keep what they chose.
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: deviceLang(),
-  theme: 'dark', accent: 'lime', body: 'male', targetW: null,
+  unit: 'kg', restSec: 90, sound: true, keepAwake: true, lang: 'auto',
+  theme: 'classic-dark', themeSystem: true, accent: 'theme', themeFavs: [], recentStudio: [], recentSessions: [], textScale: 1, highContrast: false, reduceMotion: false, autoBackup: true, backupKeep: 7, body: 'male', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null, customEx: [], gifSize: 'full',
   // effort: which per-set effort scale is logged — 'none' | 'rir' | 'rpe'. null, not 'none', so
@@ -36,8 +26,20 @@ export const DEF = {
   // heightCm improves the stride estimate and enables BMI; targetFrom is the weight the goal
   // was set at (the start of the goal progress bar, lib/weightTracker.js).
   stepGoal: 10000, steps: {}, walk: {}, heightCm: null, targetFrom: null,
-  // 2.1 — the live clock's zone: 'iraq' (Asia/Baghdad) or 'device'. See lib/liveClock.js.
-  clockZone: 'iraq',
+  // 2.12 "Ideal body": sex picks the formulas, birthYear keeps the age right as years pass,
+  // waistCm (optional) gives waist-to-height
+  sex: null, birthYear: null, waistCm: null,
+  // 3.0: more tape measurements (US-Navy body fat, frame size), the programme ('auto' follows
+  // the ideal body: lose / muscle / keep), the plan's start (bodyPlan: { start, fromKg, toKg,
+  // weeklyKg }), custom themes, and the health log (see lib/health.js)
+  neckCm: null, hipCm: null, wristCm: null, frame: 'auto', bodyGoal: 'auto', bodyPlan: null,
+  health: {}, meds: [], medLog: {}, sugarUnit: 'mgdl',
+  // 2.9 — the "Today's plan" card on Home (lib/dailyPlan.js). The clock always follows the
+  // phone's own time zone now (the old `clockZone` setting is ignored).
+  planOn: true,
+  // 2.4 — first day of the week (6 = Saturday, see weekStartOf in lib/format.js) and the water
+  // tracker (lib/water.js): glasses per day, the daily goal, whether the Home card shows.
+  weekStart: 6, water: {}, waterGoal: 8, waterOn: true,
   // AI Coach (issue: AI enablement). null until the profile opts in — a null namespace is the
   // same app it was before the feature existed, which is what Epic F asks for. Shape and
   // bounds live in lib/coach.js.
@@ -49,11 +51,11 @@ function loadState() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) return Object.assign(clone(DEF), JSON.parse(raw))
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   return clone(DEF)
 }
 
-const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length)
+// Whether this device holds anything a person entered — every log counts (lib/hasData.js).
 
 export const useStore = create((set, get) => {
   let pushTm = null
@@ -63,7 +65,7 @@ export const useStore = create((set, get) => {
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
   const nativePersist = () => {
     clearTimeout(saveTm)
-    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S) }, 800)
+    saveTm = setTimeout(() => { saveTm = null; nativeSave(get().S); syncReminder(get().S); syncMedReminders(get().S); syncDayReminders(get().S) }, 800)
   }
 
   const persist = (S, push = true) => {
@@ -151,7 +153,7 @@ export const useStore = create((set, get) => {
       clearTimeout(pushTm)
       pushTm = null
       try { await api('/api/data', { method: 'PUT', body: JSON.stringify({ state: get().S }) }); localStorage.removeItem('gym_dirty') }
-      catch (e) { localStorage.setItem('gym_dirty', '1') }
+      catch { localStorage.setItem('gym_dirty', '1') }
     },
     async pullState() {
       try {
@@ -164,11 +166,11 @@ export const useStore = create((set, get) => {
           if (active) next.active = active
           persist(next, false)
         } else if (hasData(S)) { await get().pushState() }
-      } catch (e) { /* offline — keep local */ }
+      } catch { /* offline — keep local */ }
     },
 
     async signOut() {
-      try { await get().pushState(); await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { /* */ }
+      try { await get().pushState(); await api('/api/logout', { method: 'POST', body: '{}' }) } catch { /* */ }
       clearLocalSession()
     },
 
@@ -205,6 +207,8 @@ export const useStore = create((set, get) => {
         }
         get().setGuest(true)
         syncReminder(get().S)
+        syncMedReminders(get().S)
+        syncDayReminders(get().S)
         set({ ready: true })
         return
       }
@@ -219,7 +223,7 @@ export const useStore = create((set, get) => {
         return
       }
       // Instance capabilities are public and needed whether or not anyone is signed in.
-      try { set({ config: await api('/api/config') }) } catch (e) { /* offline — assume nothing extra */ }
+      try { set({ config: await api('/api/config') }) } catch { /* offline — assume nothing extra */ }
       try {
         const me = await api('/api/me')
         get().setUser(me.user)

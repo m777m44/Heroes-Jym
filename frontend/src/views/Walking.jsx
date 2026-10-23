@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { usePedometer, weightForCalories } from '../store/usePedometer.js'
 import { todayISO, fmtDate } from '../lib/format.js'
@@ -8,7 +7,7 @@ import {
   goalOf, stepsOn, activeMsOn, strideMeters, distanceKm, caloriesFor, walkPrefs,
   weekSummary, stepStreak, bestDay, hourlyOn, DEFAULT_STRIDE_CM,
 } from '../lib/stepMetrics.js'
-import { useNow, msToMidnight, stepsPerHourNeeded, motivationTier, fmtDuration, clockZoneOf, IRAQ_TZ } from '../lib/liveClock.js'
+import { useNow, msToMidnight, stepsPerHourNeeded, motivationTier, fmtDuration } from '../lib/liveClock.js'
 import { MOBILE } from '../lib/mobile.js'
 import { hasStepService, call as serviceCall } from '../lib/stepService.js'
 import { openAppSettings } from '../lib/permissions.js'
@@ -19,8 +18,11 @@ import { stepGoalSheet } from '../components/pedometer/StepGoalSetter.jsx'
 import LiveClock from '../components/LiveClock.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
-import { Section, Row, Switch, Button, Segmented } from '../components/ui.jsx'
+import { Section, Row, Switch, Button, BackButton } from '../components/ui.jsx'
 import CommitNumber from '../components/CommitNumber.jsx'
+import CelebrationSection from '../components/pedometer/CelebrationSection.jsx'
+import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
+import { WalkSession, Achievements } from '../components/pedometer/WalkExtras.jsx'
 
 const fmtInt = n => Math.round(n).toLocaleString(dateLocale())
 
@@ -82,7 +84,6 @@ function BackgroundSection() {
 }
 
 export default function Walking() {
-  const nav = useNavigate()
   const S = useStore(s => s.S)
   const { update } = useStore()
   const status = usePedometer(s => s.status)
@@ -116,11 +117,10 @@ export default function Walking() {
   const hours = hourlyOn(S, today).slice()
   if (pending > 0) hours[now.getHours()] += pending
   const setPref = (k, v) => { update(s => { s.walk = { ...walkPrefs(s), [k]: v } }); prefsChanged(k) }
-  const zone = clockZoneOf(S)
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+      <BackButton fallback="/home" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Walking')}</h1></div>
     </div>
 
@@ -139,13 +139,29 @@ export default function Walking() {
       <div className={'walk-motto tier' + tier}>{MOTTOS[tier](left)}</div>
       {left > 0 && <div className="walk-need small">{t('To reach your goal: {0} steps per hour until midnight', fmtInt(perHour))}</div>}
       <StatusLine status={status} source={source} />
-      <div className="walk-btns">
-        {tracking && source === 'service' && <Button icon="pause" onClick={pause}>{t('Pause')}</Button>}
+      {/* 2.10: the 2.8 layout back, refined — one wide start button; while counting, Pause and
+          Stop side by side with the same size; "reset" as a quiet chip underneath. */}
+      <div className={'walk-ctl' + (tracking ? ' on' : '')} role="group" aria-label={t('Step counter')}>
         {tracking
-          ? <Button icon={source === 'service' ? 'stop' : 'pause'} onClick={stop}>{t('Stop counting')}</Button>
-          : <Button variant="primary" icon="play" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>{paused ? t('Resume counting') : t('Start counting')}</Button>}
-        {status === 'denied' && MOBILE && <Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button>}
+          ? <div className="walk-ctl-row">
+            {source === 'service' && <button className="wbtn wbtn-soft" onClick={pause}>
+              <span className="wbtn-ic"><Icon name="pause" /></span><span>{t('Pause')}</span>
+            </button>}
+            <button className="wbtn wbtn-stop" onClick={stop}>
+              <span className="wbtn-ic"><Icon name={source === 'service' ? 'stop' : 'pause'} /></span><span>{t('Stop counting')}</span>
+            </button>
+          </div>
+          : <div className="walk-ctl-row">
+            <button className="wbtn wbtn-go" disabled={status === 'starting'} onClick={() => start({ interactive: true })}>
+              <span className="wbtn-ic"><Icon name="play" /></span><span>{paused ? t('Resume counting') : t('Start counting')}</span>
+            </button>
+            {paused && <button className="wbtn wbtn-stop wbtn-sq" onClick={stop} aria-label={t('Stop counting')}>
+              <span className="wbtn-ic"><Icon name="stop" /></span>
+            </button>}
+          </div>}
+        <button className="walk-reset" onClick={stepResetSheet}><Icon name="reset" /> {t('Reset step counter')}</button>
       </div>
+      {status === 'denied' && MOBILE && <div className="walk-btns"><Button icon="gear" onClick={() => openAppSettings()}>{t('Open settings')}</Button></div>}
     </div>
 
     <div className="tiles">
@@ -154,6 +170,8 @@ export default function Walking() {
       <div className="tile"><div className="l"><Icon name="flame" /> {t('Calories')}</div><div className="v"><AnimatedNumber value={kcal} /> <span className="u">{U('kcal')}</span></div></div>
       <div className="tile"><div className="l"><Icon name="clock" /> {t('Active time')}</div><div className="v mono" dir="ltr">{fmtDuration(active, { alwaysHours: true })}</div></div>
     </div>
+
+    <WalkSession now={now} stride={stride} tracking={tracking} speed={speed} moving={walkingNow} />
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
@@ -179,6 +197,8 @@ export default function Walking() {
       {best && <div className="dim small" style={{ marginTop: 8 }}>{t('Best day: {0} steps on {1}', fmtInt(best.n), fmtDate(best.d, true))}</div>}
     </div>
 
+    <Achievements S={S} today={today} />
+
     <Section title={t('Goal & counter')}
       footer={source === 'service' || (MOBILE && status === 'idle')
         ? t('On Android the counter runs as a background service: it keeps counting with the app closed and the phone locked, and shows your steps live in the notification and on the lock screen.')
@@ -203,19 +223,12 @@ export default function Walking() {
       {MOBILE && <Row icon="speaker" iconTint="var(--blue)" title={t('Voice coach')} subtitle={t('Speaks every 1,000 steps and when you reach your goal.')}>
         <Switch checked={prefs.voice} onChange={v => setPref('voice', v)} />
       </Row>}
-      <Row icon="sparkles" iconTint="var(--pink)" title={t('Celebrations')} subtitle={t('A 5-second cheer at every 1,000 steps and at your goal.')}>
-        <Switch checked={prefs.celebrate} onChange={v => setPref('celebrate', v)} />
-      </Row>
       <Row icon="location" iconTint="var(--blue)" title={t('GPS speed')} subtitle={t('More accurate outdoors. Your location stays on this device.')}>
         <Switch checked={prefs.gps} onChange={v => setPref('gps', v)} />
       </Row>
-      <Row icon="clock" iconTint="var(--teal)" title={t('Clock')}>
-        <Segmented className="seg-inline"
-          options={[{ value: 'iraq', label: t('Baghdad') }, { value: 'device', label: t('Device') }]}
-          value={zone === IRAQ_TZ && S.clockZone !== 'device' ? 'iraq' : 'device'}
-          onChange={v => { update(s => { s.clockZone = v === 'device' ? 'device' : 'iraq' }); prefsChanged('clock') }} />
-      </Row>
     </Section>
+
+    <CelebrationSection prefs={prefs} setPref={setPref} />
 
     {MOBILE && <BackgroundSection />}
   </div>

@@ -1,0 +1,679 @@
+// 9.0 — Drinks & juices: a library of healthy drinks (weight loss, digestion, energy, protein,
+// immunity, sleep, hydration and Iraqi classics) whose calories are worked out from their
+// ingredients, plus your own drinks built from the same ingredient table.
+//
+// Accuracy notes
+//   · every ingredient has kcal / protein / carbs / fat / sugar per 100 g and a density, so any
+//     amount in g, ml, tsp, tbsp, cup or pieces converts to grams the same way
+//   · juices are separate ingredients (orange juice ≠ oranges: pressing leaves the pulp behind)
+//   · steeped things (tea leaves, herbs, cinnamon sticks, ginger slices, infused fruit) only
+//     give a fraction of their calories to the water — a recipe row can carry that share
+//   · optional rows (sugar, honey…) are off by default and shown as "+N kcal"
+//
+// Names, steps and notes are English source strings translated with t(); steps are templates
+// (lib/recipeText.js).
+//
+// State (all optional):
+//   S.myDrinks   = [{ id, n (name), col, t ('h'|'c'), sv (serves), ing: [[id, amount, unit]], at }]
+//   S.drinkFavs  = [drink ids]
+//   S.drinkLog   = { 'YYYY-MM-DD': [{ id, at }] }  (recent drinks; the calories live in S.food)
+import { uid } from './format.js'
+
+// ---- ingredient table ------------------------------------------------------------------------
+export const DING_CATS = [
+  { key: 'liquid', name: 'Water & bases', icon: 'drop', color: 'var(--blue)' },
+  { key: 'tea', name: 'Tea, coffee & herbs', icon: 'cup', color: 'var(--brown, #a2845e)' },
+  { key: 'dairy', name: 'Milk & yogurt', icon: 'drop', color: 'var(--teal)' },
+  { key: 'juice', name: 'Juices', icon: 'apple', color: 'var(--orange)' },
+  { key: 'fruit', name: 'Fruit', icon: 'apple', color: 'var(--pink)' },
+  { key: 'veg', name: 'Vegetables & greens', icon: 'leafy', color: 'var(--green)' },
+  { key: 'spice', name: 'Spices', icon: 'sparkles', color: 'var(--yellow)' },
+  { key: 'sweet', name: 'Sweeteners', icon: 'heart', color: 'var(--red)' },
+  { key: 'nuts', name: 'Nuts & seeds', icon: 'circle', color: 'var(--brown, #a2845e)' },
+  { key: 'grain', name: 'Oats, grains & powders', icon: 'sparkles', color: 'var(--indigo)' },
+]
+
+// [id, cat, name, kcal, protein, carbs, fat, sugar (per 100 g), density g/ml, default unit,
+//  'unit:grams,…', water share of the weight, flags]   flags: m dairy · n nuts · c caffeine · P keep capitals
+const ROWS = [
+  ['water', 'liquid', 'Water', 0, 0, 0, 0, 0, 1, 'ml', 'cup:240', 1, ''],
+  ['sparkling', 'liquid', 'Sparkling water', 0, 0, 0, 0, 0, 1, 'ml', 'cup:240', 1, ''],
+  ['coconutwater', 'liquid', 'Coconut water', 19, 0.7, 3.7, 0.2, 2.6, 1.02, 'ml', 'cup:240', 0.95, ''],
+  ['ice', 'liquid', 'Ice', 0, 0, 0, 0, 0, 0.92, 'g', 'cup:150,piece:25', 1, ''],
+  ['rosewater', 'liquid', 'Rose water', 0, 0, 0, 0, 0, 1, 'tsp', 'tsp:5,tbsp:15', 1, ''],
+  ['acv', 'liquid', 'Apple cider vinegar', 21, 0, 0.9, 0, 0.4, 1.01, 'tbsp', 'tbsp:15,tsp:5', 0.94, ''],
+  ['coffee', 'tea', 'Coffee (brewed)', 1, 0.1, 0, 0, 0, 1, 'ml', 'cup:240', 1, 'c'],
+  ['arabiccoffee', 'tea', 'Arabic coffee (brewed)', 2, 0.1, 0.3, 0, 0, 1, 'ml', 'cup:240', 1, 'cP'],
+  ['blacktea', 'tea', 'Black tea', 300, 20, 60, 2, 0, 0.4, 'tsp', 'tsp:2,bag:2', 0, 'c'],
+  ['greentea', 'tea', 'Green tea', 300, 22, 60, 2, 0, 0.4, 'tsp', 'tsp:2,bag:2', 0, 'c'],
+  ['chamomile', 'tea', 'Chamomile', 230, 5, 45, 2, 0, 0.3, 'bag', 'bag:1.5,tsp:1', 0, ''],
+  ['hibiscus', 'tea', 'Hibiscus (karkade)', 240, 5, 50, 1, 0, 0.4, 'tbsp', 'tbsp:4,tsp:1.3', 0, ''],
+  ['driedlime', 'tea', 'Dried lime (noomi Basra)', 250, 4, 60, 1, 4, 0.4, 'piece', 'piece:6', 0, ''],
+  ['liquorice', 'tea', 'Liquorice root', 350, 5, 80, 1, 10, 0.5, 'tbsp', 'tbsp:7', 0, ''],
+  ['milk', 'dairy', 'Milk', 61, 3.2, 4.8, 3.3, 5.1, 1.03, 'ml', 'cup:247', 0.88, 'm'],
+  ['lowfatmilk', 'dairy', 'Low-fat milk', 42, 3.4, 5, 1, 5, 1.03, 'ml', 'cup:247', 0.89, 'm'],
+  ['yogurt', 'dairy', 'Yogurt', 61, 3.5, 4.7, 3.3, 4.7, 1.04, 'g', 'cup:245,tbsp:15', 0.85, 'm'],
+  ['greekyogurt', 'dairy', 'Greek yogurt', 73, 10, 3.9, 1.9, 3.6, 1.1, 'g', 'cup:245,tbsp:18', 0.8, 'mP'],
+  ['kefir', 'dairy', 'Kefir', 41, 3.8, 4.5, 1, 4.6, 1.03, 'ml', 'cup:243', 0.88, 'm'],
+  ['almondmilk', 'dairy', 'Almond milk', 15, 0.6, 0.6, 1.2, 0, 1.02, 'ml', 'cup:244', 0.97, 'n'],
+  ['oatmilk', 'dairy', 'Oat milk', 48, 1, 6.7, 1.5, 3, 1.03, 'ml', 'cup:244', 0.9, ''],
+  ['orangejuice', 'juice', 'Orange juice', 45, 0.7, 10.4, 0.2, 8.4, 1.04, 'ml', 'cup:248', 0.88, ''],
+  ['lemonjuice', 'juice', 'Lemon juice', 22, 0.35, 6.9, 0.24, 2.5, 1.03, 'ml', 'tbsp:15,tsp:5', 0.92, ''],
+  ['limejuice', 'juice', 'Lime juice', 25, 0.4, 8.4, 0.1, 1.7, 1.03, 'ml', 'tbsp:15,tsp:5', 0.9, ''],
+  ['pomegranatejuice', 'juice', 'Pomegranate juice', 54, 0.15, 13.1, 0.3, 12.7, 1.05, 'ml', 'cup:249', 0.86, ''],
+  ['applejuice', 'juice', 'Apple juice', 46, 0.1, 11.3, 0.1, 9.6, 1.04, 'ml', 'cup:248', 0.88, ''],
+  ['carrotjuice', 'juice', 'Carrot juice', 40, 0.95, 9.3, 0.15, 3.9, 1.03, 'ml', 'cup:236', 0.89, ''],
+  ['beetjuice', 'juice', 'Beet juice', 44, 1, 10, 0.1, 8, 1.04, 'ml', 'cup:240', 0.88, ''],
+  ['grapefruitjuice', 'juice', 'Grapefruit juice', 39, 0.5, 9.2, 0.1, 7, 1.04, 'ml', 'cup:247', 0.9, ''],
+  ['pineapplejuice', 'juice', 'Pineapple juice', 53, 0.4, 12.9, 0.1, 10, 1.05, 'ml', 'cup:250', 0.86, ''],
+  ['cherryjuice', 'juice', 'Tart cherry juice', 50, 0.4, 12.3, 0.1, 11, 1.05, 'ml', 'cup:240', 0.86, ''],
+  ['sugarcanejuice', 'juice', 'Sugarcane juice', 58, 0.2, 15, 0, 14, 1.06, 'ml', 'cup:240', 0.84, ''],
+  ['tomatojuice', 'juice', 'Tomato juice', 17, 0.9, 3.5, 0.3, 2.6, 1.03, 'ml', 'cup:243', 0.94, ''],
+  ['banana', 'fruit', 'Bananas', 89, 1.1, 23, 0.3, 12.2, 0.6, 'piece', 'piece:120,cup:150', 0.75, ''],
+  ['apple', 'fruit', 'Apples', 52, 0.3, 14, 0.2, 10.4, 0.6, 'piece', 'piece:180,cup:125', 0.86, ''],
+  ['dates', 'fruit', 'Dates', 282, 2.5, 75, 0.4, 63, 0.7, 'piece', 'piece:8', 0, ''],
+  ['strawberries', 'fruit', 'Strawberries', 32, 0.7, 7.7, 0.3, 4.9, 0.6, 'g', 'cup:150,piece:12', 0.91, ''],
+  ['berries', 'fruit', 'Mixed berries', 48, 0.8, 11.5, 0.4, 7, 0.6, 'g', 'cup:150', 0.85, ''],
+  ['mango', 'fruit', 'Mango', 60, 0.8, 15, 0.4, 13.7, 0.65, 'g', 'cup:165,piece:200', 0.83, ''],
+  ['pineapple', 'fruit', 'Pineapple', 50, 0.5, 13.1, 0.1, 9.9, 0.65, 'g', 'cup:165', 0.86, ''],
+  ['watermelon', 'fruit', 'Watermelon', 30, 0.6, 7.6, 0.2, 6.2, 0.62, 'g', 'cup:152', 0.92, ''],
+  ['melon', 'fruit', 'Melon', 34, 0.8, 8.2, 0.2, 7.9, 0.65, 'g', 'cup:160', 0.9, ''],
+  ['orange', 'fruit', 'Oranges', 47, 0.9, 11.8, 0.1, 9.4, 0.6, 'piece', 'piece:130', 0.87, ''],
+  ['kiwi', 'fruit', 'Kiwi', 61, 1.1, 14.7, 0.5, 9, 0.65, 'piece', 'piece:70', 0.83, ''],
+  ['pomegranate', 'fruit', 'Pomegranate seeds', 83, 1.7, 18.7, 1.2, 13.7, 0.7, 'g', 'cup:174', 0.78, ''],
+  ['pear', 'fruit', 'Pears', 57, 0.4, 15.2, 0.1, 9.8, 0.6, 'piece', 'piece:180', 0.84, ''],
+  ['peach', 'fruit', 'Peaches', 39, 0.9, 9.5, 0.3, 8.4, 0.6, 'piece', 'piece:150', 0.89, ''],
+  ['papaya', 'fruit', 'Papaya', 43, 0.5, 10.8, 0.3, 7.8, 0.6, 'g', 'cup:145', 0.88, ''],
+  ['avocado', 'fruit', 'Avocado', 160, 2, 8.5, 14.7, 0.7, 0.65, 'piece', 'piece:150', 0.73, ''],
+  ['mulberries', 'fruit', 'Mulberries', 43, 1.4, 9.8, 0.4, 8.1, 0.6, 'g', 'cup:140', 0.88, ''],
+  ['grapes', 'fruit', 'Grapes', 69, 0.7, 18.1, 0.2, 15.5, 0.6, 'g', 'cup:150', 0.81, ''],
+  ['cherries', 'fruit', 'Cherries', 63, 1.1, 16, 0.2, 12.8, 0.6, 'g', 'cup:140', 0.82, ''],
+  ['lemon', 'fruit', 'Lemons', 29, 1.1, 9.3, 0.3, 2.5, 0.6, 'piece', 'piece:60,slice:8', 0.89, ''],
+  ['lime', 'fruit', 'Limes', 30, 0.7, 10.5, 0.2, 1.7, 0.6, 'piece', 'piece:45,slice:6', 0.88, ''],
+  ['qamaraldin', 'fruit', 'Qamar al-din (apricot sheet)', 319, 1.5, 80, 0.5, 70, 0.8, 'g', '', 0, 'P'],
+  ['driedapricot', 'fruit', 'Dried apricots', 241, 3.4, 62.6, 0.5, 53.4, 0.7, 'piece', 'piece:8', 0, ''],
+  ['raisins', 'fruit', 'Raisins', 299, 3, 79, 0.5, 59, 0.65, 'g', 'handful:30,tbsp:9', 0, ''],
+  ['tamarind', 'fruit', 'Tamarind', 239, 2.8, 62.5, 0.6, 57.4, 1.2, 'g', 'tbsp:18', 0, ''],
+  ['figs', 'fruit', 'Dried figs', 249, 3.3, 63.9, 0.9, 47.9, 0.7, 'piece', 'piece:8', 0, ''],
+  ['cucumber', 'veg', 'Cucumbers', 15, 0.7, 3.6, 0.1, 1.7, 0.6, 'g', 'piece:120,slice:8', 0.95, ''],
+  ['spinach', 'veg', 'Spinach', 23, 2.9, 3.6, 0.4, 0.4, 0.25, 'g', 'handful:30,cup:30', 0.91, ''],
+  ['kale', 'veg', 'Kale', 35, 2.9, 4.4, 1.5, 1, 0.25, 'g', 'handful:20', 0.84, ''],
+  ['carrot', 'veg', 'Carrots', 41, 0.9, 10, 0.2, 4.7, 0.6, 'piece', 'piece:60', 0.88, ''],
+  ['beet', 'veg', 'Beetroot', 43, 1.6, 9.6, 0.2, 6.8, 0.6, 'piece', 'piece:130', 0.88, ''],
+  ['celery', 'veg', 'Celery', 16, 0.7, 3, 0.2, 1.3, 0.5, 'piece', 'piece:40', 0.95, ''],
+  ['tomato', 'veg', 'Tomatoes', 18, 0.9, 3.9, 0.2, 2.6, 0.6, 'piece', 'piece:120', 0.94, ''],
+  ['parsley', 'veg', 'Parsley', 36, 3, 6.3, 0.8, 0.9, 0.2, 'g', 'handful:15', 0.88, ''],
+  ['mint', 'veg', 'Fresh mint', 44, 3.3, 8.4, 0.7, 0, 0.2, 'g', 'handful:10', 0.86, ''],
+  ['ginger', 'veg', 'Ginger', 80, 1.8, 17.8, 0.8, 1.7, 0.6, 'g', 'piece:10,tsp:2', 0.79, ''],
+  ['cinnamon', 'spice', 'Cinnamon', 247, 4, 81, 1.2, 2.2, 0.5, 'tsp', 'tsp:2.6,stick:3,pinch:0.4', 0, ''],
+  ['cardamom', 'spice', 'Cardamom', 311, 10.8, 68.5, 6.7, 0, 0.4, 'pod', 'pod:0.2,tsp:2', 0, ''],
+  ['turmeric', 'spice', 'Turmeric', 312, 9.7, 67, 3.3, 3.2, 0.6, 'tsp', 'tsp:3,pinch:0.3', 0, ''],
+  ['blackpepper', 'spice', 'Black pepper', 251, 10.4, 64, 3.3, 0.6, 0.5, 'pinch', 'pinch:0.3,tsp:2.3', 0, ''],
+  ['cumin', 'spice', 'Cumin', 375, 17.8, 44.2, 22.3, 2.3, 0.4, 'tsp', 'tsp:2.1', 0, ''],
+  ['fennel', 'spice', 'Fennel seeds', 345, 15.8, 52.3, 14.9, 0, 0.4, 'tsp', 'tsp:2', 0, ''],
+  ['anise', 'spice', 'Anise seeds', 337, 17.6, 50, 15.9, 0, 0.4, 'tsp', 'tsp:2.1', 0, ''],
+  ['fenugreek', 'spice', 'Fenugreek seeds', 323, 23, 58.4, 6.4, 0, 0.75, 'tsp', 'tsp:3.7', 0, ''],
+  ['salt', 'spice', 'Salt', 0, 0, 0, 0, 0, 1.2, 'pinch', 'pinch:0.4,tsp:6', 0, ''],
+  ['cocoa', 'spice', 'Cocoa powder', 228, 19.6, 57.9, 13.7, 1.8, 0.36, 'tbsp', 'tbsp:5.4,tsp:1.8', 0, ''],
+  ['honey', 'sweet', 'Honey', 304, 0.3, 82, 0, 82, 1.42, 'tsp', 'tsp:7,tbsp:21', 0, ''],
+  ['sugar', 'sweet', 'Sugar', 387, 0, 100, 0, 100, 0.85, 'tsp', 'tsp:4,tbsp:12.5', 0, ''],
+  ['dibis', 'sweet', 'Date syrup (dibis)', 280, 1, 70, 0.1, 65, 1.35, 'tbsp', 'tbsp:20,tsp:7', 0, ''],
+  ['walnuts', 'nuts', 'Walnuts', 654, 15, 14, 65, 2.6, 0.5, 'g', 'handful:30,tbsp:7', 0, 'n'],
+  ['almonds', 'nuts', 'Almonds', 579, 21, 22, 50, 4.4, 0.6, 'g', 'handful:30,piece:1.2', 0, 'n'],
+  ['pistachios', 'nuts', 'Pistachios', 560, 20, 27, 45, 7.7, 0.55, 'g', 'handful:30,tbsp:8', 0, 'n'],
+  ['peanutbutter', 'nuts', 'Peanut butter', 588, 25, 20, 50, 9, 1.05, 'tbsp', 'tbsp:16,tsp:5', 0, 'n'],
+  ['tahini', 'nuts', 'Tahini (rashi)', 595, 17, 21, 54, 0.5, 1, 'tbsp', 'tbsp:15', 0, ''],
+  ['chia', 'nuts', 'Chia seeds', 486, 16.5, 42, 30.7, 0, 0.65, 'tbsp', 'tbsp:12,tsp:4', 0, ''],
+  ['flax', 'nuts', 'Ground flaxseed', 534, 18.3, 28.9, 42.2, 1.6, 0.5, 'tbsp', 'tbsp:7', 0, ''],
+  ['oats', 'grain', 'Oats', 389, 17, 66, 7, 1, 0.35, 'tbsp', 'tbsp:5,cup:80', 0, ''],
+  ['barley', 'grain', 'Barley', 352, 9.9, 77.7, 1.2, 0.8, 0.85, 'tbsp', 'tbsp:12,cup:200', 0, ''],
+  ['sahlab', 'grain', 'Sahlab powder', 360, 0.5, 88, 0.2, 20, 0.6, 'tbsp', 'tbsp:10', 0, ''],
+  ['whey', 'grain', 'Whey protein', 400, 80, 10, 5, 5, 0.4, 'scoop', 'scoop:30', 0, 'm'],
+]
+const VOL = { tsp: 5, tbsp: 15, cup: 240 }
+export const DING = ROWS.map(([id, cat, name, kcal, p, c, f, s, d, def, units, w, fl]) => ({
+  id, cat, name, kcal, p, c, f, s, d, def, w, fl,
+  u: Object.fromEntries(String(units).split(',').filter(Boolean).map(x => { const [k, v] = x.split(':'); return [k, +v] })),
+}))
+export const DING_BY_ID = Object.fromEntries(DING.map(x => [x.id, x]))
+
+/** The units an ingredient can be measured in, its default first. */
+export function unitsOf(x) {
+  if (!x) return ['g']
+  const set = [x.def, ...Object.keys(x.u)]
+  if (x.d >= 0.9) set.push('ml', 'tsp', 'tbsp', 'cup')   // liquids and dense pastes
+  set.push('g')
+  return [...new Set(set)]
+}
+/** Grams in `amount` `unit` of ingredient x (g, ml, tsp/tbsp/cup by density, or its own units). */
+export function gramsOf(x, amount, unit) {
+  const a = Math.max(0, +amount || 0)
+  if (!x) return 0
+  if (unit === 'g') return a
+  if (x.u[unit]) return a * x.u[unit]
+  if (unit === 'ml') return a * x.d
+  if (VOL[unit]) return a * VOL[unit] * x.d
+  return a * (x.u.piece || 100)
+}
+
+// ---- categories, notes, cautions ----------------------------------------------------------------
+export const DRINK_CATS = [
+  { key: 'loss', name: 'Weight loss', icon: 'flame', color: '#ff9f0a', desc: 'Low in calories, filling and refreshing.' },
+  { key: 'digest', name: 'Digestion', icon: 'leafy', color: '#30d158', desc: 'Soothe the stomach and ease bloating.' },
+  { key: 'iraqi', name: 'Iraqi classics', icon: 'palm', color: '#d4a017', desc: 'Traditional drinks from all over Iraq.' },
+  { key: 'energy', name: 'Energy & pre-workout', icon: 'bolt', color: '#ffd60a', desc: 'Fuel before training or a long day.' },
+  { key: 'protein', name: 'Protein & recovery', icon: 'dumbbell', color: '#ff375f', desc: 'Help your muscles recover after training.' },
+  { key: 'immune', name: 'Immunity', icon: 'shield', color: '#40c8e0', desc: 'Vitamin C and antioxidants.' },
+  { key: 'calm', name: 'Sleep & calm', icon: 'moon', color: '#5e5ce6', desc: 'Warm, soothing drinks for the evening.' },
+  { key: 'hydrate', name: 'Hydration', icon: 'drop', color: '#0a84ff', desc: 'Flavoured water and coolers for hot days.' },
+]
+export const DRINK_CAT_BY_KEY = Object.fromEntries(DRINK_CATS.map(c => [c.key, c]))
+
+export const WHEN = {
+  am: 'In the morning', pre: 'Before a workout', post: 'After a workout', meal: 'Before or with a meal',
+  after: 'After a meal', pm: 'In the evening', hot: 'On hot days', any: 'Any time',
+}
+
+// why an ingredient is good for you — one sentence each, shared by every drink that uses it
+const NOTE = {
+  ginger: 'Ginger eases nausea and helps digestion.',
+  lemon: 'Lemon adds vitamin C and flavour for almost no calories.',
+  mint: 'Mint soothes the stomach and freshens the breath.',
+  cucumber: 'Cucumber is mostly water — hydrating and very low in calories.',
+  spinach: 'Spinach brings iron, folate and fibre for very few calories.',
+  greentea: 'Green tea has antioxidants and a gentle caffeine lift.',
+  tea: 'Tea has antioxidants and a gentle caffeine lift.',
+  cinnamon: 'Cinnamon is warming and may help steady blood sugar.',
+  hibiscus: 'Hibiscus is rich in antioxidants and may help lower blood pressure.',
+  probiotic: 'Yogurt and kefir bring probiotics for your gut, plus protein.',
+  fennel: 'Fennel eases bloating and gas.',
+  anise: 'Anise is a traditional remedy for bloating.',
+  cumin: 'Cumin is traditionally used to ease indigestion.',
+  fenugreek: 'Fenugreek has soluble fibre that may help digestion and blood sugar.',
+  chamomile: 'Chamomile is calming — a classic before bed.',
+  turmeric: 'Turmeric’s curcumin is best absorbed with a pinch of black pepper.',
+  berries: 'Berries give antioxidants and fibre with little sugar.',
+  banana: 'Banana gives quick energy and potassium for your muscles.',
+  dates: 'Dates are natural sugar, fibre and potassium — fast fuel.',
+  oats: 'Oats release their energy slowly and keep you full.',
+  whey: 'Whey protein helps muscles recover and grow.',
+  milk: 'Milk gives protein, calcium and fluid after training.',
+  beet: 'Beetroot’s nitrates may improve endurance.',
+  orange: 'Orange is full of vitamin C for your immune system.',
+  carrot: 'Carrot’s beta-carotene is good for eyes and skin.',
+  kiwi: 'Kiwi has more vitamin C than an orange.',
+  pineapple: 'Pineapple has bromelain, an enzyme that helps digest protein.',
+  papaya: 'Papaya has papain, an enzyme that aids digestion.',
+  watermelon: 'Watermelon is over 90% water — perfect on hot days.',
+  pomegranate: 'Pomegranate is rich in polyphenols that protect the heart.',
+  tamarind: 'Tamarind is a traditional digestive and a mild laxative.',
+  driedlime: 'Dried lime is tangy and traditionally used after heavy meals.',
+  cardamom: 'Cardamom aids digestion and adds a lovely aroma.',
+  chia: 'Chia seeds give fibre and omega-3 that keep you full longer.',
+  acv: 'Vinegar may help you feel full and steady blood sugar.',
+  coconutwater: 'Coconut water has natural electrolytes for rehydration.',
+  cherry: 'Tart cherry may ease muscle soreness and help sleep.',
+  cocoa: 'Cocoa gives flavanols and magnesium — chocolate taste without sugar.',
+  peanutbutter: 'Peanut butter gives healthy fats and protein for steady energy.',
+  almonds: 'Almonds bring magnesium and vitamin E.',
+  walnuts: 'Walnuts have omega-3 fats for the heart and brain.',
+  avocado: 'Avocado’s healthy fats keep you satisfied.',
+  raisins: 'Raisins give iron and quick energy.',
+  apricot: 'Apricot gives beta-carotene, potassium and fibre.',
+  mulberries: 'Mulberries bring iron and vitamin C.',
+  barley: 'Barley’s soluble fibre helps digestion and cholesterol.',
+  celery: 'Celery is hydrating and very low in calories.',
+  grapefruit: 'Grapefruit is low in calories and high in vitamin C.',
+  liquorice: 'Liquorice root soothes the stomach and the throat.',
+  salt: 'A pinch of salt replaces what you lose in sweat.',
+  coffee: 'Coffee’s caffeine sharpens focus and helps your workout.',
+  mango: 'Mango is rich in vitamins A and C.',
+  strawberries: 'Strawberries give vitamin C and antioxidants with little sugar.',
+  apple: 'Apple adds fibre and natural sweetness.',
+  tomato: 'Tomato gives lycopene and potassium for very few calories.',
+  sugarcane: 'Sugarcane juice is quick energy on a hot day.',
+  figs: 'Figs bring fibre, calcium and natural sweetness.',
+}
+const NOTE_OF = {
+  ginger: 'ginger', lemonjuice: 'lemon', lemon: 'lemon', limejuice: 'lemon', lime: 'lemon', mint: 'mint', cucumber: 'cucumber',
+  spinach: 'spinach', kale: 'spinach', greentea: 'greentea', blacktea: 'tea', cinnamon: 'cinnamon', hibiscus: 'hibiscus',
+  yogurt: 'probiotic', kefir: 'probiotic', greekyogurt: 'probiotic', fennel: 'fennel', anise: 'anise', cumin: 'cumin',
+  fenugreek: 'fenugreek', chamomile: 'chamomile', turmeric: 'turmeric', berries: 'berries', banana: 'banana', dates: 'dates',
+  oats: 'oats', whey: 'whey', milk: 'milk', lowfatmilk: 'milk', beet: 'beet', beetjuice: 'beet', orange: 'orange',
+  orangejuice: 'orange', carrot: 'carrot', carrotjuice: 'carrot', kiwi: 'kiwi', pineapple: 'pineapple', pineapplejuice: 'pineapple',
+  papaya: 'papaya', watermelon: 'watermelon', melon: 'watermelon', pomegranate: 'pomegranate', pomegranatejuice: 'pomegranate',
+  tamarind: 'tamarind', driedlime: 'driedlime', cardamom: 'cardamom', chia: 'chia', flax: 'chia', acv: 'acv',
+  coconutwater: 'coconutwater', cherryjuice: 'cherry', cherries: 'cherry', cocoa: 'cocoa', peanutbutter: 'peanutbutter',
+  almonds: 'almonds', almondmilk: 'almonds', walnuts: 'walnuts', avocado: 'avocado', raisins: 'raisins', qamaraldin: 'apricot',
+  driedapricot: 'apricot', mulberries: 'mulberries', barley: 'barley', celery: 'celery', grapefruitjuice: 'grapefruit',
+  liquorice: 'liquorice', salt: 'salt', coffee: 'coffee', arabiccoffee: 'coffee', mango: 'mango', strawberries: 'strawberries',
+  apple: 'apple', applejuice: 'apple', tomato: 'tomato', tomatojuice: 'tomato', sugarcanejuice: 'sugarcane', figs: 'figs',
+}
+export const NOTE_TEXTS = Object.values(NOTE)
+
+export const CAUTION = {
+  caffeine: 'Contains caffeine — better not late in the day.',
+  bp: 'Liquorice raises blood pressure — skip it if yours is high or you are pregnant.',
+  lowbp: 'Hibiscus can lower blood pressure — go easy if yours is low or you take blood-pressure pills.',
+  sugar: 'High in natural sugar — keep to one glass, especially with diabetes.',
+  meds: 'Grapefruit interacts with some medicines — check with your pharmacist.',
+  acid: 'Always dilute vinegar and rinse your mouth afterwards to protect your teeth.',
+  preg: 'Ask your doctor first if you are pregnant.',
+}
+
+// the Iraqi drinks' one-line story
+const STORY = {
+  shineena: 'The classic Iraqi companion to a hot lunch.',
+  iraqitea: 'Strong, sweet and served in a small istikan — Iraq in a glass.',
+  noomibasra: 'Tangy dried limes from Basra, loved after heavy meals.',
+  datesmilk: 'Iraqi dates blended with milk — a traditional energy drink.',
+  tamarhindi: 'A Ramadan favourite sold by street vendors across Iraq.',
+  qamaraldin: 'Apricot sheets soaked and blended — the taste of Ramadan evenings.',
+  zbeeb: 'A summer favourite in Mosul — cold and naturally sweet.',
+  rumman: 'Pomegranates from Halabja and Diyala are famous across Iraq.',
+  qasab: 'Freshly pressed at juice stands on hot summer days.',
+  qahwa: 'Served to guests in small cups — a sign of welcome.',
+  darseen: 'A warming winter drink, often topped with walnuts.',
+  sahlab: 'A creamy winter treat sold hot on Baghdad’s streets.',
+  sous: 'A dark, refreshing Ramadan drink poured from brass jugs.',
+  rosesharbat: 'A fragrant welcome drink at weddings and feasts.',
+  toot: 'Made from the mulberry trees that shade Iraqi gardens.',
+  mastaw: 'A refreshing yogurt drink from the mountains of Kurdistan.',
+  barleywater: 'A traditional home remedy, sipped cold through the day.',
+  halba: 'A traditional warm drink for digestion.',
+  anisetea: 'A soothing evening tea from grandmother’s kitchen.',
+  limonnana: 'The most popular cooler in Iraqi cafés.',
+  avocadodate: 'A favourite at Iraqi juice shops — thick and creamy.',
+}
+export const STORY_TEXTS = Object.values(STORY)
+
+// ---- the drinks ---------------------------------------------------------------------------------
+// D(id, name, cats, meta, ingredients, steps)
+//   meta: t 'h' hot | 'c' cold · g glass (tall, mug, istikan, jug, finjan, shaker) · col liquid colour
+//         min minutes · sv servings · w when (WHEN key) · caut [CAUTION keys]
+//   ingredients: [id, amount, unit, optional?, share?]   share = part of the calories that ends up
+//                in the drink (0.2 steeped / infused, 0.6 soaked and strained…)
+const D = (id, name, cats, m, ing, steps) => ({
+  id, name, cats, t: m.t || 'c', g: m.g || 'tall', col: m.col || '#7cc35a', min: m.min || 5, sv: m.sv || 1, w: m.w || 'any',
+  caut: m.caut || [], story: STORY[id] || null,
+  ing: ing.map(([i, a, u, o, x]) => ({ id: i, a, u, opt: o === 'o' || o === true, x: typeof o === 'number' ? o : (x == null ? 1 : x) })),
+  steps,
+})
+const S = 0.2 // steeped / infused
+
+export const DRINKS = [
+  // weight loss
+  D('greendetox', 'Green detox smoothie', ['loss', 'digest', 'immune'], { col: '#7cc35a', w: 'am' },
+    [['spinach', 30, 'g'], ['cucumber', 120, 'g'], ['apple', 0.5, 'piece'], ['lemonjuice', 15, 'ml'], ['ginger', 5, 'g'], ['water', 150, 'ml'], ['ice', 75, 'g', 'o']],
+    [['chop', ['cucumber', 'apple', 'ginger']], ['blend', ['spinach', 'cucumber', 'apple', 'lemonjuice', 'ginger', 'water']], ['blendIce'], ['serveCold']]),
+  D('lemonginger', 'Warm lemon & ginger water', ['loss', 'digest'], { t: 'h', g: 'mug', col: '#f4d35e', min: 8, w: 'am' },
+    [['water', 250, 'ml'], ['ginger', 10, 'g', S], ['lemonjuice', 15, 'ml'], ['honey', 1, 'tsp', 'o']],
+    [['boil'], ['steep', 5, ['ginger']], ['stirIn', ['lemonjuice']], ['sweeten', ['honey']]]),
+  D('cucumbermint', 'Cucumber, lemon & mint water', ['hydrate', 'loss'], { g: 'jug', col: '#cdeccf', sv: 4 },
+    [['water', 1000, 'ml'], ['cucumber', 1, 'piece', S], ['lemon', 1, 'piece', S], ['mint', 10, 'g', S], ['ice', 1, 'cup', 'o']],
+    [['slice', ['cucumber', 'lemon']], ['infuse', 2, ['cucumber', 'lemon', 'mint']], ['serveCold']]),
+  D('greentealemon', 'Green tea with lemon', ['loss', 'energy'], { t: 'h', g: 'mug', col: '#c9d86b', w: 'am', caut: ['caffeine'] },
+    [['water', 250, 'ml'], ['greentea', 1, 'bag', S], ['lemonjuice', 10, 'ml'], ['honey', 1, 'tsp', 'o']],
+    [['steep', 3, ['greentea']], ['stirIn', ['lemonjuice']], ['sweeten', ['honey']]]),
+  D('cinnamonhoney', 'Cinnamon & honey drink', ['loss', 'calm'], { t: 'h', g: 'mug', col: '#c8814a', min: 12, w: 'pm' },
+    [['water', 250, 'ml'], ['cinnamon', 1, 'stick', S], ['honey', 1, 'tsp']],
+    [['simmer', 10, ['cinnamon']], ['stirIn', ['honey']], ['serveWarm']]),
+  D('acvtonic', 'Apple cider vinegar tonic', ['loss', 'digest'], { col: '#f0c987', min: 2, w: 'meal', caut: ['acid'] },
+    [['water', 250, 'ml'], ['acv', 1, 'tbsp'], ['lemonjuice', 10, 'ml'], ['cinnamon', 1, 'pinch'], ['honey', 1, 'tsp', 'o']],
+    [['mix', ['water', 'acv', 'lemonjuice', 'cinnamon']], ['sweeten', ['honey']], ['serveCold']]),
+  D('watermelonmint', 'Watermelon & mint cooler', ['hydrate', 'loss'], { col: '#ff5e6c', w: 'hot' },
+    [['watermelon', 300, 'g'], ['mint', 5, 'g'], ['limejuice', 10, 'ml'], ['ice', 75, 'g', 'o']],
+    [['chop', ['watermelon']], ['blend', ['watermelon', 'mint', 'limejuice']], ['serveCold']]),
+  D('grapefruitspritz', 'Grapefruit & mint spritzer', ['loss', 'immune'], { col: '#ff8c69', min: 3, w: 'am', caut: ['meds'] },
+    [['grapefruitjuice', 150, 'ml'], ['sparkling', 150, 'ml'], ['mint', 3, 'g'], ['ice', 75, 'g', 'o']],
+    [['mix', ['grapefruitjuice', 'mint']], ['sparkle'], ['serveCold']]),
+  D('proteincoffee', 'Iced protein coffee', ['loss', 'protein', 'energy'], { col: '#8b5e3c', min: 3, w: 'am', caut: ['caffeine'] },
+    [['coffee', 150, 'ml'], ['lowfatmilk', 100, 'ml'], ['whey', 0.5, 'scoop'], ['ice', 75, 'g']],
+    [['shake', ['coffee', 'lowfatmilk', 'whey']], ['serveCold']]),
+  D('berrykefir', 'Berry kefir smoothie', ['loss', 'digest', 'protein'], { col: '#a23b72', w: 'am' },
+    [['kefir', 200, 'ml'], ['berries', 100, 'g'], ['chia', 0.5, 'tbsp'], ['honey', 1, 'tsp', 'o']],
+    [['blend', ['kefir', 'berries', 'chia']], ['sweeten', ['honey']], ['serveCold']]),
+  D('celeryapple', 'Celery, apple & lemon juice', ['loss', 'hydrate'], { col: '#b5d96b', min: 6, w: 'am' },
+    [['celery', 2, 'piece', 0.85], ['apple', 1, 'piece', 0.85], ['lemonjuice', 15, 'ml'], ['ginger', 5, 'g'], ['water', 100, 'ml']],
+    [['chop', ['celery', 'apple', 'ginger']], ['blend', ['celery', 'apple', 'lemonjuice', 'ginger', 'water']], ['strain'], ['serveCold']]),
+  D('icedhibiscus', 'Iced hibiscus (karkade)', ['loss', 'immune'], { col: '#b0124a', min: 15, w: 'hot', caut: ['lowbp'] },
+    [['water', 300, 'ml'], ['hibiscus', 1, 'tbsp', S], ['lemonjuice', 10, 'ml'], ['honey', 1, 'tsp', 'o'], ['ice', 75, 'g', 'o']],
+    [['steep', 10, ['hibiscus']], ['strain'], ['chill', 30], ['sweeten', ['honey']], ['serveCold']]),
+  D('spicytomato', 'Spicy tomato juice', ['loss', 'immune'], { col: '#d6402d', min: 3 },
+    [['tomatojuice', 250, 'ml'], ['lemonjuice', 10, 'ml'], ['celery', 0.5, 'piece'], ['blackpepper', 1, 'pinch'], ['salt', 1, 'pinch']],
+    [['blend', ['tomatojuice', 'celery', 'lemonjuice']], ['stirIn', ['blackpepper', 'salt']], ['serveCold']]),
+  D('chialemonade', 'Chia lemonade', ['loss', 'hydrate', 'digest'], { col: '#f6e27f', min: 12 },
+    [['water', 300, 'ml'], ['lemonjuice', 30, 'ml'], ['chia', 0.5, 'tbsp'], ['honey', 1, 'tsp'], ['mint', 3, 'g', 'o']],
+    [['mix', ['water', 'lemonjuice', 'honey']], ['stirIn', ['chia']], ['rest', 10], ['serveCold']]),
+  D('greenpineapple', 'Green pineapple smoothie', ['loss', 'digest'], { col: '#a8d45a', w: 'am' },
+    [['spinach', 30, 'g'], ['pineapple', 120, 'g'], ['cucumber', 100, 'g'], ['limejuice', 10, 'ml'], ['water', 150, 'ml'], ['ice', 75, 'g', 'o']],
+    [['chop', ['pineapple', 'cucumber']], ['blend', ['spinach', 'pineapple', 'cucumber', 'limejuice', 'water']], ['serveCold']]),
+  D('peachtea', 'Iced peach & green tea', ['hydrate', 'loss'], { col: '#f7b267', min: 15, w: 'hot', caut: ['caffeine'] },
+    [['water', 300, 'ml'], ['greentea', 1, 'bag', S], ['peach', 0.5, 'piece', 0.85], ['ice', 75, 'g']],
+    [['steep', 3, ['greentea']], ['chill', 30], ['blend', ['peach']], ['strain'], ['serveCold']]),
+  // digestion
+  D('gingermint', 'Ginger & mint tea', ['digest'], { t: 'h', g: 'mug', col: '#b9d58c', min: 8, w: 'after' },
+    [['water', 250, 'ml'], ['ginger', 10, 'g', S], ['mint', 10, 'g', S], ['honey', 1, 'tsp', 'o']],
+    [['boil'], ['steep', 7, ['ginger', 'mint']], ['strain'], ['sweeten', ['honey']]]),
+  D('fenneltea', 'Fennel seed tea', ['digest', 'calm'], { t: 'h', g: 'mug', col: '#e3d6a1', min: 10, w: 'after' },
+    [['water', 250, 'ml'], ['fennel', 1, 'tsp', S], ['honey', 1, 'tsp', 'o']],
+    [['crush', ['fennel']], ['steep', 8, ['fennel']], ['strain'], ['sweeten', ['honey']]]),
+  D('anisetea', 'Anise tea (yansoon)', ['digest', 'calm', 'iraqi'], { t: 'h', g: 'istikan', col: '#e8c97a', min: 10, w: 'pm' },
+    [['water', 250, 'ml'], ['anise', 1, 'tsp', S], ['honey', 1, 'tsp', 'o']],
+    [['crush', ['anise']], ['simmer', 5, ['anise']], ['strain'], ['sweeten', ['honey']]]),
+  D('cuminwater', 'Cumin water (kammoun)', ['digest', 'loss'], { t: 'h', g: 'mug', col: '#c9a45c', min: 8, w: 'after' },
+    [['water', 250, 'ml'], ['cumin', 1, 'tsp', S], ['lemonjuice', 5, 'ml', 'o']],
+    [['simmer', 5, ['cumin']], ['strain'], ['stirIn', ['lemonjuice']], ['serveWarm']]),
+  D('papayasmoothie', 'Papaya & yogurt smoothie', ['digest'], { col: '#ffa94d', w: 'am' },
+    [['papaya', 150, 'g'], ['yogurt', 100, 'g'], ['limejuice', 10, 'ml'], ['honey', 1, 'tsp', 'o']],
+    [['chop', ['papaya']], ['blend', ['papaya', 'yogurt', 'limejuice']], ['sweeten', ['honey']], ['serveCold']]),
+  D('pineappleginger', 'Pineapple & ginger juice', ['digest', 'immune'], { col: '#ffd23f', w: 'after' },
+    [['pineapple', 200, 'g'], ['ginger', 5, 'g'], ['water', 100, 'ml'], ['mint', 3, 'g', 'o'], ['ice', 75, 'g', 'o']],
+    [['chop', ['pineapple', 'ginger']], ['blend', ['pineapple', 'ginger', 'water', 'mint']], ['serveCold']]),
+  D('limonnana', 'Lemon & mint (limon w nana)', ['iraqi', 'digest', 'hydrate'], { col: '#bfe38a', w: 'hot' },
+    [['lemonjuice', 40, 'ml'], ['mint', 10, 'g'], ['water', 250, 'ml'], ['ice', 1, 'cup'], ['sugar', 2, 'tsp', 'o']],
+    [['blend', ['lemonjuice', 'mint', 'water', 'ice']], ['strain'], ['sweeten', ['sugar']], ['serveCold']]),
+  D('chamomilemint', 'Chamomile & mint tea', ['calm', 'digest'], { t: 'h', g: 'mug', col: '#f3dc8a', min: 6, w: 'pm' },
+    [['water', 250, 'ml'], ['chamomile', 1, 'bag', S], ['mint', 5, 'g', S], ['honey', 1, 'tsp', 'o']],
+    [['steep', 5, ['chamomile', 'mint']], ['sweeten', ['honey']], ['serveHot']]),
+  D('barleywater', 'Barley water (maa al-sha’ir)', ['digest', 'hydrate', 'iraqi'], { g: 'jug', col: '#efe3c2', min: 40, sv: 4 },
+    [['barley', 4, 'tbsp', 0.25], ['water', 1000, 'ml'], ['lemonjuice', 30, 'ml'], ['honey', 1, 'tbsp', 'o']],
+    [['wash', ['barley']], ['simmer', 30, ['barley']], ['strain'], ['stirIn', ['lemonjuice']], ['sweeten', ['honey']], ['chill', 60]]),
+  D('halba', 'Fenugreek drink (halba)', ['digest', 'iraqi'], { t: 'h', g: 'istikan', col: '#d9b56b', min: 15, w: 'am', caut: ['preg'] },
+    [['water', 250, 'ml'], ['fenugreek', 1, 'tsp', S], ['honey', 1, 'tsp', 'o']],
+    [['simmer', 10, ['fenugreek']], ['strain'], ['sweeten', ['honey']], ['serveHot']]),
+  // Iraqi classics
+  D('shineena', 'Shineena (laban drink)', ['iraqi', 'digest'], { col: '#f4f1e8', min: 3, w: 'meal' },
+    [['yogurt', 150, 'g'], ['water', 100, 'ml'], ['salt', 1, 'pinch'], ['mint', 2, 'g', 'o'], ['ice', 75, 'g', 'o']],
+    [['whisk', ['yogurt', 'water', 'salt']], ['garnish', ['mint']], ['serveCold']]),
+  D('iraqitea', 'Iraqi tea with cardamom', ['iraqi', 'energy'], { t: 'h', g: 'istikan', col: '#a0461e', min: 12, caut: ['caffeine'] },
+    [['water', 150, 'ml'], ['blacktea', 1, 'tsp', S], ['cardamom', 2, 'pod', S], ['sugar', 2, 'tsp', 'o']],
+    [['boil'], ['simmer', 10, ['blacktea', 'cardamom']], ['sweeten', ['sugar']], ['istikan']]),
+  D('noomibasra', 'Noomi Basra (dried lime tea)', ['iraqi', 'digest', 'immune'], { t: 'h', g: 'istikan', col: '#c58a2e', min: 15, w: 'after' },
+    [['water', 250, 'ml'], ['driedlime', 1, 'piece', S], ['sugar', 1, 'tsp', 'o']],
+    [['pierce'], ['simmer', 10, ['driedlime']], ['strain'], ['sweeten', ['sugar']], ['istikan']]),
+  D('datesmilk', 'Milk with dates (haleeb bil-tamur)', ['iraqi', 'energy'], { col: '#c9a27e', w: 'pre' },
+    [['milk', 250, 'ml'], ['dates', 5, 'piece'], ['cardamom', 1, 'pod'], ['ice', 75, 'g', 'o']],
+    [['pit', ['dates']], ['blend', ['milk', 'dates', 'cardamom']], ['serveCold']]),
+  D('tamarhindi', 'Tamarind drink (tamur hindi)', ['iraqi', 'digest'], { col: '#7b4a26', min: 10, w: 'hot' },
+    [['tamarind', 30, 'g', 0.6], ['water', 300, 'ml'], ['sugar', 2, 'tsp', 'o'], ['ice', 75, 'g', 'o']],
+    [['soak', 2, ['tamarind']], ['strain'], ['sweeten', ['sugar']], ['chill', 30], ['serveCold']]),
+  D('qamaraldin', 'Qamar al-din (apricot drink)', ['iraqi', 'energy'], { col: '#f39c12', min: 15, w: 'pm' },
+    [['qamaraldin', 40, 'g'], ['water', 250, 'ml'], ['rosewater', 1, 'tsp', 'o'], ['ice', 75, 'g', 'o']],
+    [['chop', ['qamaraldin']], ['soak', 2, ['qamaraldin']], ['blend', ['qamaraldin', 'water', 'rosewater']], ['chill', 30], ['serveCold']]),
+  D('zbeeb', 'Raisin sharbat (zbeeb)', ['iraqi', 'energy'], { col: '#6b3416', min: 10, w: 'hot' },
+    [['raisins', 40, 'g', 0.85], ['water', 250, 'ml'], ['ice', 75, 'g', 'o']],
+    [['wash', ['raisins']], ['soak', 8, ['raisins']], ['blend', ['raisins', 'water']], ['strain'], ['serveCold']]),
+  D('rumman', 'Fresh pomegranate juice', ['iraqi', 'immune'], { col: '#b3123a', min: 10 },
+    [['pomegranatejuice', 250, 'ml'], ['ice', 75, 'g', 'o']],
+    [['pressPom'], ['serveCold']]),
+  D('qasab', 'Sugarcane juice (asir qasab)', ['iraqi', 'energy'], { col: '#c5d86d', w: 'hot', caut: ['sugar'] },
+    [['sugarcanejuice', 250, 'ml'], ['lemonjuice', 5, 'ml'], ['ice', 75, 'g', 'o']],
+    [['pressCane'], ['stirIn', ['lemonjuice']], ['serveCold']]),
+  D('qahwa', 'Arabic coffee (qahwa)', ['iraqi', 'energy'], { t: 'h', g: 'finjan', col: '#9c7a3c', min: 15, w: 'am', caut: ['caffeine'] },
+    [['arabiccoffee', 60, 'ml'], ['cardamom', 2, 'pod', S]],
+    [['brewCoffee', 10], ['finjan']]),
+  D('darseen', 'Cinnamon tea with walnuts (darseen)', ['iraqi', 'calm'], { t: 'h', g: 'istikan', col: '#a8552e', min: 15, w: 'pm' },
+    [['water', 250, 'ml'], ['cinnamon', 2, 'stick', S], ['sugar', 1, 'tsp', 'o'], ['walnuts', 10, 'g', 'o']],
+    [['simmer', 10, ['cinnamon']], ['sweeten', ['sugar']], ['top', ['walnuts']], ['istikan']]),
+  D('sahlab', 'Sahlab with cinnamon', ['iraqi', 'calm'], { t: 'h', g: 'mug', col: '#f3e6cf', min: 10, w: 'pm' },
+    [['milk', 250, 'ml'], ['sahlab', 1, 'tbsp'], ['sugar', 2, 'tsp'], ['cinnamon', 1, 'pinch'], ['pistachios', 5, 'g', 'o']],
+    [['whisk', ['milk', 'sahlab']], ['thicken'], ['stirIn', ['sugar']], ['top', ['cinnamon', 'pistachios']], ['serveHot']]),
+  D('sous', 'Liquorice drink (sous)', ['iraqi', 'digest'], { col: '#4a2c1d', min: 10, w: 'hot', caut: ['bp'] },
+    [['liquorice', 1, 'tbsp', S], ['water', 300, 'ml'], ['ice', 75, 'g', 'o']],
+    [['soak', 8, ['liquorice']], ['strain'], ['serveCold']]),
+  D('rosesharbat', 'Rose water sharbat', ['iraqi', 'hydrate'], { col: '#f7a1c4', min: 3, w: 'hot' },
+    [['water', 250, 'ml'], ['rosewater', 2, 'tsp'], ['sugar', 3, 'tsp'], ['lemonjuice', 5, 'ml'], ['ice', 75, 'g']],
+    [['mix', ['water', 'rosewater', 'sugar', 'lemonjuice']], ['serveCold']]),
+  D('toot', 'Mulberry sharbat (toot)', ['iraqi', 'immune'], { col: '#5c1a3c', min: 6, w: 'hot' },
+    [['mulberries', 120, 'g'], ['water', 150, 'ml'], ['lemonjuice', 5, 'ml'], ['honey', 1, 'tsp', 'o'], ['ice', 75, 'g', 'o']],
+    [['wash', ['mulberries']], ['blend', ['mulberries', 'water', 'lemonjuice']], ['strain'], ['sweeten', ['honey']], ['serveCold']]),
+  D('mastaw', 'Mastaw (Kurdish yogurt drink)', ['iraqi', 'digest', 'hydrate'], { col: '#eef3ea', min: 4, w: 'meal' },
+    [['yogurt', 150, 'g'], ['sparkling', 150, 'ml'], ['mint', 2, 'g'], ['salt', 1, 'pinch'], ['cucumber', 50, 'g', 'o'], ['ice', 75, 'g', 'o']],
+    [['whisk', ['yogurt', 'salt', 'mint']], ['grate', ['cucumber']], ['sparkle'], ['serveCold']]),
+  D('avocadodate', 'Avocado & date shake', ['iraqi', 'energy', 'protein'], { col: '#9fc26b', w: 'post' },
+    [['avocado', 0.5, 'piece'], ['milk', 250, 'ml'], ['dates', 3, 'piece'], ['honey', 1, 'tsp', 'o'], ['almonds', 5, 'piece', 'o']],
+    [['pit', ['dates']], ['blend', ['avocado', 'milk', 'dates']], ['top', ['almonds']], ['serveCold']]),
+  D('gingermilk', 'Milk with ginger', ['calm', 'digest'], { t: 'h', g: 'mug', col: '#ead8b1', min: 8, w: 'pm' },
+    [['milk', 250, 'ml'], ['ginger', 5, 'g', 0.5], ['honey', 1, 'tsp', 'o']],
+    [['simmer', 5, ['milk', 'ginger']], ['strain'], ['sweeten', ['honey']], ['serveHot']]),
+  // energy & pre-workout
+  D('bananacoffee', 'Banana coffee shake', ['energy'], { col: '#b38b5d', w: 'pre', caut: ['caffeine'] },
+    [['coffee', 120, 'ml'], ['lowfatmilk', 120, 'ml'], ['banana', 1, 'piece'], ['oats', 3, 'tbsp'], ['ice', 75, 'g']],
+    [['blend', ['coffee', 'lowfatmilk', 'banana', 'oats']], ['blendIce'], ['serveCold']]),
+  D('beetorange', 'Beet & orange pre-workout', ['energy', 'immune'], { col: '#a3214a', min: 3, w: 'pre' },
+    [['beetjuice', 150, 'ml'], ['orangejuice', 100, 'ml'], ['ginger', 3, 'g'], ['ice', 75, 'g', 'o']],
+    [['blend', ['beetjuice', 'orangejuice', 'ginger']], ['serveCold']]),
+  D('datebanana', 'Date & banana power smoothie', ['energy'], { col: '#d9b98a', w: 'pre' },
+    [['banana', 1, 'piece'], ['dates', 3, 'piece'], ['almondmilk', 250, 'ml'], ['oats', 4, 'tbsp'], ['cinnamon', 1, 'pinch']],
+    [['pit', ['dates']], ['blend', ['banana', 'dates', 'almondmilk', 'oats', 'cinnamon']], ['serveCold']]),
+  D('electrolyte', 'Homemade electrolyte drink', ['energy', 'hydrate'], { g: 'shaker', col: '#ffe08a', min: 2, w: 'post' },
+    [['water', 400, 'ml'], ['orangejuice', 60, 'ml'], ['lemonjuice', 15, 'ml'], ['honey', 2, 'tsp'], ['salt', 0.125, 'tsp']],
+    [['shake', ['water', 'orangejuice', 'lemonjuice', 'honey', 'salt']], ['serveCold']]),
+  D('cocoaoat', 'Cocoa & oat energy shake', ['energy', 'protein'], { col: '#6d4430', w: 'pre' },
+    [['oatmilk', 250, 'ml'], ['cocoa', 1, 'tbsp'], ['banana', 0.5, 'piece'], ['dates', 2, 'piece'], ['ice', 75, 'g', 'o']],
+    [['pit', ['dates']], ['blend', ['oatmilk', 'cocoa', 'banana', 'dates']], ['serveCold']]),
+  D('mangolassi', 'Light mango lassi', ['energy', 'digest'], { col: '#ffb627', w: 'post' },
+    [['mango', 150, 'g'], ['yogurt', 150, 'g'], ['water', 50, 'ml'], ['cardamom', 1, 'pod'], ['honey', 1, 'tsp', 'o']],
+    [['blend', ['mango', 'yogurt', 'water', 'cardamom']], ['sweeten', ['honey']], ['serveCold']]),
+  D('strawberrybanana', 'Strawberry & banana smoothie', ['energy', 'immune'], { col: '#ff6b81', w: 'am' },
+    [['strawberries', 150, 'g'], ['banana', 0.5, 'piece'], ['lowfatmilk', 200, 'ml'], ['honey', 1, 'tsp', 'o']],
+    [['chop', ['strawberries', 'banana']], ['blend', ['strawberries', 'banana', 'lowfatmilk']], ['sweeten', ['honey']], ['serveCold']]),
+  D('figmilk', 'Fig & walnut milk', ['energy', 'calm'], { col: '#b98b6a', w: 'pre' },
+    [['milk', 250, 'ml'], ['figs', 3, 'piece'], ['walnuts', 10, 'g'], ['cinnamon', 1, 'pinch']],
+    [['soak', 1, ['figs']], ['blend', ['milk', 'figs', 'walnuts', 'cinnamon']], ['serveCold']]),
+  // protein & recovery
+  D('pbbanana', 'Peanut butter banana protein shake', ['protein', 'energy'], { g: 'shaker', col: '#c89f6a', min: 4, w: 'post' },
+    [['milk', 250, 'ml'], ['banana', 1, 'piece'], ['peanutbutter', 1, 'tbsp'], ['whey', 1, 'scoop'], ['ice', 75, 'g', 'o']],
+    [['blend', ['milk', 'banana', 'peanutbutter', 'whey']], ['serveCold']]),
+  D('chocrecovery', 'Chocolate recovery milk', ['protein'], { col: '#7a4b31', min: 3, w: 'post' },
+    [['lowfatmilk', 300, 'ml'], ['cocoa', 1, 'tbsp'], ['dates', 2, 'piece'], ['cinnamon', 1, 'pinch']],
+    [['pit', ['dates']], ['blend', ['lowfatmilk', 'cocoa', 'dates', 'cinnamon']], ['serveCold']]),
+  D('greekberry', 'Greek yogurt berry shake', ['protein', 'loss'], { col: '#c04a7a', min: 4, w: 'post' },
+    [['greekyogurt', 170, 'g'], ['berries', 100, 'g'], ['lowfatmilk', 100, 'ml'], ['honey', 1, 'tsp', 'o']],
+    [['blend', ['greekyogurt', 'berries', 'lowfatmilk']], ['sweeten', ['honey']], ['serveCold']]),
+  D('oatwhey', 'Oat, banana & whey shake', ['protein', 'energy'], { g: 'shaker', col: '#e2c290', min: 4, w: 'post' },
+    [['milk', 200, 'ml'], ['oats', 6, 'tbsp'], ['banana', 0.5, 'piece'], ['whey', 1, 'scoop'], ['cinnamon', 1, 'pinch']],
+    [['blend', ['milk', 'oats', 'banana', 'whey', 'cinnamon']], ['serveCold']]),
+  D('tartcherry', 'Tart cherry recovery juice', ['protein', 'calm'], { col: '#9b1b30', min: 2, w: 'pm' },
+    [['cherryjuice', 200, 'ml'], ['water', 100, 'ml'], ['ice', 75, 'g', 'o']],
+    [['mix', ['cherryjuice', 'water']], ['serveCold']]),
+  D('almonddatemilk', 'Almond & date milk', ['energy', 'calm'], { col: '#eadbc8', min: 10, w: 'pm' },
+    [['almonds', 20, 'g', 0.6], ['dates', 2, 'piece'], ['water', 250, 'ml'], ['cinnamon', 1, 'pinch']],
+    [['soak', 8, ['almonds']], ['blend', ['almonds', 'dates', 'water', 'cinnamon']], ['strain'], ['serveCold']]),
+  // immunity
+  D('goldenmilk', 'Golden milk (turmeric latte)', ['immune', 'calm'], { t: 'h', g: 'mug', col: '#f2b134', min: 8, w: 'pm' },
+    [['milk', 250, 'ml'], ['turmeric', 1, 'tsp'], ['cinnamon', 0.5, 'tsp'], ['ginger', 2, 'g'], ['blackpepper', 1, 'pinch'], ['honey', 1, 'tsp', 'o']],
+    [['heatMilk'], ['whisk', ['turmeric', 'cinnamon', 'ginger', 'blackpepper']], ['sweeten', ['honey']], ['serveHot']]),
+  D('orangecarrot', 'Orange, carrot & ginger juice', ['immune', 'energy'], { col: '#ff8c1a', min: 4, w: 'am' },
+    [['orangejuice', 150, 'ml'], ['carrotjuice', 100, 'ml'], ['ginger', 5, 'g'], ['ice', 75, 'g', 'o']],
+    [['blend', ['orangejuice', 'carrotjuice', 'ginger']], ['serveCold']]),
+  D('kiwispinach', 'Kiwi & spinach smoothie', ['immune', 'loss'], { col: '#8cc43c', w: 'am' },
+    [['kiwi', 2, 'piece'], ['spinach', 30, 'g'], ['apple', 0.5, 'piece'], ['water', 150, 'ml'], ['lemonjuice', 10, 'ml']],
+    [['peel', ['kiwi']], ['blend', ['kiwi', 'spinach', 'apple', 'water', 'lemonjuice']], ['serveCold']]),
+  D('lemonhoneyhot', 'Hot lemon, honey & ginger', ['immune', 'calm'], { t: 'h', g: 'mug', col: '#f7c948', min: 8, w: 'pm' },
+    [['water', 250, 'ml'], ['lemonjuice', 20, 'ml'], ['honey', 2, 'tsp'], ['ginger', 10, 'g', S]],
+    [['steep', 5, ['ginger']], ['stirIn', ['lemonjuice', 'honey']], ['serveWarm']]),
+  D('abcjuice', 'ABC juice (apple, beet, carrot)', ['immune', 'energy'], { col: '#c0392b', w: 'am' },
+    [['applejuice', 100, 'ml'], ['beetjuice', 75, 'ml'], ['carrotjuice', 100, 'ml'], ['ginger', 3, 'g']],
+    [['blend', ['applejuice', 'beetjuice', 'carrotjuice', 'ginger']], ['serveCold']]),
+  // sleep & calm
+  D('chamomilehoney', 'Chamomile with honey', ['calm'], { t: 'h', g: 'mug', col: '#f5d76e', min: 6, w: 'pm' },
+    [['water', 250, 'ml'], ['chamomile', 1, 'bag', S], ['honey', 1, 'tsp', 'o']],
+    [['steep', 5, ['chamomile']], ['sweeten', ['honey']], ['serveHot']]),
+  D('cardamommilk', 'Warm milk with cardamom & honey', ['calm'], { t: 'h', g: 'mug', col: '#f1e4c8', min: 6, w: 'pm' },
+    [['milk', 250, 'ml'], ['cardamom', 2, 'pod'], ['honey', 1, 'tsp']],
+    [['crush', ['cardamom']], ['simmer', 3, ['milk', 'cardamom']], ['stirIn', ['honey']], ['serveWarm']]),
+  D('bananaalmond', 'Banana & almond bedtime smoothie', ['calm'], { col: '#efe1b8', min: 4, w: 'pm' },
+    [['almondmilk', 250, 'ml'], ['banana', 1, 'piece'], ['almonds', 10, 'g'], ['cinnamon', 1, 'pinch']],
+    [['blend', ['almondmilk', 'banana', 'almonds', 'cinnamon']], ['serveCold']]),
+  // hydration
+  D('orangeberrywater', 'Orange & berry infused water', ['hydrate'], { g: 'jug', col: '#ffc9a9', sv: 4 },
+    [['water', 1000, 'ml'], ['orange', 1, 'piece', S], ['berries', 75, 'g', S], ['mint', 5, 'g', S], ['ice', 1, 'cup', 'o']],
+    [['slice', ['orange']], ['infuse', 2, ['orange', 'berries', 'mint']], ['serveCold']]),
+  D('coconutlime', 'Coconut water with lime', ['hydrate', 'energy'], { col: '#e9f5db', min: 2, w: 'post' },
+    [['coconutwater', 300, 'ml'], ['limejuice', 10, 'ml'], ['mint', 2, 'g', 'o'], ['ice', 75, 'g', 'o']],
+    [['mix', ['coconutwater', 'limejuice', 'mint']], ['serveCold']]),
+  D('pomspritz', 'Sparkling pomegranate spritzer', ['hydrate'], { col: '#e0457b', min: 2 },
+    [['pomegranatejuice', 100, 'ml'], ['sparkling', 200, 'ml'], ['limejuice', 10, 'ml'], ['mint', 2, 'g', 'o'], ['ice', 75, 'g']],
+    [['mix', ['pomegranatejuice', 'limejuice', 'mint']], ['sparkle'], ['serveCold']]),
+  D('applecinnamonwater', 'Apple & cinnamon water', ['hydrate', 'loss'], { g: 'jug', col: '#f6d7b0', sv: 4 },
+    [['water', 1000, 'ml'], ['apple', 1, 'piece', S], ['cinnamon', 1, 'stick', S], ['ice', 1, 'cup', 'o']],
+    [['slice', ['apple']], ['infuse', 3, ['apple', 'cinnamon']], ['serveCold']]),
+  D('melonmint', 'Melon & mint cooler', ['hydrate', 'loss'], { col: '#ffc285', w: 'hot' },
+    [['melon', 250, 'g'], ['mint', 3, 'g'], ['limejuice', 10, 'ml'], ['water', 100, 'ml'], ['ice', 75, 'g', 'o']],
+    [['chop', ['melon']], ['blend', ['melon', 'mint', 'limejuice', 'water']], ['serveCold']]),
+]
+export const DRINK_BY_ID = Object.fromEntries(DRINKS.map(d => [d.id, d]))
+export const DRINK_NAMES = DRINKS.map(d => d.name)
+export const DRINK_COUNT = DRINKS.length
+
+// ---- nutrition ----------------------------------------------------------------------------------
+const num = v => (Number.isFinite(+v) ? +v : 0)
+const r0 = v => Math.round(v)
+const r1 = v => Math.round(v * 10) / 10
+
+/** Totals of ingredient rows [{ id, a, u, x? }] — the whole batch. */
+export function rowsTotals(rows) {
+  const t = { kcal: 0, p: 0, c: 0, f: 0, s: 0, g: 0, water: 0 }
+  for (const r of rows || []) {
+    const x = DING_BY_ID[r.id]
+    if (!x) continue
+    const g = gramsOf(x, r.a, r.u)
+    const share = r.x == null ? 1 : num(r.x)
+    t.kcal += x.kcal * g / 100 * share; t.p += x.p * g / 100 * share; t.c += x.c * g / 100 * share
+    t.f += x.f * g / 100 * share; t.s += x.s * g / 100 * share
+    t.g += g; t.water += g * (x.w || 0) * (share >= 0.5 ? share : 0)
+  }
+  return t
+}
+const per = (t, sv) => {
+  const n = Math.max(1, num(sv) || 1)
+  return { kcal: r0(t.kcal / n), p: r1(t.p / n), c: r1(t.c / n), f: r1(t.f / n), s: r1(t.s / n), ml: r0(t.water / n), g: r0(t.g / n) }
+}
+/** Rows a drink uses: the required ones plus the optional ones you switched on. */
+export const drinkRows = (d, withOpt = []) => (d.ing || []).filter(r => !r.opt || withOpt.includes(r.id))
+/** Per-serving nutrition of a drink: { kcal, p, c, f, s (sugar), ml (water it adds), g }. */
+export const drinkNutrition = (d, withOpt = []) => per(rowsTotals(drinkRows(d, withOpt)), d.sv)
+/** Calories an optional row adds per serving (the "+21 kcal" next to honey). */
+export function optionalKcal(d, id) {
+  const r = (d.ing || []).find(x => x.id === id)
+  return r ? r0(rowsTotals([{ ...r, opt: false }]).kcal / Math.max(1, d.sv || 1)) : 0
+}
+/** "dairy" / "nuts" / "caffeine" — read off the ingredients. */
+export function drinkFlags(d, withOpt = []) {
+  const fl = drinkRows(d, withOpt).map(r => (DING_BY_ID[r.id] || {}).fl || '').join('')
+  return { dairy: fl.includes('m'), nuts: fl.includes('n'), caffeine: fl.includes('c') }
+}
+/** Up to `n` reasons a drink is good for you, from its ingredients (first ones first). */
+export function drinkNotes(d, n = 3) {
+  const out = []
+  for (const r of d.ing || []) {
+    const k = NOTE_OF[r.id]
+    if (k && !out.includes(NOTE[k])) out.push(NOTE[k])
+    if (out.length >= n) break
+  }
+  return out
+}
+
+// ---- your own drinks ----------------------------------------------------------------------------
+/** A saved drink as a library-shaped object (so the same screens show it). */
+export function myDrinkAsDrink(m) {
+  return {
+    id: m.id, name: m.n || '', cats: ['mine'], t: m.t === 'h' ? 'h' : 'c', g: m.t === 'h' ? 'mug' : 'tall', col: m.col || '#7cc35a',
+    min: 5, sv: Math.max(1, Math.round(num(m.sv) || 1)), w: 'any', caut: [], story: null, mine: true,
+    ing: (m.ing || []).filter(r => DING_BY_ID[r[0]]).map(([id, a, u, x]) => ({ id, a: num(a), u: u || 'g', opt: false, x: x == null ? 1 : num(x) })),
+    steps: [], note: m.note || '',
+  }
+}
+export const allDrinks = S => [...((S && S.myDrinks) || []).map(myDrinkAsDrink), ...DRINKS]
+export function drinkOf(S, id) {
+  if (DRINK_BY_ID[id]) return DRINK_BY_ID[id]
+  const m = ((S && S.myDrinks) || []).find(x => x.id === id)
+  return m ? myDrinkAsDrink(m) : null
+}
+export function saveMyDrink(s, { id, n, col, t: temp, sv, ing, note }) {
+  s.myDrinks = Array.isArray(s.myDrinks) ? s.myDrinks : []
+  const rec = {
+    id: id || 'md' + uid(), n: String(n || '').trim().slice(0, 60), col: /^#[0-9a-f]{6}$/i.test(col || '') ? col : '#7cc35a',
+    t: temp === 'h' ? 'h' : 'c', sv: Math.min(20, Math.max(1, Math.round(num(sv) || 1))),
+    ing: (ing || []).filter(r => r && DING_BY_ID[r[0]] && num(r[1]) > 0).slice(0, 30).map(([i, a, u, x]) => (x != null && x !== 1 ? [i, r1(num(a)), u, num(x)] : [i, r1(num(a)), u])),
+    note: String(note || '').slice(0, 300), at: Date.now(),
+  }
+  const i = s.myDrinks.findIndex(x => x.id === rec.id)
+  if (i >= 0) s.myDrinks[i] = rec; else s.myDrinks.unshift(rec)
+  return rec.id
+}
+export function deleteMyDrink(s, id) {
+  s.myDrinks = (s.myDrinks || []).filter(x => x.id !== id)
+  s.drinkFavs = (s.drinkFavs || []).filter(x => x !== id)
+}
+export function toggleDrinkFav(s, id) {
+  const f = new Set(s.drinkFavs || [])
+  if (f.has(id)) f.delete(id); else f.add(id)
+  s.drinkFavs = [...f]
+}
+
+/** A food-log entry for `servings` of a drink. */
+export function drinkEntry(d, { servings = 1, meal = 's', withOpt = [], now = Date.now() } = {}) {
+  const n = drinkNutrition(d, withOpt)
+  const q = Math.min(20, Math.max(0.5, Math.round(num(servings) * 2) / 2 || 1))
+  return { id: 'fe' + uid(), f: null, dr: d.id, n: d.name, kcal: n.kcal, p: n.p, c: n.c, fat: n.f, q, m: ['b', 'l', 'd', 's'].includes(meal) ? meal : 's', t: now }
+}
+/** Remember a drink in the recent list (keeps 21 days). */
+export function noteDrink(s, iso, id, now = Date.now()) {
+  s.drinkLog = s.drinkLog && typeof s.drinkLog === 'object' ? s.drinkLog : {}
+  const day = Array.isArray(s.drinkLog[iso]) ? s.drinkLog[iso] : []
+  day.push({ id, at: now })
+  s.drinkLog[iso] = day.slice(-30)
+  const keep = Object.keys(s.drinkLog).sort().slice(-21)
+  for (const k of Object.keys(s.drinkLog)) if (!keep.includes(k)) delete s.drinkLog[k]
+}
+/** Most recent distinct drinks. */
+export function recentDrinks(S, n = 8) {
+  const log = (S && S.drinkLog) || {}
+  const out = []
+  for (const k of Object.keys(log).sort().reverse()) {
+    for (const e of [...(log[k] || [])].reverse()) if (e && !out.includes(e.id) && drinkOf(S, e.id)) out.push(e.id)
+    if (out.length >= n) break
+  }
+  return out.slice(0, n)
+}
+
+// ---- finding drinks -----------------------------------------------------------------------------
+const fold = s => String(s || '').toLocaleLowerCase().normalize('NFKD').replace(/[\u064B-\u065F\u0670\u0300-\u036f]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+/**
+ * Drinks matching a query and filters. `tr` translates names (search matches both languages).
+ * cat: a DRINK_CATS key, 'fav' or 'mine'. temp: 'h' | 'c'. maxKcal: number.
+ */
+export function searchDrinks(S, { q = '', cat = null, temp = null, maxKcal = null, tr = x => x } = {}) {
+  const favs = new Set((S && S.drinkFavs) || [])
+  const Q = fold(q).trim()
+  return allDrinks(S).filter(d => {
+    if (cat === 'fav' && !favs.has(d.id)) return false
+    if (cat === 'mine' && !d.mine) return false
+    if (cat && cat !== 'fav' && cat !== 'mine' && !d.cats.includes(cat)) return false
+    if (temp && d.t !== temp) return false
+    if (maxKcal != null && drinkNutrition(d).kcal > maxKcal) return false
+    if (!Q) return true
+    const hay = fold(d.name + ' ' + tr(d.name) + ' ' + d.ing.map(r => { const x = DING_BY_ID[r.id]; return x ? x.name + ' ' + tr(x.name) : '' }).join(' '))
+    return Q.split(/\s+/).every(w => hay.includes(w))
+  })
+}
+/** Ingredients matching a query (both languages), for the drink builder. */
+export function searchDing(q, tr = x => x, cat = null) {
+  const Q = fold(q).trim()
+  return DING.filter(x => (!cat || x.cat === cat) && (!Q || fold(x.name + ' ' + tr(x.name)).includes(Q)))
+}
+/** The same drink for everyone on a given day, rotating through the library. */
+export function drinkOfDay(iso, cat = null) {
+  const pool = cat ? DRINKS.filter(d => d.cats.includes(cat)) : DRINKS
+  let h = 0
+  for (const ch of String(iso)) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return pool[h % pool.length]
+}
+/** A drink that suits a moment of the day: 'am' | 'pre' | 'post' | 'pm' | 'hot' | 'meal' | 'after'. */
+export function drinkFor(when, seed = 0) {
+  const pool = DRINKS.filter(d => d.w === when)
+  return pool.length ? pool[Math.abs(seed) % pool.length] : DRINKS[0]
+}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5.0 — the round "+ water" button in the collapsed bar -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="270" android:startColor="#FF1F8BFF" android:endColor="#FF0A6CE0" />
+    <corners android:radius="17dp" />
+</shape>

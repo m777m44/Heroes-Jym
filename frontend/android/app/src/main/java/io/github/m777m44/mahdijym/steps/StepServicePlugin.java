@@ -13,6 +13,7 @@ import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
@@ -22,6 +23,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,6 +42,7 @@ import java.util.List;
  *   pause() / resume() / stop()
  *   getState()                    → today's snapshot (steps, activeMs, speed, hourly, …)
  *   getHistory()                  → { days: { 'YYYY-MM-DD': { n, ms, h[24] } } }
+ *   resetDay({ day })             today (default) back to 0 and counting on from now, or a past day removed
  *   getBatteryStatus()            → { ignoring }   battery-optimisation exemption
  *   requestBatteryExemption()     opens the system dialog
  *   openNotificationSettings()
@@ -47,7 +50,18 @@ import java.util.List;
  *   getDeviceInfo()               → { manufacturer, model, sdk, autostart, exactAlarms }
  *   openAutostartSettings()       → { opened } — the maker's "autostart" screen (Xiaomi, Huawei…)
  *   openAppSettings()             → { opened } — the app's page in Settings (permissions)
- * Events: 'steps' (snapshot, up to 4×/s while the app is open), 'open' ({ route }).
+ *
+ * Water & celebrations (2.5):
+ *   configureWater({ config })    tracker, goal, container, reminder hours, texts → re-arms the alarm
+ *   getWater()                    → { days: { 'YYYY-MM-DD': { ml, at } }, day, ml, goal }
+ *   setWater({ day, ml, at, celebrated })  a change made in the app (the later `at` wins)
+ *   testWaterReminder()           posts a reminder now
+ *   scheduleWorkoutReminders({ items, strings }) → { scheduled } — 2.10 heads-up workout reminders
+ *   getCelebrationStatus()        → { fullScreen, overlay, sdk }
+ *   openFullScreenSettings() / openOverlaySettings()
+ *   previewCelebration({ spec, mode: 'screen' | 'notification' })
+ * Events: 'steps' (snapshot, up to 4×/s while the app is open), 'open' ({ route }),
+ *         'water' ({ day, ml, at, goal } after a notification button changed it).
  */
 @CapacitorPlugin(
     name = "StepService",
@@ -64,6 +78,9 @@ public class StepServicePlugin extends Plugin {
         StepCounterService.appVisible = true;
         StepCounterService.listener = state -> {
             try { notifyListeners("steps", JSObject.fromJSONObject(state)); } catch (JSONException ignored) { }
+        };
+        WaterStore.listener = snap -> {
+            try { notifyListeners("water", JSObject.fromJSONObject(snap)); } catch (JSONException ignored) { }
         };
         if (getActivity() != null) launchRoute = routeOf(getActivity().getIntent());
         try { Watchdog.ensureRunning(ctx()); }   // opening the app always revives a killed counter
@@ -99,6 +116,7 @@ public class StepServicePlugin extends Plugin {
     @Override protected void handleOnDestroy() {
         StepCounterService.appVisible = false;
         StepCounterService.listener = null;
+        WaterStore.listener = null;
         super.handleOnDestroy();
     }
 
@@ -167,7 +185,10 @@ public class StepServicePlugin extends Plugin {
         // pause. Only a tap on Start (attach false) switches counting back on.
         boolean attach = Boolean.TRUE.equals(call.getBoolean("attach", false)) && s.running;
         s.running = true;
-        if (!attach) s.paused = false;
+        if (!attach && s.paused) {
+            s.paused = false;
+            s.resetBaseline();             // steps taken while paused are not counted
+        }
         s.save();
         if (!StepCounterService.send(ctx(), StepCounterService.ACTION_START)) {
             s.running = false;
@@ -218,6 +239,17 @@ public class StepServicePlugin extends Plugin {
         }
         Watchdog.cancel(ctx());
         NotificationManagerCompat.from(ctx()).cancel(StepNotifier.LIVE_ID);
+        StepWidget.updateAll(ctx());
+        call.resolve(snapshot());
+    }
+
+    /** "Reset and start again": { day } — today (default) back to 0, or a past day removed. */
+    @PluginMethod
+    public void resetDay(PluginCall call) {
+        String day = call.getString("day", null);
+        StepStore.get(ctx()).resetDay(day);
+        StepCounterService svc = StepCounterService.instance;
+        if (svc != null) svc.afterReset();
         StepWidget.updateAll(ctx());
         call.resolve(snapshot());
     }
@@ -364,6 +396,174 @@ public class StepServicePlugin extends Plugin {
         JSObject r = new JSObject();
         r.put("opened", opened);
         call.resolve(r);
+    }
+
+    // ---- 9.0: the theme outside the web view ------------------------------------------------
+
+    /**
+     * The colours of the theme on screen (lib/nativeTheme.js): the status and navigation bars
+     * glide to them now, and the notifications and widgets are redrawn in them.
+     */
+    @PluginMethod
+    public void setTheme(PluginCall call) {
+        Theme.set(ctx(), call.getData());
+        final Theme th = Theme.get(ctx());
+        final android.app.Activity a = getActivity();
+        if (a != null) a.runOnUiThread(() -> SystemBars.apply(a, th));
+        StepCounterService svc = StepCounterService.instance;
+        if (svc != null) svc.refreshNotification();
+        try { WaterReminder.refreshPanel(ctx(), true); } catch (RuntimeException ignored) { }
+        try { StepWidget.updateAll(ctx()); } catch (RuntimeException ignored) { }
+        call.resolve();
+    }
+
+    // ---- water (2.5) ---------------------------------------------------------------------
+
+    @PluginMethod
+    public void configureWater(PluginCall call) {
+        JSObject cfg = call.getObject("config");
+        WaterStore w = WaterStore.get(ctx());
+        if (cfg != null) w.setConfig(cfg);
+        try { WaterReminder.createChannels(ctx(), w); } catch (RuntimeException ignored) { }
+        WaterReminder.schedule(ctx());
+        if (w.panelOn()) WaterReminder.refreshPanel(ctx(), false);
+        else if (!w.remindOn()) NotificationManagerCompat.from(ctx()).cancel(WaterReminder.NOTIF_ID);
+        else WaterReminder.panelOff(ctx());   // 9.0: the panel goes, a reminder that is up stays
+        StepCounterService svc = StepCounterService.instance;
+        if (svc != null) svc.refreshNotification();
+        StepWidget.updateAll(ctx());
+        call.resolve(waterResult(false));
+    }
+
+    private JSObject waterResult(boolean withDays) {
+        WaterStore w = WaterStore.get(ctx());
+        JSObject r;
+        try { r = JSObject.fromJSONObject(w.snapshot()); } catch (JSONException e) { r = new JSObject(); }
+        if (withDays) {
+            try { r.put("days", JSObject.fromJSONObject(w.daysCopy())); } catch (JSONException e) { r.put("days", new JSObject()); }
+        }
+        return r;
+    }
+
+    @PluginMethod
+    public void getWater(PluginCall call) { call.resolve(waterResult(true)); }
+
+    @PluginMethod
+    public void setWater(PluginCall call) {
+        String day = call.getString("day", StepStore.today());
+        Integer ml = call.getInt("ml", 0);
+        Double at = call.getDouble("at", (double) System.currentTimeMillis());
+        WaterStore w = WaterStore.get(ctx());
+        boolean changed = w.set(day, ml == null ? 0 : ml, at == null ? System.currentTimeMillis() : at.longValue(), false);
+        if (Boolean.TRUE.equals(call.getBoolean("celebrated", false))) { w.celebratedDay = day; w.save(); }
+        if (changed) {
+            StepCounterService svc = StepCounterService.instance;
+            if (svc != null) svc.refreshNotification();
+            StepWidget.updateAll(ctx());
+            // the panel shows the new total; without it, a goal met in the app ends the reminder
+            if (w.panelOn()) WaterReminder.refreshPanel(ctx(), false);
+            else if (StepStore.today().equals(day) && w.ml(day) >= w.goal()) {
+                NotificationManagerCompat.from(ctx()).cancel(WaterReminder.NOTIF_ID);
+            }
+        }
+        call.resolve(waterResult(false));
+    }
+
+    @PluginMethod
+    public void testWaterReminder(PluginCall call) {
+        WaterReminder.post(ctx(), true);
+        call.resolve();
+    }
+
+    // ---- workout reminders (2.10) ---------------------------------------------------------
+
+    /** { items: [{ id, at, title, body, big, route, start }], strings: { channel, start, later } } */
+    @PluginMethod
+    public void scheduleWorkoutReminders(PluginCall call) {
+        JSArray items = call.getArray("items");
+        JSObject strings = call.getObject("strings");
+        JSONArray list = new JSONArray();
+        if (items != null) {
+            try {
+                for (int i = 0; i < items.length(); i++) {
+                    JSONObject o = items.optJSONObject(i);
+                    if (o != null) list.put(o);
+                }
+            } catch (RuntimeException ignored) { }
+        }
+        int n = WorkoutReminder.setPlan(ctx(), list, strings);
+        JSObject r = new JSObject();
+        r.put("scheduled", n);
+        call.resolve(r);
+    }
+
+    // ---- celebrations (2.5) --------------------------------------------------------------
+
+    @PluginMethod
+    public void getCelebrationStatus(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("fullScreen", Celebration.fullScreenAllowed(ctx()));
+        r.put("overlay", Celebration.overlayAllowed(ctx()));
+        r.put("sdk", Build.VERSION.SDK_INT);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void openFullScreenSettings(PluginCall call) {
+        boolean opened = false;
+        try { ctx().startActivity(Celebration.fullScreenSettings(ctx())); opened = true; }
+        catch (RuntimeException e) {
+            try {
+                Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + ctx().getPackageName()));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx().startActivity(i);
+                opened = true;
+            } catch (RuntimeException ignored) { }
+        }
+        JSObject r = new JSObject();
+        r.put("opened", opened);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void openOverlaySettings(PluginCall call) {
+        boolean opened = false;
+        try { ctx().startActivity(Celebration.overlaySettings(ctx())); opened = true; }
+        catch (RuntimeException ignored) { }
+        JSObject r = new JSObject();
+        r.put("opened", opened);
+        call.resolve(r);
+    }
+
+    /** The settings screen's "Preview": the full-screen cheer now, or the notification. */
+    @PluginMethod
+    public void previewCelebration(PluginCall call) {
+        JSObject o = call.getObject("spec");
+        Celebration.Spec sp = new Celebration.Spec();
+        if (o != null) {
+            sp.kind = o.optString("kind", Celebration.KIND_GOAL);
+            sp.value = o.optInt("value", 10000);
+            sp.kicker = o.optString("kicker", "");
+            sp.sub = o.optString("sub", "");
+            sp.unit = o.optString("unit", "");
+            sp.open = o.optString("open", "Open app");
+            sp.hint = o.optString("hint", "");
+            sp.locale = o.optString("locale", "");
+            sp.channel = o.optString("channel", "Celebrations");
+            sp.sound = o.optBoolean("sound", true);
+            sp.vibrate = o.optBoolean("vibrate", true);
+        }
+        if ("notification".equals(call.getString("mode", "screen"))) {
+            Celebration.show(ctx(), sp, true);
+        } else {
+            try {
+                if (getActivity() != null) getActivity().startActivity(Celebration.activityIntent(ctx(), sp));
+                else ctx().startActivity(Celebration.activityIntent(ctx(), sp));
+            } catch (RuntimeException ignored) { }
+            if (sp.sound) Fanfare.play(ctx(), sp.kind);
+            if (sp.vibrate) Celebration.vibrate(ctx());
+        }
+        call.resolve();
     }
 
     @PluginMethod

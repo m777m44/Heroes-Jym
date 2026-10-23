@@ -75,6 +75,12 @@ public class StepCounterService extends Service implements SensorEventListener {
     private boolean ttsReady;
     private BroadcastReceiver screenReceiver;
     private boolean bailed;
+    // 9.0 battery: with the screen off nobody can see the notification or the widget — they are
+    // not redrawn until it comes on again (SCREEN_ON catches them up), and the per-step detector
+    // is switched off (the hardware counter keeps counting every step in the sensor hub).
+    private volatile boolean screenOn = true;
+    private static final long TTS_IDLE_MS = 90_000;
+    private final Runnable ttsIdle = () -> { if (tts != null) { try { tts.shutdown(); } catch (Exception ignored) { } tts = null; ttsReady = false; } };
 
     private final Runnable notifyRunnable = () -> { notifyQueued = false; publish(true); };
     private final Runnable tick = new Runnable() {
@@ -84,7 +90,15 @@ public class StepCounterService extends Service implements SensorEventListener {
             main.postDelayed(this, 30_000);
         }
     };
-    private final Runnable idleCheck = () -> publish(true);   // stops the walking timer
+    // Walking stopped: ask the sensors for anything batched, then settle the live steps the
+    // counter didn't confirm (2.10) and stop the walking timer.
+    private final Runnable settle = () -> { store.settleProvisional(); publish(true); };
+    private final Runnable idleCheck = () -> {
+        try { if (sensors != null && listening) sensors.flush(this); } catch (RuntimeException ignored) { }
+        main.removeCallbacks(settle);
+        main.postDelayed(settle, 1500);
+        publish(true);
+    };
 
     @Override public void onCreate() {
         super.onCreate();
@@ -96,12 +110,23 @@ public class StepCounterService extends Service implements SensorEventListener {
             counter = sensors.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
             detector = sensors.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
         }
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+            screenOn = pm == null || pm.isInteractive();
+        } catch (RuntimeException ignored) { screenOn = true; }
         screenReceiver = new BroadcastReceiver() {
             @Override public void onReceive(Context c, Intent i) {
                 if (Intent.ACTION_SCREEN_ON.equals(i.getAction()) || Intent.ACTION_USER_PRESENT.equals(i.getAction())) {
+                    boolean was = screenOn;
+                    screenOn = true;
+                    if (!was) detectorOn();
                     if (sensors != null && listening) sensors.flush(StepCounterService.this);
                     store.rollIfNeeded();
                     main.postDelayed(() -> publish(true), 400);
+                } else if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
+                    screenOn = false;
+                    detectorOff();
+                    store.flush();                    // everything on disk before the phone sleeps
                 } else if (Intent.ACTION_DATE_CHANGED.equals(i.getAction()) || Intent.ACTION_TIMEZONE_CHANGED.equals(i.getAction())
                         || Intent.ACTION_TIME_CHANGED.equals(i.getAction())) {
                     store.rollIfNeeded();
@@ -111,6 +136,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         };
         IntentFilter f = new IntentFilter();
         f.addAction(Intent.ACTION_SCREEN_ON);
+        f.addAction(Intent.ACTION_SCREEN_OFF);
         f.addAction(Intent.ACTION_USER_PRESENT);
         f.addAction(Intent.ACTION_DATE_CHANGED);
         f.addAction(Intent.ACTION_TIME_CHANGED);
@@ -187,6 +213,8 @@ public class StepCounterService extends Service implements SensorEventListener {
         }
         main.removeCallbacks(tick);
         main.postDelayed(tick, 30_000);
+        // 2.7.0 — one bar: the water joins the step notification, so its own panel goes.
+        try { WaterReminder.mergeIntoLive(this); } catch (RuntimeException ignored) { }
         publish(true);
         Watchdog.schedule(this);            // restarts the counter if anything ever kills it
         return START_STICKY;
@@ -249,14 +277,29 @@ public class StepCounterService extends Service implements SensorEventListener {
         boolean ok = false;
         try {
             if (counter != null) ok = sensors.registerListener(this, counter, SensorManager.SENSOR_DELAY_UI, 0);
-            if (detector != null) ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_FASTEST, 0);
+            // the detector only gives the instant +1 while you watch; without a counter it is the source
+            if (detector != null && (screenOn || counter == null)) { ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_NORMAL, 0); detectorUp = true; }
         } catch (RuntimeException ignored) { /* a sensor HAL hiccup — the next start retries */ }
         listening = ok;
+    }
+
+    private boolean detectorUp;
+    /** 9.0: screen on — the per-step detector back for the live +1 (the counter stays as it is). */
+    private void detectorOn() {
+        if (!listening || detectorUp || detector == null || sensors == null) return;
+        try { detectorUp = sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_NORMAL, 0); } catch (RuntimeException ignored) { }
+    }
+    /** 9.0: screen off — only the counter listens (it is never re-registered: some phones then report a stale value). */
+    private void detectorOff() {
+        if (!detectorUp || counter == null || sensors == null) return;
+        try { sensors.unregisterListener(this, detector); } catch (RuntimeException ignored) { }
+        detectorUp = false;
     }
 
     private void stopListening() {
         try { if (sensors != null) sensors.unregisterListener(this); } catch (RuntimeException ignored) { }
         listening = false;
+        detectorUp = false;
         samples.clear();
     }
 
@@ -274,8 +317,27 @@ public class StepCounterService extends Service implements SensorEventListener {
             if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE);
             else stopForeground(true);
         } catch (RuntimeException ignored) { }
+        // Counting switched off: the water goes back to its own panel (store.running is false
+        // now, so it is no longer merged).
+        try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { }
         stopSelf();
     }
+
+    /** After "reset and start again": drop the speed samples and redraw everything. */
+    void afterReset() {
+        main.post(() -> {
+            samples.clear();
+            main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
+            publish(true);
+        });
+    }
+
+    /** Counting (or paused) with the live notification up — it then carries the water too. */
+    boolean live() { return !bailed && store != null && store.running; }
+
+    /** Redraw the live notification now (water added from a notification button). */
+    void refreshNotification() { main.post(() -> publish(true, true)); }
 
     void applyConfig() {
         main.post(() -> {
@@ -304,6 +366,7 @@ public class StepCounterService extends Service implements SensorEventListener {
             while (samples.size() > 2 && samples.peekFirst()[0] < now - 20_000) samples.pollFirst();
             if (after > before) milestones(before, after);
             main.removeCallbacks(idleCheck);
+            main.removeCallbacks(settle);
             main.postDelayed(idleCheck, MOVING_MS + 500);
         }
         publish(false);
@@ -353,7 +416,13 @@ public class StepCounterService extends Service implements SensorEventListener {
             say = store.str("milestoneSay", "{steps} steps").replace("{steps}", nf.format(m)) + ". " + body;
         }
         if (store.pref("vibrate", true)) vibrate(goalNow);
-        if (!appVisible && store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        if (!appVisible) {
+            // 2.5: the goal (and, when switched on, every 1,000 steps) is celebrated outside the
+            // app — a picture notification and a full-screen cheer; otherwise the plain alert.
+            boolean cheer = goalNow ? store.pref("fullCelebrate", true) : store.pref("fullMilestones", false);
+            if (cheer && store.pref("celebrate", true)) Celebration.steps(this, store, goalNow, goalNow ? next : m, body);
+            else if (store.pref("alerts", true)) StepNotifier.alert(this, store, title, body);
+        }
         if (store.pref("voice", false)) speak(goalNow ? say + " " + body : say);
     }
 
@@ -399,16 +468,26 @@ public class StepCounterService extends Service implements SensorEventListener {
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "mj-steps");
+        main.removeCallbacks(ttsIdle);
+        main.postDelayed(ttsIdle, TTS_IDLE_MS);   // 9.0: the speech engine is let go when it's been quiet a while
     }
 
     // ---- publishing: notification, widget, web app ---------------------------------------
 
     /** Refresh everything; notification updates are throttled to one per second. */
-    private void publish(boolean force) {
+    private void publish(boolean force) { publish(force, false); }
+
+    /**
+     * 9.0 battery: the web app only hears about steps while it is on screen (it asks for a fresh
+     * state when it comes back), and with the screen off the notification and the widget wait —
+     * unless `evenIfDark` (an explicit refresh: a new theme, water added from the shade).
+     */
+    private void publish(boolean force, boolean evenIfDark) {
         long now = System.currentTimeMillis();
         double sp = speed();
         boolean mv = moving();
-        if (now - lastEmit >= EMIT_EVERY_MS || force) { lastEmit = now; emit(sp, mv); }
+        if (appVisible && (now - lastEmit >= EMIT_EVERY_MS || force)) { lastEmit = now; emit(sp, mv); }
+        if (!screenOn && !evenIfDark) { main.removeCallbacks(notifyRunnable); notifyQueued = false; return; }
         if (force || now - lastNotify >= NOTIFY_EVERY_MS) {
             main.removeCallbacks(notifyRunnable);
             notifyQueued = false;
@@ -426,6 +505,9 @@ public class StepCounterService extends Service implements SensorEventListener {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try { nm.notify(StepNotifier.LIVE_ID, StepNotifier.build(this, store, sp, mv)); } catch (RuntimeException ignored) { }
+        // 2.6: the water panel follows live steps (the automatic goal grows as you walk) and
+        // the day rolling over — re-posted only when what it shows changed.
+        try { WaterReminder.refreshPanel(this, false); } catch (RuntimeException ignored) { }
     }
 
     private void emit(double sp, boolean mv) {
@@ -438,12 +520,15 @@ public class StepCounterService extends Service implements SensorEventListener {
     @Override public void onDestroy() {
         stopListening();
         main.removeCallbacksAndMessages(null);
+        try { if (store != null) store.flush(); } catch (RuntimeException ignored) { }
         try { if (screenReceiver != null) unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
         if (tts != null) { tts.shutdown(); tts = null; }
         if (instance == this) instance = null;
         // Destroyed while counting is still on (killed by the system or a cleaner, not
         // switched off): come back in a few seconds.
         if (!bailed && store != null && store.running && canCount(this)) Watchdog.kick(this, 5_000);
+        // Not coming back: the water returns to its own panel (no longer merged — instance is gone).
+        else { try { WaterReminder.refreshPanel(this, true); } catch (RuntimeException ignored) { } }
         super.onDestroy();
     }
 

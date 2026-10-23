@@ -1,6 +1,6 @@
 {
   "name": "mahdi-jym-api",
-  "version": "2.2.1",
+  "version": "9.0.0",
   "private": true,
   "type": "module",
   "main": "server.js",
