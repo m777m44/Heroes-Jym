@@ -94,10 +94,18 @@ wallpapers — and a long list of battery fixes.**
   stays).
 - Picking an existing Drive file remembers its real size, so a shorter backup can't leave the old
   file's tail behind on providers that don't truncate.
-- A Drive file that can be read but not written is restored but not kept as the auto-save file.
+- A Drive file that can be read but not written is restored but not kept as the auto-save file,
+  and the welcome screen now says so ("new changes stay on this phone") instead of promising
+  that every change is saved to it.
 - Sleep in the health log uses age-specific ranges for children (AASM).
-- "Your day" reminders are now date-specific (today and tomorrow, re-made when the app opens)
-  instead of repeating yesterday's plan.
+- "Your day" reminders are now date-specific instead of repeating yesterday's plan, and are
+  scheduled a week ahead — they keep coming when the app stays closed for days.
+- Medicine reminders: every dose time gets its notification — all 20 medicines × 6 times, not
+  only the first 60.
+- Automatic on-device backups also keep profiles that only log food, drinks, fasting, intervals
+  or breathing.
+- Water logged and taken back from the notification while the app is closed keeps its newer
+  change time, so an older copy from another device can't overwrite the day's total.
 
 ## v8.0.0 — 2026-10-23
 

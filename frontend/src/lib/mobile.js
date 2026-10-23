@@ -104,17 +104,17 @@ export async function syncReminder(S, interactive = false) {
 }
 
 // 3.0 — medicine & vitamin reminders from the health log: one daily repeating local
-// notification per dose time (ids 7400 + n), on their own channel with vibration. Re-run only
-// when the list changes.
+// notification per dose time (ids 7400–7459, then 8000–8059 — health.js), on their own channel
+// with vibration. Re-run only when the list changes.
 let lastMedSig = null
 export async function syncMedReminders(S, interactive = false) {
   try {
-    const { medReminders, MED_ID_BASE } = await import('./health.js')
+    const { medReminders, medReminderIds } = await import('./health.js')
     const items = medReminders(S)
     const sig = JSON.stringify([items, S.lang])
     if (!interactive && sig === lastMedSig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.cancel({ notifications: Array.from({ length: 60 }, (_, i) => ({ id: MED_ID_BASE + i })) }).catch(() => {})
+    await LocalNotifications.cancel({ notifications: medReminderIds().map(id => ({ id })) }).catch(() => {})
     if (!items.length) { lastMedSig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
@@ -137,32 +137,33 @@ export async function syncMedReminders(S, interactive = false) {
 }
 
 // 7.1 — "Your day" on the Ideal body screen: meals (with the calories and a dish), the workout
-// and the evening walk at their times (ids 7500–7529, channel mj_day). 9.0 (review on PR #11):
-// no longer repeating notifications that kept showing the day they were made — each one is for
-// one date, worked out for that date, today's still-ahead ones and tomorrow's (ids 7515+), and
-// they are made again whenever the app opens or the plan changes. Water keeps its own reminders.
+// and the evening walk at their times (channel mj_day). 9.0 (review on PR #11): no longer
+// repeating notifications that kept showing the day they were made — each one is for one date,
+// worked out for that date: today's still-ahead ones and the next six days' (ids in
+// daySchedule.js), so they keep coming while the app stays closed, made again whenever the app
+// opens or the plan changes. Water keeps its own reminders.
 let lastDaySig = ''
 export async function syncDayReminders(S, interactive = false) {
   if (!MOBILE) return false
   try {
-    const [{ dayReminderItems, DAY_ID_BASE }, { idealBodyOf }, { isoOf }] = await Promise.all([import('./daySchedule.js'), import('./idealBody.js'), import('./format.js')])
+    const [{ dayReminderItems, dayReminderId, dayReminderIds, DAY_REMIND_DAYS, DAY_REMIND_PER_DAY }, { idealBodyOf }, { isoOf }] = await Promise.all([import('./daySchedule.js'), import('./idealBody.js'), import('./format.js')])
     const now = new Date()
-    const days = [0, 1].map(off => {
+    const days = Array.from({ length: DAY_REMIND_DAYS }, (_, off) => off).map(off => {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off)
       return { off, d, iso: isoOf(d) }
     })
     const r = idealBodyOf(S)
     const items = []
     for (const day of days) {
-      dayReminderItems(S, r, day.iso).slice(0, 15).forEach((x, i) => {
+      dayReminderItems(S, r, day.iso).slice(0, DAY_REMIND_PER_DAY).forEach((x, i) => {
         const at = new Date(day.d.getFullYear(), day.d.getMonth(), day.d.getDate(), x.hour, x.minute)
-        if (at.getTime() > now.getTime() + 30000) items.push({ ...x, id: DAY_ID_BASE + day.off * 15 + i, at })
+        if (at.getTime() > now.getTime() + 30000) items.push({ ...x, id: dayReminderId(day.off, i), at })
       })
     }
     const sig = JSON.stringify([days.map(d => d.iso), items.map(x => [x.id, +x.at, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
     if (!interactive && sig === lastDaySig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    await LocalNotifications.cancel({ notifications: Array.from({ length: 30 }, (_, i) => ({ id: DAY_ID_BASE + i })) }).catch(() => {})
+    await LocalNotifications.cancel({ notifications: dayReminderIds().map(id => ({ id })) }).catch(() => {})
     if (!items.length) { lastDaySig = sig; return true }
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()

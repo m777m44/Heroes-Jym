@@ -17,7 +17,13 @@ export const toHHMM = m => { const x = ((Math.round(m) % 1440) + 1440) % 1440; r
 const r50 = v => Math.max(0, Math.round(v / 50) * 50)
 
 export const MEAL_SPLIT = { b: 0.25, l: 0.35, s: 0.10, d: 0.30 }
-export const DAY_ID_BASE = 7500          // native notification ids 7500–7529 (meals, workout, walk)
+export const DAY_ID_BASE = 7500          // native notification ids: today 7500–7514, tomorrow 7515–7529
+// 9.0.0 (review on PR #11): a week ahead, so the reminders keep coming while the app stays
+// closed — the five days after tomorrow use 8100–8174. Remade whenever the app opens.
+export const DAY_ID_MORE = 8100
+export const DAY_REMIND_DAYS = 7, DAY_REMIND_PER_DAY = 15
+export const dayReminderId = (off, i) => (off < 2 ? DAY_ID_BASE + off * DAY_REMIND_PER_DAY + i : DAY_ID_MORE + (off - 2) * DAY_REMIND_PER_DAY + i)
+export const dayReminderIds = () => Array.from({ length: DAY_REMIND_DAYS * DAY_REMIND_PER_DAY }, (_, n) => dayReminderId(Math.floor(n / DAY_REMIND_PER_DAY), n % DAY_REMIND_PER_DAY))
 
 export function dayPrefs(S) {
   const d = (S && S.day) || {}

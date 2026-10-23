@@ -86,7 +86,10 @@ export default function AccountGate({ onDone }) {
   }
   const phone = skip => { choosePhone(skip); onDone && onDone() }
 
-  // 8.0 — the Drive file: 'create' after signing in, 'open' to restore on a new phone
+  // 8.0 — the Drive file: 'create' after signing in, 'open' to restore on a new phone.
+  // 9.0.0 (review on PR #11): a file that can only be read was restored and then let go —
+  // it gets its own done screen instead of the one that promises every change is saved to it
+  const fileResult = r => (r === 'restored' ? 'filerestored' : r === 'readonly' ? 'filereadonly' : 'drive')
   const driveFile = async mode => {
     const back = phase
     setErr(null)
@@ -95,7 +98,7 @@ export default function AccountGate({ onDone }) {
     try {
       const r = await linkDriveFile(useStore, mode)
       if (r === 'choose') { setPhase('filechoose'); return }
-      setResult(r === 'restored' ? 'filerestored' : 'drive')
+      setResult(fileResult(r))
       setPhase('done')
     } catch (e) {
       setPhase(back)
@@ -105,7 +108,7 @@ export default function AccountGate({ onDone }) {
   }
   const pickFile = async which => {
     setPhase('filebusy')
-    try { const r = await resolveFileChoice(useStore, which); setResult(r === 'restored' ? 'filerestored' : 'drive') } catch (e) { setErr(fileError(e && e.reason)); setResult('later') }
+    try { setResult(fileResult(await resolveFileChoice(useStore, which))) } catch (e) { setErr(fileError(e && e.reason)); setResult('later') }
     setPhase('done')
   }
   const fileName = (cloudMeta().file || {}).name
@@ -186,15 +189,16 @@ export default function AccountGate({ onDone }) {
         <div className="acc-hero" aria-hidden="true">
           {account && account.photo
             ? <img className="acc-avatar lg" src={account.photo} alt="" referrerPolicy="no-referrer" />
-            : result === 'drive' || result === 'filerestored'
+            : result === 'drive' || result === 'filerestored' || result === 'filereadonly'
               ? <span className="acc-orb df-orb ok-ring"><DriveMark size={34} /></span>
               : <span className="acc-orb ok"><Icon name="check" /></span>}
         </div>
-        <h2 id="ag-title">{account ? t('Signed in') : result === 'filerestored' ? t('Welcome back') : t('All set')}</h2>
+        <h2 id="ag-title">{account ? t('Signed in') : result === 'filerestored' || result === 'filereadonly' ? t('Welcome back') : t('All set')}</h2>
         {account && <p className="pg-lead"><b>{account.name}</b><br />{account.email}</p>}
         {err && <p className="pg-lead pg-warn">{err}</p>}
         <p className="pg-lead">{result === 'restored' ? t('Your data was restored from the account.')
           : result === 'filerestored' ? t('Your data was restored from Google Drive. Every change is saved back to the same file.')
+          : result === 'filereadonly' ? t('Restored. That file can’t be written, so new changes stay on this phone.')
           : result === 'drive' ? t('Saved to your Google Drive in {0}. Every change is saved there automatically.', fileName || 'MAHDI-JYM-backup.json')
           : result === 'later' ? t('Signed in — the first save happens as soon as there’s a connection.')
           : result === 'backup' ? t('Everything is saved to your Google account automatically through Android Backup, and comes back when you install MAHDI-JYM again.')

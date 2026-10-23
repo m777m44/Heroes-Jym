@@ -60,6 +60,11 @@ describe('water — ml, containers, goal', () => {
     expect(mergeNative(s, { [today]: { ml: 750, at: 2000 }, bogus: { ml: 1, at: 9 } })).toBe(true)
     expect(mlOn(s, today)).toBe(750)
     expect(s.waterAt[today]).toBe(2000)
+    // 9.0.0: logged and taken back from the notification — same total, later change time
+    expect(mergeNative(s, { [today]: { ml: 750, at: 3000 } })).toBe(true)
+    expect(mlOn(s, today)).toBe(750)
+    expect(s.waterAt[today]).toBe(3000)
+    expect(mergeNative(s, { [today]: { ml: 750, at: 3000 } })).toBe(false)   // nothing newer
   })
   it('counts in the chosen container to the half', () => {
     expect(countIn(1000, { ml: 250 })).toBe(4)

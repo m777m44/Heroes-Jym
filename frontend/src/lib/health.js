@@ -154,15 +154,24 @@ export function adherence(S, iso, days = 7) {
   for (const d of lastDays(iso, days)) for (const x of dosesOn(S, d)) { due++; if (x.taken) taken++ }
   return due ? Math.round(taken / due * 100) : null
 }
-/** Native notification ids for medicine reminders: 7400 + n (one per med × time, max 60). */
+/**
+ * Native notification ids for medicine reminders, one per med × time: 7400–7459, then
+ * 8000–8059. 9.0.0 (review on PR #11): room for every dose time the screen allows — MED_MAX
+ * medicines × MED_TIMES times — instead of silently stopping at 60.
+ */
 export const MED_ID_BASE = 7400
+export const MED_ID_MORE = 8000
+export const MED_TIMES = 6
+export const MED_REMIND_MAX = MED_MAX * MED_TIMES
+export const medReminderId = n => (n < 60 ? MED_ID_BASE + n : MED_ID_MORE + (n - 60))
+export const medReminderIds = () => Array.from({ length: MED_REMIND_MAX }, (_, n) => medReminderId(n))
 export function medReminders(S) {
   const out = []
   for (const m of (S.meds || []).filter(x => x.on !== false && x.remind !== false)) {
-    for (const time of cleanTimes(m.times)) {
-      if (out.length >= 60) break
+    for (const time of cleanTimes(m.times).slice(0, MED_TIMES)) {
+      if (out.length >= MED_REMIND_MAX) break
       const [h, mi] = time.split(':').map(Number)
-      out.push({ id: MED_ID_BASE + out.length, medId: m.id, name: m.name, dose: m.dose || '', kind: m.kind || 'med', hour: h, minute: mi, time })
+      out.push({ id: medReminderId(out.length), medId: m.id, name: m.name, dose: m.dose || '', kind: m.kind || 'med', hour: h, minute: mi, time })
     }
   }
   return out

@@ -29,6 +29,15 @@ describe('4.0 backups on this phone', () => {
     expect(await B.autoSnapshot(S(3), { now: T0 + 2 * DAY, enabled: false })).toBe(null)
     expect(await B.autoSnapshot({ _ts: 9 }, { now: T0 + 3 * DAY })).toBe(null)   // empty: nothing to keep
   })
+  it('9.0.0: keeps versions of a profile that only logs food, drinks, fasting or breathing', async () => {
+    expect(await B.autoSnapshot({ _ts: 5, food: { '2026-10-01': [{ n: 'Tea', kcal: 2 }] } }, { now: T0 })).toBeTruthy()
+    expect(B.hasAnyData({ _ts: 1 })).toBe(false)
+    expect(B.hasAnyData({ food: { '2026-10-01': [{ n: 'Tea', kcal: 2 }] } })).toBe(true)
+    expect(B.hasAnyData({ drinkLog: { '2026-10-01': { lemon: 1 } } })).toBe(true)
+    expect(B.hasAnyData({ fasting: { log: [{ s: 1, e: 2 }] } })).toBe(true)
+    expect(B.hasAnyData({ breathe: { log: [{ at: 1 }] } })).toBe(true)
+    expect(B.hasAnyData({ intervals: [{ id: 'x' }] })).toBe(true)
+  })
   it('keeps the newest N automatic versions and leaves your own alone', async () => {
     await B.takeSnapshot(S(1), 'manual', T0 - DAY)
     for (let i = 0; i < 10; i++) await B.autoSnapshot(S(i + 1), { now: T0 + i * DAY, keep: 7 })

@@ -14,6 +14,7 @@
 //
 // No store import (lib rule): callers pass S in and do replaceState themselves.
 import { MOBILE } from './mobile.js'
+import { hasData } from './hasData.js'
 
 const INDEX = 'mj_snaps'
 const DIR = 'snapshots'
@@ -100,8 +101,9 @@ const listeners = new Set()
 export function onSnapshotsChange(f) { listeners.add(f); return () => listeners.delete(f) }
 
 const localDay = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
-export const hasAnyData = S => !!S && !!(((S.workouts || []).length) || ((S.routines || []).length) || ((S.bodyweight || []).length) ||
-  Object.keys(S.steps || {}).length || Object.keys(S.waterMl || {}).length || Object.keys(S.health || {}).length)
+// 9.0.0 (review on PR #11): the same test as the store's — a profile with only food, fasting,
+// drinks, intervals or breathing logged gets its daily versions too
+export const hasAnyData = S => hasData(S)
 
 /** What a copy holds, for the list: counts and the last workout day. */
 export function summarize(S) {

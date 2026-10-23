@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bpCategory, sugarCategory, sleepCategory, rhrCategory, toMgdl, fromMgdl, setDay, addReading, removeReading, dayLog, summary, series, logStreak, dosesOn, toggleDose, adherence, medReminders, cleanTimes, shiftIso } from './health.js'
+import { bpCategory, sugarCategory, sleepCategory, rhrCategory, toMgdl, fromMgdl, setDay, addReading, removeReading, dayLog, summary, series, logStreak, dosesOn, toggleDose, adherence, medReminders, cleanTimes, shiftIso, MED_MAX, MED_REMIND_MAX, medReminderIds } from './health.js'
 
 describe('health — categories', () => {
   it('rates blood pressure (ACC/AHA 2017)', () => {
@@ -85,5 +85,18 @@ describe('health — medicines', () => {
     expect(r.map(x => x.time)).toEqual(['09:00', '08:00', '20:00'])
     expect(r[0]).toMatchObject({ id: 7400, hour: 9, minute: 0, kind: 'vit' })
     expect(medReminders({ meds: [{ ...S.meds[0], remind: false }] })).toEqual([])
+  })
+  it('9.0.0: a reminder for every dose time the screen allows (20 medicines × 6 times)', () => {
+    const times = ['06:00', '09:00', '12:00', '15:00', '18:00', '21:00']
+    const meds = Array.from({ length: MED_MAX }, (_, i) => ({ id: 'm' + i, name: 'Med ' + i, times }))
+    const r = medReminders({ meds })
+    expect(r).toHaveLength(MED_REMIND_MAX)
+    expect(MED_REMIND_MAX).toBe(120)
+    const ids = r.map(x => x.id)
+    expect(new Set(ids).size).toBe(120)
+    expect(ids.slice(0, 60).every(id => id >= 7400 && id < 7460)).toBe(true)
+    expect(ids.slice(60).every(id => id >= 8000 && id < 8060)).toBe(true)
+    expect(r[119]).toMatchObject({ medId: 'm19', time: '21:00' })
+    expect(medReminderIds()).toEqual(ids)
   })
 })

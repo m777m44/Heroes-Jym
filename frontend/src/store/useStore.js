@@ -4,6 +4,7 @@ import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
 import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders, syncDayReminders } from '../lib/mobile.js'
+import { hasData } from '../lib/hasData.js'
 
 const KEY = 'gym_state_v1'
 // 2.10: a fresh install follows the phone — its language ('auto', see langOf in lib/i18n.js) and
@@ -54,16 +55,7 @@ function loadState() {
   return clone(DEF)
 }
 
-// Whether this device holds anything a person entered. 9.0 (review on PR #11): every log counts —
-// a profile with only food, fasting, health or water in it is not "empty", so signing in or
-// linking a backup never replaces it without asking.
-const DATA_LISTS = ['workouts', 'routines', 'bodyweight', 'customEx', 'customFoods', 'meds', 'intervals', 'myDrinks']
-const DATA_MAPS = ['steps', 'water', 'waterMl', 'food', 'health', 'medLog', 'drinkLog']
-const filled = v => (Array.isArray(v) ? v.length > 0 : !!v && typeof v === 'object' && Object.keys(v).length > 0)
-const hasData = st => !!st && (
-  DATA_LISTS.some(k => filled(st[k])) || DATA_MAPS.some(k => filled(st[k])) ||
-  filled(st.fasting && st.fasting.log) || !!(st.fasting && st.fasting.active) || filled(st.breathe && st.breathe.log) ||
-  filled(st.planner && st.planner.blocks) || !!(st.profile && st.profile.name))
+// Whether this device holds anything a person entered — every log counts (lib/hasData.js).
 
 export const useStore = create((set, get) => {
   let pushTm = null

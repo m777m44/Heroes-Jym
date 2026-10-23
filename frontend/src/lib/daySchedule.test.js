@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { daySchedule, dayPrefs, mealIdeas, toMin, toHHMM, dayReminderItems, MEAL_SPLIT, DAY_ID_BASE } from './daySchedule.js'
+import { daySchedule, dayPrefs, mealIdeas, toMin, toHHMM, dayReminderItems, MEAL_SPLIT, DAY_ID_BASE, dayReminderId, dayReminderIds, DAY_REMIND_DAYS, DAY_REMIND_PER_DAY } from './daySchedule.js'
 import { idealBody } from './idealBody.js'
 
 const base = () => ({ unit: 'kg', bodyweight: [{ d: '2026-10-20', w: 80 }], heightCm: 175, birthYear: 1996, workouts: [], water: {}, food: {}, steps: {}, routines: [], dayPlan: {}, week: {}, walk: {}, stepGoal: 8000, waterMl: {} })
@@ -55,5 +55,16 @@ describe('daySchedule', () => {
     expect(on.length).toBe(6)
     expect(on[0].id).toBe(DAY_ID_BASE)
     expect(on.every(x => x.id < DAY_ID_BASE + 30)).toBe(true)
+  })
+  it('9.0.0: a week of reminder ids that never meet the other notifications', () => {
+    const ids = dayReminderIds()
+    expect(ids).toHaveLength(DAY_REMIND_DAYS * DAY_REMIND_PER_DAY)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(dayReminderId(0, 0)).toBe(7500)
+    expect(dayReminderId(1, 14)).toBe(7529)
+    expect(dayReminderId(2, 0)).toBe(8100)
+    expect(dayReminderId(6, 14)).toBe(8174)
+    const taken = [[1000, 1099], [1100, 1199], [3000, 3099], [7001, 7399], [7400, 7459], [7600, 7699], [7700, 7799], [8000, 8059]]
+    expect(ids.some(id => taken.some(([a, b]) => id >= a && id <= b))).toBe(false)
   })
 })

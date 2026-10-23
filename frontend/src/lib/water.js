@@ -129,13 +129,18 @@ export function setMl(s, iso, ml, at = Date.now()) {
 }
 export const addMl = (s, iso, delta, at) => setMl(s, iso, mlOn(s, iso) + delta, at)
 
-/** Merge days reported by the native store ({ iso: { ml, at } }): the later change wins. */
+/**
+ * Merge days reported by the native store ({ iso: { ml, at } }): the later change wins. 9.0.0
+ * (review on PR #11): a later change with the same total — a drink logged and taken back from
+ * the notification while the app was closed — still moves the day's change time forward, so a
+ * stale copy pulled from another device can't win the per-day last-change merge afterwards.
+ */
 export function mergeNative(s, days) {
   let changed = false
   for (const [iso, d] of Object.entries(days || {})) {
     if (!/^\d{4}-\d\d-\d\d$/.test(iso) || !d) continue
     const at = Number(d.at) || 0
-    if (at > changedAt(s, iso) && Math.round(Number(d.ml) || 0) !== mlOn(s, iso)) { setMl(s, iso, d.ml, at); changed = true }
+    if (at > changedAt(s, iso)) { setMl(s, iso, d.ml, at); changed = true }
   }
   return changed
 }
