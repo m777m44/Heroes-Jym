@@ -168,6 +168,10 @@ final class StepNotifier {
         fillLiveSmall(c, small, s, w, water, nf, steps, goal, pct, zone);
         RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_live_big);
         fillLive(c, big, s, w, water, speed, moving, nf, steps, goal, pct, zone);
+        // 9.0: the theme's colours (accent on the steps, a deep themed card) — Theme.java
+        Theme th = Theme.get(c);
+        th.paintLive(c, small, false);
+        th.paintLive(c, big, true);
 
         String title = s.str("todayTitle", "Steps today") + " · " + stepsTxt + " " + goalTxt;
         String text = twoDecimals(s, s.km()) + " " + s.str("km", "km") + " · " + nf.format(s.kcal()) + " " + s.str("kcal", "kcal")
@@ -190,7 +194,7 @@ final class StepNotifier {
             .setSilent(true)
             .setShowWhen(false)
             .setLocalOnly(true)
-            .setColor(0xFF30D158)
+            .setColor(th.accent())
             .setCategory("workout")   // Notification.CATEGORY_WORKOUT (API 31); a plain string on older releases
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -492,7 +496,7 @@ final class StepNotifier {
             .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(openApp(c, 2))
             .setAutoCancel(true)
-            .setColor(0xFF30D158)
+            .setColor(Theme.get(c).accent())
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

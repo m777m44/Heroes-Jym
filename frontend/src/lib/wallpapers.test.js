@@ -11,7 +11,7 @@ const fakeDoc = () => {
 
 describe('wallpapers', () => {
   it('has generated art and bundled photos', () => {
-    expect(ART.length).toBe(80)
+    expect(ART.length).toBe(140)   // 9.0: 10 styles × 14 palettes
     for (const id of ART) expect(artBackground(id)).toMatch(/gradient/)
     expect(artBackground('art:nope:ocean')).toBe(null)
     expect(NATURE.length).toBeGreaterThanOrEqual(10)

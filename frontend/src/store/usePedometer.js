@@ -204,8 +204,15 @@ export const usePedometer = create((set, get) => {
     serviceCall('configure', { config: cfg })
   }
 
-  const onHidden = () => { if (document.visibilityState === 'hidden') flush() }
-  const onShown = () => { if (document.visibilityState === 'visible' && serviceMode()) { serviceCall('getState').then(st => st && onState(st)); syncHistory() } }
+  // 9.0 battery: the 1-second tick and the 5-second save only run while the app is on screen.
+  // In the background the native service does the counting (and the browser can't count at
+  // all); they stop after one last save and start again — with a fresh state — on return.
+  const onHidden = () => { if (document.visibilityState === 'hidden') { flush(); haltTimers() } }
+  const onShown = () => {
+    if (document.visibilityState !== 'visible' || !src) return
+    runTimers()
+    if (serviceMode()) { serviceCall('getState').then(st => st && onState(st)); syncHistory() }
+  }
 
   const startGps = () => {
     if (gpsStop || !walkPrefs(S()).gps) return
@@ -213,14 +220,21 @@ export const usePedometer = create((set, get) => {
   }
   const stopGps = () => { if (gpsStop) gpsStop(); gpsStop = null; gps = null }
 
-  const startTimers = () => {
-    clearInterval(flushTm); clearInterval(tickTm)
+  const haltTimers = () => { clearInterval(flushTm); clearInterval(tickTm); flushTm = tickTm = null }
+  const runTimers = () => {
+    haltTimers()
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
     flushTm = setInterval(() => { flush(); syncConfig() }, FLUSH_MS)
     tickTm = setInterval(() => {
       const sp = currentSpeed(Date.now())
       if (sp !== get().speed) set({ speed: sp })
       note(total())
     }, 1000)
+  }
+  const startTimers = () => {
+    runTimers()
+    document.removeEventListener('visibilitychange', onHidden)
+    document.removeEventListener('visibilitychange', onShown)
     document.addEventListener('visibilitychange', onHidden)
     document.addEventListener('visibilitychange', onShown)
   }

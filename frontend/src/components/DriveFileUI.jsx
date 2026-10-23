@@ -58,13 +58,13 @@ export function useDriveApp() {
 
 /**
  * Connect (mode 'create') or restore from (mode 'open') a file. Resolves the outcome:
- * 'uploaded' | 'restored' | 'cancelled' | 'failed' — and shows its own toast / choice sheet.
+ * 'uploaded' | 'restored' | 'readonly' | 'cancelled' | 'failed' — and shows its own toast / choice sheet.
  */
 export async function driveFileFlow(mode = 'create', { quiet = false } = {}) {
   try {
     const r = await linkDriveFile(useStore, mode)
     if (r === 'choose') return await askFileChoice()
-    if (!quiet) ui().toast(r === 'restored' ? t('Your data was restored from Google Drive.') : t('Saved to Google Drive'))
+    if (!quiet) ui().toast(r === 'readonly' ? t('Restored. That file can’t be written, so new changes stay on this phone.') : r === 'restored' ? t('Your data was restored from Google Drive.') : t('Saved to Google Drive'))
     return r
   } catch (e) {
     if (e && e.reason === 'cancelled') return 'cancelled'
@@ -77,7 +77,7 @@ export async function driveFileFlow(mode = 'create', { quiet = false } = {}) {
 export function askFileChoice() {
   return new Promise(resolve => {
     const finish = which => resolveFileChoice(useStore, which)
-      .then(x => { ui().toast(x === 'restored' ? t('Your data was restored from Google Drive.') : t('Saved to Google Drive')); resolve(x) })
+      .then(x => { ui().toast(x === 'readonly' ? t('Restored. That file can’t be written, so new changes stay on this phone.') : x === 'restored' ? t('Your data was restored from Google Drive.') : t('Saved to Google Drive')); resolve(x) })
       .catch(e => { ui().toast(fileError(e && e.reason)); resolve('failed') })
     confirmSheet({
       title: t('Data found in the file'),

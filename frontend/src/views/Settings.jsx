@@ -27,6 +27,8 @@ import { googleUnlink } from '../lib/googleWeb.js'
 import { profileSheet, profileOf, ProfileAvatar } from '../components/ProfileSheet.jsx'
 import { whatsNewSheet } from '../components/WhatsNew.jsx'
 import { TEXT_SIZES, textScaleOf } from '../lib/a11y.js'
+import { soundPacksSheet, packName } from '../components/SoundPacks.jsx'
+import { batteryInfo } from '../lib/battery.js'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, BackButton } from '../components/ui.jsx'
 
 export default function Settings() {
@@ -167,6 +169,8 @@ export default function Settings() {
 
     {/* ---------- 8.0: tools ---------- */}
     <Section title={t('Tools')}>
+      <Row icon="calendar" iconTint="var(--indigo)" title={t('Day plan')} subtitle={t('Workout, study, rest and meals — on time')} accessory="chevron" onClick={() => nav('/dayplan')} />
+      <Row icon="cup" iconTint="var(--green)" title={t('Drinks & juices')} subtitle={t('Healthy recipes with calories')} accessory="chevron" onClick={() => nav('/drinks')} />
       <Row icon="timer" iconTint="var(--red)" title={t('Interval timer')} subtitle={t('Tabata, HIIT, EMOM and your own')} accessory="chevron" onClick={() => nav('/timer')} />
       <Row icon="wind" iconTint="var(--teal)" title={t('Breathe')} subtitle={t('Box, 4-7-8, coherent')} accessory="chevron" onClick={() => nav('/breathe')} />
       <Row icon="moon" iconTint="var(--purple)" title={t('Fasting tracker')} subtitle={t('Intermittent fasting and Ramadan')} accessory="chevron" onClick={() => nav('/fasting')} />
@@ -189,6 +193,7 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
         <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
       </Row>
+      <Row icon="music" iconTint="var(--orange)" title={t('Celebration sound')} subtitle={packName(S)} accessory="chevron" onClick={soundPacksSheet} />
       <Row icon="play" iconTint="var(--green)" title={t('Start countdown')} subtitle={t('3 · 2 · 1 · GO before every workout, then a live timer')}>
         <Switch checked={S.workoutCountdown !== false} onChange={v => update(s => { s.workoutCountdown = v })} />
       </Row>
@@ -226,6 +231,9 @@ export default function Settings() {
       </Row>
       <Row icon="image" iconTint="var(--teal)" title={t('Wallpaper')} accessory="chevron" onClick={() => nav('/wallpapers')}
         subtitle={S.wall && S.wall.id ? t('On') : t('Off')} />
+      {MOBILE && <Row icon="bell" iconTint="var(--acc)" title={t('Theme colours in notifications')} subtitle={t('The notification shade and the status bar follow your theme')}>
+        <Switch checked={S.notifTheme !== false} onChange={v => update(s => { s.notifTheme = v })} />
+      </Row>}
       {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
       <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
         <Segmented
@@ -235,6 +243,14 @@ export default function Settings() {
           onChange={v => update(s => { s.body = v })}
         />
       </Row>
+    </Section>
+
+    {/* 9.0: battery saver (lib/battery.js) */}
+    <Section title={t('Battery')} footer={t('The saver stops looping decorations and heavy blur effects. On Auto it switches on by itself at 20% battery or less.')}>
+      <Row icon="battery" iconTint="var(--green)" title={t('Battery saver')}
+        subtitle={batteryInfo().level != null ? t('Battery {0}%', Math.round(batteryInfo().level * 100)) + (batteryInfo().charging ? ' · ' + t('Charging') : '') : null} />
+      <div className="bk-keep"><Segmented options={[{ value: 'auto', label: t('Auto') }, { value: 'on', label: t('On') }, { value: 'off', label: t('Off') }]}
+        value={['on', 'off'].includes(S.saver) ? S.saver : 'auto'} onChange={v => update(s => { s.saver = v })} /></div>
     </Section>
 
     {/* 4.0: accessibility — text size, contrast, motion (lib/a11y.js) */}

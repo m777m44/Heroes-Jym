@@ -79,6 +79,28 @@ const ING_ROWS = [
   ['walnuts', 'fruit', 'Walnuts', 654, 15, 14, 65, 'handful', 30],
   ['almonds', 'fruit', 'Almonds', 579, 21, 22, 50, 'handful', 30],
   ['olives', 'fruit', 'Olives', 115, 0.8, 6, 11, 'handful', 30],
+  // 9.0 — for the Iraqi kitchen
+  ['turnip', 'veg', 'Turnips', 28, 0.9, 6.4, 0.1, 'piece', 120],
+  ['chard', 'veg', 'Swiss chard', 19, 1.8, 3.7, 0.2, 'handful', 40],
+  ['dill', 'veg', 'Dill', 43, 3.5, 7, 1.1, 'handful', 15],
+  ['cauliflower', 'veg', 'Cauliflower', 25, 1.9, 5, 0.3, 'cup', 100],
+  ['herbs', 'veg', 'Mixed herbs (leek, coriander, fenugreek leaves)', 30, 2.5, 5, 0.6, 'handful', 30],
+  ['celery', 'veg', 'Celery', 16, 0.7, 3, 0.2, 'piece', 40],
+  ['mint', 'veg', 'Fresh mint', 44, 3.3, 8.4, 0.7, 'handful', 10],
+  ['vineleaves', 'veg', 'Vine leaves', 70, 4.3, 11.7, 2, 'piece', 4],
+  ['kidneybeans', 'legumes', 'Kidney beans (cooked)', 127, 8.7, 22.8, 0.5, 'cup', 177],
+  ['wheat', 'grains', 'Whole wheat grains (jareesh)', 340, 13, 72, 2.5, 'cup', 190],
+  ['semolina', 'grains', 'Semolina', 360, 12.7, 72.8, 1.1, 'tbsp', 12],
+  ['wholewheatflour', 'grains', 'Whole wheat flour', 340, 13.2, 72, 2.5, 'tbsp', 8],
+  ['tamarind', 'pantry', 'Tamarind', 239, 2.8, 62.5, 0.6, 'tbsp', 18],
+  ['datepaste', 'pantry', 'Date paste', 300, 2, 75, 0.4, 'tbsp', 20],
+  ['cumin', 'pantry', 'Cumin', 375, 17.8, 44.2, 22.3, 'tsp', 2],
+  ['turmeric', 'pantry', 'Turmeric', 312, 9.7, 67, 3.3, 'tsp', 3],
+  ['cinnamon', 'pantry', 'Cinnamon', 247, 4, 81, 1.2, 'tsp', 2.6],
+  ['cardamom', 'pantry', 'Cardamom', 311, 10.8, 68.5, 6.7, 'tsp', 2],
+  ['baharat', 'pantry', 'Iraqi spice mix (bahar)', 300, 10, 60, 8, 'tsp', 2.5],
+  ['driedlime', 'pantry', 'Dried lime (noomi Basra)', 250, 4, 60, 1, 'piece', 6],
+  ['sesame', 'fruit', 'Sesame seeds', 573, 17.7, 23.4, 49.7, 'tbsp', 9],
 ]
 export const INGREDIENTS = ING_ROWS.map(([id, cat, name, kcal, p, c, f, unit, g]) => ({ id, cat, name, kcal, p, c, f, unit, g }))
 export const ING_BY_ID = Object.fromEntries(INGREDIENTS.map(x => [x.id, x]))
@@ -160,7 +182,26 @@ const ST = {
 export const STEP_TEXTS = Object.values(ST)
 
 // [id, name, meals, minutes, ingredients [[id, grams per serving, optional]], steps]
-const R = (id, name, meals, min, ing, steps) => ({ id, name, meals, min, ing: ing.map(([i, g, opt]) => ({ id: i, g, opt: !!opt })), steps: steps.map(k => ST[k]) })
+// 9.0: a step can also be a template from lib/recipeText.js ([key, ...args]); x = { iq, tip }
+const R = (id, name, meals, min, ing, steps, x = {}) => ({
+  id, name, meals, min, ing: ing.map(([i, g, opt]) => ({ id: i, g, opt: !!opt })),
+  steps: steps.map(k => (Array.isArray(k) ? k : ST[k])), iq: !!x.iq || IQ_OLD.has(id), tip: x.tip ? TIP[x.tip] : null,
+})
+// the 6.0 recipes that are Iraqi home cooking
+const IQ_OLD = new Set(['eggtomato', 'rashidibis', 'ijja', 'makhlama', 'baqilla', 'geymarhoney', 'ricebeans', 'riceokra', 'biryani', 'potatostew',
+  'greenbeanstew', 'peastew', 'tepsi', 'dolma', 'maqluba', 'tashreeb', 'kebab', 'fishrice', 'bulgurtomato', 'lentilsoup', 'dateswalnuts', 'datesyogurt'])
+// 9.0 — a healthy tip shown on some recipes
+const TIP = {
+  bake: 'Bake instead of frying to save about 100 kcal a serving.',
+  lean: 'Choose a lean cut and trim the fat to keep it lighter.',
+  fish: 'Grilled fish is high in protein and rich in omega-3.',
+  fibre: 'Rich in fibre and plant protein — it keeps you full for hours.',
+  light: 'A light, filling dish — great when you are losing weight.',
+  treat: 'An occasional treat — two pieces make one serving.',
+  sugar: 'Skip the sugar on top or use a little date syrup instead.',
+  veg: 'Load up on the vegetables and go easy on the rice.',
+}
+export const TIP_TEXTS = Object.values(TIP)
 export const RECIPES = [
   R('eggtomato', 'Eggs with tomato', 'bd', 15, [['egg', 100], ['tomato', 150], ['onion', 40], ['oil', 10], ['bread', 60, 1]], ['chop', 'fryOnion', 'addTomato', 'eggsIn', 'serveBread']),
   R('rashidibis', 'Tahini with date syrup', 'bs', 3, [['tahini', 30], ['dibis', 40], ['bread', 60]], ['mixRashi', 'dip']),
@@ -206,6 +247,63 @@ export const RECIPES = [
   R('honeyyogurt', 'Yogurt with honey and walnuts', 'sb', 2, [['yogurt', 200], ['honey', 15], ['walnuts', 15, 1]], ['mix']),
   R('bananashake', 'Banana milkshake', 'sb', 5, [['milk', 250], ['banana', 120], ['dates', 16, 1]], ['shake']),
   R('datesyogurt', 'Dates with yogurt', 's', 2, [['dates', 40], ['yogurt', 150]], ['mix']),
+  // 9.0 — more Iraqi home cooking, each with steps and calories per serving
+  R('masgouf', 'Masgouf (grilled carp)', 'ld', 60, [['fish', 250], ['onion', 50], ['tomato', 100], ['lemon', 15], ['turmeric', 1], ['tamarind', 10, 1], ['oliveoil', 5], ['bread', 60, 1]],
+    [['masgouf'], ['grillFor', 30], ['serveWith', ['onion', 'tomato', 'lemon', 'bread']]], { iq: true, tip: 'fish' }),
+  R('kubbamosul', 'Kubba Mosul (bulgur and meat discs)', 'l', 120, [['bulgur', 50], ['minced', 80], ['onion', 30], ['baharat', 1], ['oil', 5], ['almonds', 8, 1], ['raisins', 8, 1]],
+    [['soakFor', 30, ['bulgur']], ['knead', ['bulgur', 'minced']], ['saute', 10, ['minced', 'onion', 'baharat', 'almonds', 'raisins']], ['kubbaMosul'], ['boilGently', 15]], { iq: true, tip: 'lean' }),
+  R('kubbahalab', 'Kubbat Halab (rice kubba, baked)', 'ld', 75, [['rice', 60], ['potato', 50], ['turmeric', 1], ['minced', 60], ['onion', 30], ['parsley', 5], ['oil', 8], ['almonds', 5, 1], ['raisins', 5, 1]],
+    [['boilFor', 20, ['rice', 'potato', 'turmeric']], ['knead', ['rice', 'potato']], ['saute', 10, ['minced', 'onion', 'parsley', 'almonds', 'raisins']], ['shapeStuff'], ['bakeAt', 200, 25]], { iq: true, tip: 'bake' }),
+  R('kubbahamudh', 'Kubba hamudh (sour turnip soup)', 'ld', 90, [['rice', 30], ['semolina', 20], ['minced', 50], ['onion', 20], ['turnip', 120], ['chard', 40], ['tomatopaste', 15], ['garlic', 3], ['lemon', 25], ['oil', 5], ['mint', 2, 1]],
+    [['boilFor', 15, ['rice']], ['knead', ['rice', 'semolina']], ['saute', 10, ['minced', 'onion']], ['shapeStuff'], ['simmer', 20, ['turnip', 'chard', 'tomatopaste', 'garlic']], ['addKubba'], ['season', ['lemon', 'mint']]], { iq: true, tip: 'light' }),
+  R('kubbaburghul', 'Bulgur kubba (baked)', 'ld', 60, [['bulgur', 45], ['minced', 70], ['onion', 30], ['parsley', 5], ['baharat', 1], ['oil', 8], ['walnuts', 8, 1]],
+    [['soakFor', 30, ['bulgur']], ['knead', ['bulgur', 'minced']], ['saute', 10, ['minced', 'onion', 'parsley', 'walnuts']], ['shapeStuff'], ['bakeAt', 200, 25]], { iq: true, tip: 'bake' }),
+  R('kubbabatata', 'Potato kubba (potato chop)', 'ld', 50, [['potato', 200], ['minced', 60], ['onion', 30], ['parsley', 5], ['baharat', 1], ['oil', 10], ['egg', 25, 1]],
+    [['boilFor', 20, ['potato']], ['mash', ['potato']], ['saute', 10, ['minced', 'onion', 'parsley', 'baharat']], ['shapeStuff'], ['fryShallow']], { iq: true, tip: 'bake' }),
+  R('timmanbagilla', 'Dill rice with fava beans (timman bagilla)', 'l', 60, [['rice', 80], ['fava', 80], ['dill', 15], ['oil', 10], ['chicken', 150, 1]],
+    ['soak', ['saute', 3, ['fava', 'dill']], ['riceCover', 25], 'chicken'], { iq: true }),
+  R('timmanjazar', 'Carrot rice (timman jazar)', 'l', 60, [['rice', 80], ['carrot', 80], ['chicken', 150], ['onion', 30], ['raisins', 10], ['oil', 10], ['baharat', 1], ['almonds', 10, 1]],
+    ['soak', ['saute', 8, ['onion', 'carrot']], 'chicken', ['riceCover', 25], ['top', ['raisins', 'almonds']]], { iq: true }),
+  R('quzi', 'Quzi (lamb with spiced rice)', 'l', 150, [['meat', 150], ['rice', 80], ['onion', 30], ['baharat', 2], ['peas', 30], ['raisins', 10], ['oil', 10], ['almonds', 10, 1]],
+    [['simmer', 90, ['meat', 'onion', 'baharat']], 'soak', ['riceCover', 25], ['top', ['peas', 'raisins', 'almonds']]], { iq: true, tip: 'lean' }),
+  R('mutabbaq', 'Mutabbaq simach (fish with rice, Basra)', 'l', 60, [['fish', 200], ['rice', 80], ['onion', 40], ['raisins', 10], ['turmeric', 1], ['baharat', 1], ['oil', 10], ['lemon', 10]],
+    ['fish', ['saute', 10, ['onion', 'raisins', 'baharat']], 'soak', ['riceCover', 25], ['layer', ['rice', 'fish', 'onion']], 'flip'], { iq: true, tip: 'fish' }),
+  R('qarnabeet', 'Cauliflower stew (margat qarnabeet)', 'l', 50, [['cauliflower', 200], ['meat', 60], ['tomatopaste', 20], ['onion', 30], ['garlic', 3], ['oil', 10], ['rice', 80]],
+    ['soak', 'cookRice', 'brownMeat', ['simmer', 25, ['cauliflower', 'tomatopaste', 'garlic']], 'overRice'], { iq: true, tip: 'veg' }),
+  R('shijar', 'Zucchini stew (margat shijar)', 'l', 45, [['zucchini', 200], ['meat', 60], ['tomato', 100], ['onion', 30], ['garlic', 3], ['oil', 10], ['rice', 80]],
+    ['soak', 'cookRice', 'brownMeat', ['simmer', 20, ['zucchini', 'tomato', 'garlic']], 'overRice'], { iq: true, tip: 'veg' }),
+  R('qormahsabzi', 'Herb stew with beans (qormah sabzi)', 'l', 90, [['herbs', 60], ['kidneybeans', 80], ['meat', 80], ['driedlime', 6], ['onion', 30], ['turmeric', 1], ['oil', 10], ['rice', 80]],
+    [['saute', 15, ['herbs']], 'brownMeat', ['simmer', 60, ['kidneybeans', 'driedlime', 'turmeric']], 'soak', 'cookRice', 'overRice'], { iq: true, tip: 'fibre' }),
+  R('qeema', 'Qeema (chickpea and meat stew)', 'l', 120, [['minced', 80], ['chickpeas', 100], ['tomatopaste', 20], ['driedlime', 6], ['onion', 30], ['baharat', 1], ['oil', 10], ['rice', 80]],
+    [['simmer', 60, ['chickpeas', 'minced', 'onion', 'driedlime']], ['qeemaMash'], 'soak', 'cookRice', 'overRice'], { iq: true, tip: 'lean' }),
+  R('harissa', 'Harissa (wheat and chicken porridge)', 'bl', 180, [['wheat', 60], ['chickenbreast', 100], ['butter', 5, 1], ['cinnamon', 1, 1], ['sugar', 4, 1]],
+    [['soakNight', ['wheat']], ['simmer', 150, ['wheat', 'chickenbreast']], ['harissaBeat'], ['top', ['butter', 'cinnamon', 'sugar']]], { iq: true, tip: 'sugar' }),
+  R('lablabi', 'Lablabi (chickpeas with lemon and cumin)', 'sd', 10, [['chickpeas', 200], ['lemon', 15], ['cumin', 1], ['oliveoil', 5, 1]],
+    [['simmer', 10, ['chickpeas']], ['season', ['lemon', 'cumin', 'oliveoil']], ['serveBowl']], { iq: true, tip: 'fibre' }),
+  R('shalgham', 'Shalgham (turnips with date syrup)', 's', 40, [['turnip', 250], ['dibis', 20, 1]],
+    [['boilFor', 30, ['turnip']], ['serveWith', ['dibis']]], { iq: true, tip: 'light' }),
+  R('shorbakhudra', 'Vegetable soup (shorbat khudra)', 'ld', 40, [['carrot', 60], ['potato', 80], ['zucchini', 80], ['tomato', 80], ['onion', 30], ['celery', 30], ['oil', 5], ['vermicelli', 10, 1], ['lemon', 10, 1]],
+    [['chop', ['carrot', 'potato', 'zucchini', 'onion', 'celery']], ['saute', 5, ['onion']], ['simmer', 25, ['carrot', 'potato', 'zucchini', 'tomato', 'celery', 'vermicelli']], ['season', ['lemon']]], { iq: true, tip: 'light' }),
+  R('tikkalamb', 'Lamb tikka', 'ld', 40, [['meat', 150], ['yogurt', 30], ['onion', 30], ['lemon', 10], ['baharat', 1], ['oliveoil', 5], ['tomato', 80], ['bread', 60, 1]],
+    [['marinate', 60, ['meat', 'yogurt', 'onion', 'lemon', 'baharat']], ['skewer', ['meat', 'tomato']], ['grillFor', 12], ['serveWith', ['bread', 'onion']]], { iq: true, tip: 'lean' }),
+  R('tikkachicken', 'Chicken tikka', 'ld', 35, [['chickenbreast', 180], ['yogurt', 40], ['garlic', 3], ['lemon', 10], ['baharat', 1], ['oliveoil', 5], ['pepper', 60, 1], ['bread', 60, 1]],
+    [['marinate', 60, ['chickenbreast', 'yogurt', 'garlic', 'lemon', 'baharat']], ['skewer', ['chickenbreast', 'pepper']], ['grillFor', 12], ['serveWith', ['bread']]], { iq: true }),
+  R('salatairaqi', 'Iraqi salad', 'lds', 10, [['tomato', 120], ['cucumber', 120], ['onion', 30], ['parsley', 10], ['lemon', 15], ['oliveoil', 5], ['lettuce', 30, 1]],
+    [['chop', ['tomato', 'cucumber', 'onion', 'parsley', 'lettuce']], ['season', ['lemon', 'oliveoil']], 'mix'], { iq: true, tip: 'light' }),
+  R('yaprakh', 'Vine-leaf dolma (yaprakh)', 'l', 100, [['vineleaves', 40], ['rice', 60], ['minced', 40], ['onion', 40], ['tomato', 60], ['tomatopaste', 10], ['lemon', 15], ['oil', 10], ['garlic', 3, 1]],
+    ['stuffing', ['rollLeaves'], 'dolmaPot', 'flip'], { iq: true }),
+  R('dijajmahshi', 'Stuffed roast chicken (dijaj mahshi)', 'l', 120, [['chicken', 200], ['rice', 50], ['minced', 30], ['almonds', 10], ['raisins', 10], ['baharat', 1], ['oil', 5]],
+    ['soak', ['saute', 10, ['minced', 'rice', 'almonds', 'raisins', 'baharat']], ['stuffChicken'], ['bakeAt', 190, 90]], { iq: true }),
+  R('shifta', 'Shifta (baked meat patties with potatoes)', 'ld', 60, [['minced', 120], ['onion', 30], ['parsley', 10], ['baharat', 1], ['potato', 150], ['tomato', 100], ['tomatopaste', 10], ['oil', 5]],
+    [['knead', ['minced', 'onion', 'parsley', 'baharat']], ['patties'], ['layer', ['potato', 'tomato', 'tomatopaste']], ['bakeAt', 200, 40]], { iq: true, tip: 'bake' }),
+  R('sambusa', 'Baked meat sambusa', 'ds', 45, [['flour', 40], ['minced', 50], ['onion', 30], ['parsley', 5], ['baharat', 1], ['oil', 8]],
+    [['knead', ['flour', 'oil']], ['saute', 10, ['minced', 'onion', 'parsley', 'baharat']], ['foldTriangles'], ['bakeAt', 200, 20]], { iq: true, tip: 'bake' }),
+  R('burghulhummus', 'Bulgur with chickpeas (burghul bil-hummus)', 'ld', 30, [['bulgur', 70], ['chickpeas', 60], ['onion', 30], ['tomatopaste', 10], ['oil', 10]],
+    ['fryOnion', ['stirIn', ['tomatopaste', 'chickpeas']], 'bulgur'], { iq: true, tip: 'fibre' }),
+  R('kleicha', 'Date kleicha (lighter)', 's', 60, [['wholewheatflour', 30], ['datepaste', 25], ['butter', 8], ['milk', 10], ['cardamom', 0.5], ['sesame', 2, 1]],
+    [['knead', ['wholewheatflour', 'butter', 'milk', 'cardamom']], ['kleicha'], ['top', ['sesame']], ['bakeAt', 180, 20]], { iq: true, tip: 'treat' }),
+  R('fishtamarind', 'Fish in tamarind sauce', 'ld', 40, [['fish', 200], ['tamarind', 15], ['onion', 40], ['tomato', 80], ['garlic', 3], ['turmeric', 1], ['oil', 10], ['rice', 80, 1]],
+    ['fish', ['saute', 8, ['onion', 'garlic', 'turmeric']], ['simmer', 15, ['tomato', 'tamarind']], ['serveWith', ['rice']]], { iq: true, tip: 'fish' }),
 ]
 export const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]))
 

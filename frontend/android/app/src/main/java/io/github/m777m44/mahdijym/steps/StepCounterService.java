@@ -75,6 +75,12 @@ public class StepCounterService extends Service implements SensorEventListener {
     private boolean ttsReady;
     private BroadcastReceiver screenReceiver;
     private boolean bailed;
+    // 9.0 battery: with the screen off nobody can see the notification or the widget — they are
+    // not redrawn until it comes on again (SCREEN_ON catches them up), and the per-step detector
+    // is switched off (the hardware counter keeps counting every step in the sensor hub).
+    private volatile boolean screenOn = true;
+    private static final long TTS_IDLE_MS = 90_000;
+    private final Runnable ttsIdle = () -> { if (tts != null) { try { tts.shutdown(); } catch (Exception ignored) { } tts = null; ttsReady = false; } };
 
     private final Runnable notifyRunnable = () -> { notifyQueued = false; publish(true); };
     private final Runnable tick = new Runnable() {
@@ -104,12 +110,23 @@ public class StepCounterService extends Service implements SensorEventListener {
             counter = sensors.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
             detector = sensors.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
         }
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+            screenOn = pm == null || pm.isInteractive();
+        } catch (RuntimeException ignored) { screenOn = true; }
         screenReceiver = new BroadcastReceiver() {
             @Override public void onReceive(Context c, Intent i) {
                 if (Intent.ACTION_SCREEN_ON.equals(i.getAction()) || Intent.ACTION_USER_PRESENT.equals(i.getAction())) {
+                    boolean was = screenOn;
+                    screenOn = true;
+                    if (!was) detectorOn();
                     if (sensors != null && listening) sensors.flush(StepCounterService.this);
                     store.rollIfNeeded();
                     main.postDelayed(() -> publish(true), 400);
+                } else if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
+                    screenOn = false;
+                    detectorOff();
+                    store.flush();                    // everything on disk before the phone sleeps
                 } else if (Intent.ACTION_DATE_CHANGED.equals(i.getAction()) || Intent.ACTION_TIMEZONE_CHANGED.equals(i.getAction())
                         || Intent.ACTION_TIME_CHANGED.equals(i.getAction())) {
                     store.rollIfNeeded();
@@ -119,6 +136,7 @@ public class StepCounterService extends Service implements SensorEventListener {
         };
         IntentFilter f = new IntentFilter();
         f.addAction(Intent.ACTION_SCREEN_ON);
+        f.addAction(Intent.ACTION_SCREEN_OFF);
         f.addAction(Intent.ACTION_USER_PRESENT);
         f.addAction(Intent.ACTION_DATE_CHANGED);
         f.addAction(Intent.ACTION_TIME_CHANGED);
@@ -259,14 +277,29 @@ public class StepCounterService extends Service implements SensorEventListener {
         boolean ok = false;
         try {
             if (counter != null) ok = sensors.registerListener(this, counter, SensorManager.SENSOR_DELAY_UI, 0);
-            if (detector != null) ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_FASTEST, 0);
+            // the detector only gives the instant +1 while you watch; without a counter it is the source
+            if (detector != null && (screenOn || counter == null)) { ok |= sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_NORMAL, 0); detectorUp = true; }
         } catch (RuntimeException ignored) { /* a sensor HAL hiccup — the next start retries */ }
         listening = ok;
+    }
+
+    private boolean detectorUp;
+    /** 9.0: screen on — the per-step detector back for the live +1 (the counter stays as it is). */
+    private void detectorOn() {
+        if (!listening || detectorUp || detector == null || sensors == null) return;
+        try { detectorUp = sensors.registerListener(this, detector, SensorManager.SENSOR_DELAY_NORMAL, 0); } catch (RuntimeException ignored) { }
+    }
+    /** 9.0: screen off — only the counter listens (it is never re-registered: some phones then report a stale value). */
+    private void detectorOff() {
+        if (!detectorUp || counter == null || sensors == null) return;
+        try { sensors.unregisterListener(this, detector); } catch (RuntimeException ignored) { }
+        detectorUp = false;
     }
 
     private void stopListening() {
         try { if (sensors != null) sensors.unregisterListener(this); } catch (RuntimeException ignored) { }
         listening = false;
+        detectorUp = false;
         samples.clear();
     }
 
@@ -304,7 +337,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     boolean live() { return !bailed && store != null && store.running; }
 
     /** Redraw the live notification now (water added from a notification button). */
-    void refreshNotification() { main.post(() -> publish(true)); }
+    void refreshNotification() { main.post(() -> publish(true, true)); }
 
     void applyConfig() {
         main.post(() -> {
@@ -435,16 +468,26 @@ public class StepCounterService extends Service implements SensorEventListener {
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "mj-steps");
+        main.removeCallbacks(ttsIdle);
+        main.postDelayed(ttsIdle, TTS_IDLE_MS);   // 9.0: the speech engine is let go when it's been quiet a while
     }
 
     // ---- publishing: notification, widget, web app ---------------------------------------
 
     /** Refresh everything; notification updates are throttled to one per second. */
-    private void publish(boolean force) {
+    private void publish(boolean force) { publish(force, false); }
+
+    /**
+     * 9.0 battery: the web app only hears about steps while it is on screen (it asks for a fresh
+     * state when it comes back), and with the screen off the notification and the widget wait —
+     * unless `evenIfDark` (an explicit refresh: a new theme, water added from the shade).
+     */
+    private void publish(boolean force, boolean evenIfDark) {
         long now = System.currentTimeMillis();
         double sp = speed();
         boolean mv = moving();
-        if (now - lastEmit >= EMIT_EVERY_MS || force) { lastEmit = now; emit(sp, mv); }
+        if (appVisible && (now - lastEmit >= EMIT_EVERY_MS || force)) { lastEmit = now; emit(sp, mv); }
+        if (!screenOn && !evenIfDark) { main.removeCallbacks(notifyRunnable); notifyQueued = false; return; }
         if (force || now - lastNotify >= NOTIFY_EVERY_MS) {
             main.removeCallbacks(notifyRunnable);
             notifyQueued = false;
@@ -477,6 +520,7 @@ public class StepCounterService extends Service implements SensorEventListener {
     @Override public void onDestroy() {
         stopListening();
         main.removeCallbacksAndMessages(null);
+        try { if (store != null) store.flush(); } catch (RuntimeException ignored) { }
         try { if (screenReceiver != null) unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
         if (tts != null) { tts.shutdown(); tts = null; }
         if (instance == this) instance = null;

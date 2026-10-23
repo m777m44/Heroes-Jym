@@ -21,7 +21,10 @@ export default function Tools() {
   const ready = useMemo(() => overallReadiness(recoveryOf(S.workouts, now)), [S.workouts, now])
   const hiitWeek = (Array.isArray(S.intervals) ? S.intervals : []).filter(e => e.at > now - 7 * 864e5).length
 
+  const plan = S.planner && Array.isArray(S.planner.blocks) ? S.planner : null
   const featured = [
+    { to: '/dayplan', icon: 'calendar', title: 'Day plan', sub: plan ? t('{0} blocks', plan.blocks.length) : t('Workout, study, rest, meals'), c1: '#5e5ce6', c2: '#ff375f' },
+    { to: '/drinks', icon: 'cup', title: 'Drinks & juices', sub: t('Healthy recipes with calories'), c1: '#30d158', c2: '#ffb627' },
     { to: '/timer', icon: 'timer', title: 'Interval timer', sub: hiitWeek ? t('{0} this week', hiitWeek) : t('Tabata, HIIT, EMOM'), c1: '#ff375f', c2: '#ff9f0a' },
     { to: '/breathe', icon: 'wind', title: 'Breathe', sub: t('Box, 4-7-8, coherent'), c1: '#30b0c7', c2: '#5e5ce6' },
     { to: '/fasting', icon: 'moon', title: 'Fasting tracker', sub: fast ? (fast.done ? t('Goal reached!') : hmText(fast.elapsedMs)) : t('16:8, Ramadan, custom'), c1: '#ff9f0a', c2: '#bf5af2', live: !!fast },

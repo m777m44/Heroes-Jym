@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 5.0 — the water panel (expanded) while the step counter is off: the water ring with %, the amount, where the goal comes from, the reminder's exercise line, the four containers, Undo · Edit · In 15 min. Filled by WaterReminder.fill(); chip ids shared with notif_live_big.xml. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root"
     android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/notif_water_card" android:paddingStart="12dp" android:paddingTop="9dp" android:paddingEnd="12dp" android:paddingBottom="9dp"
     android:orientation="vertical">
 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">

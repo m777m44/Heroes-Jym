@@ -7,7 +7,7 @@ import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { fmtDate, fmtNum, todayISO } from '../lib/format.js'
 import {
-  RANGES, inRange, bpCategory, sugarCategory, sleepCategory, rhrCategory, toMgdl, fromMgdl, dayLog, setDay,
+  RANGES, inRange, bpCategory, sugarCategory, sleepCategory, sleepRange, rhrCategory, toMgdl, fromMgdl, dayLog, setDay,
   addReading, removeReading, summary, series, logStreak, dosesOn, toggleDose, adherence, cleanTimes,
   newMedId, MED_MAX, shiftIso, TIME_RE,
 } from '../lib/health.js'
@@ -88,7 +88,7 @@ export default function Health() {
         title={t(k === 'mood' ? 'Mood' : k === 'energy' ? 'Energy' : 'Stress')} />)}
     </Section>
 
-    <Section title={t('Sleep')} footer={sl ? t(SLEEP[sl][0]) + ' · ' + t('adults need 7–9 hours') : t('Last night, in hours (half hours are fine).')}>
+    <Section title={t('Sleep')} footer={sl ? t(SLEEP[sl][0]) + ' · ' + (age != null && age < 18 ? t('{0}–{1} hours suit your age', sleepRange(age)[0], sleepRange(age)[1]) : t('adults need 7–9 hours')) : t('Last night, in hours (half hours are fine).')}>
       <Row icon="bed" iconTint="var(--indigo)" title={t('Hours slept')}>
         <CommitNumber className="rowfield" decimal value={log.sleepH} placeholder="7.5" aria-label={t('Hours slept')}
           onCommit={v => set({ sleepH: inRange(v, RANGES.sleepH) ? Math.round(v * 2) / 2 : null })} />

@@ -16,6 +16,7 @@ import { bodyKg } from './water.js'
 import { workoutKcalOn } from './workoutTimer.js'
 import { FOODS, FOOD_BY_ID } from './foodDb.js'
 import { RECIPE_BY_ID } from './kitchen.js'
+import { DRINK_BY_ID } from './drinks.js'
 
 export const MEALS = [
   { key: 'b', name: 'Breakfast', icon: 'sun', color: 'var(--orange)' },
@@ -52,6 +53,7 @@ export function foodName(S, x) {
   if (!x) return ''
   if (x.f) { const f = foodOf(S, x.f); if (f) return f.custom || !FOOD_BY_ID[f.id] ? f.n : t(f.name) }
   if (x.r && RECIPE_BY_ID[x.r]) return t(RECIPE_BY_ID[x.r].name)
+  if (x.dr && DRINK_BY_ID[x.dr]) return t(DRINK_BY_ID[x.dr].name)   // 9.0: a drink from the library
   if (x.name) return t(x.name)
   return x.n || t('Quick calories')
 }

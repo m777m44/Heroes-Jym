@@ -20,6 +20,9 @@ import {
 import Icon from '../components/Icon.jsx'
 import { BackButton, Button, Segmented } from '../components/ui.jsx'
 import { n0, mealName } from '../components/food/FoodSheets.jsx'
+import { stepText } from '../lib/recipeText.js'
+import { DRINK_COUNT } from '../lib/drinks.js'
+import { nav } from '../lib/nav.js'
 
 const toast = m => useUI.getState().toast(m)
 const mealOf = k => MEALS.find(m => m.key === k) || MEALS[3]
@@ -69,6 +72,7 @@ function RecipeView({ id, meal: meal0, close }) {
       <div className="grow" style={{ flex: 1, minWidth: 0 }}>
         <h3 style={{ margin: 0 }}>{t(r.name)}</h3>
         <div className="small muted"><Icon name="timer" style={{ width: 13, height: 13, verticalAlign: '-2px' }} /> {t('{0} min', r.min)} · {r.meals.split('').map(mealName).join(' · ')}</div>
+        {r.iq && <span className="iq-badge"><Icon name="palm" />{t('Iraqi kitchen')}</span>}
       </div>
     </div>
     <div className={'kit-status ' + (match.ready ? 'ok' : 'miss')}>
@@ -91,7 +95,8 @@ function RecipeView({ id, meal: meal0, close }) {
     </div>
     <div className="small muted kit-hint">{t('Tap an ingredient to mark it as in your kitchen; optional ones switch on and off.')}</div>
     <div className="lbl2">{t('How to make it')}</div>
-    <ol className="kit-steps">{r.steps.map((s, i) => <li key={i}>{t(s)}</li>)}</ol>
+    <ol className="kit-steps">{r.steps.map((s, i) => <li key={i} style={{ '--i': i }}>{stepText(s, ingName)}</li>)}</ol>
+    {r.tip && <div className="kit-tip"><Icon name="lightbulb" /><span>{t(r.tip)}</span></div>}
     {!match.ready && <Button variant="tinted" icon="list" onClick={shop}>{t('Add missing to the shopping list')}</Button>}
     <div className="lbl2" style={{ marginTop: 14 }}>{t('Add to today’s log')}</div>
     <Segmented options={MEALS.map(m => ({ value: m.key, label: t(m.name) }))} value={meal} onChange={setMeal} />
@@ -130,13 +135,19 @@ export const ingPickSheet = onPick => useUI.getState().openSheet(close => <IngPi
 // ---- the tabs ----------------------------------------------------------------------------------
 function Recipes({ St, meal, setMeal }) {
   const [ready, setReady] = useState(false)
+  const [iq, setIq] = useState(false)
   const iso = todayISO()
   const left = foodGoalOf(St, iso).kcal - dayTotals(St, iso).kcal
   const pantry = St.pantry || []
-  const list = suggestRecipes(pantry, meal, { left, readyOnly: ready })
+  const list = suggestRecipes(pantry, meal, { left, readyOnly: ready }).filter(x => !iq || x.r.iq)
   const nReady = suggestRecipes(pantry, meal, { readyOnly: true }).length
   const update = useStore(s => s.update)
   return <>
+    <button className="card dk-promo" onClick={() => nav('/drinks')}>
+      <span className="dk-promo-ic"><Icon name="cup" /></span>
+      <span className="grow"><b>{t('Drinks & juices')}</b><span className="small muted">{t('{0} healthy recipes with calories — and your own', DRINK_COUNT)}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
     <Segmented options={MEALS.map(m => ({ value: m.key, label: t(m.name) }))} value={meal} onChange={setMeal} />
     {!pantry.length && <div className="card kit-empty">
       <Icon name="lightbulb" />
@@ -145,13 +156,16 @@ function Recipes({ St, meal, setMeal }) {
     </div>}
     <div className="kit-bar">
       <span className="small muted">{t('{0} ready to cook · {1} kcal left today', nReady, n0(Math.max(0, left)))}</span>
-      <button className={'chip nocap' + (ready ? ' on' : '')} onClick={() => setReady(v => !v)}><Icon name="checkCircle" />{t('Ready only')}</button>
+      <span className="kit-bar-chips">
+        <button className={'chip nocap' + (iq ? ' on' : '')} aria-pressed={iq} onClick={() => setIq(v => !v)}><Icon name="palm" />{t('Iraqi')}</button>
+        <button className={'chip nocap' + (ready ? ' on' : '')} aria-pressed={ready} onClick={() => setReady(v => !v)}><Icon name="checkCircle" />{t('Ready only')}</button>
+      </span>
     </div>
     <div className="kit-grid">
       {list.map(({ r, match, n, fits }) => <button key={r.id} className={'card kit-card' + (match.ready ? ' ready' : '')} onClick={() => recipeSheet(r.id, meal)}>
         <span className="kit-bub" style={{ '--tint': mealOf(meal).color }}><Icon name={mealOf(meal).icon} /></span>
         <span className="kit-card-b">
-          <b>{t(r.name)}</b>
+          <b>{t(r.name)}{r.iq && <Icon name="palm" className="iq-mark" aria-label={t('Iraqi kitchen')} />}</b>
           <span className="small muted">{n0(n.kcal)} {U('kcal')} · {t('{0} min', r.min)}{fits === false ? ' · ' + t('over today’s goal') : ''}</span>
           <span className={'kit-badge ' + (match.ready ? 'ok' : match.missing.length <= 2 ? 'near' : 'far')}>
             {match.ready ? t('Ready to cook') : match.missing.length <= 2 ? t('Missing: {0}', listOf(match.missing.map(ingName))) : t('Missing {0} ingredients', match.missing.length)}

@@ -183,7 +183,7 @@ public class WorkoutReminder extends BroadcastReceiver {
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(o.optString("big", body)).setBigContentTitle(title))
-            .setColor(0xFF30D158)
+            .setColor(Theme.get(c).accent())
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setPriority(NotificationCompat.PRIORITY_HIGH)       // heads-up on Android 7 and older
             .setVibrate(VIBRATION)

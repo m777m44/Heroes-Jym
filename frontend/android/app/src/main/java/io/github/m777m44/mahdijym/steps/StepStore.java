@@ -102,7 +102,34 @@ final class StepStore {
 
     // ---- persistence -------------------------------------------------------------------
 
+    // 9.0 battery: a step no longer writes the whole state (62 days of history included) to
+    // disk. Steps mark the store dirty and it is written at most every 15 s — and at once when
+    // the screen goes off, the service stops, or anything else (a milestone, a new day, new
+    // settings) calls save(). If Android kills the process in between, the hardware counter
+    // still holds those steps and the next reading credits them.
+    private static final long SAVE_EVERY_MS = 15_000;
+    private final android.os.Handler saver = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable flushRun = this::flush;
+    private long lastSaveAt;
+    private boolean dirty;
+
+    /** The per-step path: persist soon. */
+    synchronized void saveSoon() {
+        dirty = true;
+        long now = SystemClock.elapsedRealtime();
+        long wait = SAVE_EVERY_MS - (now - lastSaveAt);
+        if (wait <= 0) { save(); return; }
+        saver.removeCallbacks(flushRun);
+        saver.postDelayed(flushRun, wait);
+    }
+
+    /** Write now if anything is waiting. */
+    synchronized void flush() { if (dirty) save(); }
+
     synchronized void save() {
+        dirty = false;
+        lastSaveAt = SystemClock.elapsedRealtime();
+        saver.removeCallbacks(flushRun);
         prefs.edit()
             .putString("day", day)
             .putInt("steps", steps)
@@ -270,10 +297,10 @@ final class StepStore {
         if (d == StepMath.REJECT) {
             rejected++;                    // a baseline jump, not walking
             provisional = 0;
-            save();
+            saveSoon();
             return 0;
         }
-        if (d <= 0) { save(); return 0; }
+        if (d <= 0) { saveSoon(); return 0; }
         provisional = StepMath.provisionalAfter(provisional, d);   // 2.10: no step back, no double
         return addSteps((int) d, now);
     }
@@ -300,7 +327,7 @@ final class StepStore {
     }
 
     private int addSteps(int delta, long now) {
-        if (delta <= 0) { save(); return 0; }
+        if (delta <= 0) { saveSoon(); return 0; }
         if (lastStepAt > 0) {
             // A batch of steps delivered after the screen was off spans the whole gap; count
             // at most ~0.6 s per step of it as walking, so a short walk after a long sit
@@ -312,7 +339,7 @@ final class StepStore {
         int h = hourNow();
         hourly[h] += delta;
         lastStepAt = now;
-        save();
+        saveSoon();
         return delta;
     }
 

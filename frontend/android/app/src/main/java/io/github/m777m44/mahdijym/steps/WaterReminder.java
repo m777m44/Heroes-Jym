@@ -218,6 +218,27 @@ public class WaterReminder extends BroadcastReceiver {
         }
     }
 
+    /**
+     * 9.0 — "Water in the notifications" switched off while reminders stay on: remove the quiet
+     * panel that is showing now, but leave a reminder that is still up (same id, other channel).
+     */
+    static void panelOff(Context c) {
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        try {
+            for (android.service.notification.StatusBarNotification sb : nm.getActiveNotifications()) {
+                if (sb.getId() != NOTIF_ID) continue;
+                android.app.Notification n = sb.getNotification();
+                boolean isPanel = Build.VERSION.SDK_INT >= 26
+                    ? CH_PANEL.equals(n.getChannelId())
+                    : (n.flags & android.app.Notification.FLAG_ONGOING_EVENT) != 0;
+                if (isPanel) cancel(c, NOTIF_ID);
+            }
+        } catch (RuntimeException e) {
+            if (!alertUp()) cancel(c, NOTIF_ID);
+        }
+    }
+
     private static void cancel(Context c, int id) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(id);
@@ -339,6 +360,7 @@ public class WaterReminder extends BroadcastReceiver {
 
         RemoteViews big = new RemoteViews(c.getPackageName(), R.layout.notif_water);
         fill(c, w, big, nf, amountTxt, pct, ml, goal, sub, move, alert);
+        Theme.get(c).paintCard(big, R.id.w_root);   // 9.0: the card follows the theme
         RemoteViews small = new RemoteViews(c.getPackageName(), R.layout.notif_water_small);
         fillSmall(c, w, small, nf, amountTxt, pct, ml, goal);
 
@@ -359,7 +381,7 @@ public class WaterReminder extends BroadcastReceiver {
             .setCustomContentView(small)
             .setCustomBigContentView(big)
             .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
-            .setColor(0xFF0A84FF)
+            .setColor(Theme.get(c).on ? Theme.get(c).accent() : 0xFF0A84FF)
             .setContentIntent(Celebration.openApp(c, REQ_OPEN, "/water"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setLocalOnly(true);
@@ -465,7 +487,7 @@ public class WaterReminder extends BroadcastReceiver {
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle("\uD83D\uDCA7 " + text)
             .setProgress(Math.max(1, goal), Math.min(ml, goal), false)
-            .setColor(0xFF0A84FF)
+            .setColor(Theme.get(c).on ? Theme.get(c).accent() : 0xFF0A84FF)
             .setSilent(true)
             .setAutoCancel(true)
             .setContentIntent(Celebration.openApp(c, REQ_OPEN, "/water"))

@@ -1,15 +1,19 @@
 // 6.0 — wallpapers behind the whole app.
-//   nature / anime  photos bundled with the app (public/wallpapers/<id>.webp, thumbnails in t/)
-//   art             generated backgrounds: 8 styles × 10 palettes, pure CSS (no files)
+//   nature / anime / sea / iraq  photos bundled with the app (public/wallpapers/<id>.webp, thumbnails
+//                   in t/) — 9.0 added seas & oceans (s*) and Iraq (q*, shown once there are any)
+//   art             generated backgrounds: 10 styles × 14 palettes, pure CSS (no files; 9.0 added
+//                   ripples, dunes and the lagoon, deep sea, palm grove and Babylon palettes)
 //   mine            your own photos from the gallery, resized on the phone and kept in IndexedDB
 //                   (never uploaded; they are not part of the backup)
 // S.wall = { id, dim (0–0.85), blur (px 0–24) } — id null means no wallpaper.
 // applyWallpaper(wall, mode) runs right after applyTheme (which resets the surface colours), so it
 // can make the surfaces translucent over the picture and switch on the frosted-glass rules.
-import { NATURE, ANIME } from './wallpaperList.js'
+import { NATURE, ANIME, SEA, IRAQ } from './wallpaperList.js'
 
 export const WALL_CATS = [
   { key: 'nature', name: 'Nature', icon: 'mountain' },
+  { key: 'sea', name: 'Seas', icon: 'waves' },
+  { key: 'iraq', name: 'Iraq', icon: 'palm' },
   { key: 'anime', name: 'Anime', icon: 'sparkles' },
   { key: 'art', name: 'Art', icon: 'palette' },
   { key: 'mine', name: 'My photos', icon: 'image' },
@@ -34,6 +38,11 @@ export const PALETTES = {
   mint: ['#002b33', '#07575b', '#4fc1b5', '#c4f1e8'],
   gold: ['#140f04', '#5c4300', '#d4a017', '#fff1a8'],
   rose: ['#2a0a14', '#8a1c3c', '#e85d75', '#ffd1dc'],
+  // 9.0
+  lagoon: ['#03262e', '#05668d', '#00a6a6', '#9ef0f0'],
+  deepsea: ['#020b1a', '#0b2545', '#2a6f97', '#8da9c4'],
+  palm: ['#0d1f0f', '#2d5016', '#c9a227', '#f2e8c9'],
+  babylon: ['#06123d', '#1d3fa6', '#d4a017', '#ffe9a8'],
 }
 const STYLES = {
   mesh: ([a, b, c, d]) => `radial-gradient(at 18% 22%, ${c} 0, transparent 52%), radial-gradient(at 85% 18%, ${b} 0, transparent 50%), radial-gradient(at 60% 88%, ${d}55 0, transparent 55%), linear-gradient(160deg, ${a}, ${b})`,
@@ -44,6 +53,9 @@ const STYLES = {
   prism: ([a, b, c, d]) => `conic-gradient(from 210deg at 50% 62%, ${a}, ${b}, ${c}, ${d}, ${b}, ${a})`,
   dots: ([a, b, c, d]) => `radial-gradient(${d}33 1.6px, transparent 1.8px) 0 0/22px 22px, linear-gradient(170deg, ${a}, ${b} 60%, ${c})`,
   orbs: ([a, b, c, d]) => `radial-gradient(circle at 25% 30%, ${c} 0 14%, transparent 34%), radial-gradient(circle at 78% 62%, ${d}aa 0 10%, transparent 30%), radial-gradient(circle at 40% 85%, ${b} 0 12%, transparent 32%), ${a}`,
+  // 9.0
+  ripples: ([a, b, c, d]) => `repeating-radial-gradient(circle at 20% 12%, ${d}26 0 2px, transparent 2px 24px), radial-gradient(90% 60% at 20% 10%, ${c}66 0, transparent 60%), linear-gradient(165deg, ${a}, ${b} 60%, ${c})`,
+  dunes: ([a, b, c, d]) => `radial-gradient(130% 55% at 50% 118%, ${d}cc 0 40%, transparent 41%), radial-gradient(150% 65% at 15% 112%, ${c}d9 0 45%, transparent 46%), radial-gradient(170% 75% at 92% 108%, ${b} 0 50%, transparent 51%), linear-gradient(180deg, ${a}, ${b} 75%)`,
 }
 export const ART_STYLES = Object.keys(STYLES)
 export const ART = ART_STYLES.flatMap(st => Object.keys(PALETTES).map(p => 'art:' + st + ':' + p))
@@ -56,13 +68,17 @@ export function artBackground(id) {
 export function wallsOf(cat, mine = []) {
   if (cat === 'nature') return NATURE.map(([id, color]) => ({ id, color, thumb: photoUrl(id, true) }))
   if (cat === 'anime') return ANIME.map(([id, color]) => ({ id, color, thumb: photoUrl(id, true) }))
+  if (cat === 'sea') return SEA.map(([id, color]) => ({ id, color, thumb: photoUrl(id, true) }))
+  if (cat === 'iraq') return IRAQ.map(([id, color]) => ({ id, color, thumb: photoUrl(id, true) }))
   if (cat === 'art') return ART.map(id => ({ id, bg: artBackground(id) }))
   if (cat === 'mine') return mine.map(m => ({ id: 'mine:' + m.id, thumb: m.thumb }))
   return []
 }
-export const visibleCats = () => WALL_CATS.filter(c => c.key !== 'anime' || ANIME.length)
-const COLOR = Object.fromEntries([...NATURE, ...ANIME])
-export const catOf = id => (!id ? null : id.startsWith('art:') ? 'art' : id.startsWith('mine:') ? 'mine' : id[0] === 'a' ? 'anime' : 'nature')
+const PHOTO_CATS = { anime: ANIME, sea: SEA, iraq: IRAQ }
+export const visibleCats = () => WALL_CATS.filter(c => !PHOTO_CATS[c.key] || PHOTO_CATS[c.key].length)
+const COLOR = Object.fromEntries([...NATURE, ...ANIME, ...SEA, ...IRAQ])
+const PREFIX = { a: 'anime', s: 'sea', q: 'iraq' }
+export const catOf = id => (!id ? null : id.startsWith('art:') ? 'art' : id.startsWith('mine:') ? 'mine' : PREFIX[id[0]] || 'nature')
 export const wallExists = id => !!id && (catOf(id) === 'art' ? !!artBackground(id) : catOf(id) === 'mine' ? true : id in COLOR)
 export function normWall(w) {
   const x = w && typeof w === 'object' ? w : {}

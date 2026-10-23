@@ -45,6 +45,8 @@ export const PLACES = [
   ['History', '/history', 'history', 'var(--grey)', 'past workouts log'],
   ['Library', '/library', 'dumbbell', 'var(--orange)', 'exercises'],
   ['Tools', '/tools', 'widget', 'var(--purple)', 'utilities'],
+  ['Day plan', '/dayplan', 'calendar', 'var(--indigo)', 'schedule day study work rest timetable routine خطة يوم دراسة جدول'],
+  ['Drinks & juices', '/drinks', 'cup', 'var(--green)', 'juice smoothie tea shake detox laban عصير مشروبات شاي'],
   ['Interval timer', '/timer', 'timer', 'var(--red)', 'tabata hiit emom stopwatch rounds boxing'],
   ['Breathe', '/breathe', 'wind', 'var(--teal)', 'breathing calm relax meditation box 4-7-8'],
   ['Fasting tracker', '/fasting', 'moon', 'var(--orange)', 'intermittent 16:8 ramadan iftar suhoor omad'],

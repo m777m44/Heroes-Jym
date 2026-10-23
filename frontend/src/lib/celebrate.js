@@ -6,7 +6,7 @@
 // A browser only plays audio for a page that is open, so when a milestone lands while the app
 // is in the background the pedometer posts a notification instead (stepNotification.js).
 import { create } from 'zustand'
-import { audioContext } from './sound.js'
+import { audioContext, keepAwakeFor } from './sound.js'
 
 export const CELEBRATION_MS = 6000
 
@@ -154,14 +154,85 @@ function workoutFanfare(ctx, bus, t0) {
   applause(ctx, bus, hit + 0.25, 1.8, 0.045)
 }
 
-/** The celebration sound. `kind`: 'goal' | 'milestone' | 'water' | 'plan' | 'workout'. */
+// ---- 9.0: sound packs -------------------------------------------------------------------------
+// Six new packs rendered by scripts/build-sounds.py into public/sounds/<pack>/<kind>.mp3 — the
+// same files the Android celebration plays when the app is closed — plus 'classic', the
+// original synth below. S.soundPack picks one (default champion), S.soundVol is 0–1.
+export const PACKS = [
+  { id: 'champion', name: 'Champion', desc: 'A stadium hit, brass, choir and a cheering crowd', icon: 'trophy', c: '#ff9f0a' },
+  { id: 'epic', name: 'Epic', desc: 'Cinematic taiko drums, deep brass and choir', icon: 'mountain', c: '#bf5af2' },
+  { id: 'neon', name: 'Neon', desc: 'An electronic build-up and a pumping drop', icon: 'bolt', c: '#40c8e0' },
+  { id: 'royal', name: 'Royal', desc: 'A trumpet fanfare with timpani', icon: 'crown', c: '#ffd60a' },
+  { id: 'arcade', name: 'Arcade', desc: 'An 8-bit victory jingle', icon: 'sparkles', c: '#30d158' },
+  { id: 'zen', name: 'Zen', desc: 'Singing bowls, marimba and chimes — calm', icon: 'leafy', c: '#63e6e2' },
+  { id: 'classic', name: 'Classic', desc: 'The original fanfare', icon: 'music', c: '#8e8e93' },
+]
+export const PACK_IDS = PACKS.map(p => p.id)
+const FILE_OF = { milestone: 'milestone', goal: 'goal', water: 'water', plan: 'plan', workout: 'workout', fast: 'fast', hiit: 'workout', body: 'goal', dayplan: 'plan' }
+let prefsOf = () => ({})
+/** App wiring: where the sound settings live (S.soundPack, S.soundVol). */
+export function bindSoundPrefs(get) { prefsOf = get }
+export const packOf = S => (S && PACK_IDS.includes(S.soundPack) ? S.soundPack : 'champion')
+export const volOf = S => (S && Number.isFinite(+S.soundVol) ? Math.max(0, Math.min(1, +S.soundVol)) : 0.9)
+
+const base = () => (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || '/'
+export const soundUrl = (pack, kind) => base() + 'sounds/' + pack + '/' + (FILE_OF[kind] || 'goal') + '.mp3'
+const buffers = new Map()          // url → Promise<AudioBuffer>
+function bufferOf(ctx, url) {
+  if (!buffers.has(url)) {
+    if (buffers.size > 12) buffers.delete(buffers.keys().next().value)
+    const p = fetch(url).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer() })
+      .then(ab => new Promise((res, rej) => { const q = ctx.decodeAudioData(ab, res, rej); if (q && q.then) q.then(res, rej) }))
+    p.catch(() => buffers.delete(url))
+    buffers.set(url, p)
+  }
+  return buffers.get(url)
+}
+let current = null
+async function playFile(pack, kind, vol) {
+  const ctx = audioContext()
+  const buf = await bufferOf(ctx, soundUrl(pack, kind))
+  if (current) { try { current.stop() } catch { /* already ended */ } }
+  const src = ctx.createBufferSource(), g = ctx.createGain()
+  src.buffer = buf
+  g.gain.value = vol
+  src.connect(g); g.connect(ctx.destination)
+  src.start(ctx.currentTime + 0.01)
+  current = src
+  src.onended = () => { if (current === src) current = null }
+  keepAwakeFor(buf.duration + 0.2)
+}
+/** Load the files of a pack ahead of time (idle, after start-up) so the first celebration is instant. */
+export function prefetchPack(pack, kinds = ['milestone', 'goal', 'water', 'workout', 'plan', 'fast']) {
+  // only fetched (into the offline cache) — decoding waits for the first celebration, so no
+  // audio context is opened and no memory is used before a sound is actually needed
+  if (pack === 'classic' || typeof fetch === 'undefined') return
+  for (const k of kinds) fetch(soundUrl(pack, k)).catch(() => {})
+}
+/** Settings: hear a pack (always plays, whatever the Sounds switch says). */
+export function previewPack(pack, kind = 'goal', vol = 0.9) { playPack(pack, kind, vol) }
+function playPack(pack, kind, vol) {
+  if (pack === 'classic') { synthCheer(kind, vol); return }
+  playFile(pack, kind, vol).catch(() => synthCheer(kind, vol))   // offline before the first download → the synth
+}
+
+/** The celebration sound. `kind`: 'goal' | 'milestone' | 'water' | 'plan' | 'workout' | 'fast' | 'hiit' | 'body'. */
 export function playCheer(enabled, kind = 'milestone') {
   if (!enabled) return
+  const S = prefsOf() || {}
+  const vol = volOf(S)
+  if (vol <= 0) return
+  try { playPack(packOf(S), kind, vol) } catch { /* no audio */ }
+}
+
+/** 'classic': the original synthesized fanfare (2.10 – 7.2). */
+function synthCheer(kind = 'milestone', vol = 0.9) {
   try {
     const ctx = audioContext()
     const t0 = ctx.currentTime + 0.03
     const master = ctx.createGain()
-    master.gain.value = 0.8
+    master.gain.value = 0.8 * vol
+    keepAwakeFor(4.5)
     const comp = ctx.createDynamicsCompressor()            // big chords without clipping
     comp.threshold.value = -14; comp.ratio.value = 4
     master.connect(comp); comp.connect(ctx.destination)

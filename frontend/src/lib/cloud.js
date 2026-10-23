@@ -43,7 +43,7 @@
 // throttled (a walk saves steps every few seconds) and flushed when the app goes to the
 // background.
 import { MOBILE } from './mobile.js'
-import { DEF } from '../store/useStore.js'
+import { DEF, hasData as storeHasData } from '../store/useStore.js'
 import * as df from './driveFile.js'
 
 const META = 'mj_cloud'
@@ -243,8 +243,8 @@ export async function upload(S, id) {
   return { id: j.id || id, ts }
 }
 
-const hasData = S => !!S && !!(((S.workouts || []).length) || ((S.routines || []).length) || ((S.bodyweight || []).length) ||
-  Object.keys(S.steps || {}).length || Object.keys(S.waterMl || {}).length)
+// 9.0: the same complete check as the store's (food, fasting, health, water… all count)
+const hasData = S => storeHasData(S)
 
 // ---- Android Backup copy --------------------------------------------------------------------
 
@@ -533,7 +533,13 @@ export async function linkDriveFile(store, mode = 'create') {
     try { got = await readLinked() } catch (e) { await unlinkDriveFile(); throw e }
     if (got.bad) { await unlinkDriveFile(); throw Object.assign(new Error('not MAHDI-JYM data'), { reason: 'notours' }) }
     if (got.S && hasData(got.S)) {
-      if (!hasData(store.getState().S)) { applyFile(store, got); return done('restored') }
+      if (!hasData(store.getState().S)) {
+        applyFile(store, got)
+        // 9.0 (review on PR #11): a file we may read but not write is a restore, not a place to
+        // save to — it is not kept linked, so nothing pretends to back up into it
+        if (info && info.canWrite === false) { await unlinkDriveFile(); return done('readonly') }
+        return done('restored')
+      }
       // nothing is written until the choice is made — not even by a background round
       setMeta({ fileChoose: true })
       return done('choose')

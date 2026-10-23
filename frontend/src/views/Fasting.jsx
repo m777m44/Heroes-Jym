@@ -8,7 +8,7 @@ import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { PLANS, STAGES, planById, startFast, fastStatus, endFast, fastStats, lastDays, hmText, hText, normFasting, goalHours } from '../lib/fasting.js'
 import { MOBILE } from '../lib/mobile.js'
-import { celebrate } from '../lib/celebrate.js'
+import { celebrate, playCheer } from '../lib/celebrate.js'
 import { goalHaptic } from '../lib/hapticFeedback.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -32,7 +32,10 @@ export async function syncFastNotification(F) {
     const perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted') return
     const ramadan = f.active.plan === 'ramadan'
+    let iconColor
+    try { iconColor = (await import('../lib/themes.js')).themeAccent() } catch { iconColor = undefined }
     await LocalNotifications.schedule({ notifications: [{
+      iconColor,
       id: NOTIFY_ID, schedule: { at: new Date(at), allowWhileIdle: true },
       title: ramadan ? t('Time for iftar') : t('Fast complete!'),
       body: ramadan ? t('Your fast is done — break it gently with water and dates.') : t('You fasted {0} hours. Break it gently — water first, then a light meal.', f.active.goalH),
@@ -84,7 +87,7 @@ export default function Fasting() {
     const e = endFast(F.active, Date.now())
     save(f => { f.log = [...f.log, e].slice(-400); f.active = null })
     syncFastNotification({ ...F, active: null })
-    if (e.hit) { goalHaptic(); celebrate(Math.max(1, Math.round((e.end - e.start) / 3600000)), 'fast') }
+    if (e.hit) { goalHaptic(); celebrate(Math.max(1, Math.round((e.end - e.start) / 3600000)), 'fast'); playCheer(useStore.getState().S.sound !== false, 'fast') }
     else ui().toast(t('Fast ended — {0}', hmText(e.end - e.start)))
   }
   const askEnd = () => st && st.done ? finish() : confirmSheet({

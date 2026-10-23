@@ -11,6 +11,10 @@
 // web bundles; the Capacitor plugins are only ever imported behind it.
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
+// 9.0: reminders carry the theme's accent as their icon colour (Android)
+async function accentColor() {
+  try { return (await import('./themes.js')).themeAccent() } catch { return undefined }
+}
 
 const FILE = 'mahdi-jym-state.json'
 // Name of the mirror before the MAHDI-JYM rebrand — read once as a fallback so an existing
@@ -88,10 +92,11 @@ export async function syncReminder(S, interactive = false) {
       return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
         route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
     }).concat(burnItems))) { lastSig = sig; return true }
+    const color = await accentColor()
     const notifications = plan.map(item => {
       const { title, body } = reminderText(item, S)
-      return { id: item.id, title, body, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
-    }).concat(burnItems.map(x => ({ id: x.id, title: x.title, body: x.body, schedule: { at: new Date(x.at), allowWhileIdle: true }, extra: { route: x.start } })))
+      return { id: item.id, title, body, iconColor: color, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
+    }).concat(burnItems.map(x => ({ id: x.id, title: x.title, body: x.body, iconColor: color, schedule: { at: new Date(x.at), allowWhileIdle: true }, extra: { route: x.start } })))
     if (notifications.length) await LocalNotifications.schedule({ notifications })
     lastSig = sig
     return true
@@ -116,9 +121,10 @@ export async function syncMedReminders(S, interactive = false) {
     if (perm.display !== 'granted') return false
     const { t } = await import('./i18n.js')
     await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    const color = await accentColor()
     await LocalNotifications.schedule({
       notifications: items.map(m => ({
-        id: m.id, channelId: 'mj_meds',
+        id: m.id, channelId: 'mj_meds', iconColor: color,
         title: (m.kind === 'vit' ? '💊 ' + t('Vitamin time: {0}', m.name) : '💊 ' + t('Medicine time: {0}', m.name)),
         body: (m.dose ? m.dose + ' · ' : '') + t('Tap to mark it as taken.'),
         schedule: { on: { hour: m.hour, minute: m.minute }, repeats: true, allowWhileIdle: true },
@@ -131,17 +137,29 @@ export async function syncMedReminders(S, interactive = false) {
 }
 
 // 7.1 — "Your day" on the Ideal body screen: meals (with the calories and a dish), the workout
-// and the evening walk at their times, every day (ids 7500–7529, channel mj_day). Re-made each
-// new day, so the dish ideas and today's workout stay current. Water keeps its own reminders.
+// and the evening walk at their times (ids 7500–7529, channel mj_day). 9.0 (review on PR #11):
+// no longer repeating notifications that kept showing the day they were made — each one is for
+// one date, worked out for that date, today's still-ahead ones and tomorrow's (ids 7515+), and
+// they are made again whenever the app opens or the plan changes. Water keeps its own reminders.
 let lastDaySig = ''
 export async function syncDayReminders(S, interactive = false) {
   if (!MOBILE) return false
   try {
     const [{ dayReminderItems, DAY_ID_BASE }, { idealBodyOf }, { isoOf }] = await Promise.all([import('./daySchedule.js'), import('./idealBody.js'), import('./format.js')])
-    const iso = isoOf(new Date())
+    const now = new Date()
+    const days = [0, 1].map(off => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + off)
+      return { off, d, iso: isoOf(d) }
+    })
     const r = idealBodyOf(S)
-    const items = dayReminderItems(S, r, iso)
-    const sig = JSON.stringify([items.map(x => [x.id, x.hour, x.minute, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
+    const items = []
+    for (const day of days) {
+      dayReminderItems(S, r, day.iso).slice(0, 15).forEach((x, i) => {
+        const at = new Date(day.d.getFullYear(), day.d.getMonth(), day.d.getDate(), x.hour, x.minute)
+        if (at.getTime() > now.getTime() + 30000) items.push({ ...x, id: DAY_ID_BASE + day.off * 15 + i, at })
+      })
+    }
+    const sig = JSON.stringify([days.map(d => d.iso), items.map(x => [x.id, +x.at, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
     if (!interactive && sig === lastDaySig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: Array.from({ length: 30 }, (_, i) => ({ id: DAY_ID_BASE + i })) }).catch(() => {})
@@ -152,9 +170,10 @@ export async function syncDayReminders(S, interactive = false) {
     const { t } = await import('./i18n.js')
     const { MEALS } = await import('./food.js')
     const meal = k => t((MEALS.find(m => m.key === k) || MEALS[3]).name)
+    const color = await accentColor()
     await LocalNotifications.createChannel({ id: 'mj_day', name: t('Your day'), description: t('Meals, workout and walk at their times'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
     await LocalNotifications.schedule({
-      notifications: items.map(({ id, hour, minute, item: x }) => {
+      notifications: items.map(({ id, at, item: x }) => {
         let title, body, route
         if (x.kind === 'meal') {
           title = '🍽 ' + meal(x.meal) + (x.kcal ? ' · ' + t('{0} kcal', x.kcal) : '')
@@ -169,7 +188,7 @@ export async function syncDayReminders(S, interactive = false) {
           body = t('{0} steps today', x.steps) + ' · ' + t('{0} min', x.min)
           route = '/walk'
         }
-        return { id, channelId: 'mj_day', title, body, schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true }, extra: { route } }
+        return { id, channelId: 'mj_day', title, body, iconColor: color, schedule: { at, allowWhileIdle: true }, extra: { route } }
       }),
     })
     lastDaySig = sig

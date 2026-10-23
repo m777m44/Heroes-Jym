@@ -7,6 +7,8 @@ import { t, dateLocale, U } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
+import { normPlan, isLive, liveState, dayRec, KINDS as PLAN_KINDS } from '../lib/dayPlan.js'
+import { useVisibleInterval } from '../lib/battery.js'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import WaterCard from '../components/WaterCard.jsx'
@@ -39,6 +41,8 @@ function QuickTools({ nav }) {
   const S = useStore(s => s.S)
   const fast = fastStatus(normFasting(S.fasting).active)
   const items = [
+    ['/dayplan', 'calendar', t('Day plan'), '#5e5ce6'],
+    ['/drinks', 'cup', t('Drinks'), '#30d158'],
     ['/timer', 'timer', t('Timer'), '#ff375f'],
     ['/breathe', 'wind', t('Breathe'), '#30b0c7'],
     ['/fasting', 'moon', fast ? hmText(fast.elapsedMs) : t('Fasting tracker'), '#bf5af2', !!fast],
@@ -49,6 +53,31 @@ function QuickTools({ nav }) {
     {items.map(([to, icon, label, c, live], i) => <button key={to} role="listitem" className={'qt' + (live ? ' live' : '')} style={{ '--c': c, '--i': i }} onClick={() => nav(to)}>
       <span className="qt-ic"><Icon name={icon} /></span><span className="qt-l" dir="auto">{label}</span>
     </button>)}
+  </div>
+}
+
+// 9.0: the day plan while it runs — what is on now, what comes next.
+function DayPlanCard({ nav }) {
+  const S = useStore(s => s.S)
+  const [now, setNow] = useState(() => new Date())
+  useVisibleInterval(() => setNow(new Date()), 30000)
+  const plan = normPlan(S.planner)
+  const iso = todayISO()
+  if (!plan || !isLive(plan, iso)) return null
+  const live = liveState(plan, dayRec(plan, iso), now)
+  const b = live.cur ? live.cur.b : live.next ? live.next.b : null
+  if (!b) return null
+  const K = PLAN_KINDS[b.k]
+  const left = live.cur ? Math.max(0, Math.round(live.cur.left)) : Math.max(1, Math.round(live.next.inMin))
+  return <div className="card tappable dp-home" style={{ '--c': K.color }} onClick={() => nav('/dayplan')}>
+    <span className="dp-home-ic"><Icon name={K.icon} /></span>
+    <div className="grow">
+      <div className="lbl2">{live.cur ? t('Now') : t('Up next')} · {t('{0} of {1} done', live.done, live.total)}</div>
+      <b>{b.n ? t(b.n) : t(K.name)}</b>
+      <div className="small muted">{live.cur ? t('{0} min left', left) : t('In {0} min', left)}</div>
+    </div>
+    <div className="dp-home-bar"><i style={{ width: Math.round(live.pct * 100) + '%' }} /></div>
+    <Icon name="chevronRight" className="chev" />
   </div>
 }
 
@@ -221,6 +250,7 @@ export default function Home() {
     </div>
 
     <QuickTools nav={nav} />
+    <DayPlanCard nav={nav} />
     <FastingCard nav={nav} />
 
     {S.planOn !== false && <TodayPlan />}

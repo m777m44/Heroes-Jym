@@ -14,7 +14,7 @@ import { beep, vibrate } from '../lib/sound.js'
 import { speak } from '../lib/voice.js'
 import { tickHaptic, workoutHaptic } from '../lib/hapticFeedback.js'
 import { useWakeLock } from '../lib/wakelock.js'
-import { celebrate } from '../lib/celebrate.js'
+import { celebrate, playCheer } from '../lib/celebrate.js'
 import { lastBW } from '../lib/history.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -184,7 +184,7 @@ export default function Timer() {
     if (e.sec >= 20) update(s => { s.intervals = [...(Array.isArray(s.intervals) ? s.intervals : []), e].slice(-300) })
     setResult(e)
     setMode('done')
-    if (e.done && !stopped) { workoutHaptic(); celebrate(Math.max(1, Math.round(e.sec / 60)), 'hiit') }
+    if (e.done && !stopped) { workoutHaptic(); celebrate(Math.max(1, Math.round(e.sec / 60)), 'hiit'); playCheer(useStore.getState().S.sound !== false, 'hiit') }
   }
   const start = () => {
     update(s => { s.timerLast = cfg })

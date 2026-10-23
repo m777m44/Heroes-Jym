@@ -16,10 +16,67 @@ final class Fanfare {
 
     private Fanfare() { }
 
+    // 9.0 — the sound packs: the same files the app plays (public/sounds/<pack>/<kind>.mp3 inside
+    // the APK's web assets, rendered by frontend/scripts/build-sounds.py). The pack and volume come
+    // from the app's settings (S.soundPack / S.soundVol in the step-service config); 'classic', or a
+    // file that can't be opened, falls back to the synth below.
+    private static android.media.MediaPlayer current;
+
+    static String fileFor(String kind) {
+        if (Celebration.KIND_WATER.equals(kind)) return "water";
+        if ("milestone".equals(kind)) return "milestone";
+        if ("workout".equals(kind) || "hiit".equals(kind)) return "workout";
+        if ("plan".equals(kind)) return "plan";
+        if ("fast".equals(kind)) return "fast";
+        return "goal";
+    }
+
+    private static boolean playAsset(Context c, String pack, String file, float vol) {
+        String path = "public/sounds/" + pack + "/" + file + ".mp3";
+        android.media.MediaPlayer mp = new android.media.MediaPlayer();
+        try {
+            mp.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+            try (android.content.res.AssetFileDescriptor fd = c.getAssets().openFd(path)) {
+                mp.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+            } catch (java.io.IOException compressed) {
+                // stored compressed in this build: copy it out once and play the copy
+                java.io.File f = new java.io.File(c.getCacheDir(), "snd-" + pack + "-" + file + ".mp3");
+                if (!f.exists() || f.length() == 0) {
+                    try (java.io.InputStream in = c.getAssets().open(path); java.io.OutputStream out = new java.io.FileOutputStream(f)) {
+                        byte[] buf = new byte[16384];
+                        int n;
+                        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    }
+                }
+                mp.setDataSource(f.getAbsolutePath());
+            }
+            mp.setVolume(vol, vol);
+            mp.setOnCompletionListener(m -> { m.release(); if (current == m) current = null; });
+            mp.setOnErrorListener((m, w, e) -> { m.release(); if (current == m) current = null; return true; });
+            mp.setOnPreparedListener(android.media.MediaPlayer::start);
+            if (current != null) { try { current.release(); } catch (RuntimeException ignored) { } }
+            current = mp;
+            mp.prepareAsync();
+            return true;
+        } catch (Exception e) {
+            try { mp.release(); } catch (RuntimeException ignored) { }
+            return false;
+        }
+    }
+
     static void play(Context c, String kind) {
         long now = System.currentTimeMillis();
         if (now - lastPlay < 2500) return;   // never stack two jingles
         lastPlay = now;
+        StepStore st = StepStore.get(c);
+        String pack = st.str("soundPack", "champion");
+        float vol;
+        synchronized (st) { vol = (float) Math.max(0, Math.min(1, st.config.optDouble("soundVol", 0.9))); }
+        if (vol <= 0.001f) return;
+        if (!"classic".equals(pack) && playAsset(c.getApplicationContext(), pack, fileFor(kind), vol)) return;
+        final float fv = vol;
         new Thread(() -> {
             AudioTrack track = null;
             try {
@@ -36,6 +93,7 @@ final class Fanfare {
                     .setTransferMode(AudioTrack.MODE_STATIC)
                     .build();
                 track.write(pcm, 0, pcm.length);
+                try { track.setVolume(fv); } catch (RuntimeException ignored) { }
                 track.play();
                 Thread.sleep(pcm.length * 1000L / RATE + 150);
             } catch (Throwable ignored) {

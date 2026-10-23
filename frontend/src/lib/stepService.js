@@ -146,6 +146,9 @@ export function serviceConfig(S, weightKg) {
     food: S && S.foodOn !== false ? foodNative(S, todayISO()) : null,
     // 7.2: the running workout — the notification's header shows its timer
     workout: S && S.active && S.active.start > 0 ? { start: S.active.start } : null,
+    // 9.0: the celebration sound pack (lib/celebrate.js) for the lock-screen celebration
+    soundPack: S && ['champion', 'epic', 'neon', 'royal', 'arcade', 'zen', 'classic'].includes(S.soundPack) ? S.soundPack : 'champion',
+    soundVol: S && Number.isFinite(+S.soundVol) ? Math.max(0, Math.min(1, +S.soundVol)) : 0.9,
   }
 }
 

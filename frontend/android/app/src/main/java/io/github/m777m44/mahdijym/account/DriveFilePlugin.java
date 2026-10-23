@@ -220,6 +220,11 @@ public class DriveFilePlugin extends Plugin {
         io.execute(() -> {
             JSObject o = describe(uri);
             o.put("persisted", kept);
+            // 9.0 (review on PR #11): remember the picked file's real length — a provider that
+            // can't truncate ("w" fallback) pads with it, so a shorter backup never leaves the
+            // old file's tail behind
+            long real = o.optLong("size", -1);
+            if (real > 0) prefs().edit().putLong("size", real).apply();
             call.resolve(o);
         });
     }

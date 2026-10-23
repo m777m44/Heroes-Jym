@@ -457,6 +457,42 @@ export function applyTheme(th, accent = 'theme', doc = typeof document !== 'unde
   if (meta) meta.content = tk.bg
 }
 
+// ---- 9.0: the painted theme as plain colours -------------------------------------------------
+// For Android (the notification shade, the status and navigation bars, reminder icons): reads
+// the custom properties actually in effect — theme, accent and wallpaper overrides included —
+// and resolves each to #rrggbb through the browser's own colour parser.
+let probe = null
+function cssHex(expr, doc) {
+  try {
+    if (!probe || !probe.isConnected) { probe = doc.createElement('i'); probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none'; doc.body.appendChild(probe) }
+    probe.style.color = ''
+    probe.style.color = expr
+    const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(probe).color)
+    if (!m) return null
+    const [r, g, b, a] = m[1].split(/[ ,/]+/).filter(Boolean).map(Number)
+    if (a === 0) return null
+    return toHex([r, g, b])
+  } catch { return null }
+}
+/** The accent in use as #rrggbb (fallback: the classic green). */
+export function themeAccent(doc = typeof document !== 'undefined' ? document : null) {
+  return (doc && doc.body && cssHex('var(--acc)', doc)) || '#30d158'
+}
+/** { acc, acc2, bg, surface, surface2, ink, ink2, light } of the theme on screen, or null. */
+export function themePalette(doc = typeof document !== 'undefined' ? document : null) {
+  if (!doc || !doc.body) return null
+  const de = doc.documentElement
+  const light = de.dataset.theme === 'light'
+  const pick = (v, fb) => cssHex(v, doc) || fb
+  const bg = pick('var(--bg)', light ? '#f2f2f7' : '#000000')
+  // solid versions of the (possibly see-through) surfaces, laid over the background
+  const surface = pick(`color-mix(in srgb, var(--surface) 92%, ${bg})`, light ? '#ffffff' : '#1c1c1e')
+  const surface2 = pick(`color-mix(in srgb, var(--surface-2) 92%, ${bg})`, light ? '#ececef' : '#2c2c2e')
+  const ink = light ? '#000000' : '#ffffff'
+  const ink2 = pick(`color-mix(in srgb, ${ink} 62%, ${surface})`, light ? '#6e6e73' : '#a1a1a6')
+  return { acc: themeAccent(doc), acc2: pick('var(--acc-2)', '#248a3d'), bg, surface, surface2, ink, ink2, light }
+}
+
 /** A small preview of a theme for its card: { bg, surface, surface2, acc, label }. */
 export function themePreview(th) {
   const tk = themeTokens(th)

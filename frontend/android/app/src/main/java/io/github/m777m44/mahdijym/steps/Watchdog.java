@@ -17,8 +17,11 @@ import android.os.SystemClock;
  * away from recents, a "cleaner", or the battery manager — and nothing brings them back until
  * the app is opened again. The watchdog closes that gap:
  *
- *   - an alarm every 15 minutes (allowed in Doze) checks that the service is running whenever
- *     counting is switched on, and restarts it if not;
+ *   - an alarm every 30 minutes checks that the service is running whenever counting is
+ *     switched on, and restarts it if not. 9.0: it no longer wakes the phone for that (it was
+ *     ~96 wake-ups a day) — it is delivered the next time the phone is awake anyway (the screen
+ *     comes on, a Doze maintenance window), which is when a stopped counter matters. It is still
+ *     an exact allow-while-idle alarm, which keeps Android 12+'s foreground-service exemption;
  *   - a short one-off alarm after the task is swiped away or the service is destroyed
  *     without being switched off, so the counter is back within seconds.
  *
@@ -29,7 +32,7 @@ import android.os.SystemClock;
  */
 public class Watchdog extends BroadcastReceiver {
     static final String ACTION_CHECK = "io.github.m777m44.mahdijym.steps.WATCHDOG";
-    private static final long EVERY_MS = 15 * 60 * 1000L;
+    private static final long EVERY_MS = 30 * 60 * 1000L;
     private static final int REQ_PERIODIC = 41, REQ_KICK = 42;
 
     @Override public void onReceive(Context c, Intent intent) {
@@ -60,28 +63,29 @@ public class Watchdog extends BroadcastReceiver {
         return Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms();
     }
 
-    private static void at(Context c, int req, long delayMs) {
+    private static void at(Context c, int req, long delayMs, boolean wake) {
         AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
         long when = SystemClock.elapsedRealtime() + delayMs;
+        int type = wake ? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME;
         PendingIntent p = pi(c, req);
         try {
             if (Build.VERSION.SDK_INT >= 23) {
-                if (exactAllowed(am)) am.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, when, p);
-                else am.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, when, p);
+                if (exactAllowed(am)) am.setExactAndAllowWhileIdle(type, when, p);
+                else am.setAndAllowWhileIdle(type, when, p);
             } else {
-                am.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, when, p);
+                am.setExact(type, when, p);
             }
         } catch (RuntimeException e) {
-            try { am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, when, p); } catch (RuntimeException ignored) { }
+            try { am.set(type, when, p); } catch (RuntimeException ignored) { }
         }
     }
 
-    /** The periodic check, 15 minutes from now (replaces any pending one). */
-    static void schedule(Context c) { at(c, REQ_PERIODIC, EVERY_MS); }
+    /** The periodic check, 30 minutes from now (replaces any pending one) — without waking the phone. */
+    static void schedule(Context c) { at(c, REQ_PERIODIC, EVERY_MS, false); }
 
-    /** A one-off check soon — after the app is swiped away or the service is killed. */
-    static void kick(Context c, long delayMs) { at(c, REQ_KICK, delayMs); }
+    /** A one-off check soon — after the app is swiped away or the service is killed (this one wakes). */
+    static void kick(Context c, long delayMs) { at(c, REQ_KICK, delayMs, true); }
 
     /** Counting switched off: no more checks. */
     static void cancel(Context c) {

@@ -108,7 +108,7 @@ export default function TodayPlan() {
     try { seen = localStorage.getItem(DONE_KEY) } catch { /* private mode */ }
     if (seen === iso) return
     try { localStorage.setItem(DONE_KEY, iso) } catch { /* private mode */ }
-    if (walkPrefs(S).celebrate !== false) { celebrate(100, 'plan'); playCheer(S.sound !== false, 'goal') }
+    if (walkPrefs(S).celebrate !== false) { celebrate(100, 'plan'); playCheer(S.sound !== false, 'plan') }
   }, [p.done, iso])
 
   const streak = useMemo(() => planStreak(S, iso, { pending }), [S, iso, p.score >= 67])   // eslint-disable-line react-hooks/exhaustive-deps

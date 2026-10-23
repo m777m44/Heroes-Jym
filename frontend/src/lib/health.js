@@ -45,10 +45,24 @@ export function sugarCategory(mgdl, ctx = 'fasting') {
   if (ctx === 'after') return mgdl < 140 ? 'normal' : mgdl < 200 ? 'pre' : 'high'
   return mgdl < 200 ? 'normal' : 'high'                // random
 }
-/** Hours of sleep for an adult: 'short' (< 6) | 'bitShort' (6–7) | 'good' (7–9) | 'long' (> 9). */
+/**
+ * Hours of sleep: 'short' (an hour or more under the range) | 'bitShort' | 'good' | 'long'. The
+ * range follows the age — AASM for children (9.0, review on PR #11: one 8–10 h range for every
+ * child was wrong for the young ones): under 1 year 12–16 h, 1–2 years 11–14, 3–5 years 10–13,
+ * 6–12 years 9–12, teens 8–10; adults 7–9, 65 and over 7–8.
+ */
+export function sleepRange(age = 30) {
+  if (age == null || !fin(age)) return [7, 9]
+  if (age < 1) return [12, 16]
+  if (age < 3) return [11, 14]
+  if (age < 6) return [10, 13]
+  if (age < 13) return [9, 12]
+  if (age < 18) return [8, 10]
+  return age >= 65 ? [7, 8] : [7, 9]
+}
 export function sleepCategory(h, age = 30) {
   if (!fin(h)) return null
-  const [lo, hi] = age != null && age < 18 ? [8, 10] : age >= 65 ? [7, 8] : [7, 9]
+  const [lo, hi] = sleepRange(age)
   return h < lo - 1 ? 'short' : h < lo ? 'bitShort' : h <= hi ? 'good' : 'long'
 }
 /** Resting heart rate: 'low' (< 60, fine if you are fit) | 'normal' | 'high' (> 100). */

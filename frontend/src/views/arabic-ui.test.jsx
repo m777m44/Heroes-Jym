@@ -24,10 +24,13 @@ it('the Arabic UI has no stray English', async () => {
   const H8 = 3600000, t8 = Date.now()
   st.fasting = { plan: 'custom', custom: 18, active: { start: t8 - 13 * H8, goalH: 16, plan: '16' }, log: [{ start: t8 - 40 * H8, end: t8 - 23 * H8, goalH: 16, plan: '16', hit: true }] }
   st.intervals = [{ d: new Date().toISOString().slice(0, 10), at: t8 - H8, preset: 'tabata', name: 'Tabata', sec: 230, work: 160, rounds: 8, kcal: 30, done: true }]
+  // 9.0: a drink of your own (named in Arabic), a favourite, and today's drink log
+  st.myDrinks = [{ id: 'md1', n: 'عصيري الصباحي', col: '#ff8c1a', t: 'c', sv: 1, ing: [['orangejuice', 200, 'ml'], ['banana', 1, 'piece'], ['ice', 75, 'g']], note: 'أخلطه وأشربه باردًا', at: t8 }]
+  st.drinkFavs = ['zbeeb', 'md1']
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery', '/drinks': 'Drinks', '/drinks?c=iraqi': 'Drinks', '/drinks?c=mine': 'Drinks', '/drinks?c=fav': 'Drinks', '/dayplan': 'DayPlan' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -37,6 +40,22 @@ it('the Arabic UI has no stray English', async () => {
     } catch (e) { throw new Error(name + ': ' + e.message) }
     for (const line of text(html).split('\n').map(s => s.trim()).filter(Boolean)) {
       if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(name)
+    }
+  }
+  // 9.0: a day plan from each template, started today (live card, timeline, totals)
+  {
+    const DP = await import('./DayPlan.jsx')
+    const { newPlan, TEMPLATES } = await import('../lib/dayPlan.js')
+    const S0 = useStore.getInitialState().S
+    const iso0 = new Date().toISOString().slice(0, 10)
+    for (const tp of TEMPLATES) {
+      const P = newPlan(tp.id, {}, { prefs: { wake: '07:00', sleep: '23:00' }, seed: 3 })
+      P.days = { [iso0]: { on: Date.now(), done: {}, skip: {} } }
+      P.remind = true
+      S0.planner = P
+      let html
+      try { html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/dayplan'] }, React.createElement(DP.default))) } catch (e) { throw new Error('DayPlan:' + tp.id + ': ' + e.message) }
+      for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('DayPlan:' + tp.id)
     }
   }
   // 3.0: the other Ideal body tabs, and the Theme Studio (wheel, HEX)
@@ -76,6 +95,10 @@ it('the Arabic UI has no stray English', async () => {
   const WN = await import('../components/WhatsNew.jsx')
   const PF = await import('../components/ProfileSheet.jsx')
   const QS = await import('../components/QuickSearch.jsx')
+  const DK = await import('./Drinks.jsx')
+  const DR = await import('../lib/drinks.js')
+  const SP = await import('../components/SoundPacks.jsx')
+  const DPV = await import('./DayPlan.jsx')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -92,6 +115,12 @@ it('the Arabic UI has no stray English', async () => {
     bp: () => H.bpSheet(isoToday), sugar: () => H.sugarSheet(isoToday, 'mmol'), med: () => H.medSheet(), medEdit: () => H.medSheet(st.meds[0]),
     // 8.0
     zones: () => HZ.zonesSheet(), whatsNew: () => WN.whatsNewSheet(), profile: () => PF.profileSheet(), search: () => QS.quickSearchSheet(() => {}),
+    // 9.0
+    ...Object.fromEntries(DR.DRINKS.map(d => ['drink_' + d.id, () => DK.drinkSheet(d.id)])),
+    drinkMine: () => DK.drinkSheet('md1'), drinkBuilder: () => DK.drinkBuilderSheet(), drinkRemix: () => DK.drinkBuilderSheet(null, { from: DR.DRINK_BY_ID.greendetox }),
+    drinkEdit: () => DK.drinkBuilderSheet(useStore.getState().S.myDrinks[0]), drinkPick: () => DK.pickDrinkSheet(() => {}), sounds: () => SP.soundPacksSheet(),
+    blockMeal: () => DPV.blockSheet({ k: 'meal', s: 780, d: 45, meal: 'l', items: [{ t: 'r', id: 'masgouf', q: 1 }, { t: 'd', id: 'shineena', q: 1 }] }, 650),
+    blockNew: () => DPV.blockSheet({ s: 600 }), blockWater: () => DPV.blockSheet({ id: 'bw', k: 'water', s: 600, d: 5, ml: 300 }),
   }
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })

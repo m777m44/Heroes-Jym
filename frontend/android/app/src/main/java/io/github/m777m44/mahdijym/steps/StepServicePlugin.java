@@ -398,6 +398,25 @@ public class StepServicePlugin extends Plugin {
         call.resolve(r);
     }
 
+    // ---- 9.0: the theme outside the web view ------------------------------------------------
+
+    /**
+     * The colours of the theme on screen (lib/nativeTheme.js): the status and navigation bars
+     * glide to them now, and the notifications and widgets are redrawn in them.
+     */
+    @PluginMethod
+    public void setTheme(PluginCall call) {
+        Theme.set(ctx(), call.getData());
+        final Theme th = Theme.get(ctx());
+        final android.app.Activity a = getActivity();
+        if (a != null) a.runOnUiThread(() -> SystemBars.apply(a, th));
+        StepCounterService svc = StepCounterService.instance;
+        if (svc != null) svc.refreshNotification();
+        try { WaterReminder.refreshPanel(ctx(), true); } catch (RuntimeException ignored) { }
+        try { StepWidget.updateAll(ctx()); } catch (RuntimeException ignored) { }
+        call.resolve();
+    }
+
     // ---- water (2.5) ---------------------------------------------------------------------
 
     @PluginMethod
@@ -409,6 +428,7 @@ public class StepServicePlugin extends Plugin {
         WaterReminder.schedule(ctx());
         if (w.panelOn()) WaterReminder.refreshPanel(ctx(), false);
         else if (!w.remindOn()) NotificationManagerCompat.from(ctx()).cancel(WaterReminder.NOTIF_ID);
+        else WaterReminder.panelOff(ctx());   // 9.0: the panel goes, a reminder that is up stays
         StepCounterService svc = StepCounterService.instance;
         if (svc != null) svc.refreshNotification();
         StepWidget.updateAll(ctx());

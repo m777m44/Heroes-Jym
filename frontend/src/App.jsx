@@ -9,13 +9,14 @@ import { applyWallpaper } from './lib/wallpapers.js'
 import { applyLook } from './lib/look.js'
 import { installTouchFeedback } from './lib/motion.js'
 import { setNav, nav } from './lib/nav.js'
-import { onNotificationTap } from './lib/mobile.js'
+import { onNotificationTap, syncDayReminders } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
+import ScrollIndicator from './components/ScrollIndicator.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import Login from './views/Login.jsx'
 import Home from './views/Home.jsx'
@@ -55,6 +56,8 @@ const Timer = lazy(() => import('./views/Timer.jsx'))
 const Breathe = lazy(() => import('./views/Breathe.jsx'))
 const Fasting = lazy(() => import('./views/Fasting.jsx'))
 const Recovery = lazy(() => import('./views/Recovery.jsx'))
+const Drinks = lazy(() => import('./views/Drinks.jsx'))       // 9.0
+const DayPlan = lazy(() => import('./views/DayPlan.jsx'))     // 9.0
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import StartCountdown from './components/workout/StartCountdown.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
@@ -68,6 +71,10 @@ import { DEMO } from './lib/demo.js'
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
 import { installBackButton } from './lib/backButton.js'
+import { bindSoundPrefs, prefetchPack, packOf } from './lib/celebrate.js'
+import { initBatterySaver, refreshSaver } from './lib/battery.js'
+import { syncNativeTheme } from './lib/nativeTheme.js'
+import { syncPlanReminders } from './lib/planReminders.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -100,6 +107,11 @@ function Shell() {
     applyTheme(th, S.accent)
     applyWallpaper(S.wall, th.mode)     // 6.0: after the theme — it makes the surfaces see-through
   }, [S.theme, S.themeSystem, S.accent, systemDark, S.wall]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 9.0: the theme reaches Android — status / navigation bars and the notification shade
+  useEffect(() => { const tm = setTimeout(() => syncNativeTheme(useStore.getState().S), 150); return () => clearTimeout(tm) }, [S.theme, S.themeSystem, S.accent, systemDark, S.wall, S.notifTheme]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 9.0: sound packs read their settings from the store; the battery saver watches the battery
+  useEffect(() => { bindSoundPrefs(() => useStore.getState().S); initBatterySaver(() => useStore.getState().S) }, [])
+  useEffect(() => { refreshSaver() }, [S.saver])
   useEffect(() => { applyLook(S) }, [S.shape, S.cardStyle]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { applyA11y(S) }, [S.textScale, S.highContrast, S.reduceMotion]) // eslint-disable-line react-hooks/exhaustive-deps
   const lang = langOf(S)                     // 'auto' → the phone's language
@@ -119,6 +131,21 @@ function Shell() {
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
   // water: reminders (native on Android) and the two-way sync with the notification buttons
   useEffect(() => { if (ready && authed) return startWaterSync(useStore) }, [ready, authed])
+  // 9.0: the chosen sound pack is fetched once in the background, so it also plays offline
+  useEffect(() => {
+    if (!ready) return
+    const tm = setTimeout(() => { const st = useStore.getState().S; if (st.sound !== false) prefetchPack(packOf(st)) }, 9000)
+    return () => clearTimeout(tm)
+  }, [ready, S.soundPack])
+  // 9.0: date-specific reminders are re-armed when the app comes back (a new day, a new plan)
+  useEffect(() => {
+    if (!ready || !authed) return
+    const onVis = () => { if (document.visibilityState === 'visible') { const st = useStore.getState().S; syncDayReminders(st); syncPlanReminders(st) } }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [ready, authed])
+  // 9.0: day-plan reminders follow the plan (and are re-made for a new day when the app opens)
+  useEffect(() => { if (ready && authed) syncPlanReminders(useStore.getState().S) }, [ready, authed, S.planner, S.lang]) // eslint-disable-line react-hooks/exhaustive-deps
   // 2.6: the Google account copy (when signed in) — kept in step while the app runs
   useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
   // 4.0: a version of your data once a day, kept on this phone (Settings → Backups & restore)
@@ -195,6 +222,8 @@ function Shell() {
               <Route path="/breathe" element={<Breathe />} />
               <Route path="/fasting" element={<Fasting />} />
               <Route path="/recovery" element={<Recovery />} />
+              <Route path="/drinks" element={<Drinks />} />
+              <Route path="/dayplan" element={<DayPlan />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />
@@ -215,6 +244,7 @@ function Shell() {
       <RestTimer />
       <Modals />
       <Toast />
+      <ScrollIndicator />
       <CelebrationOverlay />
       <StartCountdown />
       {MOBILE && !DEMO && <AppLock />}

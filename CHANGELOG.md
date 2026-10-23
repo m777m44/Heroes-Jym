@@ -3,6 +3,102 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v9.0.0 — 2026-10-23
+
+**Drinks & juices with calories worked out from the ingredients, your own drink builder, 28 new
+Iraqi dishes, a day plan that runs live (study, work, workout, rest, meals, drinks), six new
+celebration sound packs, the theme on Android's notification shade and status bar, ten sea
+wallpapers — and a long list of battery fixes.**
+*مشروبات وعصائر بسعرات محسوبة من المكوّنات، وصانع مشروباتك الخاصة، و28 طبقًا عراقيًا جديدًا، وخطة يوم تعمل مباشرة (دراسة وعمل وتمرين وراحة ووجبات ومشروبات)، وست حزم أصوات احتفال جديدة، وألوان الثيم في لوحة الإشعارات وشريط الحالة، وعشر خلفيات بحرية — مع إصلاحات كثيرة لاستهلاك البطارية.*
+
+### 🥤 Drinks & juices (new screen: Tools → Drinks & juices, `/drinks`)
+- **71 drinks** in eight groups — weight loss, digestion, **Iraqi classics** (shineena, Iraqi tea
+  with cardamom, noomi Basra, Mosul's zbeeb, tamur hindi, qamar al-din, sous, sahlab, darseen with
+  walnuts, mastaw, rose and mulberry sharbat…), energy & pre-workout, protein & recovery, immunity,
+  sleep & calm and hydration. Search in both languages, hot / cold / under 100 kcal filters,
+  favourites, a drink of the day and your recent drinks.
+- **Calories from the ingredients**: a new ingredient table (kcal, protein, carbs, fat, sugar,
+  density and household measures) so g, ml, tsp, tbsp, cup and pieces all convert the same way.
+  Juices are their own ingredients (pressing leaves the pulp behind), steeped tea, herbs and infused
+  fruit only count the little they give to the water, and optional sugar or honey shows as
+  "+21 kcal". Each recipe has steps, why it's good for you, the best time, caffeine / milk / nut
+  flags and cautions where they matter (liquorice and blood pressure, grapefruit and medicines…).
+- **Log a drink** in one tap: an exact food-log entry, and the water it adds counted towards the
+  water goal.
+- **Create your drink**: pick ingredients, amounts and units and watch the calories, sugar and water
+  add up live; save it to *My drinks*, edit it, or start from any library drink with
+  *Make my own version*.
+- Every drink is drawn — its own glass (tall glass, mug, the Iraqi istikan on its saucer, a jug, a
+  finjan, a shaker) filled with its colour, with ice, steam, lemon or mint.
+
+### 🌴 The Iraqi kitchen (Kitchen)
+- **28 new Iraqi dishes** with ingredients, steps and calories per serving: masgouf, Kubba Mosul,
+  Kubbat Halab, kubba hamudh, bulgur and potato kubba, timman bagilla, timman jazar, quzi, mutabbaq
+  simach, margat qarnabeet and shijar, qormah sabzi, qeema, harissa, lablabi, shalgham, shorbat
+  khudra, lamb and chicken tikka, Iraqi salad, yaprakh, dijaj mahshi, shifta, baked sambusa,
+  burghul bil-hummus, a lighter date kleicha and fish in tamarind sauce. 50 Iraqi recipes in all,
+  an **Iraqi** filter, and a healthy tip on many (bake instead of fry, a lean cut, less rice…).
+- Steps are now short templates translated once ("Sauté over medium heat for 10 min: …"), so new
+  recipes are fully translated in all 13 languages.
+
+### 📅 Day plan (`/dayplan`)
+- Pick a template — **workout day, study day, student athlete, rest day, Ramadan** (from your suhoor
+  and iftar) or from scratch — laid out between your wake-up and sleep times. Every block can be
+  edited: study, work, workout, rest, meal, drink, water break, walk, free time, sleep.
+- **Accurate food and drink**: plan the dishes (kitchen recipes) and drinks of each meal; the meal
+  targets share what is left of your daily goal after the planned drinks, and the totals show
+  planned calories, water, study and moving time.
+- **Start my day** and it runs live: the block now with a countdown ring, what comes next, +10
+  minutes, skip, and *Log & done* — which logs exactly the planned dishes and drinks. Home shows the
+  current block. On the phone each block can remind you, in your theme colour (date-specific, today
+  and — with *Run it every day* — tomorrow).
+
+### 🎺 Celebration sounds
+- **Six new packs**: Champion (stadium hit, brass, choir, crowd), Epic (taiko, deep brass, choir),
+  Neon (electronic build-up and drop), Royal (trumpet fanfare and timpani), Arcade (8-bit) and Zen
+  (singing bowls and marimba) — plus the classic one. Pick and preview each moment, and set the
+  volume, in **Settings → Celebration sound**. Fasting and the interval timer now celebrate with
+  sound too.
+- The sounds are rendered by `frontend/scripts/build-sounds.py` (no samples — synthesized, with a
+  hall and mastering for phone speakers) and the Android lock-screen celebration plays the same
+  files.
+
+### 🎨 Your theme everywhere
+- The **live notification** takes the theme's accent (rings, numbers, icon) and, on Android 12+, a
+  deep themed card behind the expanded view; the water panel, reminders and workout notifications
+  follow too (*Settings → Theme colours in notifications*).
+- The **status bar and navigation bar** glide to the theme's colour with dark or light icons.
+- A new in-app notification bar (toast), a slim accent scroll indicator while scrolling, smoother
+  entrance animations, and new art wallpapers (lagoon, deep sea, palm grove, Babylon).
+- **Ten new sea and ocean wallpapers** (Wallpapers → Seas).
+
+### 🔋 Battery
+- With the screen off the step counter no longer redraws its notification or the widget every
+  second, nor wakes the app — the hardware counter keeps every step, and all of it is shown the
+  moment the screen comes on. The per-step detector rests while the screen is off.
+- The step store writes to disk at most every 15 s instead of on every step (62 days of history
+  were re-written each time).
+- The watchdog no longer wakes the phone every 15 minutes (it checks every 30, when the phone is
+  awake anyway).
+- The web app only hears live steps while it is on screen; its 1-second tick and 5-second save stop
+  in the background.
+- Sounds release the audio hardware when they end (an idle Web Audio context kept running), the
+  voice engine is let go after a quiet minute and a half.
+- Endless decorative animations now loop a few times and rest, and a **battery saver** (Auto at 20%,
+  or always on) stops looping decorations and heavy blur.
+
+### 🛠 Fixes (review of PR #11)
+- Signing in with Google, or linking a backup file, never replaces local data silently when that
+  data is only food, fasting, health, water or drinks — every log counts now.
+- Switching off "Water in the notifications" removes the panel at once (a reminder that is up
+  stays).
+- Picking an existing Drive file remembers its real size, so a shorter backup can't leave the old
+  file's tail behind on providers that don't truncate.
+- A Drive file that can be read but not written is restored but not kept as the auto-save file.
+- Sleep in the health log uses age-specific ranges for children (AASM).
+- "Your day" reminders are now date-specific (today and tomorrow, re-made when the app opens)
+  instead of repeating yesterday's plan.
+
 ## v8.0.0 — 2026-10-23
 
 **Google Drive that works with no setup, direct "Sign in with Google" on the web too, and a new

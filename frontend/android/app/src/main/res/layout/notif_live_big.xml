@@ -11,6 +11,7 @@
      (motto · day ends in) stays in the layout for its ids but is hidden. Filled by
      StepNotifier.fillLive(); the chip ids are shared with notif_water.xml. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/n_root"
     android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/notif_live_card" android:paddingStart="12dp" android:paddingTop="8dp" android:paddingEnd="12dp" android:paddingBottom="8dp"
     android:orientation="vertical">
 <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:gravity="center_vertical" android:orientation="horizontal">
