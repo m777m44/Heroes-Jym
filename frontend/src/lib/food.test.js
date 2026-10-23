@@ -168,7 +168,8 @@ describe('food goal & insights', () => {
     expect(foodStreak(s, D)).toBe(2)
     expect(foodStreak(s, '2026-10-23')).toBe(2)
     expect(foodStreak({}, D)).toBe(0)
-    expect(foodNative(s, D)).toEqual({ day: D, eaten: 400, goal: 2000 })
+    expect(foodNative(s, D)).toMatchObject({ day: D, eaten: 400, goal: 2000, wk: 0 })
+    expect(Object.keys(foodNative(s, D))).toEqual(expect.arrayContaining(['p', 'c', 'f', 'pg', 'cg', 'fg']))
   })
 
   it('points out going over, low protein, fat and sweets', () => {

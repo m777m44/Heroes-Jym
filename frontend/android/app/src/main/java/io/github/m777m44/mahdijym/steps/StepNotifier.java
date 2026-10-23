@@ -214,34 +214,71 @@ final class StepNotifier {
         else v.setProgressBar(ringOk, 1000, 1000, false);
     }
 
-    /** Collapsed: the steps ring | the water ring, "+" the usual container (or the clock when water is off). */
+    /**
+     * Collapsed (7.2 redesign): three equal sections — the steps ring | the water ring | the food
+     * calories ring — split by hairlines, then "+" the usual container. Water and food drop out
+     * when they are off; the clock takes the "+" button's place when water is off.
+     */
     static void fillLiveSmall(Context c, RemoteViews v, StepStore s, WaterStore w, boolean water,
                               NumberFormat nf, int steps, int goal, int pct, String zone) {
         v.setTextViewText(R.id.n_steps, nf.format(steps));
         v.setTextColor(R.id.n_steps, steps >= goal ? 0xFFFFD60A : 0xFF30D158);
-        v.setTextViewText(R.id.n_pct, s.paused ? s.str("paused", "Paused") : "/ " + nf.format(goal) + " · " + pct + "%");
+        v.setTextViewText(R.id.n_pct, s.paused ? s.str("paused", "Paused") : pct + "% · " + s.str("stepsUnit", "steps"));
         v.setTextColor(R.id.n_pct, s.paused ? 0xFFFF9F0A : 0xFF8E8E93);
         ring(v, R.id.n_ring, R.id.n_ring_ok, steps, goal);
         v.setImageViewResource(R.id.n_ring_i, s.paused ? R.drawable.ic_n_pause : steps >= goal ? R.drawable.ic_n_check : R.drawable.ic_stat_steps);
         v.setString(R.id.n_clock, "setTimeZone", zone);
+        v.setOnClickPendingIntent(R.id.ns_box, openRoute(c, 21, "/walk"));
         if (water) {
             int ml = w.todayMl(), wg = w.goal();
             int wp = (int) Math.min(999, (long) ml * 100 / Math.max(1, wg));
             v.setViewVisibility(R.id.ws_box, View.VISIBLE);
+            v.setViewVisibility(R.id.d_ws, View.VISIBLE);
             v.setViewVisibility(R.id.ws_add, View.VISIBLE);
             v.setViewVisibility(R.id.n_clock, View.GONE);
             v.setTextViewText(R.id.ws_ml, nf.format(ml));
             v.setTextColor(R.id.ws_ml, ml >= wg ? 0xFF30D158 : 0xFF64D2FF);
-            v.setTextViewText(R.id.ws_pct, "/ " + nf.format(wg) + " · " + wp + "%");
+            v.setTextViewText(R.id.ws_pct, wp + "% · " + s.str("ml", "ml"));
             ring(v, R.id.ws_ring, R.id.ws_ring_ok, ml, wg);
             v.setImageViewResource(R.id.ws_ring_i, ml >= wg ? R.drawable.ic_n_check : R.drawable.ic_w_drop);
             v.setImageViewResource(R.id.ws_icon, WaterReminder.shapeOf(w.unitKey()));
             v.setOnClickPendingIntent(R.id.ws_add, WaterReminder.liveDrink(c));
+            v.setOnClickPendingIntent(R.id.ws_box, openRoute(c, 22, "/water"));
         } else {
             v.setViewVisibility(R.id.ws_box, View.GONE);
+            v.setViewVisibility(R.id.d_ws, View.GONE);
             v.setViewVisibility(R.id.ws_add, View.GONE);
             v.setViewVisibility(R.id.n_clock, View.VISIBLE);
         }
+        // 7.2: food calories in the collapsed view too
+        int[] fc = s.foodCard();
+        if (fc != null) {
+            int eaten = fc[0], fg = fc[1];
+            boolean over = eaten > fg;
+            int fp = (int) Math.min(999, (long) eaten * 100 / Math.max(1, fg));
+            v.setViewVisibility(R.id.fs_box, View.VISIBLE);
+            v.setViewVisibility(R.id.d_fs, View.VISIBLE);
+            v.setTextViewText(R.id.fs_kcal, nf.format(eaten));
+            v.setTextColor(R.id.fs_kcal, over ? 0xFFFF9F0A : 0xFFFF6482);
+            v.setTextViewText(R.id.fs_pct, fp + "% · " + s.str("kcal", "kcal"));
+            v.setTextColor(R.id.fs_pct, over ? 0xFFFF9F0A : 0xFF8E8E93);
+            // over the goal: the orange ring, full
+            v.setViewVisibility(R.id.fs_ring, over ? View.GONE : View.VISIBLE);
+            v.setViewVisibility(R.id.fs_ring_ok, over ? View.VISIBLE : View.GONE);
+            if (over) v.setProgressBar(R.id.fs_ring_ok, 1000, 1000, false);
+            else v.setProgressBar(R.id.fs_ring, 1000, (int) Math.max(eaten > 0 ? 12 : 0, Math.min(1000, (long) eaten * 1000 / Math.max(1, fg))), false);
+            v.setOnClickPendingIntent(R.id.fs_box, openRoute(c, 23, "/food"));
+        } else {
+            v.setViewVisibility(R.id.fs_box, View.GONE);
+            v.setViewVisibility(R.id.d_fs, View.GONE);
+        }
+    }
+
+    /** 7.2: a macro bar — "Protein 45/120 g" and its fill. */
+    static void macro(RemoteViews v, int text, int bar, String label, int eaten, int goal, NumberFormat nf, String g) {
+        v.setTextViewText(text, label + " " + nf.format(eaten) + (goal > 0 ? "/" + nf.format(goal) : "") + " " + g);
+        int lvl = goal > 0 ? (int) Math.min(1000, (long) eaten * 1000 / goal) : 0;
+        v.setProgressBar(bar, 1000, Math.max(lvl, eaten > 0 ? 20 : 0), false);
     }
 
     /** Expanded: the whole dashboard. */
@@ -252,6 +289,19 @@ final class StepNotifier {
         v.setString(R.id.n_clock, "setTimeZone", zone);
         v.setTextViewText(R.id.n_status, (s.paused ? "\u23F8 " : "\u25CF ") + (s.paused ? s.str("paused", "Paused") : moving ? s.str("walking", "Walking") : s.str("live", "Live")));
         v.setTextColor(R.id.n_status, s.paused ? 0xFFFF9F0A : moving ? 0xFF30D158 : 0xFF8E8E93);
+        // 7.2: a workout running — its timer ticks in the header where the clock sits
+        long ws = s.workoutStart();
+        if (ws > 0) {
+            long ago = Math.max(0, System.currentTimeMillis() - ws);
+            v.setViewVisibility(R.id.n_wk, View.VISIBLE);
+            v.setViewVisibility(R.id.n_clock, View.GONE);
+            v.setChronometer(R.id.n_wk, SystemClock.elapsedRealtime() - ago, null, true);
+            v.setTextViewText(R.id.n_status, "\u25CF " + s.str("workoutNow", "Workout"));
+            v.setTextColor(R.id.n_status, 0xFFFF9F0A);
+        } else {
+            v.setViewVisibility(R.id.n_wk, View.GONE);
+            v.setViewVisibility(R.id.n_clock, View.VISIBLE);
+        }
         v.setImageViewResource(R.id.n_pause_i, s.paused ? R.drawable.ic_n_play : R.drawable.ic_n_pause);
         v.setOnClickPendingIntent(R.id.n_pause, s.paused
             ? serviceAction(c, StepCounterService.ACTION_RESUME, 11)
@@ -338,9 +388,24 @@ final class StepNotifier {
                 : s.str("foodLeft", "{n} kcal left").replace("{n}", nf.format(fg - eaten)));
             v.setTextColor(R.id.f_togo, over ? 0xFFFF9F0A : 0xFFC7C7CC);
             v.setOnClickPendingIntent(R.id.f_card, openRoute(c, 23, "/food"));
+            // 7.2: protein · carbs · fat vs. their goals, and the day's net kcal (eaten − burned by
+            // walking and workouts)
+            int[] m = s.foodMacros();
+            if (m != null) {
+                String g = s.str("g", "g");
+                v.setViewVisibility(R.id.f_macros, View.VISIBLE);
+                macro(v, R.id.m_p, R.id.m_p_bar, s.str("protein", "Protein"), m[0], m[3], nf, g);
+                macro(v, R.id.m_c, R.id.m_c_bar, s.str("carbs", "Carbs"), m[1], m[4], nf, g);
+                macro(v, R.id.m_f, R.id.m_f_bar, s.str("fat", "Fat"), m[2], m[5], nf, g);
+                int net = eaten - s.kcal() - m[6];
+                v.setTextViewText(R.id.m_net, (net > 0 ? "+" : net < 0 ? "\u2212" : "") + nf.format(Math.abs(net)));
+                v.setTextColor(R.id.m_net, net > fg ? 0xFFFF9F0A : 0xFF30D158);
+                v.setTextViewText(R.id.m_net_l, s.str("net", "net kcal"));
+            } else v.setViewVisibility(R.id.f_macros, View.GONE);
         } else {
             v.setViewVisibility(R.id.f_card, View.GONE);
             v.setViewVisibility(R.id.f_gap, View.GONE);
+            v.setViewVisibility(R.id.f_macros, View.GONE);
         }
         v.setOnClickPendingIntent(R.id.n_card, openRoute(c, 21, "/walk"));
         if (water) v.setOnClickPendingIntent(R.id.w_card, openRoute(c, 22, "/water"));

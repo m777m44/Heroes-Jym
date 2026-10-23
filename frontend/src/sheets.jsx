@@ -4,7 +4,6 @@ import { useUI } from './store/useUI.js'
 import { EXIDX, BODYPARTS, isCardio, allExercises, equipmentOf } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, durPart, todayISO, uid, exCount, DAYN, DAYS, MONTHS_LONG, weekStartOf, weekOrder } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg, modeOf, effortOf } from './lib/history.js'
-import { beep } from './lib/sound.js'
 import { t, instrFor, instrTranslated, exName, exSearch, U } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
 import { starterRoutines } from './lib/starter.js'
@@ -24,6 +23,10 @@ import { MOBILE, shareExport } from './lib/mobile.js'
 import { validateWeighIn } from './lib/weightTracker.js'
 import { milestoneCrossed } from './lib/idealBody.js'
 import { celebrate, playCheer } from './lib/celebrate.js'
+import { workoutHaptic } from './lib/hapticFeedback.js'
+import { startCountdown, COUNTDOWN_MS } from './components/workout/StartCountdown.jsx'
+import { sessionKcalFor, fmtClock } from './lib/workoutTimer.js'
+import { CountUp } from './components/workout/WorkoutClock.jsx'
 import { attachPhoto } from './components/weight/WeightPhotoUpload.jsx'
 import { deletePhoto } from './lib/photoStore.js'
 import { photosChanged, photoProfile } from './components/weight/usePhoto.js'
@@ -834,11 +837,16 @@ export function beginWorkout(routineId, bw, adhoc) {
     const plan = nextPrescription(st, cfg, r)
     return { id: cfg.id, sg: cfg.sg, target: { ...cfg }, plan, sets: applyPrescription(buildSets(st, cfg), plan) }
   })
+  // 7.2: a 3 · 2 · 1 · GO countdown first (Settings → Workout can turn it off). The clock is
+  // pre-dated by the countdown so it reads 0:00 on GO, and GO sets it exactly.
+  const cd = st.workoutCountdown !== false
+  const id = uid()
   update(s => {
-    s.active = { id: uid(), d: todayISO(), start: Date.now(), routineId, name: r ? r.name : 'Freestyle', bw: bw || null, cur: 0, entries }
+    s.active = { id, d: todayISO(), start: Date.now() + (cd ? COUNTDOWN_MS : 0), routineId, name: r ? r.name : 'Freestyle', bw: bw || null, cur: 0, entries }
   })
   useUI.getState().stopRest()
   nav('/workout')
+  if (cd) startCountdown(routineLabel(r ? r.name : 'Freestyle'), () => update(s => { if (s.active && s.active.id === id) s.active.start = Date.now() }))
 }
 function TopWeight({ entryIdx, close }) {
   const st = useStore(s => s.S)
@@ -936,14 +944,27 @@ function SessionRating({ w }) {
 function FinishSummary({ w, prs, e1prs = [], close }) {
   const st = useStore(s => s.S)
   const coachOn = !!useStore(s => s.config)?.coach?.enabled && !!st.coach?.consent?.agreedAt
-  return <div style={{ textAlign: 'center', padding: '8px 0' }}>
-    <div style={{ fontSize: 44, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="trophy" /></div>
-    <h3 style={{ margin: '8px 0' }}>{t('Workout complete!')}</h3>
-    <div className="tiles" style={{ textAlign: 'left' }}>
-      <div className="tile"><div className="l">{t('Duration')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtDur(w.end - w.start)}</div></div>
-      <div className="tile"><div className="l">{t('Volume')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{fmtVol(w.vol, st.unit)}</div></div>
-      <div className="tile"><div className="l">{t('Sets')}</div><div className="v" style={{ fontSize: '1.1rem' }}>{setsDone(w)}</div></div>
-      <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
+  // 7.2: an animated finish — a glowing trophy, every number counting up, the calories burned
+  const kcal = sessionKcalFor(st, w, { isCardio: e => modeOf({ ...(e.target || {}), id: e.id }) === 'cardio' })
+  const tiles = [
+    { k: 'dur', icon: 'timer', l: t('Duration'), v: <CountUp to={w.end - w.start} fmt={fmtClock} /> },
+    { k: 'kcal', icon: 'flame', l: t('Burned'), v: <><CountUp to={kcal} /> <small>{t('kcal')}</small></> },
+    { k: 'vol', icon: 'barbell', l: t('Volume'), v: <CountUp to={w.vol || 0} fmt={v => fmtVol(Math.round(v), st.unit)} /> },
+    { k: 'sets', icon: 'checkCircle', l: t('Sets'), v: <CountUp to={setsDone(w)} /> },
+  ]
+  return <div className="fin">
+    <div className="fin-hero" aria-hidden="true">
+      <span className="fin-ring r1" /><span className="fin-ring r2" />
+      <span className="fin-badge"><Icon name="trophy" /></span>
+    </div>
+    <h3 className="fin-title">{t('Workout complete!')}</h3>
+    <div className="fin-sub">{routineLabel(w.name)}{prs.length ? ' · ' + t('{0} new PRs', prs.length) : ''}</div>
+    <div className="fin-tiles">
+      {tiles.map((x, i) => <div key={x.k} className={'fin-tile ' + x.k} style={{ '--i': i }}>
+        <span className="fin-tile-i"><Icon name={x.icon} /></span>
+        <div className="fin-tile-v">{x.v}</div>
+        <div className="fin-tile-l">{x.l}</div>
+      </div>)}
     </div>
     {(prs.length > 0 || e1prs.length > 0) && <div style={{ textAlign: 'left', marginBottom: 12 }}>
       {prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {EXIDX[id] ? exName(EXIDX[id]) : id}</div>)}
@@ -997,6 +1018,9 @@ function doFinishWorkout() {
     s.active = null
   })
   useUI.getState().stopRest()
-  beep(snd(), 880, 0.15); beep(snd(), 1100, 0.15, 0.18); beep(snd(), 1320, 0.3, 0.36)
+  // 7.2: the finish — its own fanfare, a medium professional vibration and the full-screen scene
+  playCheer(snd(), 'workout')
+  if ((st.walk || {}).haptics !== false) workoutHaptic()
+  celebrate(Math.max(1, Math.round((w.end - w.start) / 60000)), 'workout')
   ui().openSheet(close => <FinishSummary w={w} prs={prs} e1prs={e1prs} close={close} />, { kind: 'center', locked: true })
 }

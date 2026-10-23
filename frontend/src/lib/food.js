@@ -13,6 +13,7 @@ import { t } from './i18n.js'
 import { isoOf, uid } from './format.js'
 import { idealBodyOf, macrosFor, goalPlanOf } from './idealBody.js'
 import { bodyKg } from './water.js'
+import { workoutKcalOn } from './workoutTimer.js'
 import { FOODS, FOOD_BY_ID } from './foodDb.js'
 import { RECIPE_BY_ID } from './kitchen.js'
 
@@ -149,12 +150,12 @@ export function toggleFav(s, id) {
   s.foodFav = [...fav]
   return fav.has(id)
 }
-export function saveCustomFood(s, { id, n, kcal, p = 0, c = 0, f = 0 }) {
+export function saveCustomFood(s, { id, n, kcal, p = 0, c = 0, f = 0, g = 0, est = null }) {
   const name = String(n || '').trim().slice(0, 60)
   if (!name) throw Object.assign(new Error('Give it a name'), { key: 'Give it a name' })
   if (!(num(kcal) > 0 && num(kcal) <= 5000)) throw Object.assign(new Error('Enter the calories (1–5,000).'), { key: 'Enter the calories (1–5,000).' })
   s.customFoods = s.customFoods || []
-  const food = { id: id || 'cf' + uid(), n: name, kcal: r0(num(kcal)), p: r1(num(p)), c: r1(num(c)), f: r1(num(f)), unit: 'serving', g: 0, custom: true, cat: 'mine' }
+  const food = { id: id || 'cf' + uid(), n: name, kcal: r0(num(kcal)), p: r1(num(p)), c: r1(num(c)), f: r1(num(f)), unit: 'serving', g: Math.max(0, Math.min(5000, r0(num(g)))), custom: true, cat: 'mine', ...(est ? { est } : {}) }
   const i = s.customFoods.findIndex(x => x.id === food.id)
   if (i >= 0) s.customFoods[i] = food; else s.customFoods.push(food)
   return food
@@ -276,7 +277,11 @@ export function sweetKcalOn(S, iso) {
 
 /** What the step-counter notification shows: { day, eaten, goal }. */
 export function foodNative(S, iso) {
-  return { day: iso, eaten: dayTotals(S, iso).kcal, goal: foodGoalOf(S, iso).kcal }
+  const d = dayTotals(S, iso), g = foodGoalOf(S, iso)
+  // 7.2: macros and their goals, and the workouts' kcal, for the notification's macro strip
+  let wk = 0
+  try { wk = workoutKcalOn({ ...S, active: null }, iso) } catch { wk = 0 }   // finished sessions only — steady between pushes
+  return { day: iso, eaten: d.kcal, goal: g.kcal, p: r0(d.p), c: r0(d.c), f: r0(d.f), pg: r0(g.macros.protein), cg: r0(g.macros.carbs), fg: r0(g.macros.fat), wk }
 }
 
 /** "1 plate · 300 g" — a food's usual serving. */

@@ -4,6 +4,7 @@
        cards    steps (green → gold) | water (blue → green) | food (pink → orange over the goal):
                 coloured icon chip · title · %, big number, goal, a slim progress bar, what's left.
                 Each card opens its screen.
+       macros   7.2: protein · carbs · fat eaten vs. their goals, and today's net kcal (eaten − burned)
        stats    km · kcal · walking time · km/h
        water    glass · cup · can · bottle (tap to add) · Undo · Edit
      About 226dp — under the ~252dp Android 12+ gives a custom expanded notification. The footer
@@ -17,6 +18,8 @@
         android:format12Hour="EEEE d MMMM" android:format24Hour="EEEE d MMMM" android:maxLines="1" android:textColor="#FFC7C7CC" android:textSize="12sp" android:textStyle="bold" />
     <TextView android:id="@+id/n_status" android:layout_width="wrap_content" android:layout_height="18dp" android:layout_marginEnd="6dp" android:background="@drawable/notif_pill"
         android:gravity="center" android:includeFontPadding="false" android:maxLines="1" android:paddingStart="7dp" android:paddingEnd="7dp" android:textColor="#FF30D158" android:textSize="10.5sp" android:textStyle="bold" />
+    <Chronometer android:id="@+id/n_wk" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFeatureSettings="tnum" android:visibility="gone"
+        android:includeFontPadding="false" android:maxLines="1" android:textColor="#FFFF9F0A" android:textSize="13sp" android:textStyle="bold" />
     <TextClock android:id="@+id/n_clock" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFeatureSettings="tnum"
         android:format12Hour="hh:mm:ss a" android:format24Hour="HH:mm:ss" android:maxLines="1" android:textColor="#FFF2F2F7" android:textSize="13sp" android:textStyle="bold" />
     <LinearLayout android:id="@+id/n_pause" android:layout_width="28dp" android:layout_height="22dp" android:layout_marginStart="8dp" android:background="@drawable/notif_icon_btn" android:gravity="center">
@@ -99,7 +102,34 @@
             android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFC7C7CC" android:textSize="9.5sp" />
     </LinearLayout>
 </LinearLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="30dp" android:layout_marginTop="6dp" android:background="@drawable/notif_stats" android:orientation="horizontal">
+<LinearLayout android:id="@+id/f_macros" android:layout_width="match_parent" android:layout_height="26dp" android:layout_marginTop="5dp" android:background="@drawable/notif_stats"
+    android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:paddingEnd="10dp" android:visibility="gone">
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="8dp" android:orientation="vertical">
+        <TextView android:id="@+id/m_p" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFFF7A70" android:textSize="9.5sp" android:textStyle="bold" android:fontFeatureSettings="tnum" />
+        <ProgressBar android:id="@+id/m_p_bar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="3dp"
+            android:minHeight="4dp" android:maxHeight="4dp" android:indeterminate="false" android:max="1000" android:mirrorForRtl="true" android:progressDrawable="@drawable/notif_bar_protein" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="8dp" android:orientation="vertical">
+        <TextView android:id="@+id/m_c" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="9.5sp" android:textStyle="bold" android:fontFeatureSettings="tnum" />
+        <ProgressBar android:id="@+id/m_c_bar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="3dp"
+            android:minHeight="4dp" android:maxHeight="4dp" android:indeterminate="false" android:max="1000" android:mirrorForRtl="true" android:progressDrawable="@drawable/notif_bar_carbs" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="8dp" android:orientation="vertical">
+        <TextView android:id="@+id/m_f" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFFFD60A" android:textSize="9.5sp" android:textStyle="bold" android:fontFeatureSettings="tnum" />
+        <ProgressBar android:id="@+id/m_f_bar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="3dp"
+            android:minHeight="4dp" android:maxHeight="4dp" android:indeterminate="false" android:max="1000" android:mirrorForRtl="true" android:progressDrawable="@drawable/notif_bar_fat" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="end" android:orientation="vertical">
+        <TextView android:id="@+id/m_net" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:includeFontPadding="false" android:maxLines="1" android:textColor="#FFF2F2F7" android:textSize="11sp" android:textStyle="bold" android:fontFeatureSettings="tnum" />
+        <TextView android:id="@+id/m_net_l" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="1dp"
+            android:includeFontPadding="false" android:maxLines="1" android:textColor="#FF8E8E93" android:textSize="8.5sp" />
+    </LinearLayout>
+</LinearLayout>
+<LinearLayout android:layout_width="match_parent" android:layout_height="28dp" android:layout_marginTop="6dp" android:background="@drawable/notif_stats" android:orientation="horizontal">
     <LinearLayout android:id="@+id/n_km_box" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
     android:gravity="center" android:orientation="horizontal">
     <ImageView android:layout_width="12dp" android:layout_height="12dp" android:contentDescription="@null" android:src="@drawable/ic_n_route" android:tint="#FF64D2FF" />
@@ -153,7 +183,7 @@
 </LinearLayout>
 <LinearLayout android:id="@+id/w_row" android:layout_width="match_parent" android:layout_height="wrap_content"
     android:layout_marginTop="6dp" android:gravity="center_vertical" android:orientation="horizontal">
-    <LinearLayout android:id="@+id/w_c0" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+    <LinearLayout android:id="@+id/w_c0" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1"
     android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
     android:paddingStart="4dp" android:paddingEnd="4dp">
     <ImageView android:id="@+id/w_i0" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
@@ -163,7 +193,7 @@
         <TextView android:id="@+id/w_m0" android:layout_width="wrap_content" android:layout_height="wrap_content"
     android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
-</LinearLayout><LinearLayout android:id="@+id/w_c1" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+</LinearLayout><LinearLayout android:id="@+id/w_c1" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1"
     android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
     android:paddingStart="4dp" android:paddingEnd="4dp">
     <ImageView android:id="@+id/w_i1" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
@@ -173,7 +203,7 @@
         <TextView android:id="@+id/w_m1" android:layout_width="wrap_content" android:layout_height="wrap_content"
     android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
-</LinearLayout><LinearLayout android:id="@+id/w_c2" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+</LinearLayout><LinearLayout android:id="@+id/w_c2" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1"
     android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
     android:paddingStart="4dp" android:paddingEnd="4dp">
     <ImageView android:id="@+id/w_i2" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
@@ -183,7 +213,7 @@
         <TextView android:id="@+id/w_m2" android:layout_width="wrap_content" android:layout_height="wrap_content"
     android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
-</LinearLayout><LinearLayout android:id="@+id/w_c3" android:layout_width="0dp" android:layout_height="38dp" android:layout_weight="1"
+</LinearLayout><LinearLayout android:id="@+id/w_c3" android:layout_width="0dp" android:layout_height="34dp" android:layout_weight="1"
     android:layout_marginStart="5dp" android:background="@drawable/notif_chip" android:gravity="center" android:orientation="horizontal"
     android:paddingStart="4dp" android:paddingEnd="4dp">
     <ImageView android:id="@+id/w_i3" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@null" />
@@ -194,10 +224,10 @@
     android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FF64D2FF" android:textSize="10sp" android:textStyle="bold" android:layout_marginTop="1dp" android:fontFeatureSettings="tnum"/>
     </LinearLayout>
 </LinearLayout>
-    <LinearLayout android:id="@+id/w_undo" android:layout_width="34dp" android:layout_height="38dp" android:layout_marginStart="5dp"
+    <LinearLayout android:id="@+id/w_undo" android:layout_width="34dp" android:layout_height="34dp" android:layout_marginStart="5dp"
     android:background="@drawable/notif_icon_btn" android:gravity="center">
     <ImageView android:id="@+id/w_undo_i" android:layout_width="18dp" android:layout_height="18dp" android:contentDescription="@null" android:src="@drawable/ic_w_undo" />
-</LinearLayout><LinearLayout android:id="@+id/w_edit" android:layout_width="34dp" android:layout_height="38dp" android:layout_marginStart="5dp"
+</LinearLayout><LinearLayout android:id="@+id/w_edit" android:layout_width="34dp" android:layout_height="34dp" android:layout_marginStart="5dp"
     android:background="@drawable/notif_icon_btn" android:gravity="center">
     <ImageView android:layout_width="17dp" android:layout_height="17dp" android:contentDescription="@null" android:src="@drawable/ic_w_edit" />
 </LinearLayout>

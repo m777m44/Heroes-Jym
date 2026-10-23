@@ -50,6 +50,7 @@ const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
 const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
 const Reports = lazy(() => import('./views/Reports.jsx'))
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
+import StartCountdown from './components/workout/StartCountdown.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
 import AccountGate from './components/AccountGate.jsx'
 import { storageChosen, startCloudSync, restoreFromBackup } from './lib/cloud.js'
@@ -204,6 +205,7 @@ function Shell() {
       <Modals />
       <Toast />
       <CelebrationOverlay />
+      <StartCountdown />
       {MOBILE && !DEMO && <AppLock />}
       {authed && ready && !DEMO && checked && (chosen ? <PermissionGate /> : <AccountGate onDone={() => setChosen(true)} />)}
     </>

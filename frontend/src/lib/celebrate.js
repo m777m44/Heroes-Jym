@@ -110,7 +110,51 @@ function applause(ctx, out, at, len, vol = 0.07) {
   hiss(ctx, out, at, len, { type: 'bandpass', f: 1300, q: 0.5, vol: vol * 0.9, attack: len * 0.3 })
 }
 
-/** The celebration sound. `kind`: 'goal' | 'milestone' | 'water' | 'plan'. */
+/** 7.2 — a soft string pad: detuned triangles that swell in and fade out slowly. */
+function pad(ctx, out, f, at, len, vol = 0.05) {
+  const g = ctx.createGain(), lp = ctx.createBiquadFilter()
+  lp.type = 'lowpass'; lp.frequency.value = f * 4
+  g.gain.setValueAtTime(0.0001, at)
+  g.gain.exponentialRampToValueAtTime(vol, at + Math.min(0.35, len * 0.3))
+  g.gain.setValueAtTime(vol, at + len * 0.65)
+  g.gain.exponentialRampToValueAtTime(0.0001, at + len)
+  lp.connect(g); g.connect(out)
+  for (const det of [-9, 0, 9]) {
+    const o = ctx.createOscillator()
+    o.type = 'triangle'; o.frequency.value = f; o.detune.value = det
+    o.connect(lp); o.start(at); o.stop(at + len + 0.05)
+  }
+}
+
+/**
+ * 7.2 — "workout complete": its own composition, so finishing a session never sounds like a
+ * step goal. In D major: a timpani roll that speeds up, a rising bell arpeggio (D–F♯–A–D)
+ * over a string pad, a warm brass chord with a kick and cymbal on the downbeat, and a falling
+ * chime shimmer to close. About 2.8 s; elegant rather than loud.
+ */
+function workoutFanfare(ctx, bus, t0) {
+  // timpani roll: soft, accelerating, growing
+  const roll = [0, 0.16, 0.29, 0.39, 0.47, 0.53, 0.58]
+  roll.forEach((d, i) => kick(ctx, bus, t0 + d, 0.12 + i * 0.04))
+  // rising arpeggio on bells
+  const arp = [587.33, 739.99, 880, 1174.66]
+  arp.forEach((f, i) => bell(ctx, bus, f, t0 + 0.08 + i * 0.12, 1.1, 0.07))
+  // the downbeat
+  const hit = t0 + 0.66
+  pad(ctx, bus, 293.66, t0 + 0.1, 2.6, 0.035)
+  pad(ctx, bus, 440, t0 + 0.1, 2.6, 0.03)
+  ;[146.83, 293.66, 369.99, 440, 587.33, 739.99].forEach(f => brass(ctx, bus, f, hit, 1.6, 0.06))
+  kick(ctx, bus, hit, 0.55)
+  hiss(ctx, bus, hit, 1.9, { f: 6500, vol: 0.09, attack: 0.003 })
+  // a second, higher answer
+  ;[1174.66, 1479.98, 1760].forEach((f, i) => bell(ctx, bus, f, hit + 0.42 + i * 0.05, 1.4, 0.045, 'triangle'))
+  // falling shimmer
+  ;[4698.6, 3951.1, 3520, 2960, 2349.3, 1975.5].forEach((f, i) => bell(ctx, bus, f, hit + 0.9 + i * 0.06, 0.7, 0.022, 'sine'))
+  // gentle applause under the tail
+  applause(ctx, bus, hit + 0.25, 1.8, 0.045)
+}
+
+/** The celebration sound. `kind`: 'goal' | 'milestone' | 'water' | 'plan' | 'workout'. */
 export function playCheer(enabled, kind = 'milestone') {
   if (!enabled) return
   try {
@@ -141,6 +185,8 @@ export function playCheer(enabled, kind = 'milestone') {
       ;[1760, 2349.3, 2793.8].forEach((f, i) => bell(ctx, bus, f, t0 + 0.75 + i * 0.06, 0.8, 0.035, 'triangle'))
       return
     }
+
+    if (kind === 'workout') { workoutFanfare(ctx, bus, t0); return }
 
     const big = kind === 'goal' || kind === 'plan'
     // pickup: G – G – G – C (ta-ta-ta-taaa), then the chord

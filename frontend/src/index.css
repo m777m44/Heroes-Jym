@@ -2607,3 +2607,148 @@ html[data-motion="reduce"] .ib-glow,html[data-motion="reduce"] .ib-soon-r,html[d
 .ib-warn .icn{color:var(--orange);flex:none}
 .ib-warn .h2link{white-space:nowrap;font-weight:700}
 .ib-setup-h h2{font-size:19px;font-weight:800;color:var(--label);text-transform:none;letter-spacing:-.01em}
+
+/* ---- 7.2: workout start countdown ------------------------------------------------------------ */
+.cdown{position:fixed;inset:0;z-index:210;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px);color:#fff;text-align:center;cursor:pointer;
+  background:radial-gradient(110% 80% at 50% 42%,color-mix(in srgb,var(--acc) 38%,transparent) 0%,rgba(8,8,16,.93) 55%,rgba(3,3,8,.98) 100%);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);animation:celfade .25s var(--ease) both;-webkit-tap-highlight-color:transparent}
+.cdown.go{background:radial-gradient(110% 80% at 50% 42%,color-mix(in srgb,var(--green) 52%,transparent) 0%,rgba(8,8,16,.9) 58%,rgba(3,3,8,.97) 100%)}
+.cdown-kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.cdown-label{font-size:20px;font-weight:700;letter-spacing:-.01em;max-width:86vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdown-stage{position:relative;width:min(62vw,250px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;margin:18px 0 10px}
+.cdown-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.cdown-track{fill:none;stroke:rgba(255,255,255,.12);stroke-width:6}
+.cdown-arc{fill:none;stroke:var(--acc);stroke-width:6;stroke-linecap:round;stroke-dasharray:339.3;stroke-dashoffset:0;
+  filter:drop-shadow(0 0 8px color-mix(in srgb,var(--acc) 70%,transparent));animation:cdarc linear both}
+.cdown.go .cdown-arc{stroke:var(--green);animation:none}
+@keyframes cdarc{from{stroke-dashoffset:0}to{stroke-dashoffset:339.3}}
+.cdown-num{font-size:clamp(84px,30vw,128px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;
+  text-shadow:0 10px 40px color-mix(in srgb,var(--acc) 60%,transparent);animation:cdpop .55s cubic-bezier(.2,1.4,.4,1) both}
+.cdown.go .cdown-num{font-size:clamp(64px,22vw,96px);color:var(--green);text-shadow:0 10px 44px color-mix(in srgb,var(--green) 70%,transparent)}
+@keyframes cdpop{0%{transform:scale(1.9);opacity:0;filter:blur(6px)}60%{opacity:1;filter:blur(0)}100%{transform:scale(1);opacity:1}}
+.cdown-dots{display:flex;gap:8px}
+.cdown-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:background var(--fast) var(--ease),transform var(--fast) var(--ease)}
+.cdown-dots i.on{background:var(--acc);transform:scale(1.2)}
+.cdown.go .cdown-dots i.on{background:var(--green)}
+.cdown-hint{margin-top:22px;font-size:12px;opacity:.5}
+
+/* ---- 7.2: live workout clock ----------------------------------------------------------------- */
+.wclock{display:flex;align-items:center;gap:12px;margin:2px 0 10px;padding:12px 14px;border-radius:calc(var(--r-sm) + 8px);position:relative;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 16%,var(--surface)) 0%,var(--surface) 70%);
+  border:1px solid color-mix(in srgb,var(--acc) 26%,transparent);box-shadow:0 10px 28px -18px color-mix(in srgb,var(--acc) 80%,transparent);
+  animation:wcin .45s var(--ease) both}
+@keyframes wcin{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.wclock-ring{position:relative;width:58px;height:58px;flex:none}
+.wclock-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.wclock-track{fill:none;stroke:var(--surface-3);stroke-width:6}
+.wclock-arc{fill:none;stroke:var(--acc);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .6s var(--ease)}
+.wclock-ring-v{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.wclock-ring-v small{font-size:9px;opacity:.7;margin-inline-start:1px}
+.wclock-main{flex:1;min-width:0}
+.wclock-live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+.wclock-live i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:wclive 1.6s ease-out infinite}
+.wclock.wait .wclock-live{color:var(--orange)}
+@keyframes wclive{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--red) 60%,transparent)}100%{box-shadow:0 0 0 8px transparent}}
+.wclock-t{font-size:34px;font-weight:800;line-height:1.05;letter-spacing:-.03em;font-variant-numeric:tabular-nums;direction:ltr;text-align:start}
+[dir=rtl] .wclock-t{text-align:end}
+.wclock-stats{display:flex;flex-direction:column;gap:6px;flex:none}
+.wclock-st{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--label-2);padding:4px 9px;border-radius:999px;background:var(--surface-2)}
+.wclock-st b{color:var(--label);font-variant-numeric:tabular-nums;font-size:13px}
+.wclock-st.kc{color:var(--orange)}
+.wclock-st.st{color:var(--green)}
+.wclock-st span{color:var(--label-3)}
+
+/* ---- 7.2: workout finish summary ------------------------------------------------------------- */
+.fin{text-align:center;padding:6px 0}
+.fin-hero{position:relative;width:96px;height:96px;margin:4px auto 8px;display:flex;align-items:center;justify-content:center}
+.fin-ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--orange);opacity:0;animation:celring 1.8s cubic-bezier(.2,.7,.3,1) infinite}
+.fin-ring.r2{border-color:var(--pink);animation-delay:.6s}
+.fin-badge{position:relative;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;color:#1a1000;
+  background:linear-gradient(145deg,var(--yellow),var(--orange));box-shadow:0 12px 30px -10px color-mix(in srgb,var(--orange) 85%,transparent);
+  animation:finpop .7s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes finpop{0%{transform:scale(.2) rotate(-25deg);opacity:0}100%{transform:none;opacity:1}}
+.fin-title{margin:6px 0 2px;font-size:22px;letter-spacing:-.02em}
+.fin-sub{color:var(--label-2);font-size:13px;margin-bottom:14px}
+.fin-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fin-tile{position:relative;padding:12px;border-radius:calc(var(--r-sm) + 4px);background:var(--surface-2);text-align:start;overflow:hidden;
+  animation:wcin .5s var(--ease) both;animation-delay:calc(var(--i) * 90ms + 150ms)}
+.fin-tile-i{display:inline-flex;width:28px;height:28px;border-radius:9px;align-items:center;justify-content:center;font-size:16px;
+  color:var(--tc);background:color-mix(in srgb,var(--tc) 16%,transparent)}
+.fin-tile-v{font-size:20px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.fin-tile-v small{font-size:11px;font-weight:600;color:var(--label-3)}
+.fin-tile-l{font-size:12px;color:var(--label-2)}
+.fin-tile.dur{--tc:var(--blue)}.fin-tile.kcal{--tc:var(--orange)}.fin-tile.vol{--tc:var(--purple)}.fin-tile.sets{--tc:var(--green)}
+
+/* ---- 7.2: your own food — smart calories ------------------------------------------------------ */
+.cf .cf-name{font-size:17px;font-weight:600;margin-bottom:10px}
+.cf .seg{margin-bottom:12px}
+.cf-grams label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--label-2)}
+.cf-g{position:relative;display:flex;align-items:center;width:140px}
+.cf-g .input{text-align:center;font-weight:700;font-variant-numeric:tabular-nums;padding-inline-end:30px}
+.cf-g em{position:absolute;inset-inline-end:12px;font-style:normal;color:var(--label-3);font-size:13px}
+.cf-chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 4px;scrollbar-width:none}
+.cf-chips::-webkit-scrollbar{display:none}
+.cf-chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid var(--surface-3);background:var(--surface-2);color:var(--label);font:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;transition:background var(--fast) var(--ease),border-color var(--fast) var(--ease),transform var(--fast) var(--ease)}
+.cf-chip:active{transform:scale(.94)}
+.cf-chip.on{background:color-mix(in srgb,var(--acc) 18%,var(--surface));border-color:var(--acc);color:var(--acc)}
+.cf-est{margin:10px 0;padding:14px;border-radius:calc(var(--r-sm) + 6px);position:relative;overflow:hidden;
+  background:linear-gradient(140deg,color-mix(in srgb,var(--cc,var(--acc)) 14%,var(--surface-2)),var(--surface-2) 65%);
+  border:1px solid color-mix(in srgb,var(--cc,var(--acc)) 30%,transparent);animation:wcin .35s var(--ease) both}
+.cf-est.empty{display:flex;align-items:center;gap:10px;color:var(--label-2);font-size:14px;--cc:var(--acc)}
+.cf-est.empty .icon,.cf-est.empty svg{color:var(--acc);font-size:20px}
+.cf-est-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cf-est-k{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.cf-est-k b{font-size:38px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;animation:cfpop .35s cubic-bezier(.2,1.4,.4,1) both}
+.cf-est-k span{font-size:14px;color:var(--label-2);font-weight:600}
+.cf-est-k.sm{margin:4px 0 10px}.cf-est-k.sm b{font-size:30px}.cf-est-k small{flex-basis:100%;margin-top:4px}
+@keyframes cfpop{from{transform:scale(.8);opacity:.3}to{transform:none;opacity:1}}
+.cf-est-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:end}
+.cf-conf{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--cc);background:color-mix(in srgb,var(--cc) 15%,transparent)}
+.cf-conf i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.cf-src{display:flex;gap:6px;align-items:flex-start;margin:10px 0 8px;color:var(--label-2);line-height:1.35}
+.cf-src svg{flex:none;margin-top:1px;color:var(--cc)}
+.cf-macs{display:grid;gap:6px}
+.cf-mac{display:grid;grid-template-columns:62px 1fr 52px;align-items:center;gap:8px;font-size:12px}
+.cf-mac span{color:var(--label-2)}
+.cf-mac i{height:7px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.cf-mac i b{display:block;height:100%;border-radius:inherit;transition:width .5s var(--ease)}
+.cf-mac em{font-style:normal;text-align:end;font-weight:700;font-variant-numeric:tabular-nums}
+.cf-mac.p b{background:var(--red)}.cf-mac.c b{background:var(--blue)}.cf-mac.f b{background:var(--yellow)}
+.cf-alts{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.cf-alt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--surface-3);background:var(--surface);color:var(--label);
+  font:inherit;font-size:14px;text-align:start;cursor:pointer;transition:transform var(--fast) var(--ease),border-color var(--fast) var(--ease),background var(--fast) var(--ease)}
+.cf-alt:active{transform:scale(.98)}
+.cf-alt.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--surface))}
+.cf-alt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-alt em{font-style:normal;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.cf-ings .kit-items{margin-bottom:10px}
+.cf-hint{display:flex;align-items:center;gap:6px;margin-top:8px;color:var(--green)}
+
+/* ---- 7.2: polish — springier presses, a sheen on primary buttons, smoother controls ------------ */
+.btn{position:relative;overflow:hidden;transition:transform .18s cubic-bezier(.3,.7,.4,1.35),background var(--fast),box-shadow .2s var(--ease),opacity var(--fast)}
+.btn:active{transform:scale(.962)}
+.btn .icn{transition:transform .2s cubic-bezier(.3,.7,.4,1.5)}
+.btn:active .icn{transform:scale(.86)}
+.btn.primary{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 86%,#fff) 0%,var(--acc) 45%,var(--acc-2,var(--acc)) 100%)}
+.btn.primary::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%)}
+.btn.primary:active::after,.btn.primary:focus-visible::after{animation:btnsheen .7s var(--ease)}
+@media (hover:hover){.btn.primary:hover::after{animation:btnsheen .9s var(--ease)}.btn:hover{box-shadow:0 8px 22px -12px color-mix(in srgb,var(--acc) 70%,transparent)}}
+@keyframes btnsheen{to{transform:translateX(120%)}}
+.btn.tinted:active,.btn.danger:active{filter:brightness(1.08)}
+.seg-sel{transition:transform .38s cubic-bezier(.3,.8,.3,1.12)}
+.sw .knob{transition:transform .32s cubic-bezier(.3,.8,.3,1.25),width var(--fast) var(--ease)}
+.item{transition:background .15s,transform .18s cubic-bezier(.3,.7,.4,1.35)}
+.list>.item[role=button]:active,.list>.item[onclick]:active{transform:scale(.985)}
+.card.tap,.card[role=button],button.card{transition:transform .18s cubic-bezier(.3,.7,.4,1.35),box-shadow .2s var(--ease)}
+button.card:active,.card[role=button]:active{transform:scale(.98)}
+#tabbar button:not(.start).on .icn{animation:tabpop .42s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes tabpop{0%{transform:scale(.7) translateY(3px)}100%{transform:none}}
+#tabbar button.start .cir{transition:transform .2s cubic-bezier(.3,.7,.4,1.5),box-shadow .2s}
+#tabbar button.start:active .cir{transform:scale(.9)}
+#tabbar button.start.rec .cir{animation:recpulse 2s ease-out infinite}
+@keyframes recpulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--orange) 55%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.tab-clock{font-variant-numeric:tabular-nums;font-weight:700;color:var(--orange);direction:ltr;unicode-bidi:isolate}
+.wprog i{transition:width .5s var(--ease)}

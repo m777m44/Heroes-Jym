@@ -151,6 +151,9 @@ export default function Settings() {
       <Row icon="bell" iconTint="var(--pink)" title={t('Sounds')}>
         <Switch checked={!!S.sound} onChange={v => update(s => { s.sound = v })} />
       </Row>
+      <Row icon="play" iconTint="var(--green)" title={t('Start countdown')} subtitle={t('3 · 2 · 1 · GO before every workout, then a live timer')}>
+        <Switch checked={S.workoutCountdown !== false} onChange={v => update(s => { s.workoutCountdown = v })} />
+      </Row>
       <Row icon="timer" iconTint="var(--teal)" title={t('Voice countdown')} subtitle={t('Says 3, 2, 1 at the end of a rest or a timed set')}>
         <Switch checked={S.voiceCount !== false} onChange={v => update(s => { s.voiceCount = v })} />
       </Row>

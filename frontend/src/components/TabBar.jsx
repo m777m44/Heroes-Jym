@@ -1,7 +1,16 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
+import { useEffect, useState } from 'react'
+import { fmtClock } from '../lib/workoutTimer.js'
 import Icon from './Icon.jsx'
+
+// 7.2: while a workout runs, the Start tab shows its live time (ticks on its own)
+function TabClock({ start }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const iv = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(iv) }, [])
+  return <span className="tab-clock">{fmtClock(Math.max(0, now - start))}</span>
+}
 
 export default function TabBar() {
   const nav = useNavigate()
@@ -25,9 +34,9 @@ export default function TabBar() {
     <nav id="tabbar">
       <Tab k="home" icon="house" to="/home" label={t('Home')} />
       <Tab k="plan" icon="calendar" to="/plan" label={t('Plan')} />
-      <button className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout}>
+      <button className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout} aria-label={S.active ? t('Resume') : t('Start')}>
         <span className="cir"><Icon name={S.active ? 'play' : 'dumbbell'} /></span>
-        <span>{S.active ? t('Resume') : t('Start')}</span>
+        <span>{S.active ? <TabClock start={S.active.start} /> : t('Start')}</span>
       </button>
       <Tab k="stats" icon="chart" to="/stats" label={t('Stats')} />
       <Tab k="library" icon="list" to="/library" label={t('Exercises')} />

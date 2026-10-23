@@ -33,3 +33,39 @@ export async function goalHaptic() {
   }
   vibrate([90, 80, 90, 80, 400])
 }
+
+/**
+ * 7.2 — the start countdown: a light tap on 3 · 2 · 1 and one firm knock on GO, so you can
+ * feel the workout start with the phone on the bench.
+ */
+export async function tickHaptic(go = false) {
+  if (MOBILE) {
+    try {
+      const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+      await Haptics.impact({ style: go ? ImpactStyle.Heavy : ImpactStyle.Light })
+      return
+    } catch { /* fall through */ }
+  }
+  vibrate(go ? 90 : 25)
+}
+
+/**
+ * 7.2 — workout finished: a professional, medium-strength pattern. Three rising knocks
+ * (medium · medium · heavy) like a drum roll landing, the platform's success pattern, then
+ * one smooth 320 ms buzz — firm enough to feel, never harsh or alarming.
+ */
+export const WORKOUT_PATTERN = [55, 90, 55, 90, 85, 160, 320]
+export async function workoutHaptic() {
+  if (MOBILE) {
+    try {
+      const { Haptics, ImpactStyle, NotificationType } = await import('@capacitor/haptics')
+      await Haptics.impact({ style: ImpactStyle.Medium }); await wait(120)
+      await Haptics.impact({ style: ImpactStyle.Medium }); await wait(120)
+      await Haptics.impact({ style: ImpactStyle.Heavy }); await wait(200)
+      await Haptics.notification({ type: NotificationType.Success }); await wait(220)
+      await Haptics.vibrate({ duration: 320 })
+      return
+    } catch { /* fall through */ }
+  }
+  vibrate(WORKOUT_PATTERN)
+}

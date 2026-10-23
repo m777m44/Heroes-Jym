@@ -9,13 +9,15 @@ import { useMemo, useState } from 'react'
 import { burst, lastTap } from '../../lib/motion.js'
 import { useStore } from '../../store/useStore.js'
 import { useUI } from '../../store/useUI.js'
-import { t, U, dateLocale } from '../../lib/i18n.js'
+import { t, U, dateLocale, getLang } from '../../lib/i18n.js'
 import { nav } from '../../lib/nav.js'
 import { FOOD_CATS } from '../../lib/foodDb.js'
 import {
   MEALS, QTY_STEP, MAX_QTY, MIN_GOAL, MAX_GOAL, clampQty, foodName, foodOf, searchFoods, recentFoods, makeEntry, addEntry,
   editEntry, removeEntry, toggleFav, saveCustomFood, deleteCustomFood, servingText, foodGoalOf, dayTotals, mealAt,
 } from '../../lib/food.js'
+import { estimateFood, scaleFood, kcalFromMacros } from '../../lib/foodEstimate.js'
+import { itemsTotals, saveBuiltMeal, searchIngredients, ING_BY_ID } from '../../lib/kitchen.js'
 import Icon from '../Icon.jsx'
 import { Button, Segmented } from '../ui.jsx'
 
@@ -104,11 +106,12 @@ function AddFood({ iso, meal: meal0, close }) {
       {!list.length && <div className="empty small">
         <div className="ico"><Icon name="magnifier" /></div>
         {q.trim() ? t('Nothing found for “{0}”.', q.trim()) : tab === 'fav' ? t('No favourites yet — tap the star next to a food.') : t('Nothing here yet.')}
+        {q.trim() && <><div style={{ height: 10 }} /><Button variant="primary" icon="sparkles" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Add “{0}” — the app works out the calories', q.trim())}</Button></>}
       </div>}
     </div>
     <div className="food-add-more">
       <Button variant="tinted" icon="bolt" onClick={() => quickSheet({ iso, meal })}>{t('Quick calories')}</Button>
-      <Button variant="tinted" icon="plus" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Create a food')}</Button>
+      <Button variant="tinted" icon="sparkles" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Your own food')}</Button>
     </div>
     <button className="card food-kitchen-link" onClick={() => { close(); nav('/kitchen?m=' + meal) }}>
       <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
@@ -202,33 +205,133 @@ function Quick({ iso, meal: meal0, close }) {
 }
 export const quickSheet = ({ iso, meal }) => ui().openSheet(close => <Quick iso={iso} meal={meal} close={close} />)
 
-// ---- your own food --------------------------------------------------------------------------
-function CustomFood({ existing, iso, meal, name: prefill, close }) {
+// ---- your own food ----------------------------------------------------------------------------
+// 7.2: you name it and say how much — the app works out the calories. Three ways:
+//   Smart        the closest food in the database (or the ingredients the name mentions), scaled
+//                to your grams; pick another match if it guessed wrong
+//   Ingredients  add what went into it, with grams — the totals add up exactly
+//   Manual       type the numbers from a label; leave calories empty and the macros give them
+const GRAM_CHIPS = [100, 150, 200, 250, 300, 500]
+const CONF = { high: ['var(--green)', 'Close match'], medium: ['var(--orange)', 'Good estimate'], low: ['var(--red)', 'Rough estimate'] }
+
+function EstimateCard({ est, St }) {
+  if (!est) return <div className="cf-est empty"><Icon name="sparkles" /><span>{t('Type a name — the app works out the calories.')}</span></div>
+  const [col, lbl] = CONF[est.confidence] || CONF.low
+  const tot = Math.max(1, est.p * 4 + est.c * 4 + est.f * 9)
+  const bar = (k, v, mul, cls) => <div className={'cf-mac ' + cls}><span>{t(k)}</span><i><b style={{ width: Math.round(v * mul / tot * 100) + '%' }} /></i><em>{n0(v)} {U('g')}</em></div>
+  return <div className="cf-est" style={{ '--cc': col }}>
+    <div className="cf-est-top">
+      <div className="cf-est-k"><b key={est.kcal}>{n0(est.kcal)}</b><span>{U('kcal')}</span></div>
+      <div className="cf-est-meta">
+        <span className="cf-conf"><i />{t(lbl)}</span>
+        <span className="small muted">{est.g > 0 ? t('for {0}', n0(est.g) + ' ' + U('g')) : t('1 serving')}</span>
+      </div>
+    </div>
+    <div className="cf-src small">
+      <Icon name={est.method === 'food' ? 'checkCircle' : est.method === 'ingredients' ? 'fork' : 'info'} />
+      <span>{est.method === 'food' ? t('Based on: {0}', foodName(St, est.match))
+        : est.method === 'ingredients' ? t('From ingredients: {0}', est.ings.map(x => t(x.name)).join(getLang() === 'ar' ? '، ' : ', '))
+          : t('No close match — estimated from a typical dish. Add grams or pick a match for a better number.')}</span>
+    </div>
+    <div className="cf-macs">{bar('Protein', est.p, 4, 'p')}{bar('Carbs', est.c, 4, 'c')}{bar('Fat', est.f, 9, 'f')}</div>
+  </div>
+}
+
+export function CustomFood({ existing, iso, meal, name: prefill, close }) {
+  const St = useStore(s => s.S)
   const [n, setN] = useState(existing ? existing.n : prefill || '')
+  const [mode, setMode] = useState(existing ? (Array.isArray(existing.items) ? 'ings' : existing.est ? 'auto' : 'manual') : 'auto')
+  const [g, setG] = useState(existing && existing.g > 0 ? String(existing.g) : '')
+  const [pick, setPick] = useState(null)            // { id, n } — another match you chose for this name
   const [v, setV] = useState(() => ({ kcal: existing ? existing.kcal : '', p: existing ? existing.p : '', c: existing ? existing.c : '', f: existing ? existing.f : '' }))
+  const [items, setItems] = useState(() => (existing && Array.isArray(existing.items) ? existing.items.map(i => ({ ...i })) : []))
+  const [iq, setIq] = useState('')
   const set = k => e => setV(o => ({ ...o, [k]: e.target.value }))
+  const grams = +g > 0 ? +g : null
+  const picked = pick && pick.n === n ? foodOf(St, pick.id) : null
+  const est = useMemo(() => {
+    if (mode !== 'auto') return null
+    if (picked) return { ...scaleFood(picked, grams), method: 'food', confidence: 'high', match: picked, ings: [], alts: [] }
+    return estimateFood(St, n, { grams, tr: t })
+  }, [mode, St, n, grams, picked])
+  const alts = est && est.method !== 'food' ? est.alts : est ? [est.match, ...est.alts].filter(Boolean) : []
+  const ingTot = itemsTotals(items)
+  const macroK = kcalFromMacros(v.p, v.c, v.f)
+  const ingHits = iq.trim() ? searchIngredients(iq, t).filter(x => !items.some(i => i.id === x.id)).slice(0, 8) : []
   const save = () => {
     let food
-    try { update(s => { food = saveCustomFood(s, { id: existing && existing.id, n, kcal: v.kcal, p: v.p, c: v.c, f: v.f }) }) } catch (e) { toast(t(e.key || 'Something went wrong')); return }
+    try {
+      update(s => {
+        if (mode === 'ings') food = saveBuiltMeal(s, { id: existing && existing.id, n, items, servings: 1 })
+        else if (mode === 'auto') {
+          if (!est) throw Object.assign(new Error('Give it a name'), { key: 'Give it a name' })
+          food = saveCustomFood(s, { id: existing && existing.id, n, kcal: est.kcal, p: est.p, c: est.c, f: est.f, g: est.g, est: est.match ? est.match.id : est.method })
+        } else food = saveCustomFood(s, { id: existing && existing.id, n, kcal: v.kcal === '' || v.kcal == null ? macroK : v.kcal, p: v.p, c: v.c, f: v.f, g: grams || 0 })
+      })
+    } catch (e) { toast(t(e.key || 'Something went wrong')); return }
     close()
     toast(existing ? t('Saved') : t('“{0}” created', food.n))
     if (!existing && iso) amountSheet({ food, iso, meal })
   }
   const del = () => { update(s => { deleteCustomFood(s, existing.id) }); close(); toast(t('Removed {0}', existing.n)) }
-  return <>
-    <h3>{existing ? t('Edit your food') : t('Create a food')}</h3>
-    <div className="muted small" style={{ marginBottom: 12 }}>{t('Per serving — it shows up in search and under My foods.')}</div>
-    <input className="input" maxLength={60} placeholder={t('Food name')} value={n} onChange={e => setN(e.target.value)} />
-    <div className="food-form">
-      <label><span>{t('Calories')}</span><input className="input" type="number" inputMode="numeric" min="1" max="5000" value={v.kcal} onChange={set('kcal')} placeholder="0" /></label>
-      <label><span>{t('Protein')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.p} onChange={set('p')} placeholder="0" /></label>
-      <label><span>{t('Carbs')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.c} onChange={set('c')} placeholder="0" /></label>
-      <label><span>{t('Fat')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.f} onChange={set('f')} placeholder="0" /></label>
-    </div>
+  const setIg = (id, val) => setItems(l => l.map(i => (i.id === id ? { ...i, g: Math.max(0, Math.min(2000, val)) } : i)))
+  return <div className="cf">
+    <h3>{existing ? t('Edit your food') : t('Your own food')}</h3>
+    <div className="muted small" style={{ marginBottom: 10 }}>{t('Write what you ate and how much — the app works out the calories.')}</div>
+    <input className="input cf-name" maxLength={60} placeholder={t('Food name — e.g. kubba with rice')} value={n} onChange={e => setN(e.target.value)} aria-label={t('Food name')} />
+    <Segmented options={[{ value: 'auto', label: t('Smart') }, { value: 'ings', label: t('Ingredients') }, { value: 'manual', label: t('Manual') }]} value={mode} onChange={setMode} />
+    {mode !== 'ings' && <div className="cf-grams">
+      <label><span>{t('Amount')}</span>
+        <span className="cf-g"><input className="input" type="number" inputMode="numeric" min="0" max="5000" value={g} onChange={e => setG(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} placeholder={t('1 serving')} /><em>{U('g')}</em></span>
+      </label>
+      <div className="cf-chips">
+        <button className={'cf-chip' + (!grams ? ' on' : '')} onClick={() => setG('')}>{t('1 serving')}</button>
+        {GRAM_CHIPS.map(x => <button key={x} className={'cf-chip' + (grams === x ? ' on' : '')} onClick={() => setG(String(x))}>{n0(x)} {U('g')}</button>)}
+      </div>
+    </div>}
+    {mode === 'auto' && <>
+      <EstimateCard est={est} St={St} />
+      {alts.length > 1 && <>
+        <div className="lbl2">{t('Not right? Pick the closest:')}</div>
+        <div className="cf-alts">{alts.slice(0, 5).map(x => <button key={x.id} className={'cf-alt' + (est && est.match && est.match.id === x.id ? ' on' : '')} onClick={() => setPick({ id: x.id, n })}>
+          <FoodBubble food={x} size={26} /><span>{foodName(St, x)}</span><em>{n0(scaleFood(x, grams).kcal)}</em>
+        </button>)}</div>
+      </>}
+    </>}
+    {mode === 'ings' && <div className="cf-ings">
+      <div className="cf-est-k sm"><b key={ingTot.kcal}>{n0(ingTot.kcal)}</b><span>{U('kcal')}</span><small className="muted">{t('for {0}', n0(ingTot.g) + ' ' + U('g'))} · {t('Protein')} {n0(ingTot.p)} · {t('Carbs')} {n0(ingTot.c)} · {t('Fat')} {n0(ingTot.f)}</small></div>
+      {items.length > 0 && <div className="list kit-items">{items.map(i => {
+        const x = ING_BY_ID[i.id]
+        if (!x) return null
+        const step = x.unit === 'g' ? 25 : x.g
+        return <div key={i.id} className="item kit-item">
+          <div className="grow"><div className="tt">{t(x.name)}</div><div className="ss">{n0(x.kcal * i.g / 100)} {U('kcal')}</div></div>
+          <div className="kit-svc">
+            <button className="iconbtn sm" aria-label={t('Less')} onClick={() => setIg(i.id, i.g - step)}><Icon name="minus" /></button>
+            <input className="kit-g" inputMode="numeric" value={i.g} onChange={e => setIg(i.id, +e.target.value.replace(/\D/g, '') || 0)} aria-label={t(x.name)} />
+            <span className="small muted">{U('g')}</span>
+            <button className="iconbtn sm" aria-label={t('More')} onClick={() => setIg(i.id, i.g + step)}><Icon name="plus" /></button>
+          </div>
+          <button className="iconbtn sm" aria-label={t('Remove')} onClick={() => setItems(l => l.filter(y => y.id !== i.id))}><Icon name="xmark" /></button>
+        </div>
+      })}</div>}
+      <label className="food-search"><Icon name="magnifier" /><input className="input" type="search" value={iq} onChange={e => setIq(e.target.value)} placeholder={t('Search ingredients')} aria-label={t('Search ingredients')} /></label>
+      {ingHits.length > 0 && <div className="cf-alts">{ingHits.map(x => <button key={x.id} className="cf-alt" onClick={() => { setItems(l => [...l, { id: x.id, g: x.unit === 'g' ? 100 : x.g }]); setIq('') }}>
+        <Icon name="plus" /><span>{t(x.name)}</span><em>{n0(x.kcal)}/100 {U('g')}</em></button>)}</div>}
+    </div>}
+    {mode === 'manual' && <>
+      <div className="food-form">
+        <label><span>{t('Calories')}</span><input className="input" type="number" inputMode="numeric" min="1" max="5000" value={v.kcal} onChange={set('kcal')} placeholder={macroK > 0 ? String(macroK) : '0'} /></label>
+        <label><span>{t('Protein')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.p} onChange={set('p')} placeholder="0" /></label>
+        <label><span>{t('Carbs')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.c} onChange={set('c')} placeholder="0" /></label>
+        <label><span>{t('Fat')} ({U('g')})</span><input className="input" type="number" inputMode="decimal" min="0" value={v.f} onChange={set('f')} placeholder="0" /></label>
+      </div>
+      {macroK > 0 && (v.kcal === '' || v.kcal == null) && <div className="small cf-hint"><Icon name="calculator" />{t('Calories from the macros: {0} kcal', n0(macroK))}</div>}
+    </>}
     <div style={{ height: 14 }} />
     <Button variant="primary" icon="check" onClick={save}>{existing ? t('Save') : t('Create and add')}</Button>
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={del}>{t('Delete food')}</Button></>}
-  </>
+  </div>
 }
 export const customFoodSheet = (existing, opts = {}) => ui().openSheet(close => <CustomFood existing={existing} {...opts} close={close} />)
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 7.2 — a hairline between the collapsed notification's sections. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#26FFFFFF" />
+    <corners android:radius="1dp" />
+</shape>

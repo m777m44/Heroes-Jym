@@ -84,6 +84,14 @@ export function serviceStrings() {   // (callers may still pass S — unused sin
     foodLabel: t('Food'),
     foodLeft: t('{0} kcal left', '{n}'),
     foodOver: t('{0} kcal over', '{n}'),
+    // 7.2 — the redesigned notification: macros, net kcal, units in the collapsed view
+    ml: U('ml'),
+    g: U('g'),
+    protein: t('Protein'),
+    carbs: t('Carbs'),
+    fat: t('Fat'),
+    net: t('net kcal'),
+    workoutNow: t('Workout'),
     // 7.0 — the Today widget
     wToday: t('Today'),
     wWater: t('Water'),
@@ -136,6 +144,8 @@ export function serviceConfig(S, weightKg) {
     strings: serviceStrings(S),
     // 5.0: today's food log for the notification (kcal eaten / goal)
     food: S && S.foodOn !== false ? foodNative(S, todayISO()) : null,
+    // 7.2: the running workout — the notification's header shows its timer
+    workout: S && S.active && S.active.start > 0 ? { start: S.active.start } : null,
   }
 }
 

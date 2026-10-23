@@ -416,6 +416,31 @@ final class StepStore {
         return new int[] { eaten, goal };
     }
 
+    /**
+     * 7.2: today's macros for the notification — { protein, carbs, fat, proteinGoal, carbsGoal,
+     * fatGoal, workoutKcal } in g / kcal, or null when the food log is off. Eaten values are 0
+     * on a new day until the app sends fresh numbers.
+     */
+    synchronized int[] foodMacros() {
+        JSONObject f = config.optJSONObject("food");
+        if (f == null || f.optInt("goal", 0) <= 0) return null;
+        boolean today = f.optString("day", "").equals(today());
+        return new int[] {
+            today ? Math.max(0, f.optInt("p", 0)) : 0, today ? Math.max(0, f.optInt("c", 0)) : 0, today ? Math.max(0, f.optInt("f", 0)) : 0,
+            Math.max(0, f.optInt("pg", 0)), Math.max(0, f.optInt("cg", 0)), Math.max(0, f.optInt("fg", 0)),
+            today ? Math.max(0, f.optInt("wk", 0)) : 0,
+        };
+    }
+
+    /** 7.2: when the running workout started (epoch ms), or 0 — none, or older than 4 hours. */
+    synchronized long workoutStart() {
+        JSONObject w = config.optJSONObject("workout");
+        if (w == null) return 0;
+        long st = w.optLong("start", 0);
+        long now = System.currentTimeMillis();
+        return st > 0 && now - st < 4L * 3600 * 1000 && st - now < 60_000 ? st : 0;
+    }
+
     synchronized String clockZone() {
         // 2.9: always the phone's own zone. Configs saved by older versions may still carry a
         // fixed city zone; it is ignored so the clock never shows a city's time.
