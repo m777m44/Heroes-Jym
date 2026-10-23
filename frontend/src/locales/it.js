@@ -2922,4 +2922,5 @@ export default {
   "Close match": "Corrispondenza vicina",
   "Good estimate": "Buona stima",
   "Rough estimate": "Stima approssimativa",
+  "1 new PR": "1 nuovo record",
 }

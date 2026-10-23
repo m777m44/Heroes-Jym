@@ -66,3 +66,18 @@ describe('food estimate (7.2)', () => {
     expect(estimateFood({}, '  ')).toBe(null)
   })
 })
+
+describe('ingredientsIn (7.2)', async () => {
+  const { ingredientsIn } = await import('./foodEstimate.js')
+  it('finds the kitchen ingredients a name mentions', async () => {
+    const ids = ingredientsIn('rice with chicken and tomato').map(x => x.id)
+    expect(ids.length).toBeGreaterThanOrEqual(2)
+    expect(ids.some(i => /rice/.test(i))).toBe(true)
+    expect(ids.some(i => /chicken/.test(i))).toBe(true)
+    expect(ids.length).toBeLessThanOrEqual(3)            // one per word — no "chicken breast" twin
+    expect(ingredientsIn('')).toEqual([])
+    const { plateShare } = await import('./foodEstimate.js')
+    expect(plateShare(3)).toBe(120)
+    expect(plateShare(5)).toBe(80)
+  })
+})

@@ -83,6 +83,28 @@ const GUESS = [
 ]
 export const DEFAULT_DENSITY = 150
 
+/** The kitchen ingredients a name mentions ("رز ودجاج وطماطة" → rice, chicken, tomato). */
+export function ingredientsIn(name, tr = v => v) {
+  const Q = words(name)
+  if (!Q.length) return []
+  // one ingredient per word you wrote — the plainest one ("chicken" → Chicken, not Chicken breast)
+  const out = []
+  for (const q of Q) {
+    let best = null, bestLen = 1e9
+    for (const x of INGREDIENTS) {
+      if (out.includes(x)) continue
+      const W = itemWords(x, tr).filter(H => hit(q, H))
+      if (!W.length) continue
+      const len = Math.min(...W.map(H => H.length))
+      if (len < bestLen) { best = x; bestLen = len }
+    }
+    if (best) out.push(best)
+  }
+  return out
+}
+/** Grams per ingredient when a plate of `n` ingredients is split evenly (the estimator's rule). */
+export const plateShare = n => (n > 0 ? Math.round(Math.min(400, 120 * n) / n / 5) * 5 : 0)
+
 /**
  * The calories of a food you name. `grams` is how much you ate (empty → one usual serving).
  * Picks the best database match; else adds up the kitchen ingredients the name mentions; else
@@ -97,15 +119,14 @@ export function estimateFood(S, name, { grams = null, tr = v => v } = {}) {
     return { ...v, method: 'food', confidence: best.score >= 0.85 ? 'high' : 'medium', match: best.food, ings: [], alts: ranked.slice(1, 5).map(x => x.food) }
   }
   // ingredients the name mentions ("رز ودجاج وطماطة") — each counts equally toward the weight
-  const Q = words(name)
-  const ings = Q.length ? INGREDIENTS.filter(x => itemWords(x, tr).some(H => Q.some(q => hit(q, H)))) : []
+  const ings = ingredientsIn(name, tr)
   if (ings.length) {
     const w = g || Math.min(400, 120 * ings.length)
     const share = w / ings.length / 100
     const sum = k => ings.reduce((n, x) => n + x[k] * share, 0)
     return { kcal: r0(sum('kcal')), p: r1(sum('p')), c: r1(sum('c')), f: r1(sum('f')), g: r0(w), method: 'ingredients', confidence: 'medium', match: null, ings, alts: ranked.map(x => x.food).slice(0, 4) }
   }
-  if (!Q.length) return null
+  if (!words(name).length) return null
   const n = normalize(name)
   const d = (GUESS.find(([re]) => re.test(n)) || [null, DEFAULT_DENSITY])[1]
   const w = g || 200

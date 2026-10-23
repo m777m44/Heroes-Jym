@@ -2922,4 +2922,5 @@ export default {
   "Close match": "Точное совпадение",
   "Good estimate": "Хорошая оценка",
   "Rough estimate": "Примерная оценка",
+  "1 new PR": "1 новый рекорд",
 }

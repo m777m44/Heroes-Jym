@@ -2999,4 +2999,5 @@ export default {
   "Close match": "تطابق قريب",
   "Good estimate": "تقدير جيد",
   "Rough estimate": "تقدير تقريبي",
+  "1 new PR": "رقم قياسي جديد",
 }

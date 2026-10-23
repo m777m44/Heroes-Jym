@@ -2940,4 +2940,5 @@ export default {
   "Close match": "Genauer Treffer",
   "Good estimate": "Gute Schätzung",
   "Rough estimate": "Grobe Schätzung",
+  "1 new PR": "1 neuer Bestwert",
 }

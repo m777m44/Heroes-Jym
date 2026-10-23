@@ -958,7 +958,7 @@ function FinishSummary({ w, prs, e1prs = [], close }) {
       <span className="fin-badge"><Icon name="trophy" /></span>
     </div>
     <h3 className="fin-title">{t('Workout complete!')}</h3>
-    <div className="fin-sub">{routineLabel(w.name)}{prs.length ? ' · ' + t('{0} new PRs', prs.length) : ''}</div>
+    <div className="fin-sub">{routineLabel(w.name)}{prs.length ? ' · ' + (prs.length === 1 ? t('1 new PR') : t('{0} new PRs', prs.length)) : ''}</div>
     <div className="fin-tiles">
       {tiles.map((x, i) => <div key={x.k} className={'fin-tile ' + x.k} style={{ '--i': i }}>
         <span className="fin-tile-i"><Icon name={x.icon} /></span>

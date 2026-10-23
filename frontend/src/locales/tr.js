@@ -2922,4 +2922,5 @@ export default {
   "Close match": "Yakın eşleşme",
   "Good estimate": "İyi tahmin",
   "Rough estimate": "Kaba tahmin",
+  "1 new PR": "1 yeni rekor",
 }

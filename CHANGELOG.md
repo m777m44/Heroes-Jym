@@ -3,6 +3,47 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v7.2.0 — 2026-10-23
+
+**A timer for every workout with a 3 · 2 · 1 countdown, a finish with a medium vibration and a
+celebration fanfare, 131 Iraqi dishes and fruits, your own foods with calories worked out for you,
+and a redesigned notification with food calories in both its small and big views.**
+*مؤقت لكل تمرين مع عدّ تنازلي ٣ · ٢ · ١، ونهاية باهتزاز متوسط ولحن احتفالي، و١٣١ أكلة عراقية وفاكهة، وأكلاتك الخاصة بسعرات يحسبها التطبيق، وإشعار بتصميم جديد يعرض سعرات الأكل في الوضعين الصغير والكبير.*
+
+### ⏱ Workout timer
+- **Starting any workout** shows a full-screen **3 · 2 · 1 · GO** with a ring, a soft tick and a
+  light tap each second (tap to skip; can be turned off in Settings).
+- The workout screen opens with a **live clock card**: elapsed time, a sets ring, sets done and
+  calories burned so far. The centre tab shows the running time too.
+- **The finish**: a professional **medium-strength vibration** (three firm pulses) and a short,
+  elegant **celebration fanfare**, the full-screen celebration, then an animated summary —
+  duration, calories, volume, sets, new records and the muscles you trained.
+
+### 🍲 131 new foods — Iraqi dishes and fruits (313 in all)
+- Dolma, every kind of kubba, tashreeb, pacha, masgouf, quzi, tepsi, maqluba, Iraqi breads,
+  kahi with geymar and date syrup, kleicha, zalabia, luqaimat, Iraqi tea and drinks…
+- Fruits: **pomegranate** (half, whole, seeds, juice), mulberries, quince, Barhi and other dates,
+  figs, apricots, plums, citrus, melons and more — each with calories, protein, carbs and fat.
+
+### ✨ Your own food — the app works out the calories
+- Type what you ate and how much: **Smart** finds the closest food (Arabic or English) and scales
+  it to your grams, or adds up the ingredients the name mentions, with a confidence badge and
+  "pick the closest" if it is not right.
+- **Ingredients** starts from what the name mentions; **Manual** takes calories or works them out
+  from protein, carbs and fat. Then it goes straight into your meal.
+
+### 🔔 The notification, redesigned
+- **Collapsed**: three rings side by side — steps, water and **food calories** (orange when over
+  the goal) — each opening its screen, plus a quick water button.
+- **Expanded**: steps, water and food cards, a **protein / carbs / fat strip** with bars, and
+  **net calories** (eaten − burned walking − burned training).
+- During a workout the header shows a **live workout timer** in orange.
+
+### 💎 Polish
+- Springy, smooth buttons with a soft sheen on the main ones, springy switches and segmented
+  controls, the active tab pops, and the start button pulses while a walk records — all calmer
+  with Reduce motion on.
+
 ## v7.1.0 — 2026-10-23
 
 **Ideal body for every age, the three numbers that start it all (age → height → weight), your

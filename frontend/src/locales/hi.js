@@ -2922,4 +2922,5 @@ export default {
   "Close match": "करीबी मेल",
   "Good estimate": "अच्छा अनुमान",
   "Rough estimate": "मोटा अनुमान",
+  "1 new PR": "1 नया रिकॉर्ड",
 }

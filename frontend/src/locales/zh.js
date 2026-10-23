@@ -2922,4 +2922,5 @@ export default {
   "Close match": "高度匹配",
   "Good estimate": "较好估算",
   "Rough estimate": "粗略估算",
+  "1 new PR": "1 项新纪录",
 }

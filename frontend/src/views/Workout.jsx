@@ -151,8 +151,6 @@ function ActiveWorkout() {
   const unitIdx = units.findIndex(u => u === unit)
   const isSuperset = unit.length > 1
 
-  const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  const done = setsDoneActive(A)
 
   const mutEntry = (idx, fn) => update(s => { fn(s.active.entries[idx]) }, true)
   // Clearing an optional field drops the key rather than storing null, so a set only carries
@@ -256,11 +254,10 @@ function ActiveWorkout() {
   return <div className="narrow">
     <div className="hdr">
       <button className="iconbtn" aria-label={t('Discard')} onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}><Icon name="xmark" /></button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{routineLabel(A.name)}</div><div className="sub">{t('{0} sets', done + '/' + total)}</div></div>
+      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 600 }}>{routineLabel(A.name)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} aria-label={t('Finish')} onClick={finishWorkout}><Icon name="check" /></button>
     </div>
     <WorkoutClock A={A} />
-    <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
     {A.entries.length ? <>
       <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>

@@ -2922,4 +2922,5 @@ export default {
   "Close match": "거의 일치",
   "Good estimate": "좋은 추정",
   "Rough estimate": "대략적인 추정",
+  "1 new PR": "새 기록 1개",
 }

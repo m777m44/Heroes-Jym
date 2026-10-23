@@ -2922,4 +2922,5 @@ export default {
   "Close match": "Bliskie dopasowanie",
   "Good estimate": "Dobre oszacowanie",
   "Rough estimate": "Przybliżone oszacowanie",
+  "1 new PR": "1 nowy rekord",
 }

@@ -16,7 +16,7 @@ import {
   MEALS, QTY_STEP, MAX_QTY, MIN_GOAL, MAX_GOAL, clampQty, foodName, foodOf, searchFoods, recentFoods, makeEntry, addEntry,
   editEntry, removeEntry, toggleFav, saveCustomFood, deleteCustomFood, servingText, foodGoalOf, dayTotals, mealAt,
 } from '../../lib/food.js'
-import { estimateFood, scaleFood, kcalFromMacros } from '../../lib/foodEstimate.js'
+import { estimateFood, scaleFood, kcalFromMacros, ingredientsIn, plateShare } from '../../lib/foodEstimate.js'
 import { itemsTotals, saveBuiltMeal, searchIngredients, ING_BY_ID } from '../../lib/kitchen.js'
 import Icon from '../Icon.jsx'
 import { Button, Segmented } from '../ui.jsx'
@@ -279,7 +279,11 @@ export function CustomFood({ existing, iso, meal, name: prefill, close }) {
     <h3>{existing ? t('Edit your food') : t('Your own food')}</h3>
     <div className="muted small" style={{ marginBottom: 10 }}>{t('Write what you ate and how much — the app works out the calories.')}</div>
     <input className="input cf-name" maxLength={60} placeholder={t('Food name — e.g. kubba with rice')} value={n} onChange={e => setN(e.target.value)} aria-label={t('Food name')} />
-    <Segmented options={[{ value: 'auto', label: t('Smart') }, { value: 'ings', label: t('Ingredients') }, { value: 'manual', label: t('Manual') }]} value={mode} onChange={setMode} />
+    <Segmented options={[{ value: 'auto', label: t('Smart') }, { value: 'ings', label: t('Ingredients') }, { value: 'manual', label: t('Manual') }]} value={mode} onChange={m => {
+      // switching to Ingredients with an empty list → start from what the name mentions
+      if (m === 'ings' && !items.length) { const l = ingredientsIn(n, t).slice(0, 6); setItems(l.map(x => ({ id: x.id, g: plateShare(l.length) }))) }
+      setMode(m)
+    }} />
     {mode !== 'ings' && <div className="cf-grams">
       <label><span>{t('Amount')}</span>
         <span className="cf-g"><input className="input" type="number" inputMode="numeric" min="0" max="5000" value={g} onChange={e => setG(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} placeholder={t('1 serving')} /><em>{U('g')}</em></span>
@@ -329,7 +333,7 @@ export function CustomFood({ existing, iso, meal, name: prefill, close }) {
       {macroK > 0 && (v.kcal === '' || v.kcal == null) && <div className="small cf-hint"><Icon name="calculator" />{t('Calories from the macros: {0} kcal', n0(macroK))}</div>}
     </>}
     <div style={{ height: 14 }} />
-    <Button variant="primary" icon="check" onClick={save}>{existing ? t('Save') : t('Create and add')}</Button>
+    <Button variant="primary" icon="check" onClick={save} disabled={!n.trim() || (mode === 'ings' && !items.length) || (mode === 'auto' && !est)}>{existing ? t('Save') : t('Create and add')}</Button>
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={del}>{t('Delete food')}</Button></>}
   </div>
 }
