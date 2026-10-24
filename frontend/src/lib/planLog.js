@@ -1,10 +1,11 @@
-// Logging a block of the schedule: its planned dishes, drinks, soft drinks and nuts go into that
+// Logging a block of the schedule: its planned dishes, foods, drinks, soft drinks and nuts go into that
 // day's food log with their exact calories, the water into today's water log, and the block is
 // marked done. Used by the schedule screen and by the "Done ✓" button on a reminder (applied when
 // the app opens again — see planReminders.js).
 import { useStore } from '../store/useStore.js'
 import { todayISO } from './format.js'
-import { addEntry } from './food.js'
+import { addEntry, makeEntry } from './food.js'
+import { FOOD_BY_ID } from './foodDb.js'
 import { RECIPE_BY_ID, recipeEntry } from './kitchen.js'
 import { drinkOf, drinkEntry, noteDrink, drinkNutrition } from './drinks.js'
 import { SODA_BY_ID, sodaEntry, sodaNutrition, countsAsWater } from './sodas.js'
@@ -31,6 +32,8 @@ export function completeBlock(b, iso) {
         if (countsAsWater(x)) ml += sodaNutrition(x, e.ml, e.q).ml * 0.9
       }
       if (it.t === 'n' && NUT_BY_ID[it.id]) { const e = nutEntry(NUT_BY_ID[it.id], { g: (it.g || 30) * (it.q || 1), form: it.fm, meal }); addEntry(s, iso, e); kcal += e.kcal }
+      // 11.0: foods from the database (eggs, bread, rice and stew…) — per serving, like the food log
+      if (it.t === 'f' && FOOD_BY_ID[it.id]) { const e = makeEntry(FOOD_BY_ID[it.id], { q: it.q || 1, m: meal }); addEntry(s, iso, e); kcal += e.kcal * e.q }
     }
     markBlock(s, iso, b.id, 'done')
   })

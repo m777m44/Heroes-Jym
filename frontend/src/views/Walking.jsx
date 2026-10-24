@@ -23,6 +23,7 @@ import CommitNumber from '../components/CommitNumber.jsx'
 import CelebrationSection from '../components/pedometer/CelebrationSection.jsx'
 import { stepResetSheet } from '../components/pedometer/StepReset.jsx'
 import { WalkSession, Achievements } from '../components/pedometer/WalkExtras.jsx'
+import JourneyCard, { StepMonth } from '../components/pedometer/JourneyCard.jsx'
 
 const fmtInt = n => Math.round(n).toLocaleString(dateLocale())
 
@@ -196,6 +197,10 @@ export default function Walking() {
       </div>
       {best && <div className="dim small" style={{ marginTop: 8 }}>{t('Best day: {0} steps on {1}', fmtInt(best.n), fmtDate(best.d, true))}</div>}
     </div>
+
+    {/* 11.0: all your steps as a walk across Iraq, and the last five weeks at a glance */}
+    <JourneyCard S={S} />
+    <StepMonth S={S} today={today} />
 
     <Achievements S={S} today={today} />
 

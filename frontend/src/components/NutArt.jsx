@@ -4,6 +4,10 @@
 // chia, flax, a roasted chickpea, kerzat (a little of everything) and dried coconut.
 // Roasted pieces are a shade darker, salted ones sparkle with salt, `shell` shows them in the shell.
 // `pile` draws three pieces in a small bowl (the hero); `live` makes them bob and the salt twinkle.
+// 11.0 — melon seeds, lemon pistachios, an acorn in its cap, popcorn, a corn kernel, lupini, crunchy
+// peanuts, royal and seed kerzat; dates (each kind its own colour), raisins, figs, apricots, a sheet
+// of qamar al-din, mulberries, prunes, banana chips; sugared almonds and chickpeas, chocolate nuts,
+// simsimiya and jowziya bars and a date stuffed with an almond. Shapes may take the item's colour.
 import { useId } from 'react'
 
 function mix(hex, to, k) {
@@ -52,23 +56,62 @@ const PIECE = {
   chickpea: c => <><path d="M0 -10C6 -10 10 -5 10 1C10 7 5 10 0 10S-10 7-10 1C-10-3-8-6-6-7.4C-6-9.4-4-11-2-10.6C-1.4-10.2-.8-10 0-10Z" fill={c('#e3b260')} stroke={c('#b98634')} strokeWidth=".9" /><path d="M-4 -6C-1 -2-1 3-4 7" fill="none" stroke={c('#b98634')} strokeWidth=".8" opacity=".7" /><ellipse cx="3" cy="-3.6" rx="2.6" ry="1.6" fill="#fff" opacity=".35" /></>,
   coconut: c => <><path d="M-13 -1A13 13 0 0 0 13 -1Z" fill={c('#7a4a2a')} /><path d="M-11 -1A11 11 0 0 0 11 -1Z" fill="#fbf8f1" /><path d="M-8 -1A8 8 0 0 0 8 -1Z" fill={c('#efe7d6')} /><path d="M-13 -1H13" stroke={c('#5a3219')} strokeWidth="1.2" /></>,
 }
-PIECE.kerzat = PIECE.peanut
+// 11.0 — `col` is the item's own colour (dates, raisins, sugared sweets come in several)
+const ds = (col, k) => mix(col, 'black', k)
+Object.assign(PIECE, {
+  melon: (c, shell) => shell
+    ? <><path d="M0 -11C5 -10 7.4 -4 7.4 1.6C7.4 7.6 4 11 0 11S-7.4 7.6-7.4 1.6C-7.4-4-5-10 0-11Z" fill={c('#f1e8cc')} stroke={c('#c9b98f')} strokeWidth=".9" /><path d="M0 -8.6C3 -7.8 5 -3 5 1.6C5 6 2.8 8.6 0 8.6" fill="none" stroke={c('#ddd0aa')} strokeWidth=".8" /></>
+    : <ellipse rx="5" ry="8" fill={c('#efe3c4')} stroke={c('#c4b48a')} strokeWidth=".8" />,
+  acorn: c => <><path d="M-7.6 -1.6C-7.6 6-4 11 0 11S7.6 6 7.6-1.6Z" fill={c('#b5793f')} stroke={c('#80501f')} strokeWidth=".9" /><path d="M-9.4 -1.4C-9.4-6.4-5-9.6 0-9.6S9.4-6.4 9.4-1.4C6 0-6 0-9.4-1.4Z" fill={c('#7a5a34')} stroke={c('#4f3a1f')} strokeWidth=".9" /><path d="M-6 -5.2h12M-8 -3h16" stroke={c('#5d4426')} strokeWidth=".7" /><path d="M0 -9.6V-12.6" stroke={c('#4f3a1f')} strokeWidth="1.4" strokeLinecap="round" /><ellipse cx="-3" cy="4" rx="1.6" ry="3" fill="#fff" opacity=".22" /></>,
+  popcorn: c => <><g fill={c('#fff8e6')} stroke={c('#e3cf9c')} strokeWidth=".8"><circle cx="-4.6" cy="-2" r="5.4" /><circle cx="4" cy="-4" r="5" /><circle cx="5" cy="3.6" r="4.6" /><circle cx="-3" cy="5" r="4.8" /><circle cx=".4" cy="0" r="4.6" /></g><path d="M-2 -1.4C-1 1.4 1.4 2.4 3.6 1.6" fill="none" stroke={c('#f0b44a')} strokeWidth="1.2" strokeLinecap="round" /></>,
+  corn: c => <><path d="M-6 -9C-2 -11 2 -11 6 -9C8 -4 6.6 4 3.4 9.4C1.6 11.4-1.6 11.4-3.4 9.4C-6.6 4-8-4-6-9Z" fill={c('#f2b33d')} stroke={c('#c4841b')} strokeWidth=".9" /><path d="M-4 -7.6C-1.4 -8.6 1.4 -8.6 4 -7.6C4 -4 1.6 -2 0 -2S-4 -4-4 -7.6Z" fill={c('#fbe3a0')} /><ellipse cx="-2.4" cy="2" rx="1.2" ry="3" fill="#fff" opacity=".3" /></>,
+  lupin: c => <><ellipse rx="10" ry="8.6" fill={c('#f4d35e')} stroke={c('#c9a32e')} strokeWidth=".9" /><path d="M6.6 -2.6C8.6 -1.6 8.6 1.6 6.6 2.6" fill="none" stroke={c('#b08a1e')} strokeWidth="1.1" /><ellipse cx="-3" cy="-3" rx="3.4" ry="1.8" fill="#fff" opacity=".4" /></>,
+  crunchy: c => <><circle r="9" fill={c('#d98e3f')} stroke={c('#a9651f')} strokeWidth=".9" /><g fill={c('#b8702a')}>{[[-4, -1], [2, -4], [4, 2], [-1, 4], [-5, 3.6], [5.4, -1.4], [0, 0]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=".9" />)}</g><ellipse cx="-3" cy="-3.6" rx="2.6" ry="1.6" fill="#fff" opacity=".35" /></>,
+  date: (c, _s, col = '#b5772f') => <><path d="M0 -12C5 -12 7 -6 7 0C7 7 4.6 12 0 12S-7 7-7 0C-7-6-5-12 0-12Z" fill={c(col)} stroke={c(ds(col, 0.32))} strokeWidth=".9" /><path d="M-3 -7C-4 -2-4 3-2.6 8M2.6 -8C3.6 -3 3.4 2 2.2 7" fill="none" stroke={c(ds(col, 0.36))} strokeWidth=".7" opacity=".75" /><ellipse cx="-2.6" cy="-5" rx="1.6" ry="3.4" fill="#fff" opacity=".3" /></>,
+  raisin: (c, _s, col = '#4a2a3a') => <><path d="M-6 -4C-4 -8 3 -8.6 6 -5C8.6 -2 8 4 5 6.4C2 8.6-3.6 8.4-6 5.4C-8 3-8 -1.4-6 -4Z" fill={c(col)} stroke={c(ds(col, 0.3))} strokeWidth=".8" /><path d="M-3.6 -3C-1 -1.6 1 -1.8 3.6 -3.4M-4 2C-1.6 3.4 1.6 3.4 4.4 1.6" fill="none" stroke={c(ds(col, 0.38))} strokeWidth=".7" /><ellipse cx="-2.4" cy="-4.2" rx="1.6" ry=".9" fill="#fff" opacity=".35" /></>,
+  fig: c => <><path d="M0 -11C2 -11 2.6 -9 2.4 -7.6C7 -6 10 -2 10 2.6C10 8 5.6 11 0 11S-10 8-10 2.6C-10-2-7-6-2.4-7.6C-2.6-9-2-11 0-11Z" fill={c('#8a6a48')} stroke={c('#5c4228')} strokeWidth=".9" /><g fill={c('#e9d3a8')}>{[[-4, 2], [-1, 5], [3, 3], [5, -1], [0, 0], [-5, -2], [2, 7]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=".7" />)}</g><ellipse cx="-4" cy="-3" rx="2" ry="1.2" fill="#fff" opacity=".22" /></>,
+  apricot: c => <><path d="M0 -10C6 -10 10.6 -5.6 10.6 0S6 10 0 10S-10.6 5.6-10.6 0S-6 -10 0 -10Z" fill={c('#f29f3d')} stroke={c('#c76f15')} strokeWidth=".9" /><path d="M0 -10C-2.4 -4-2.4 4 0 10" fill="none" stroke={c('#c76f15')} strokeWidth=".9" /><ellipse cx="4" cy="-4" rx="2.6" ry="1.6" fill="#fff" opacity=".32" /></>,
+  sheet: c => <><path d="M-11 -7L9 -9.4L11 7L-9 9.4Z" fill={c('#f08a24')} stroke={c('#b85e0c')} strokeWidth=".9" /><path d="M-11 -7L-3.6 -1.4L-9 9.4Z" fill={c('#d9731a')} /><path d="M-1 -5.6L7 -6.6" stroke="#fff" strokeOpacity=".4" strokeWidth="1.2" strokeLinecap="round" /></>,
+  mulberry: (c, _s, col = '#d8c7a2') => <><path d="M0 -12.6V-9.6" stroke={c('#7d8f3a')} strokeWidth="1.4" strokeLinecap="round" />{[[0, -7], [-3, -4.4], [3, -4.4], [-4, -0.6], [0, -1.6], [4, -0.6], [-3.4, 3.2], [1, 2.6], [3.6, 3.4], [-1, 6.4], [2, 6.6]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.5" fill={c(col)} stroke={c(ds(col, 0.25))} strokeWidth=".5" />)}</>,
+  prune: c => <><path d="M0 -10.6C6.4 -10.6 9.6 -5 9.6 0.6C9.6 6.6 5.4 10.6 0 10.6S-9.6 6.6-9.6 0.6C-9.6-5-6.4-10.6 0-10.6Z" fill={c('#3a1f2b')} stroke={c('#1f0f17')} strokeWidth=".9" /><path d="M-4 -5C-5 0-4 4-1.6 7M3 -6C4 -1 3.6 3 2 6" fill="none" stroke="#000" strokeOpacity=".35" strokeWidth=".8" /><ellipse cx="-3" cy="-5" rx="2" ry="3" fill="#fff" opacity=".2" /></>,
+  chip: c => <><circle r="9.6" fill={c('#f3d98a')} stroke={c('#c9a24a')} strokeWidth=".9" /><circle r="3.2" fill="none" stroke={c('#b98a3a')} strokeWidth="1" strokeDasharray="1 1.4" /><path d="M-6 -5C-3 -7.4 3 -7.4 6 -5" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1.2" strokeLinecap="round" /></>,
+  sugared: (c, _s, col = '#f6eaf2') => <><ellipse rx="10.4" ry="7.4" fill={c(col)} stroke={c(ds(col, 0.18))} strokeWidth=".9" /><ellipse cx="-3.6" cy="-3" rx="4" ry="1.7" fill="#fff" opacity=".75" /></>,
+  sugarball: (c, _s, col = '#f9dfe9') => <><circle r="8" fill={c(col)} stroke={c(ds(col, 0.2))} strokeWidth=".9" /><ellipse cx="-2.6" cy="-3" rx="2.8" ry="1.6" fill="#fff" opacity=".75" /></>,
+  choc: c => <><ellipse rx="10.6" ry="7.8" fill={c('#5a3825')} stroke={c('#3a2214')} strokeWidth=".9" /><path d="M-6 -4C-3 -6 3 -6 6 -4" fill="none" stroke="#fff" strokeOpacity=".38" strokeWidth="1.4" strokeLinecap="round" /></>,
+  bar: (c, _s, col = '#e2b55e') => <><rect x="-13" y="-6.4" width="26" height="12.8" rx="2.8" fill={c(col)} stroke={c(ds(col, 0.3))} strokeWidth=".9" /><g fill={c(mix(col, 'white', 0.55))}>{[[-9, -3, 20], [-5, 1, -30], [-1, -3.4, 50], [3, 1.6, 10], [7, -2.6, -40], [9.6, 2.4, 30], [-8, 3.4, 60], [0, 3.6, -20], [5, -0.4, 70]].map(([x, y, r], i) => <ellipse key={i} cx={x} cy={y} rx="1.4" ry=".7" transform={`rotate(${r} ${x} ${y})`} />)}</g><path d="M-11 -4.6H11" stroke="#fff" strokeOpacity=".3" strokeWidth="1" strokeLinecap="round" /></>,
+  nutbar: (c, _s, col = '#b07a3f') => <><rect x="-13" y="-6.4" width="26" height="12.8" rx="2.8" fill={c(col)} stroke={c(ds(col, 0.32))} strokeWidth=".9" /><g fill={c('#d8b07c')} stroke={c('#8a5a2c')} strokeWidth=".5">{[[-8, -1, 3], [-1, 1.6, 3.4], [6, -1.4, 3]].map(([x, y, r], i) => <g key={i}><ellipse cx={x} cy={y} rx={r} ry={r * 0.75} /><path d={`M${x} ${y - r * 0.7}V${y + r * 0.7}`} fill="none" /></g>)}</g></>,
+  stuffed: c => <><path d="M0 -12C5.4 -12 7.6 -6 7.6 0C7.6 7 5 12 0 12S-7.6 7-7.6 0C-7.6-6-5.4-12 0-12Z" fill={c('#6b3a1f')} stroke={c('#40200f')} strokeWidth=".9" /><path d="M-2.6 -7.4C0 -9 3 -6 2.6 0C2.2 5-1 8-2.6 6.6C-4 3-4.4 -4-2.6 -7.4Z" fill={c('#e8cfa3')} stroke={c('#b8925c')} strokeWidth=".7" /><ellipse cx="-4" cy="-6" rx="1.2" ry="2.6" fill="#fff" opacity=".25" /></>,
+})
+// items drawn with another's piece
+Object.assign(PIECE, { kerzat: PIECE.peanut, pistachiolemon: PIECE.pistachio, zahdi: PIECE.date, khastawi: PIECE.date, barhi: PIECE.date, medjool: PIECE.date,
+  raisins: PIECE.raisin, kishmish: PIECE.raisin, figs: PIECE.fig, apricots: PIECE.apricot, qamaraldin: PIECE.sheet, mulberries: PIECE.mulberry, prunes: PIECE.prune,
+  bananachips: PIECE.chip, mlabbas: PIECE.sugared, chickpeacandy: PIECE.sugarball, chocnuts: PIECE.choc, simsimiya: PIECE.bar, jowziya: PIECE.nutbar, datestuffed: PIECE.stuffed })
+// the mixes: [piece, x, y, rotation, scale, in the shell] — in the bowl and on their own
+const MIX = {
+  kerzat: { pile: [['peanut', -14, 2, -18, 1.02, true], ['pistachio', 14, 3, 14, 1.02, true], ['cashew', -1, -9, 8, 1.08, false], ['sunflower', 3, 10, 70, 0.84, true]],
+    one: [['peanut', -8, 4, -18, 1, true], ['cashew', 9, -5, 12, 1, false], ['pistachio', 3, 12, 4, 0.82, true]] },
+  kerzatroyal: { pile: [['cashew', -13, 3, -14, 1.04, false], ['pistachio', 13, 4, 16, 1, true], ['almond', 0, -9, 6, 1.02, false], ['hazelnut', 2, 10, 0, 0.8, false]],
+    one: [['cashew', -8, 3, -16, 1, false], ['almond', 9, -5, 14, 0.92, false], ['hazelnut', 4, 11, 0, 0.72, false]] },
+  kerzatseeds: { pile: [['sunflower', -13, 3, -30, 0.95, true], ['melon', 12, 4, 25, 0.95, true], ['pumpkin', 0, -8, 5, 0.95, true], ['watermelon', 3, 10, 70, 0.8, true]],
+    one: [['sunflower', -8, 3, -25, 0.9, true], ['melon', 8, -4, 20, 0.9, true], ['pumpkin', 2, 10, 80, 0.75, true]] },
+}
 
 export default function NutArt({ nut, size = 48, live = false, shell = false, form = null, pile = false, className = '', label }) {
   const raw = useId()
   const id = 'na' + raw.replace(/[^a-zA-Z0-9]/g, '')
   const n = nut || {}
   const fm = form || n.def || 'raw'
-  const k = fm === 'raw' ? 0 : 0.14
+  // roasted pieces a shade darker; raw, boiled, dried and sweet ones keep their colour
+  const k = fm === 'roasted' || fm === 'salted' ? 0.14 : 0
   const c = hex => (k ? mix(hex, 'black', k) : hex)
   const sh = shell && n.shell
-  const salted = fm === 'salted'
-  const draw = (kind, hasShell) => (PIECE[kind] || PIECE.almond)(c, hasShell)
+  const salted = fm === 'salted' || fm === 'boiled'
+  const draw = (kind, hasShell) => (PIECE[kind] || PIECE.almond)(c, hasShell, kind === n.id ? n.col : undefined)
+  const m = MIX[n.id]
+  const flat = ['bar', 'nutbar', 'sheet'].includes(n.id) || ['simsimiya', 'jowziya', 'qamaraldin'].includes(n.id)
   const pieces = pile
-    ? (n.id === 'kerzat' ? [['peanut', -14, 2, -18, 1.02, true], ['pistachio', 14, 3, 14, 1.02, true], ['cashew', -1, -9, 8, 1.08, false], ['sunflower', 3, 10, 70, 0.84, true]]
-      : [[n.id, -13, 4, -16, 1.04, sh], [n.id, 13, 5, 18, 1.04, sh], [n.id, 0, -8, 4, 1.16, sh]])
-    : n.id === 'kerzat' ? [['peanut', -8, 4, -18, 1, true], ['cashew', 9, -5, 12, 1, false], ['pistachio', 3, 12, 4, 0.82, true]]
-      : [[n.id, 0, 0, -12, 1.7, sh]]
+    ? (m ? m.pile : flat ? [[n.id, -6, 5, -8, 0.95, sh], [n.id, 6, -6, 10, 0.95, sh]] : [[n.id, -13, 4, -16, 1.04, sh], [n.id, 13, 5, 18, 1.04, sh], [n.id, 0, -8, 4, 1.16, sh]])
+    : m ? m.one : [[n.id, 0, 0, flat ? -8 : -12, flat ? 1.5 : 1.7, sh]]
   return <svg className={'na' + (live ? ' live' : '') + (salted ? ' salted' : '') + (className ? ' ' + className : '')} viewBox="0 0 64 64" width={size} height={size}
     role="img" aria-label={label || undefined} aria-hidden={label ? undefined : true}>
     <defs>

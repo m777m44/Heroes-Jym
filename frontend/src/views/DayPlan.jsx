@@ -7,18 +7,22 @@
 // the days you choose (school Sunday–Thursday), with an end time, your notes, their own reminder
 // and food, drinks, soft drinks and nuts. Copy a day onto others. The school week template.
 // On the phone each reminder shows everything you wrote and chose, with Done ✓ and In 10 min.
+// 11.0 — the timeline is grouped into morning, afternoon, evening and night (with their calories),
+// blocks can carry foods from the database (eggs, bread, rice and stew…) and their own icon, the
+// day shows its protein, carbs and fat, and a school week made before 11.0 is offered the new one.
 // The logic is in lib/dayPlan.js, logging in lib/planLog.js, reminders in lib/planReminders.js.
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { todayISO, DAYS, DAYN, weekOrder, weekStartOf } from '../lib/format.js'
-import { MEALS, foodGoalOf, dayTotals } from '../lib/food.js'
+import { MEALS, foodGoalOf, dayTotals, searchFoods, servingText } from '../lib/food.js'
 import {
   KINDS, KIND_KEYS, TEMPLATES, REMIND_OPTS, DAY_ALL, SCHOOL_DAYS, WEEKEND, NOTE_MAX, toHHMM, toMin, newPlan, normPlan, liveState, dayRec, isLive,
   planTotals, mealTargets, itemInfo, blockKcal, blockMl, startDay, stopDay, markBlock, upsertBlock, removeBlock, extendNow, planPrefs,
-  blocksOn, dayBlocks, typeDays, daysLabel, copyDay, hasItems, cleanDays,
+  blocksOn, dayBlocks, typeDays, daysLabel, copyDay, hasItems, cleanDays, BLOCK_ICONS, partOf, oldSchoolPlan, noteText, SCHOOL_TV,
 } from '../lib/dayPlan.js'
+import { FOODS, FOOD_CATS } from '../lib/foodDb.js'
 import { RECIPES, recipeNutrition } from '../lib/kitchen.js'
 import { drinkOf } from '../lib/drinks.js'
 import { SODA_BY_ID } from '../lib/sodas.js'
@@ -47,6 +51,10 @@ const clock = m => { const d = new Date(2000, 0, 1, Math.floor(((m % 1440) + 144
 const durText = m => (m >= 60 ? (Math.floor(m / 60) + ' ' + U('h') + (m % 60 ? ' ' + (m % 60) + ' ' + U('mn') : '')) : t('{0} min', n0(m)))
 const kindName = b => (b.n ? t(b.n) : b.k === 'meal' ? t((MEALS.find(m => m.key === b.meal) || MEALS[1]).name) : t((KINDS[b.k] || KINDS.other).name))
 const itemName = x => (x.own ? x.name : t(x.name))
+/** 11.0: the name with how many ("Boiled egg ×2") — nuts are in grams, shown elsewhere. */
+const itemLabel = x => itemName(x) + (x.kind !== 'n' && x.q > 1 ? ' ×' + n0(x.q) : '')
+const iconOf = b => b.ic || (KINDS[b.k] || KINDS.other).icon
+const FOOD_ICON = { dishes: 'fork', grains: 'sparkles', meat: 'flame', dairy: 'drop', veg: 'leafy', fruit: 'apple', legumes: 'nut', fast: 'bolt', sweets: 'star', drinks: 'cup' }
 const shortDays = () => DAYS.map(d => t(d))
 const sameDays = (w, set) => Array.isArray(w) && w.length === set.length && set.every(d => w.includes(d))
 const dayLabel = w => (sameDays(w, WEEKEND) ? t('Weekend') : daysLabel(w, shortDays(), t, weekStartOf()))
@@ -87,11 +95,34 @@ function RecipePick({ meal, target, onPick, close }) {
 }
 const recipePickSheet = (meal, target, onPick) => ui().openSheet(close => <RecipePick meal={meal} target={target} onPick={onPick} close={close} />)
 
+// 11.0 — a food from the database (eggs, bread, rice, stews, fruit…), per serving
+function FoodPick({ onPick, close }) {
+  const St = useStore(s => s.S)
+  const [q, setQ] = useState('')
+  const [cat, setCat] = useState('dishes')
+  const list = q.trim() ? searchFoods(St, q).filter(f => !f.custom).slice(0, 80) : FOODS.filter(f => f.cat === cat)
+  return <div className="dk-pick">
+    <h3>{t('Choose a food')}</h3>
+    <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search foods')} />
+    {!q.trim() && <div className="dk-chips scroll">{FOOD_CATS.map(c => <button key={c.key} className={'chip nocap' + (cat === c.key ? ' on' : '')} aria-pressed={cat === c.key} onClick={() => setCat(c.key)}><Icon name={c.icon} />{t(c.name)}</button>)}</div>}
+    <div className="list dk-pick-l">
+      {list.map(f => <button key={f.id} className="item dk-pick-i" onClick={() => { onPick(f); close() }}>
+        <span className="dp-ki" style={{ '--c': KINDS.meal.color }}><Icon name={FOOD_ICON[f.cat] || 'fork'} /></span>
+        <div className="grow"><div className="tt">{t(f.name)}</div><div className="ss">{n0(f.kcal)} {U('kcal')} · {servingText(f, U)}</div></div>
+        <Icon name="plus" />
+      </button>)}
+      {!list.length && <div className="empty small">{t('Nothing found')}</div>}
+    </div>
+  </div>
+}
+export const foodPickSheet = onPick => ui().openSheet(close => <FoodPick onPick={onPick} close={close} />)
+
 function ItemArt({ St, it, size = 26 }) {
   if (it.t === 'd') return <DrinkGlass drink={drinkOf(St, it.id)} size={size} />
   if (it.t === 's' && SODA_BY_ID[it.id]) return <SodaArt soda={SODA_BY_ID[it.id]} pk={it.pk} ml={it.ml} size={size} />
   if (it.t === 'n' && NUT_BY_ID[it.id]) return <NutArt nut={NUT_BY_ID[it.id]} form={it.fm} size={size + 4} />
-  return <span className="dp-ki" style={{ '--c': KINDS.meal.color }}><Icon name="fork" /></span>
+  const f = it.t === 'f' ? itemInfo(St, it) : null
+  return <span className="dp-ki" style={{ '--c': KINDS.meal.color }}><Icon name={f ? FOOD_ICON[f.cat] || 'fork' : 'fork'} /></span>
 }
 const itemSub = x => (x.kind === 's' ? sizeText(x.size, x.pk) + ' · ' : x.kind === 'n' ? n0(x.g) + ' ' + U('g') + ' · ' : '') + n0(x.kcal) + ' ' + U('kcal')
 
@@ -138,6 +169,7 @@ function BlockEdit({ block: b0, close, target }) {
   const addDrink = () => pickDrinkSheet(d => add({ t: 'd', id: d.id, q: 1 }))
   const addSoda = () => pickSodaSheet(({ s, pk, ml, q }) => add({ t: 's', id: s.id, pk, ml, q }))
   const addNut = () => pickNutSheet(({ n, fm, g }) => add({ t: 'n', id: n.id, fm, g, q: 1 }))
+  const addFood = () => foodPickSheet(f => add({ t: 'f', id: f.id, q: 1 }))
   const setQ = (i, q) => setB(x => ({ ...x, items: x.items.map((it, k) => (k === i ? { ...it, q: Math.min(8, Math.max(0.5, q)) } : it)) }))
   const rmItem = i => setB(x => ({ ...x, items: x.items.filter((_, k) => k !== i) }))
   const K = KINDS[b.k] || KINDS.other
@@ -148,11 +180,15 @@ function BlockEdit({ block: b0, close, target }) {
     <h3>{isNew ? t('Add a block') : t('Edit block')}</h3>
     <div className="dp-kinds" role="radiogroup" aria-label={t('Kind')}>
       {KIND_KEYS.map(k => <button key={k} role="radio" aria-checked={b.k === k} className={'dp-kind' + (b.k === k ? ' on' : '')} style={{ '--c': KINDS[k].color }}
-        onClick={() => set({ k, items: hasItems(k) ? (b.items || []) : [], d: k === 'sleep' ? 480 : k === 'school' && b.d < 120 ? 310 : b.k === 'sleep' ? 30 : b.d })}>
+        onClick={() => set({ k, ic: k === b.k ? b.ic : undefined, items: hasItems(k) ? (b.items || []) : [], d: k === 'sleep' ? 480 : k === 'school' && b.d < 120 ? 310 : b.k === 'sleep' ? 30 : b.d })}>
         <Icon name={KINDS[k].icon} /><span>{t(KINDS[k].name)}</span>
       </button>)}
     </div>
     <TextField value={b.n ? t(b.n) : ''} onChange={e => set({ n: e.target.value.slice(0, 40) })} placeholder={t('Title (optional)')} dir="auto" />
+    <div className="dp-icons scroll" role="radiogroup" aria-label={t('Icon')}>
+      <button role="radio" aria-checked={!b.ic} className={'dp-icon' + (!b.ic ? ' on' : '')} onClick={() => set({ ic: undefined })} title={t('Auto')}><Icon name={K.icon} /></button>
+      {BLOCK_ICONS.filter(x => x !== K.icon).map(x => <button key={x} role="radio" aria-checked={b.ic === x} className={'dp-icon' + (b.ic === x ? ' on' : '')} onClick={() => set({ ic: x })}><Icon name={x} /></button>)}
+    </div>
     <div className="dp-time">
       <label><span className="lbl2">{t('Starts')}</span><input className="input" type="time" value={toHHMM(b.s)} onChange={e => e.target.value && set({ s: toMin(e.target.value) })} /></label>
       <label><span className="lbl2">{t('Ends')}</span><input className="input" type="time" value={toHHMM(end)} onChange={e => e.target.value && setEnd(e.target.value)} /></label>
@@ -174,7 +210,7 @@ function BlockEdit({ block: b0, close, target }) {
 
     <label className="sc-notes">
       <span className="lbl2">{t('Notes')}</span>
-      <textarea className="input" rows={2} dir="auto" maxLength={NOTE_MAX} value={b.nt || ''} placeholder={b.k === 'school' ? t('e.g. Maths exam — take the calculator') : t('Anything you want to remember — it shows in the reminder')}
+      <textarea className="input" rows={2} dir="auto" maxLength={NOTE_MAX} value={noteText(b.nt, t)} placeholder={b.k === 'school' ? t('e.g. Maths exam — take the calculator') : t('Anything you want to remember — it shows in the reminder')}
         onChange={e => set({ nt: e.target.value.slice(0, NOTE_MAX) })} />
     </label>
 
@@ -205,6 +241,7 @@ function BlockEdit({ block: b0, close, target }) {
       </div>
       <div className="dp-add-row">
         {(b.k === 'meal' || b.k === 'school' || b.k === 'work' || b.k === 'other') && <Button variant="tinted" size="sm" icon="fork" onClick={addRecipe}>{t('Add a dish')}</Button>}
+        {b.k !== 'drink' && <Button variant="tinted" size="sm" icon="apple" onClick={addFood}>{t('Add a food')}</Button>}
         <Button variant="tinted" size="sm" icon="cup" onClick={addDrink}>{t('Add a drink')}</Button>
         <Button variant="tinted" size="sm" icon="can" onClick={addSoda}>{t('Soft drink')}</Button>
         <Button variant="tinted" size="sm" icon="nut" onClick={addNut}>{t('Nuts')}</Button>
@@ -297,11 +334,11 @@ function LiveCard({ St, live, iso, targets }) {
     return <div className="card dp-live idle" style={{ '--c': next ? KINDS[next.b.k].color : 'var(--acc)' }}>
       <span className="dp-live-bg" aria-hidden="true" />
       <div className="dp-live-row">
-        <span className="dp-live-ic"><Icon name={next ? KINDS[next.b.k].icon : 'checkCircle'} /></span>
+        <span className="dp-live-ic"><Icon name={next ? iconOf(next.b) : 'checkCircle'} /></span>
         <div className="grow">
           <div className="lbl2">{next ? t('Up next') : t('Nothing scheduled now')}</div>
           {next && <><b className="dp-live-t">{kindName(next.b)}</b><div className="small">{t('In {0} · at {1}', durText(Math.max(1, Math.round(next.inMin))), clock(next.b.s))}</div></>}
-          {next && next.b.nt && <div className="small dp-live-note" dir="auto"><Icon name="pencil" />{next.b.nt}</div>}
+          {next && next.b.nt && <div className="small dp-live-note" dir="auto"><Icon name="pencil" />{noteText(next.b.nt, t)}</div>}
         </div>
       </div>
       <Progress live={live} />
@@ -323,7 +360,7 @@ function LiveCard({ St, live, iso, targets }) {
     <span className="dp-live-bg" aria-hidden="true" />
     <div className="dp-live-top">
       <Ring pct={cur.pct} color={K.color}>
-        <Icon name={K.icon} />
+        <Icon name={iconOf(b)} />
         <b>{left >= 60 ? durText(left) : n0(left)}</b>
         {left < 60 && <span>{U('mn')}</span>}
       </Ring>
@@ -331,8 +368,8 @@ function LiveCard({ St, live, iso, targets }) {
         <div className="lbl2">{t('Now')}</div>
         <b className="dp-live-t">{kindName(b)}</b>
         <div className="small">{clock(b.s)} – {clock(b.s + b.d)}</div>
-        {b.nt && <div className="small dp-live-note" dir="auto"><Icon name="pencil" />{b.nt}</div>}
-        {its.length > 0 && <div className="small dp-live-items">{its.map(itemName).join(' · ')} · {n0(its.reduce((a, x) => a + x.kcal, 0))} {U('kcal')}</div>}
+        {b.nt && <div className="small dp-live-note" dir="auto"><Icon name="pencil" />{noteText(b.nt, t)}</div>}
+        {its.length > 0 && <div className="small dp-live-items">{its.map(itemLabel).join(' · ')} · {n0(its.reduce((a, x) => a + x.kcal, 0))} {U('kcal')}</div>}
         {b.k === 'water' && <div className="small">{t('Drink {0} ml of water.', n0(b.ml || 250))}</div>}
         {b.k === 'meal' && !its.length && targets[b.id] > 0 && <div className="small">{t('About {0} kcal for this meal', n0(targets[b.id]))}</div>}
       </div>
@@ -347,7 +384,7 @@ function LiveCard({ St, live, iso, targets }) {
       }}><b className="dp-plus10">+10</b></button>
       <button className="iconbtn" aria-label={t('Skip')} onClick={() => update(s => { markBlock(s, iso, b.id, 'skip') })}><Icon name="chevronRight" /></button>
     </div>
-    {next && <div className="dp-next"><span className="lbl2">{t('Next')}</span><Icon name={KINDS[next.b.k].icon} style={{ color: KINDS[next.b.k].color }} /><b>{kindName(next.b)}</b><span className="small muted">{clock(next.b.s)}</span></div>}
+    {next && <div className="dp-next"><span className="lbl2">{t('Next')}</span><Icon name={iconOf(next.b)} style={{ color: KINDS[next.b.k].color }} /><b>{kindName(next.b)}</b><span className="small muted">{clock(next.b.s)}</span></div>}
     <Progress live={live} />
   </div>
 }
@@ -413,6 +450,17 @@ export default function DayPlan() {
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const addBlock = s => blockSheet({ s, w: typeDays(plan, wd) })
   const stopped = !!(dayRec(plan, iso) || {}).off
+  const upgrade = () => confirmSheet({ title: t('Use the new school week?'), message: t('Up at 7:00, school 7:30–12:40, then lunch, a nap, homework, games, review, sport, dinner and bed at 22:00 — Friday and Saturday too. Your current blocks are replaced; reminders stay as they are.'), confirmText: t('Update'),
+    onConfirm: () => { update(s => { s.planner = newPlan('school', normPlan(s.planner) || {}, { seed: new Date().getDate() }) }); sync(); toast(t('Your new school week is ready')) } })
+  const keepOld = () => update(s => { s.planner = normPlan(s.planner); s.planner.tv = SCHOOL_TV })
+  // the timeline in parts of the day, each with its calories
+  const parts = []
+  for (const b of blocks) {
+    const pt = partOf(b.s)
+    const last = parts[parts.length - 1]
+    if (!last || last.p.key !== pt.key) parts.push({ p: pt, list: [b], kcal: blockKcal(St, b) })
+    else { last.list.push(b); last.kcal += blockKcal(St, b) }
+  }
 
   return <div className="narrow dp-page">
     <div className="hdr">
@@ -421,6 +469,12 @@ export default function DayPlan() {
         <div className="sub">{isToday ? now.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : t(DAYN[wd])}</div></div>
       <button className="iconbtn" aria-label={t('Add a block')} onClick={() => addBlock(isToday ? Math.min(1435, Math.ceil(nowMin / 15) * 15) : 12 * 60)}><Icon name="plus" /></button>
     </div>
+
+    {oldSchoolPlan(plan) && <div className="card sc-upd">
+      <span className="sc-upd-ic"><Icon name="sparkles" /></span>
+      <div className="grow"><b>{t('A new school week')}</b><div className="small">{t('Up at 7:00, school 7:30–12:40 and a full, organised afternoon, evening and weekend.')}</div></div>
+      <div className="sc-upd-act"><Button size="sm" variant="primary" onClick={upgrade}>{t('Update')}</Button><Button size="sm" variant="plain" onClick={keepOld}>{t('Keep mine')}</Button></div>
+    </div>}
 
     <WeekStrip plan={plan} wd={wd} today={today} onPick={setWd} />
 
@@ -451,10 +505,18 @@ export default function DayPlan() {
       <div className="dp-stat" style={{ '--c': '#5e5ce6' }}><Icon name="book" /><b>{durText(studyMin)}</b><span>{t('School, study & work')}</span></div>
       <div className="dp-stat" style={{ '--c': '#ff375f' }}><Icon name="dumbbell" /><b>{durText((tot.min.workout || 0) + (tot.min.walk || 0))}</b><span>{t('Moving')}</span></div>
     </div>
+    {(tot.p > 0 || tot.c > 0 || tot.f > 0) && <div className="dp-macros">
+      <span style={{ '--c': '#ff375f' }}><i />{t('Protein')} <b>{n0(tot.p)} {U('g')}</b></span>
+      <span style={{ '--c': '#ffd60a' }}><i />{t('Carbs')} <b>{n0(tot.c)} {U('g')}</b></span>
+      <span style={{ '--c': '#64d2ff' }}><i />{t('Fat')} <b>{n0(tot.f)} {U('g')}</b></span>
+    </div>}
     {live && <div className="small muted dp-eaten">{t('Eaten so far: {0} of {1} kcal', n0(eaten), n0(goal))}</div>}
 
-    <div className="dp-tl" role="list" key={wd}>
-      {blocks.map((b, i) => {
+    <div className="dp-tl" key={wd}>
+      {parts.map(({ p, list, kcal }, pi) => <div key={p.key + pi} className="dp-part" role="list" aria-label={t(p.name)}>
+        <div className="dp-part-h" role="presentation"><Icon name={p.icon} /><b>{t(p.name)}</b><span className="small muted">{t('{0} blocks', n0(list.length))}{kcal > 0 ? ' · ' + n0(kcal) + ' ' + U('kcal') : ''}</span></div>
+      {list.map(b => {
+        const i = blocks.indexOf(b)
         const K = KINDS[b.k] || KINDS.other, st = statusOf(b.id)
         const kc = blockKcal(St, b), ml = blockMl(St, b)
         const its = (b.items || []).map(it => itemInfo(St, it)).filter(Boolean)
@@ -463,7 +525,7 @@ export default function DayPlan() {
           <span className="dp-b-time">{clock(b.s)}</span>
           <span className="dp-b-rail"><i /></span>
           <button className="dp-b-card" onClick={() => blockSheet(plan.blocks.find(x => x.id === b.id) || b, targets[b.id] || 0)}>
-            <span className="dp-b-ic"><Icon name={st === 'done' ? 'check' : K.icon} /></span>
+            <span className="dp-b-ic"><Icon name={st === 'done' ? 'check' : iconOf(b)} /></span>
             <span className="grow">
               <b>{kindName(b)}</b>
               <span className="small muted">{b.k === 'sleep' || b.k === 'wake' ? durText(b.d) : clock(b.s) + ' – ' + clock(b.s + b.d)}
@@ -471,8 +533,8 @@ export default function DayPlan() {
                 {b.k === 'meal' && !kc && targets[b.id] > 0 && <> · ≈{n0(targets[b.id])} {U('kcal')}</>}
                 {ml > 0 && <> · {n0(ml)} {U('ml')}</>}
               </span>
-              {b.nt && <span className="dp-b-note" dir="auto"><Icon name="pencil" />{b.nt}</span>}
-              {its.length > 0 && <span className="dp-b-items" dir="auto">{its.map(itemName).join(' · ')}</span>}
+              {b.nt && <span className="dp-b-note" dir="auto"><Icon name="pencil" />{noteText(b.nt, t)}</span>}
+              {its.length > 0 && <span className="dp-b-items" dir="auto">{its.map(itemLabel).join(' · ')}</span>}
               <span className="sc-b-meta">
                 {b.mv && <span className="sc-pill moved"><Icon name="clock" />{t('Today only')}</span>}
                 {oddDays(b.w) && <span className="sc-pill"><Icon name="calendar" />{dayLabel(b.w)}</span>}
@@ -488,6 +550,7 @@ export default function DayPlan() {
           }}><Icon name="check" /></button>}
         </div>
       })}
+      </div>)}
       {!blocks.length && <div className="empty small"><div className="ico"><Icon name="calendar" /></div>{t('Nothing planned on this day yet.')}</div>}
     </div>
     <Button variant="tinted" icon="plus" onClick={() => addBlock(12 * 60)}>{t('Add a block')}</Button>

@@ -7,6 +7,13 @@
 // before) and can carry food, drinks, soft drinks and nuts. A school week template (7:30–12:40,
 // then lunch, rest, homework, work, drinks and dinner) and school / prayer / other blocks.
 // Reminders follow the schedule every day (a week ahead) and show everything you wrote and chose.
+// 11.0 — the school week rebuilt on your own times: up at 7:00, water 7:15, breakfast (eggs and
+// bread) 7:20, get ready 7:25, school 7:30–12:40 with nothing inside it, home 12:40, water 12:50,
+// lunch 13:00 (a different Iraqi dish each day), a drink after it, then a nap, homework, a snack,
+// phone & games, review, a workout or football, family time, dinner with water, the school bag
+// and a light snack before bed at 22:00. Friday and Saturday: sleep in until 9:00, an Iraqi
+// breakfast, study, games, family, football and rest. Meals carry real foods, so every block shows
+// its calories; blocks can have their own icon (b.ic) and notes in your language.
 // Pure (no store, no DOM). Screen: views/DayPlan.jsx.
 //
 //   S.planner = {
@@ -14,7 +21,8 @@
 //     blocks: [{ id, k (kind), s (start, minutes after midnight), d (minutes), n? (own title),
 //                w? ([0–6] weekdays, getDay numbers; missing = every day), nt? (notes), rm? (reminder:
 //                -1 off, 0 at the start, N minutes before), meal? ('b'|'l'|'d'|'s'),
-//                items?: [{ t: 'r'|'d'|'f'|'s'|'n', id, q, ml?, pk?, g?, fm? }], ml? (water) }],
+//                items?: [{ t: 'r'|'d'|'f'|'s'|'n', id, q, ml?, pk?, g?, fm? }], ml? (water), ic? (icon) }],
+//     tv?: the template's version (the school week is 2 since 11.0),
 //     days: { 'YYYY-MM-DD': { on (started at), off? (stopped: no reminders), done: { blockId: at }, skip: { blockId: at },
 //                             mv?: { blockId: [start, minutes] } (that day only — +10 in the live view) } }
 //   }
@@ -52,11 +60,17 @@ export const DAY_ALL = [0, 1, 2, 3, 4, 5, 6]
 export const SCHOOL_DAYS = [0, 1, 2, 3, 4] // Sunday–Thursday
 export const WEEKEND = [5, 6]              // Friday and Saturday
 export const NOTE_MAX = 300
-const MAX_BLOCKS = 60
+const MAX_BLOCKS = 80
 const ITEMS_MAX = 8
+/** 11.0 — icons a block can show instead of its kind's (the editor's icon row). */
+export const BLOCK_ICONS = ['house', 'shirt', 'backpack', 'gamepad', 'ball', 'tv', 'people', 'phone', 'book', 'pencil', 'lightbulb', 'school',
+  'moon', 'bed', 'sun', 'cup', 'fork', 'apple', 'drop', 'figureWalk', 'figureRun', 'bike', 'swim', 'dumbbell', 'heart', 'smile', 'music',
+  'camera', 'palm', 'prayer', 'briefcase', 'star', 'sparkles', 'leafy']
+/** The version of the school week template — older school plans are offered the new one. */
+export const SCHOOL_TV = 2
 
 export const TEMPLATES = [
-  { id: 'school', name: 'School week', icon: 'school', desc: 'School Sunday to Thursday, 7:30 to 12:40 — then lunch, rest, homework, work, drinks and dinner. Friday and Saturday have their own plan.' },
+  { id: 'school', name: 'School week', icon: 'school', desc: 'Up at 7:00, school Sunday to Thursday 7:30–12:40 — then lunch, a nap, homework, games, review, sport, dinner and a light snack before bed at 22:00. Friday and Saturday: study, family, football and rest.' },
   { id: 'workout', name: 'Workout day', icon: 'dumbbell', desc: 'Study or work, a full workout and meals that fuel it.' },
   { id: 'study', name: 'Study day', icon: 'book', desc: 'Focused study blocks with short breaks, a quick workout.' },
   { id: 'student', name: 'Student athlete', icon: 'trophy', desc: 'Study in the morning, train in the afternoon.' },
@@ -106,24 +120,87 @@ const T = {
   custom: [['wake', '07:00', 15], ['meal', '07:30', 30, { meal: 'b' }], ['meal', '13:00', 45, { meal: 'l' }], ['meal', '19:30', 40, { meal: 'd' }], ['sleep', '23:00', 480]],
 }
 
-// 10.0 — the school week, at fixed times: school 07:30–12:40 Sunday to Thursday, the afternoon for
-// lunch, rest, homework, work, drinks and a workout; Friday and Saturday slower. Thursday and Friday
-// nights run later, Saturday night is early again for school on Sunday.
-const SD = SCHOOL_DAYS, WE = WEEKEND
+// 11.0 — the school week, at fixed times (your own): school 07:30–12:40 Sunday to Thursday with
+// nothing inside it; the afternoon for lunch, a nap, homework, games, review and sport; every
+// evening family time, dinner with water and some free time; the nights before school end with the
+// bag, a light snack and bed at 22:00, Thursday and Friday nights run later (sleep in until 9:00).
+// Friday and Saturday: an Iraqi breakfast, study, games, helping at home, football and rest.
+// Meals carry real foods (lib/foodDb.js), drinks real drinks, snacks real nuts — all counted.
+const SD = SCHOOL_DAYS, WE = WEEKEND, FRI = [5], SAT = [6]
+const SCHOOL_NIGHTS = [0, 1, 2, 3, 6]     // the nights before a school day
+const LATE_NIGHTS = [4, 5]                // Thursday and Friday nights
+const NOT_FRI = [0, 1, 2, 3, 4, 6]
+const F = (id, q = 1) => ({ t: 'f', id, q }), DR = id => ({ t: 'd', id, q: 1 }), NUT = (id, g, fm) => ({ t: 'n', id, g, fm, q: 1 })
 const SCHOOL = [
-  ['wake', '06:30', 15, { w: SD }], ['water', '06:45', 5, { ml: 300, w: SD }], ['meal', '06:50', 25, { meal: 'b', w: SD }],
-  ['school', '07:30', 310, { w: SD, rm: 10 }],
-  ['meal', '13:00', 40, { meal: 'l', w: SD }], ['rest', '13:45', 45, { w: SD }], ['study', '14:30', 90, { n: 'Homework', w: SD }],
-  ['meal', '16:00', 15, { meal: 's', w: SD, items: [{ t: 'n', id: 'almond', fm: 'raw', g: 25, q: 1 }] }], ['drink', '16:15', 10, { when: 'after', w: SD }],
-  ['work', '16:30', 120, { w: SD }], ['water', '18:30', 5, { ml: 300, w: SD }], ['workout', '18:45', 60, { w: SD }],
-  ['drink', '19:50', 10, { when: 'post', w: SD }], ['meal', '20:15', 40, { meal: 'd', w: SD }], ['free', '21:00', 60, { w: SD }],
-  ['drink', '22:05', 10, { when: 'pm', w: [0, 1, 2, 3] }], ['sleep', '22:30', 480, { w: [0, 1, 2, 3, 6] }], ['sleep', '23:30', 540, { w: [4, 5] }],
-  ['wake', '08:30', 15, { w: WE }], ['water', '08:45', 5, { ml: 300, w: WE }], ['meal', '09:00', 30, { meal: 'b', w: WE }],
-  ['walk', '10:00', 30, { w: WE }], ['free', '10:45', 120, { w: WE }], ['meal', '13:30', 45, { meal: 'l', w: WE }],
-  ['rest', '14:30', 60, { w: WE }], ['drink', '16:00', 10, { when: 'after', w: WE }], ['study', '16:30', 60, { n: 'Homework', w: WE }],
-  ['workout', '17:45', 60, { w: WE }], ['water', '18:50', 5, { ml: 300, w: WE }], ['meal', '19:30', 40, { meal: 'd', w: WE }],
-  ['free', '20:30', 90, { w: [5] }], ['free', '20:30', 75, { w: [6] }], ['drink', '21:50', 10, { when: 'pm', w: [6] }],
+  // Sunday–Thursday: up, water, breakfast (eggs and bread), get ready — then school
+  ['wake', '07:00', 15, { w: SD }],
+  ['water', '07:15', 5, { ml: 250, w: SD }],
+  ['meal', '07:20', 5, { meal: 'b', w: SD, items: [F('egg', 2), F('khubz')] }],
+  ['other', '07:25', 5, { n: 'Get ready for school', nt: 'Clothes, school bag and a water bottle', ic: 'shirt', w: SD }],
+  ['school', '07:30', 310, { w: SD }],
+  ['other', '12:40', 10, { n: 'Back home', ic: 'house', rm: -1, w: SD }],
+  ['water', '12:50', 5, { ml: 300, w: SD }],
+  // a different Iraqi lunch every school day
+  ['meal', '13:00', 40, { meal: 'l', w: [0], items: [F('rice'), F('fasolia'), F('salad')] }],
+  ['meal', '13:00', 40, { meal: 'l', w: [1], items: [F('chickenrice'), F('salad')] }],
+  ['meal', '13:00', 40, { meal: 'l', w: [2], items: [F('rice'), F('bamia'), F('salad')] }],
+  ['meal', '13:00', 40, { meal: 'l', w: [3], items: [F('dolma'), F('laban')] }],
+  ['meal', '13:00', 40, { meal: 'l', w: [4], items: [F('biryani'), F('salad')] }],
+  ['drink', '13:40', 10, { w: SD, items: [DR('noomibasra')] }],
+  ['rest', '13:50', 40, { n: 'Nap', w: SD }],
+  ['study', '14:30', 90, { n: 'Homework', nt: 'The hardest subject first — phone in another room', w: SD }],
+  ['meal', '16:00', 15, { meal: 's', w: SD, items: [NUT('almond', 25, 'raw'), F('apple')] }],
+  ['water', '16:15', 5, { ml: 300, w: SD }],
+  ['free', '16:20', 70, { n: 'Phone & games', ic: 'gamepad', rm: -1, w: SD }],
+  ['study', '17:30', 45, { n: 'Review', nt: 'Go over today’s lessons and get ready for tomorrow', w: SD }],
+  ['drink', '18:15', 10, { w: SD, items: [DR('limonnana')] }],
+  ['workout', '18:30', 50, { w: [0, 2, 4] }],
+  ['walk', '18:30', 50, { n: 'Walk or football', ic: 'ball', w: [1, 3] }],
+  ['water', '19:20', 5, { ml: 400, w: SD }],
+  // Friday and Saturday: sleep in, an Iraqi breakfast with tea, study, games, family, sport, rest
+  ['wake', '09:00', 15, { w: WE }],
+  ['water', '09:15', 5, { ml: 300, w: WE }],
+  ['meal', '09:30', 40, { meal: 'b', w: FRI, items: [F('kahi'), F('teasugar')] }],
+  ['meal', '09:30', 40, { meal: 'b', w: SAT, items: [F('eggtomato'), F('samoon'), F('teasugar')] }],
+  ['study', '10:15', 90, { n: 'Review', nt: 'Go over the week’s lessons', w: FRI }],
+  ['study', '10:15', 90, { n: 'Homework', nt: 'Get ready for Sunday', w: SAT }],
+  ['free', '11:45', 60, { n: 'Phone & games', ic: 'gamepad', rm: -1, w: WE }],
+  ['water', '12:45', 5, { ml: 300, w: WE }],
+  ['free', '12:50', 40, { n: 'Help at home', ic: 'house', rm: -1, w: WE }],
+  ['meal', '13:30', 45, { meal: 'l', w: FRI, items: [F('dolma'), F('laban'), F('salad')] }],
+  ['meal', '13:30', 45, { meal: 'l', w: SAT, items: [F('masgouf'), F('rice'), F('salad')] }],
+  ['drink', '14:15', 10, { w: WE, items: [DR('iraqitea')] }],
+  ['rest', '14:30', 60, { n: 'Nap', w: WE }],
+  ['meal', '15:30', 15, { meal: 's', w: WE, items: [NUT('kerzat', 30, 'roasted'), F('watermelon')] }],
+  ['water', '15:45', 5, { ml: 300, w: WE }],
+  ['workout', '16:00', 90, { n: 'Football with friends', nt: 'Take a bottle of water with you', ic: 'ball', w: FRI }],
+  ['water', '17:30', 5, { ml: 400, w: FRI }],
+  ['free', '17:35', 145, { n: 'Visit relatives', ic: 'people', rm: -1, w: FRI }],
+  ['workout', '16:00', 60, { w: SAT }],
+  ['water', '17:00', 5, { ml: 400, w: SAT }],
+  ['study', '17:05', 55, { n: 'Review', w: SAT }],
+  ['free', '18:00', 90, { n: 'Phone & games', ic: 'gamepad', rm: -1, w: SAT }],
+  // every evening: family time, dinner with water, a little free time
+  ['free', '19:30', 30, { n: 'Family time', ic: 'people', rm: -1, w: NOT_FRI }],
+  ['meal', '20:00', 30, { meal: 'd', items: [F('whitecheese', 2), F('khubz'), F('cucumber'), F('tomato'), F('olives')] }],
+  ['water', '20:30', 5, { ml: 250 }],
+  ['free', '20:35', 45, { rm: -1 }],
+  // the nights before school (Sunday–Wednesday and Saturday): the bag, a light snack, bed at 22:00
+  ['other', '21:20', 10, { n: 'Get your bag ready', nt: 'Tomorrow’s books, your clothes and a water bottle', ic: 'backpack', w: SCHOOL_NIGHTS }],
+  ['meal', '21:30', 15, { meal: 's', n: 'Light snack before bed', w: SCHOOL_NIGHTS, items: [DR('cardamommilk'), F('dates')] }],
+  ['other', '21:45', 15, { n: 'Get ready for bed', nt: 'Brush your teeth, phone away, lights low', ic: 'moon', w: SCHOOL_NIGHTS }],
+  ['sleep', '22:00', 540, { w: SCHOOL_NIGHTS }],
+  // Thursday and Friday nights: later, then sleep in until 9:00
+  ['free', '21:20', 100, { n: 'Phone & games', ic: 'gamepad', rm: -1, w: LATE_NIGHTS }],
+  ['meal', '23:00', 15, { meal: 's', n: 'Light snack before bed', w: LATE_NIGHTS, items: [DR('cardamommilk'), F('dates')] }],
+  ['other', '23:15', 15, { n: 'Get ready for bed', nt: 'Brush your teeth, phone away, lights low', ic: 'moon', w: LATE_NIGHTS }],
+  ['sleep', '23:30', 570, { w: LATE_NIGHTS }],
 ]
+/** The English notes and names the templates use (t() keys — the locale tests check them). */
+export const TEMPLATE_TEXTS = [...new Set(SCHOOL.flatMap(([, , , x]) => [x.n, x.nt]).filter(Boolean))]
+const TEMPLATE_NOTES = new Set(SCHOOL.map(([, , , x]) => x.nt).filter(Boolean))
+/** A block's notes for showing: a template's note in your language, your own words as they are. */
+export const noteText = (nt, tr = s => s) => (!nt ? '' : TEMPLATE_NOTES.has(nt) ? tr(nt) : String(nt))
 
 /** Clean prefs: wake / sleep times (a day of at least 12 h, else 07:00–23:00). */
 export function planPrefs(P) {
@@ -157,6 +234,7 @@ const block = (k, s, d, x = {}) => {
   if (w) b.w = w
   if (x.nt && String(x.nt).trim()) b.nt = String(x.nt).trim().slice(0, NOTE_MAX)
   if (x.rm !== undefined && x.rm !== null && REMIND_OPTS.includes(+x.rm) && +x.rm !== 0) b.rm = +x.rm
+  if (x.ic && BLOCK_ICONS.includes(x.ic)) b.ic = x.ic
   if (k === 'meal') b.meal = ['b', 'l', 'd', 's'].includes(x.meal) ? x.meal : 'l'
   if (k === 'meal' || k === 'drink') b.items = []
   if (hasItems(k) && Array.isArray(x.items) && x.items.length) b.items = x.items.map(cleanItem).filter(Boolean).slice(0, ITEMS_MAX)
@@ -174,7 +252,7 @@ export function buildTemplate(tpl, prefs = {}, { suhoor = '04:30', iftar = '18:3
   if (tpl === 'ramadan') return ramadan(HHMM.test(suhoor) ? suhoor : '04:30', HHMM.test(iftar) ? iftar : '18:30', seed)
   const drinkX = (kind, x, i) => {
     const extra = { ...(x || {}) }
-    if (kind === 'drink') { const dr = drinkFor(extra.when || 'any', seed + i); extra.items = [{ t: 'd', id: dr.id, q: 1 }] }
+    if (kind === 'drink' && !(extra.items && extra.items.length)) { const dr = drinkFor(extra.when || 'any', seed + i); extra.items = [{ t: 'd', id: dr.id, q: 1 }] }
     return extra
   }
   if (tpl === 'school') return trimOverlap(SCHOOL.map(([kind, at, d, x], i) => block(kind, h(at), d, drinkX(kind, x, i))))
@@ -242,15 +320,21 @@ export function trimOverlap(blocks) {
 
 /** A fresh plan from a template (keeps your reminder settings). */
 export function newPlan(tpl, prev = {}, opts = {}) {
-  const prefs = tpl === 'school' ? { wake: '06:30', sleep: '22:30' } : planPrefs({ wake: prev.wake, sleep: prev.sleep, ...opts.prefs })
-  return { v: 1, tpl, ...prefs, remind: !!prev.remind, auto: !!prev.auto, blocks: buildTemplate(tpl, prefs, opts), days: prev.days || {} }
+  const prefs = tpl === 'school' ? { wake: '07:00', sleep: '22:00' } : planPrefs({ wake: prev.wake, sleep: prev.sleep, ...opts.prefs })
+  const P = { v: 1, tpl, ...prefs, remind: !!prev.remind, auto: !!prev.auto, blocks: buildTemplate(tpl, prefs, opts), days: prev.days || {} }
+  if (tpl === 'school') P.tv = SCHOOL_TV
+  return P
 }
 
 export function normPlan(P) {
   if (!P || typeof P !== 'object' || !Array.isArray(P.blocks)) return null
   const prefs = planPrefs(P)
-  return { v: 1, tpl: P.tpl || 'custom', ...prefs, remind: !!P.remind, auto: !!P.auto, blocks: fitBlocks(P.blocks), days: P.days && typeof P.days === 'object' ? P.days : {} }
+  const out = { v: 1, tpl: P.tpl || 'custom', ...prefs, remind: !!P.remind, auto: !!P.auto, blocks: fitBlocks(P.blocks), days: P.days && typeof P.days === 'object' ? P.days : {} }
+  if (Number.isFinite(+P.tv) && +P.tv > 0) out.tv = +P.tv
+  return out
 }
+/** 11.0 — a school week made before the new template (it is offered, never forced). */
+export const oldSchoolPlan = P => !!P && P.tpl === 'school' && !(+P.tv >= SCHOOL_TV)
 
 // ---- weekdays ---------------------------------------------------------------------------------------
 /** The blocks that run on a weekday (0 = Sunday … 6 = Saturday). */
@@ -298,22 +382,24 @@ export function daysLabel(w, names, tr = s => s, weekStart = 6) {
 }
 
 // ---- calories -------------------------------------------------------------------------------------
-/** One planned item → { kcal, ml, name (t() key or own name), own, q, sub?, kind }. */
+const mac = (n, q = 1) => ({ p: Math.round(num(n.p) * q * 10) / 10, c: Math.round(num(n.c) * q * 10) / 10, f: Math.round(num(n.f) * q * 10) / 10 })
+/** One planned item → { kcal, ml, p, c, f (grams), name (t() key or own name), own, q, sub?, kind }. */
 export function itemInfo(S, it) {
   if (!it) return null
   const q = Math.max(0.5, num(it.q) || 1)
-  if (it.t === 'r') { const r = RECIPE_BY_ID[it.id]; if (!r) return null; return { kcal: Math.round(recipeNutrition(r).kcal * q), ml: 0, name: r.name, own: false, q, kind: 'r' } }
-  if (it.t === 'd') { const d = drinkOf(S, it.id); if (!d) return null; const n = drinkNutrition(d); return { kcal: Math.round(n.kcal * q), ml: Math.round(n.ml * q), name: d.name, own: !!d.mine, q, col: d.col, kind: 'd' } }
-  if (it.t === 'f') { const f = FOOD_BY_ID[it.id]; if (!f) return null; return { kcal: Math.round(num(f.kcal) * (f.g || 100) / 100 * q), ml: 0, name: f.name, own: false, q, kind: 'f' } }
+  if (it.t === 'r') { const r = RECIPE_BY_ID[it.id]; if (!r) return null; const n = recipeNutrition(r); return { kcal: Math.round(n.kcal * q), ml: 0, ...mac(n, q), name: r.name, own: false, q, kind: 'r' } }
+  if (it.t === 'd') { const d = drinkOf(S, it.id); if (!d) return null; const n = drinkNutrition(d); return { kcal: Math.round(n.kcal * q), ml: Math.round(n.ml * q), ...mac(n, q), name: d.name, own: !!d.mine, q, col: d.col, kind: 'd' } }
+  // 11.0: a food from the database — its calories are per serving (an egg, a piece of bread, a plate)
+  if (it.t === 'f') { const f = FOOD_BY_ID[it.id]; if (!f) return null; return { kcal: Math.round(num(f.kcal) * q), ml: 0, ...mac(f, q), name: f.name, own: false, q, unit: f.unit, cat: f.cat, kind: 'f' } }
   if (it.t === 's') {
     const s = SODA_BY_ID[it.id]; if (!s) return null
     const p = packFor(s, it.pk, it.ml), n = sodaNutrition(s, p.ml, q)
-    return { kcal: n.kcal, ml: s.k100 < 5 && !s.cf100 ? Math.round(n.ml * 0.9) : 0, name: s.name, own: false, q, pk: p.pk, size: p.ml, sugar: n.sugar, col: s.col, kind: 's' }
+    return { kcal: n.kcal, ml: s.k100 < 5 && !s.cf100 ? Math.round(n.ml * 0.9) : 0, ...mac(n), name: s.name, own: false, q, pk: p.pk, size: p.ml, sugar: n.sugar, col: s.col, kind: 's' }
   }
   if (it.t === 'n') {
     const x = NUT_BY_ID[it.id]; if (!x) return null
     const g = Math.max(1, num(it.g) || 30) * q, n = nutNutrition(x, g, it.fm)
-    return { kcal: n.kcal, ml: 0, name: x.name, own: false, q: 1, g: Math.round(g), col: x.col, kind: 'n' }
+    return { kcal: n.kcal, ml: 0, ...mac(n), name: x.name, own: false, q: 1, g: Math.round(g), col: x.col, kind: 'n' }
   }
   return null
 }
@@ -335,17 +421,28 @@ export function mealTargets(S, blocks, goal) {
 
 /** The day at a glance: planned calories (meals + drinks + snacks) vs the goal, water, minutes per kind. */
 export function planTotals(S, blocks, goal) {
-  const t = { kcal: 0, goal, ml: 0, min: Object.fromEntries(KIND_KEYS.map(k => [k, 0])), meals: 0, drinks: 0 }
+  const t = { kcal: 0, goal, ml: 0, p: 0, c: 0, f: 0, min: Object.fromEntries(KIND_KEYS.map(k => [k, 0])), meals: 0, drinks: 0 }
   for (const b of blocks) {
     const k = blockKcal(S, b)
+    for (const it of b.items || []) { const x = itemInfo(S, it); if (x) { t.p += x.p || 0; t.c += x.c || 0; t.f += x.f || 0 } }
     t.kcal += k
     if (b.k === 'meal') t.meals += k
     else t.drinks += k
     t.ml += blockMl(S, b)
     t.min[b.k] = (t.min[b.k] || 0) + b.d
   }
+  t.p = Math.round(t.p); t.c = Math.round(t.c); t.f = Math.round(t.f)
   return t
 }
+
+/** 11.0 — the parts of the day the timeline is grouped in, by start time. */
+export const DAY_PARTS = [
+  { key: 'morning', name: 'Morning', icon: 'sun', from: 4 * 60 },
+  { key: 'afternoon', name: 'Afternoon', icon: 'sparkles', from: 12 * 60 },
+  { key: 'evening', name: 'Evening', icon: 'people', from: 17 * 60 },
+  { key: 'night', name: 'Night', icon: 'moon', from: 21 * 60 },
+]
+export const partOf = m => { const x = ((m % 1440) + 1440) % 1440; return x < 4 * 60 ? DAY_PARTS[3] : [...DAY_PARTS].reverse().find(p => x >= p.from) }
 
 // ---- live -------------------------------------------------------------------------------------------
 const nowMinOf = d => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60
@@ -417,7 +514,7 @@ export function markBlock(s, iso, id, how = 'done', now = Date.now()) {
 export function upsertBlock(s, b) {
   const P = s.planner
   const i = P.blocks.findIndex(x => x.id === b.id)
-  const clean = block(b.k, b.s, b.d, { n: b.n, w: b.w, nt: b.nt, rm: b.rm, meal: b.meal, items: (b.items || []).slice(0, ITEMS_MAX), ml: b.ml })
+  const clean = block(b.k, b.s, b.d, { n: b.n, w: b.w, nt: b.nt, rm: b.rm, meal: b.meal, items: (b.items || []).slice(0, ITEMS_MAX), ml: b.ml, ic: b.ic })
   clean.id = b.id || clean.id
   // a new time replaces what was changed for one day only (+10)
   if (i >= 0 && (P.blocks[i].s !== clean.s || P.blocks[i].d !== clean.d)) for (const d of Object.values(P.days || {})) if (d && d.mv) delete d.mv[clean.id]
@@ -498,7 +595,8 @@ export function blockText(S, b, lead = 0, tr = defTr, fmtTime = toHHMM) {
   if (lead > 0) msg = b.k === 'school' ? tr('Get your bag ready — school starts at {0}.', fmtTime(b.s)) : tr('Starts at {0} — get ready.', fmtTime(b.s))
   const title = lead > 0 ? tr('In {0} min: {1}', lead, name) : name + ' · ' + range
   const lines = ['⏰ ' + range + (b.k === 'sleep' || b.k === 'wake' ? '' : ' (' + tr('{0} min', b.d) + ')')]
-  if (b.nt) lines.push('📝 ' + b.nt)
+  const nt = noteText(b.nt, tr)
+  if (nt) lines.push('📝 ' + nt)
   for (const x of its) {
     const sub = x.kind === 's' ? ' (' + (x.size >= 1000 ? tr('{0} L', x.size / 1000) : tr('{0} ml', x.size)) + (x.q !== 1 ? ' × ' + x.q : '') + ')' : x.kind === 'n' ? ' (' + tr('{0} g', x.g) + ')' : x.q !== 1 ? ' × ' + x.q : ''
     lines.push((x.kind === 'r' || x.kind === 'f' ? '🍽️ ' : x.kind === 'n' ? '🥜 ' : '🥤 ') + (x.own ? x.name : tr(x.name)) + sub + ' — ' + tr('{0} kcal', x.kcal))
@@ -506,7 +604,7 @@ export function blockText(S, b, lead = 0, tr = defTr, fmtTime = toHHMM) {
   if (its.length > 1 || (its.length && ml)) lines.push('🔥 ' + tr('{0} kcal', kcal) + (ml ? ' · 💧 ' + tr('{0} ml', ml) : ''))
   else if (!its.length && b.k === 'water') lines.push('💧 ' + tr('{0} ml', b.ml || 250))
   lines.push(msg)
-  return { title, body: b.nt ? b.nt.split('\n')[0] : msg, lines, kcal, ml }
+  return { title, body: nt ? nt.split('\n')[0] : msg, lines, kcal, ml }
 }
 
 /**

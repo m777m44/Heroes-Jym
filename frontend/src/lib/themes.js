@@ -1,5 +1,7 @@
-// Themes: 190 colour families in 16 categories × 7 variants = 1,330 curated themes (4.0 added
-// MAHDI Signature, Coder classics and 56 families; 3.0 had 938, 2.12 658, 2.10 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
+// Themes: 206 colour families in 17 categories × 7 variants = 1,442 curated themes (11.0 added
+// Iraq — the Tigris, the Euphrates, Ishtar blue, Baghdad nights, Basra palms, Mosul marble and
+// more; 4.0 added MAHDI Signature, Coder classics and 56 families; 3.0 had 938, 2.12 658, 2.10
+// 120), plus the Theme Studio's 2,721,600 numbered ones — all generated from a hue, a
 // saturation and an accent so every one of them stays readable and consistent.
 //
 //   S.theme        the chosen theme id, '<family>-<variant>' (old saves: 'dark' / 'light')
@@ -32,6 +34,8 @@ export const CATEGORIES = [
   // 4.0
   { id: 'signature', name: 'MAHDI Signature', icon: 'starFill' },
   { id: 'code', name: 'Coder classics', icon: 'code' },
+  // 11.0
+  { id: 'iraq', name: 'Iraq', icon: 'palm' },
 ]
 
 /**
@@ -264,6 +268,23 @@ export const FAMILIES = [
   { id: 'champion', name: 'Champion', cat: 'sport', h: 210, s: 50, acc: '#ffcc00', accL: '#987600' },
   { id: 'sprint', name: 'Sprint', cat: 'sport', h: 0, s: 60, acc: '#ff3b3b', accL: '#bf0000' },
   { id: 'retro', name: 'Retro', cat: 'classic', h: 30, s: 20, acc: '#e8b04a', accL: '#93630f' },
+  // ---- 11.0: Iraq — its rivers, cities, marshes, mountains and history ----
+  { id: 'tigris', name: 'Tigris', cat: 'iraq', h: 200, s: 55, acc: '#4fc3f7', accL: '#0a6a99' },
+  { id: 'euphrates', name: 'Euphrates', cat: 'iraq', h: 175, s: 50, acc: '#3dd6c0', accL: '#0b7266' },
+  { id: 'ishtar', name: 'Ishtar blue', cat: 'iraq', h: 222, s: 70, acc: '#f2c14e', accL: '#7d5900' },
+  { id: 'baghdadnights', name: 'Baghdad nights', cat: 'iraq', h: 250, s: 45, acc: '#ffcf6b', accL: '#8a5c00' },
+  { id: 'basrapalms', name: 'Basra palms', cat: 'iraq', h: 120, s: 35, acc: '#7ccf6a', accL: '#2c7022' },
+  { id: 'mosulmarble', name: 'Mosul marble', cat: 'iraq', h: 210, s: 8, acc: '#b8c7d9', accL: '#44566b' },
+  { id: 'erbilcitadel', name: 'Erbil citadel', cat: 'iraq', h: 32, s: 40, acc: '#e8b27a', accL: '#83501e' },
+  { id: 'samarra', name: 'Samarra', cat: 'iraq', h: 38, s: 50, acc: '#f0c27b', accL: '#855810' },
+  { id: 'marshes', name: 'The marshes', cat: 'iraq', h: 160, s: 40, acc: '#8fe0b0', accL: '#1d7046' },
+  { id: 'kurdistan', name: 'Kurdistan mountains', cat: 'iraq', h: 140, s: 30, acc: '#ffd34e', accL: '#7f6100' },
+  { id: 'sumer', name: 'Sumer', cat: 'iraq', h: 25, s: 35, acc: '#7cb2ff', accL: '#1f50b0' },
+  { id: 'ur', name: 'Ur ziggurat', cat: 'iraq', h: 28, s: 55, acc: '#ff9f5c', accL: '#9c450e' },
+  { id: 'iraqidates', name: 'Iraqi dates', cat: 'iraq', h: 22, s: 55, acc: '#e8a05a', accL: '#874512' },
+  { id: 'halabja', name: 'Halabja pomegranate', cat: 'iraq', h: 350, s: 55, acc: '#ff5c7a', accL: '#b0102f' },
+  { id: 'qamar', name: 'Qamar al-din', cat: 'iraq', h: 30, s: 75, acc: '#ffad42', accL: '#9a5200' },
+  { id: 'iraqflag', name: 'Iraq flag', cat: 'iraq', h: 140, s: 6, acc: '#ff4a5a', accL: '#b00d1f' },
 ]
 
 /** Lightness of bg / elevated / surface / surface-2 / surface-3, and how much of the hue's saturation. */

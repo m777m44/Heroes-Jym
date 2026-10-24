@@ -221,6 +221,27 @@ export function waterSchedule(p, goalMl, ml, now = new Date()) {
   return { slots: out, due, behind: Math.max(0, due - ml) }
 }
 
+/**
+ * 11.0 — where you should be right now: the goal spread evenly over your day (`from` → `to`, the
+ * reminder hours), so at 15:30 of 09:00–22:00 half of it is due. → { due (ml by now), diff (ml −
+ * due: + ahead, − behind), pct (of the day gone), left (ml still to drink), perHour (to finish by
+ * `to`), state: 'done' | 'early' (before your day) | 'ahead' | 'on' | 'behind' | 'late' (day over) }.
+ */
+export function waterPace(goal, ml, now = new Date(), from = '09:00', to = '22:00') {
+  const g = Math.max(0, +goal || 0), m = Math.max(0, +ml || 0)
+  let a = HHMM.test(from || '') ? minOf(from) : 540, b = HHMM.test(to || '') ? minOf(to) : 1320
+  if (b <= a) { a = 540; b = 1320 }
+  const t = now.getHours() * 60 + now.getMinutes()
+  const pct = Math.min(1, Math.max(0, (t - a) / (b - a)))
+  const due = Math.round(g * pct / 10) * 10
+  const diff = Math.round(m - due)
+  const left = Math.max(0, Math.round(g - m))
+  const hours = (b - Math.max(t, a)) / 60
+  const perHour = !left ? 0 : hours > 0 ? Math.round(left / hours / 10) * 10 : left
+  const state = m >= g && g > 0 ? 'done' : t < a ? 'early' : t >= b ? 'late' : diff >= 150 ? 'ahead' : diff > -150 ? 'on' : 'behind'
+  return { due, diff, pct, left, perHour, state }
+}
+
 /** The next reminder strictly after `now` (today's remaining slots, else tomorrow's first). */
 export function nextReminder(p, now = new Date()) {
   if (!p.on) return null

@@ -3,6 +3,98 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v11.0.0 — 2026-10-24
+
+**Your school week on your own times — up at 7:00, water, breakfast, get ready, school
+7:30–12:40 with nothing inside it, home, water, lunch and a drink — and the rest of the day and the
+weekend organised for you, every meal with its calories. Many more nuts (with their Iraqi names,
+dried fruits and dates), Iraqi drinks and everyday Iraqi food, a real profile picture, the walk
+"From Zakho to Fao", water in any amount with your pace, Iraq themes — and no more buzzing on
+every tap.**
+*أسبوع الدوام بأوقاتك أنت — استيقاظ 7:00، ماء، فطور، تجهّز، دوام 7:30–12:40 بلا أي شيء داخله، رجوع، ماء، غداء ومشروب — وباقي اليوم والعطلة منظّمة لك وكل وجبة بسعراتها. مكسرات أكثر بكثير بأسمائها العراقية مع الفواكه المجففة والتمور، ومشروبات وأكلات عراقية يومية، وصورة شخصية حقيقية، ورحلة «من زاخو إلى الفاو»، والماء بأي كمية مع معرفة تقدّمك، وثيمات العراق — ولا اهتزاز مع كل لمسة بعد الآن.*
+
+### 🏫 The school week, rebuilt (My schedule → School week)
+- **Sunday–Thursday, your times:** 07:00 wake up · 07:15 water (250 ml) · 07:20 breakfast (two
+  boiled eggs and bread, 321 kcal) · 07:25 get ready (clothes, school bag, a water bottle) ·
+  07:30–12:40 school, with no rest, water or food inside it · 12:40 back home · 12:50 water ·
+  13:00 lunch · 13:40 a drink (noomi Basra).
+- **The rest of the day:** a nap, homework (the hardest subject first), a snack (almonds and an
+  apple), water, phone & games, review, a workout (Sun, Tue, Thu) or a walk / football (Mon,
+  Wed), water, family time, **dinner with water after it** (cheese, bread, cucumber, tomato and
+  olives), some free time, the school bag, **a light snack before bed — warm milk with cardamom
+  and dates** — getting ready for bed, and sleep at 22:00 (9 hours).
+- **A different Iraqi lunch every school day:** rice with fasolia, chicken with rice, rice with
+  bamia, dolma with laban, biryani — each with its calories.
+- **Friday and Saturday:** sleep in until 9:00, an Iraqi breakfast with tea (kahi and geymar on
+  Friday), review or homework, phone & games, helping at home, lunch (dolma on Friday, masgouf on
+  Saturday), tea, a nap, kerzat and fruit, football with friends or a workout, visiting
+  relatives — and the same evening. Thursday and Friday nights run until 23:30.
+- About 2,400 ml of water and every block's calories, protein, carbs and fat through the day.
+  School keeps its time when you press +10; "Phone & games", family and free time don't ring.
+- A school week made before 11.0 is **offered** the new one (Update / Keep mine) — never forced.
+
+### 📅 My schedule
+- The timeline is grouped into **morning, afternoon, evening and night**, each with its number of
+  blocks and calories; the day shows its **protein, carbs and fat**.
+- **Foods from the database** can go into any block ("Add a food": eggs, bread, rice, stews,
+  fruit…), counted per serving and logged to the food diary with "Log & done".
+- Blocks can have **their own icon** (phone & games, football, TV, family, school bag, clothes…),
+  quantities show in the timeline ("Boiled egg ×2"), and template notes appear in your language.
+- Fixed: a food item in a block was counted per 100 g instead of per serving.
+
+### 🥜 Nuts, seeds, dried fruits and dates — 47 in all, with their Iraqi names
+- New: melon seeds (حب بطيخ), lemon-salted pistachios, acorns (بلوط), royal kerzat, seed kerzat,
+  popcorn (شامية), roasted corn, lupini (ترمس), crunchy coated peanuts.
+- **Dried fruits & dates:** raisins (زبيب), golden raisins (كشمش), zahdi, khastawi, barhi and
+  medjool dates — weighed with or without the stone — dried figs, apricots, qamar al-din, dried
+  mulberries, prunes (عنجاص), banana chips.
+- **Sweet & coated:** sugared almonds (ملبّس), sugar-coated chickpeas, chocolate nuts, simsimiya,
+  jowziya, dates stuffed with almonds — with a sugar caution.
+- Each one drawn (an acorn in its cap, popcorn, dates in their own colours, a sheet of qamar
+  al-din, sesame and walnut bars…); a handful of popcorn or lupini weighs what it really weighs;
+  only nuts and seeds count towards the daily handful.
+
+### 🥤 Iraqi drinks — 88 in all, 38 Iraqi
+- Tea with milk, tea with lemon, mint tea, hot cocoa, warm milk with dibis, Turkish coffee,
+  Nescafé with milk, fresh lemonade, hamudh hilu, and the juice shop: orange, carrot, apple,
+  grape and mango juice, banana milk, strawberry milk and the Iraqi juice cocktail — each with
+  its recipe, calories worked out from the ingredients and a one-line story.
+
+### 🍳 Everyday Iraqi food
+- An Iraqi breakfast plate, two boiled eggs with samoon, two fried eggs with bread, cheese,
+  olives and bread, timman with fasolia or bamia, green bean stew, sheikh mahshi, makarona,
+  shifta, cheese / labneh / chips sandwiches, halawa with bread, popcorn, arnoos, amba and
+  instant coffee 3-in-1.
+
+### 👤 A real profile picture
+- Your own photo from the phone (cropped to a circle, kept small, stays in your backups), or one
+  of **270+ symbols** in groups — faces, sports, animals, nature, food, Iraq, things, hearts — or
+  36 icons or your initial, on **24 colours**. Your choice wins over the Google account photo.
+
+### 🚶 Walking
+- **From Zakho to Fao:** all your steps as a walk across Iraq — Zakho, Duhok, Mosul, Erbil,
+  Kirkuk, Tikrit, Samarra, Baghdad, Babylon, Karbala, Najaf, Diwaniyah, Samawah, Nasiriyah,
+  Basra, Fao (1,360 km) — on a small map, with the next stop and laps.
+- **The last five weeks** as a calendar, each day shaded by how close it came to the goal.
+
+### 💧 Water
+- **Any amount** (25 ml–1.5 L, quick sizes up to a 1.5 L bottle), or take some back — undoable.
+- **Your pace:** how much should be in by now, ahead or behind, and the ml an hour still needed.
+
+### 🎨 Iraq themes — 1,442 curated themes
+- A new **Iraq** category: Tigris, Euphrates, Ishtar blue, Baghdad nights, Basra palms, Mosul
+  marble, Erbil citadel, Samarra, the marshes, Kurdistan mountains, Sumer, Ur ziggurat, Iraqi
+  dates, Halabja pomegranate, qamar al-din and the Iraq flag — every accent readable (≥ 3:1).
+
+### ✋ Feel
+- **The light vibration on every tap and swipe is off by default** (Settings → Vibrate on tap
+  brings it back). Milestone, goal, countdown and set haptics stay.
+
+### Quality
+- 692 web tests (new: the school week on your times, parts of the day, foods in blocks, the new
+  nuts, water pace, the journey, the profile picture helpers, the drinks and foods); the Arabic UI
+  guard covers the new sheets; 12 locales × 4,262 keys in sync.
+
 ## v10.0.0 — 2026-10-24
 
 **Soft drinks in every can, bottle and glass, nuts & seeds by the handful, and "My schedule" —
