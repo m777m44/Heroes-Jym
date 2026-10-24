@@ -13,7 +13,7 @@ import { todayISO } from '../lib/format.js'
 import { MEALS, mealAt, addEntry, dayEntries, foodGoalOf } from '../lib/food.js'
 import {
   NUT_CATS, NUT_CAT_BY_KEY, FORMS, UNITS, HANDFUL_G, MICRO, BENEFIT, NUT_CAUTION,
-  nutOf, unitsFor, edibleGrams, nutNutrition, nutEntry, searchNuts, nutDay, nutOfDay,
+  nutOf, unitsFor, edibleGrams, amountFor, nutNutrition, nutEntry, searchNuts, nutDay, nutOfDay,
 } from '../lib/nuts.js'
 import { burst, lastTap } from '../lib/motion.js'
 import NutArt from '../components/NutArt.jsx'
@@ -43,9 +43,10 @@ function usePortion(n) {
   const g = edibleGrams(n, a, u, shell)
   const setUnit = x => {
     if (x === u) return
-    const g0 = edibleGrams(n, a, u, shell)
-    const conv = x === 'g' ? Math.max(5, Math.round(g0 / 5) * 5 / (shell && n.shell ? n.ef : 1)) : x === 'handful' ? Math.max(0.5, Math.round(g0 / HANDFUL_G * 2) / 2) : x === 'piece' ? Math.max(1, Math.round(g0 / (n.pw || 1))) : Math.max(0.5, Math.round(g0 / (n.sp || 9) * 2) / 2)
-    setU(x); setA(Math.min(MAXA[x], x === 'g' ? Math.round(conv / 5) * 5 || 5 : conv))
+    // the same edible grams in the new unit — in the shell a handful holds less nut (review on PR #13)
+    const raw = amountFor(n, edibleGrams(n, a, u, shell), x, shell)
+    const conv = x === 'g' ? Math.max(5, Math.round(raw / 5) * 5) : x === 'piece' ? Math.max(1, Math.round(raw)) : Math.max(0.5, Math.round(raw * 2) / 2)
+    setU(x); setA(Math.min(MAXA[x], conv))
   }
   return { u, a, setA, setUnit, form, setForm, shell, setShell, g }
 }

@@ -109,6 +109,20 @@ export function edibleGrams(n, amount, unit = 'g', inShell = false) {
   return a * shell
 }
 
+/**
+ * The other way round: how much in `unit` gives `g` edible grams — weighed in the shell, a gram
+ * or a handful holds less nut (review on PR #13). Not rounded.
+ */
+export function amountFor(n, g, unit = 'g', inShell = false) {
+  if (!n) return 0
+  const x = Math.max(0, +g || 0)
+  const shell = inShell && n.shell ? n.ef : 1
+  if (unit === 'handful') return x / (HANDFUL_G * shell)
+  if (unit === 'piece') return x / (n.pw || 1)
+  if (unit === 'tbsp') return x / (n.sp || 9)
+  return x / shell
+}
+
 const r1 = v => Math.round(v * 10) / 10
 /** Nutrition for `g` edible grams in a form: kcal, protein, fat, carbs, fibre, sugar, sodium. */
 export function nutNutrition(n, g = HANDFUL_G, form = null) {

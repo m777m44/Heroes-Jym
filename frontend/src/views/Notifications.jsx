@@ -1,5 +1,5 @@
 // 10.0 — /notifications: every reminder of the app in one place. Which ones are on (water,
-// workouts, your schedule, your day, medicines, the burn plan), when the next one comes, and one
+// workouts, your schedule, your day, medicines, the burn plan, a fast), when the next one comes, and one
 // timeline of everything still to ring today — each row opens the screen where it is set up.
 // On the phone: the system's notification settings (now grouped by kind) and a test notification.
 import { useEffect, useMemo, useState } from 'react'
@@ -14,6 +14,7 @@ import { dayPrefs, dayReminderItems } from '../lib/daySchedule.js'
 import { idealBodyOf } from '../lib/idealBody.js'
 import { medReminders } from '../lib/health.js'
 import { burnReminders, burnReminderText } from '../lib/burnPlan.js'
+import { normFasting } from '../lib/fasting.js'
 import { MEALS } from '../lib/food.js'
 import { MOBILE } from '../lib/mobile.js'
 import { nav } from '../lib/nav.js'
@@ -25,6 +26,16 @@ const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const hm = d => d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
 const clockMin = m => hm(new Date(2000, 0, 1, Math.floor((((m % 1440) + 1440) % 1440) / 60), ((m % 60) + 60) % 60))
 const safe = (f, d) => { try { return f() } catch { return d } }
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+const whenText = (d, now) => (sameDay(d, now) ? hm(d) : d.toLocaleDateString(dateLocale(), { weekday: 'short' }) + ' ' + hm(d))
+
+/** The running fast and its "done" notification (Fasting.jsx), when that is still to come (review on PR #13). */
+function fastAlarm(S, now) {
+  const f = normFasting(S.fasting)
+  const end = f.active ? new Date(f.active.start + f.active.goalH * 3600000) : null
+  return { f, end, at: end && f.remind && end > now ? end : null, ramadan: !!f.active && f.active.plan === 'ramadan' }
+}
+const fastTitle = x => (x.ramadan ? t('Time for iftar') : t('Fast complete!'))
 
 async function openSystem() {
   try { const { call } = await import('../lib/stepService.js'); await call('openNotificationSettings', {}) } catch { /* web */ }
@@ -50,6 +61,8 @@ function upcoming(S, now) {
   const w = safe(() => waterRemindPrefs(S), { on: false })
   if (w.on) for (const at of safe(() => reminderSlots(w, now), [])) if (at > now) out.push({ at, icon: 'drop', color: '#64d2ff', title: t('Time for water'), sub: t('Water reminders'), to: '/water' })
   for (const r of safe(() => planReminders(S, now, 1), [])) if (r.at > now && r.at < end) out.push({ at: r.at, icon: r.kind === 'walk' ? 'figureWalk' : 'dumbbell', color: '#ff375f', title: r.kind === 'walk' ? t('Walking reminder') : r.routine || t('Workout reminder'), sub: t('Workout reminders'), to: '/settings' })
+  const fast = safe(() => fastAlarm(S, now), null)
+  if (fast && fast.at && fast.at < end) out.push({ at: fast.at, icon: 'moon', color: '#bf5af2', title: fastTitle(fast), sub: t('Fasting tracker'), to: '/fasting' })
   for (const m of safe(() => medReminders(S), [])) {
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), m.hour, m.minute)
     if (at > now) out.push({ at, icon: 'pill', color: '#ff9f0a', title: m.name, sub: t('Medicine reminders'), to: '/health' })
@@ -79,6 +92,7 @@ export default function Notifications() {
   const meds = safe(() => medReminders(S), [])
   const burn = safe(() => burnReminders(S, bodyKg(S)), [])
   const day = safe(() => dayPrefs(S), { remind: false })
+  const fast = safe(() => fastAlarm(S, now), { f: { remind: false, active: null }, end: null, at: null, ramadan: false })
   const nextPlan = safe(() => planNotifications(S, plan, now, t, clockMin, { days: 7, max: 1 })[0], null)
   const list = useMemo(() => upcoming(S, now), [S]) // eslint-disable-line react-hooks/exhaustive-deps
   // the phone's notification settings open through the Android service (review on PR #13: hidden where it isn't)
@@ -95,6 +109,8 @@ export default function Notifications() {
     { on: !!day.remind, icon: 'sun', tint: 'var(--green)', title: t('Your day'), sub: day.remind ? t('Meals, workout and walk at their times') : t('Off'), to: '/ideal' },
     { on: meds.length > 0, icon: 'pill', tint: 'var(--orange)', title: t('Medicine reminders'), sub: meds.length ? t('{0} reminders a day', n0(meds.length)) : t('Off'), to: '/health' },
     { on: burn.length > 0, icon: 'flame', tint: 'var(--pink)', title: t('Burn plan'), sub: burn.length ? t('{0} reminders planned', n0(burn.length)) : t('Off'), to: '/burn' },
+    { on: !!fast.at, icon: 'moon', tint: 'var(--purple)', title: t('Fasting tracker'), to: '/fasting',
+      sub: fast.at ? t('Next: {0}', fastTitle(fast) + ' · ' + whenText(fast.at, now)) : !fast.f.active ? t('Start fasting') : fast.f.remind ? t('Time to break your fast') : t('Off') },
   ]
   const onCount = rows.filter(r => r.on).length
   return <div className="narrow nf-page">

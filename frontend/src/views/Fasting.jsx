@@ -14,7 +14,10 @@ import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Button, BackButton } from '../components/ui.jsx'
 
-const NOTIFY_ID = 7600
+// 10.0: its own id — 7600 is also the burn plan's first notification, so ending a fast could take
+// that one away (and the two replaced each other)
+const NOTIFY_ID = 7680
+const LEGACY_ID = 7600
 const ui = () => useUI.getState()
 const hhmm = ms => new Date(ms).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
 const dayShort = iso => new Date(iso + 'T12:00:00').toLocaleDateString(dateLocale(), { weekday: 'narrow' })
@@ -25,6 +28,9 @@ export async function syncFastNotification(F) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: [{ id: NOTIFY_ID }] }).catch(() => {})
+    // one armed by 9.0 or older under the old id — only while it is still waiting to ring
+    const old = await LocalNotifications.getPending().catch(() => null)
+    if (old && (old.notifications || []).some(n => +n.id === LEGACY_ID)) await LocalNotifications.cancel({ notifications: [{ id: LEGACY_ID }] }).catch(() => {})
     const f = normFasting(F)
     if (!f.active || !f.remind) return
     const at = f.active.start + f.active.goalH * 3600000

@@ -51,7 +51,7 @@ export async function syncPlanReminders(S, force = false) {
       const r = await call('schedulePlanReminders', {
         items: alarms.map(n => ({
           id: n.id, block: n.block, w: n.w, start: n.start, lead: n.lead, skip: n.skip, title: n.title, body: n.body, big: n.lines.join('\n'),
-          color: n.color, route: '/dayplan', ttl: 2 * 3600000,
+          color: n.color, route: '/dayplan', ttl: 2 * 3600000, ...(n.once ? { once: n.once } : {}),
         })),
         strings: { channel: t('My schedule'), channelDesc: t('Each block of your schedule, with everything you planned'), done: t('Done ✓'), later: t('In {0} min', 10), sub: t('My schedule') },
       })

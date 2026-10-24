@@ -36,8 +36,15 @@ final class PlanMath {
     }
 
     /** Whether a block with weekdays `w` and quiet days `skip` still rings on the day `iso`. */
-    static boolean ringsOn(int[] w, Set<String> skip, String iso) {
-        int wd = iso == null ? -1 : weekdayOf(iso);
+    static boolean ringsOn(int[] w, Set<String> skip, String iso) { return ringsOn(w, skip, null, iso); }
+
+    /**
+     * The same for an entry that may be for one day only (`only`, 'yyyy-MM-dd': a day's own time
+     * after +10) — then no other day, whatever its weekday (review on PR #13).
+     */
+    static boolean ringsOn(int[] w, Set<String> skip, String only, String iso) {
+        if (iso == null || (only != null && !only.isEmpty() && !only.equals(iso))) return false;
+        int wd = weekdayOf(iso);
         return wd >= 0 && runsOn(w, wd) && (skip == null || !skip.contains(iso));
     }
 
@@ -46,12 +53,18 @@ final class PlanMath {
         return Integer.toHexString((title + '\u0001' + body + '\u0001' + big).hashCode());
     }
 
+    static long[] nextRing(int start, int leadMin, int[] w, Set<String> skip, long after) {
+        return nextRing(start, leadMin, w, skip, null, after);
+    }
+
     /**
      * A block's next ring after `after`: { ring time, the block's start that day } — on a weekday it
-     * runs, not on a day in `skip`, `leadMin` minutes before its start (`start`, minutes after
-     * midnight). Null when there is none in the next ten days (no weekday at all).
+     * runs, not on a day in `skip` (and only on `only` when that is set), `leadMin` minutes before
+     * its start (`start`, minutes after midnight). Weekdays and quiet days are the block's own
+     * date, also when the lead makes it ring the evening before (a 00:15 block, an hour early).
+     * Null when there is none in the next ten days.
      */
-    static long[] nextRing(int start, int leadMin, int[] w, Set<String> skip, long after) {
+    static long[] nextRing(int start, int leadMin, int[] w, Set<String> skip, String only, long after) {
         int st = Math.max(0, Math.min(1439, start));
         long lead = Math.max(0, leadMin) * 60_000L;
         Calendar day = Calendar.getInstance();
@@ -62,10 +75,8 @@ final class PlanMath {
             blk.set(Calendar.MINUTE, st % 60);
             blk.set(Calendar.SECOND, 0);
             blk.set(Calendar.MILLISECOND, 0);
-            long when = blk.getTimeInMillis();
-            if (runsOn(w, blk.get(Calendar.DAY_OF_WEEK) - 1) && (skip == null || !skip.contains(dayOf(when))) && when - lead > after) {
-                return new long[] { when - lead, when };
-            }
+            long blockAt = blk.getTimeInMillis();
+            if (blockAt - lead > after && ringsOn(w, skip, only, dayOf(blockAt))) return new long[] { blockAt - lead, blockAt };
             day.add(Calendar.DAY_OF_YEAR, 1);
         }
         return null;

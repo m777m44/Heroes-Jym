@@ -547,8 +547,8 @@ export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime
  * time itself and re-arms after every ring, so the whole schedule keeps reminding with the app
  * closed, however many blocks it has (review on PR #13).
  * A block moved on one day (+10) stays quiet at its usual time that day and gets one more entry
- * for that day only (`once`): its weekday, the new time and the same day a week later as quiet,
- * so it rings once and is not armed again.
+ * for that day only (`once`, which the phone keeps to — that date and no other, even after a
+ * reboot weeks later; the same day a week later is quiet too, for older builds).
  * → [{ id, block, w, start, lead, title, body, lines, kind, color, skip: ['YYYY-MM-DD'], once? }]
  */
 export function planAlarms(S, plan, now = new Date(), tr = defTr, fmtTime = toHHMM) {

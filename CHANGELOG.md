@@ -63,8 +63,8 @@ tidier notification settings, and many fixes.**
 
 ### 🔔 Notifications
 - A notifications centre (`/notifications`, from Settings and Tools): which reminders are on —
-  schedule, water, workouts, your day, medicines, the burn plan — and one timeline of everything
-  still to ring today; a test notification and the phone's settings.
+  schedule, water, workouts, your day, medicines, the burn plan, a running fast — and one timeline
+  of everything still to ring today; a test notification and the phone's settings.
 - The phone's notification settings are grouped: steps & activity, water, schedule & meals,
   workouts, health & medicines.
 
@@ -79,6 +79,9 @@ tidier notification settings, and many fixes.**
 - Drinks are logged to the meal of the time of day (they always went to snacks).
 - After midnight a log goes to snacks, not breakfast.
 - Sugary soft drinks count in the food screen's "sweet drinks and sweets" pointer.
+- Nuts weighed in the shell keep their amount when you switch between grams and handfuls.
+- The fasting reminder has its own notification id — it shared one with the burn plan's first
+  reminder, so ending a fast could take that one away.
 - New tests: soft-drink and nut maths, the school week, weekday blocks, reminders a week ahead
   and what they say; the Arabic screen guard covers every new screen and sheet.
 

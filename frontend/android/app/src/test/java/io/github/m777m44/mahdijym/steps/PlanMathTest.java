@@ -65,11 +65,30 @@ public class PlanMathTest {
     }
 
     @Test public void aBlockMovedForOneDayRingsOnceThatDay() {
-        // Monday's homework moved to 14:40 on that Monday only: its weekday, the next Monday quiet
+        // Monday's snack moved to 16:20 on that Monday only (+10 twice)
         int[] monday = { 1 };
         Set<String> skip = new HashSet<>(Collections.singletonList("2026-10-26"));
-        assertArrayEquals(new long[] { at(19, 14, 40), at(19, 14, 40) }, PlanMath.nextRing(14 * 60 + 40, 0, monday, skip, at(19, 14, 0)));
-        assertNull(PlanMath.nextRing(14 * 60 + 40, 0, monday, skip, at(19, 14, 41)));
+        int t = 16 * 60 + 20;
+        assertArrayEquals(new long[] { at(19, 16, 20), at(19, 16, 20) }, PlanMath.nextRing(t, 0, monday, skip, "2026-10-19", at(19, 16, 0)));
+        assertNull(PlanMath.nextRing(t, 0, monday, skip, "2026-10-19", at(19, 16, 21)));
+        // armed again after a reboot weeks later: never — not on 2 November, nor any other Monday (review on PR #13)
+        assertNull(PlanMath.nextRing(t, 0, monday, skip, "2026-10-19", at(28, 9, 0)));
+        assertFalse(PlanMath.ringsOn(monday, skip, "2026-10-19", "2026-11-02"));
+        assertTrue(PlanMath.ringsOn(monday, skip, "2026-10-19", "2026-10-19"));
+        // without `only` that Monday a fortnight later ("33 October" = 2 November) would ring — what the day's entry must not do
+        assertArrayEquals(new long[] { at(33, 16, 20), at(33, 16, 20) }, PlanMath.nextRing(t, 0, monday, skip, at(28, 9, 0)));
+    }
+
+    @Test public void quietDaysAreTheBlocksOwnDateWhenItRingsTheEveningBefore() {
+        // Tuesdays at 00:15, an hour early → Monday 23:15; done for Tuesday the 20th → quiet that Monday evening
+        int[] tuesday = { 2 };
+        int t = 15;
+        assertArrayEquals(new long[] { at(19, 23, 15), at(20, 0, 15) }, PlanMath.nextRing(t, 60, tuesday, null, at(19, 22, 0)));
+        Set<String> doneTue = new HashSet<>(Collections.singletonList("2026-10-20"));
+        assertArrayEquals(new long[] { at(26, 23, 15), at(27, 0, 15) }, PlanMath.nextRing(t, 60, tuesday, doneTue, at(19, 22, 0)));
+        // Monday the 19th quiet doesn't silence Tuesday's block
+        Set<String> quietMon = new HashSet<>(Collections.singletonList("2026-10-19"));
+        assertArrayEquals(new long[] { at(19, 23, 15), at(20, 0, 15) }, PlanMath.nextRing(t, 60, tuesday, quietMon, at(19, 22, 0)));
     }
 
     @Test public void aReminderInTheShadeStaysOnlyWhileItsDayStillRings() {

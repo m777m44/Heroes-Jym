@@ -145,7 +145,7 @@ public class PlanReminder extends BroadcastReceiver {
         for (int i = 0; i < list.length(); i++) {
             JSONObject o = list.optJSONObject(i);
             if (o == null || !block.equals(o.optString("block", "")) || o.optInt("lead", 0) != lead) continue;
-            if (PlanMath.ringsOn(ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), day)) return o;
+            if (PlanMath.ringsOn(ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), o.optString("once", null), day)) return o;
         }
         return null;
     }
@@ -158,7 +158,7 @@ public class PlanReminder extends BroadcastReceiver {
     /** A block's next ring after `after`: { ring time, the block's start that day }, or null. */
     static long[] nextRing(JSONObject o, long after) {
         if (o == null || !o.has("start")) return null;
-        return PlanMath.nextRing(o.optInt("start", 0), o.optInt("lead", 0), ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), after);
+        return PlanMath.nextRing(o.optInt("start", 0), o.optInt("lead", 0), ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), o.optString("once", null), after);
     }
 
     // ---- alarms -----------------------------------------------------------------------------

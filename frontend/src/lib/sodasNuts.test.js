@@ -4,7 +4,7 @@ import {
   SODAS, SODA_BY_ID, SODA_CATS, PACKS, SODA_SWAP, packFor, sodaNutrition, swapSaving, sodaEntry, sodaDay, searchSodas,
   recentSodas, countsAsWater, packDims, walkMinutes, TSP_G,
 } from './sodas.js'
-import { NUTS, NUT_BY_ID, NUT_CATS, FORMS, MICRO, BENEFIT, NUT_CAUTION, HANDFUL_G, unitsFor, edibleGrams, nutNutrition, nutEntry, nutDay, searchNuts, nutOfDay } from './nuts.js'
+import { NUTS, NUT_BY_ID, NUT_CATS, FORMS, MICRO, BENEFIT, NUT_CAUTION, HANDFUL_G, unitsFor, edibleGrams, amountFor, nutNutrition, nutEntry, nutDay, searchNuts, nutOfDay } from './nuts.js'
 import { foodName, entryKcal } from './food.js'
 
 describe('soft drinks — the data', () => {
@@ -110,6 +110,14 @@ describe('nuts & seeds', () => {
     expect(edibleGrams(p, 100, 'g', true)).toBeCloseTo(53, 0)
     expect(edibleGrams(p, 100, 'g', false)).toBe(100)
     expect(edibleGrams(NUT_BY_ID.almond, 10, 'piece')).toBeCloseTo(12, 5)
+    // and back: 50 g of pistachios in the shell ≈ 26.5 g of nut ≈ 1.67 handfuls in the shell, not 0.88 (review on PR #13)
+    const g = edibleGrams(p, 50, 'g', true)
+    expect(amountFor(p, g, 'handful', true)).toBeCloseTo(50 / HANDFUL_G, 5)
+    expect(amountFor(p, g, 'handful', false)).toBeCloseTo(g / HANDFUL_G, 5)
+    expect(amountFor(p, g, 'g', true)).toBeCloseTo(50, 5)
+    for (const u of ['handful', 'g', 'piece', 'tbsp']) for (const sh of [false, true]) {
+      expect(edibleGrams(p, amountFor(p, 40, u, sh), u, sh), u + sh).toBeCloseTo(40, 5)
+    }
     expect(edibleGrams(NUT_BY_ID.chia, 2, 'tbsp')).toBe(24)
     expect(unitsFor(NUT_BY_ID.chia)).toEqual(['handful', 'g', 'tbsp'])
     expect(unitsFor(NUT_BY_ID.almond)).toContain('piece')
