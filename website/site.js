@@ -65,25 +65,30 @@
   } catch (e) { /* fallback entries stay */ }
 })()
 
-// Download cards: show the real version + size of the newest GitHub release next to the
-// button. The button itself always points at releases/latest/download/MAHDI-JYM.apk, so it
-// works even when this request fails.
+// Download cards: show the real version + the size of each APK of the newest GitHub release next
+// to its button (data-asset names the file). The buttons always point at
+// releases/latest/download/<file>, so they work even when this request fails.
 ;(async () => {
   const lines = document.querySelectorAll('[data-rel="line"]')
-  if (!lines.length) return
+  const tags = document.querySelectorAll('[data-rel="tag"]')
+  if (!lines.length && !tags.length) return
   try {
     let rel = null
-    const cached = sessionStorage.getItem('gh_latest')
+    const cached = sessionStorage.getItem('gh_latest2')
     if (cached) rel = JSON.parse(cached)
     else {
       const r = await fetch('https://api.github.com/repos/m777m44/Heroes-Jym/releases/latest')
       if (!r.ok) return
       const d = await r.json()
-      const apk = (d.assets || []).find(a => a.name === 'MAHDI-JYM.apk')
-      rel = { tag: d.tag_name, size: apk ? apk.size : 0 }
-      sessionStorage.setItem('gh_latest', JSON.stringify(rel))
+      rel = { tag: d.tag_name, sizes: Object.fromEntries((d.assets || []).map(a => [a.name, a.size])) }
+      sessionStorage.setItem('gh_latest2', JSON.stringify(rel))
     }
-    const mb = rel.size ? ' · ' + (rel.size / 1048576).toFixed(1) + ' MB' : ''
-    lines.forEach(el => { el.textContent = rel.tag + mb + ' · Android 6.0+' })
+    const ar = document.documentElement.lang === 'ar'
+    tags.forEach(el => { el.textContent = (ar ? '' : 'Version ') + String(rel.tag).replace(/^v/, '') })
+    lines.forEach(el => {
+      const size = rel.sizes[el.dataset.asset || 'MAHDI-JYM.apk']
+      const mb = size ? ' · ' + (size / 1048576).toFixed(size >= 104857600 ? 0 : 1) + ' MB' : ''
+      el.textContent = rel.tag + mb + (el.tagName === 'EM' ? (ar ? ' ←' : ' →') : ' · Android 6.0+')
+    })
   } catch (e) { /* keep the static line */ }
 })()

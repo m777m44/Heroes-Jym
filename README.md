@@ -54,9 +54,9 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 
 <div align="center">
 
-### [▶ Try the live demo](https://heroes-jym.com/demo/) · [📱 Download the Android APK](https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk) · [🌐 heroes-jym.com](https://heroes-jym.com)
+### [🌐 Open the web app](https://m777m44.github.io/Heroes-Jym/app/) · [📦 Android — full (offline)](https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk) · [🪶 Android — light (online)](https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM-online.apk) · [▶ Live demo](https://m777m44.github.io/Heroes-Jym/demo/) · [Website](https://m777m44.github.io/Heroes-Jym/)
 
-No signup, nothing to install — it runs entirely in your browser on example data.<br>
+The web app is the real app with your own data, kept in your browser; the demo runs on example data. Both Android versions have the same features — the full one keeps everything inside (works with no internet), the light one is a small download that loads exercise media and pictures from this repository when shown.<br>
 <sub>There's no server behind the demo, so passkey sign-in, sync across devices and the
 admin dashboard only exist in a self-hosted instance.</sub>
 

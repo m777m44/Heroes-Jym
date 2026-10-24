@@ -3,6 +3,81 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v12.0.0 — 2026-10-24
+
+**Two Android versions with the same features — full (offline, everything inside) and light
+(online, a small download that loads exercise media and pictures from this repository) — and the
+real app on GitHub Pages as a web app. Updates inside the app. Any emoji typed with your keyboard
+as your profile picture, ready-made pictures from the repository or a photo from your phone. 144
+soft drinks (compare any two), 147 drinks and juices, 111 nuts, seeds and sweets. Arabic and
+English only.**
+*نسختا أندرويد بالمزايا نفسها — الكاملة (أوفلاين، كل شيء بداخلها) والخفيفة (أونلاين، تنزيل صغير
+يحمّل حركات التمارين والصور من المستودع) — والتطبيق الحقيقي على صفحات جيت هب كتطبيق ويب. التحديثات
+داخل التطبيق. أي إيموجي تكتبه بلوحة المفاتيح صورةً لملفك، أو صور جاهزة من المستودع، أو صورة من
+هاتفك. 144 مشروبًا غازيًا (قارن أي اثنين)، 147 مشروبًا وعصيرًا، 111 من المكسرات والبذور والحلويات.
+العربية والإنجليزية فقط.*
+
+### 📦 Two versions, the same app
+- **`MAHDI-JYM.apk` — full (offline):** everything inside — all 1,324 exercise images and
+  animations, the wallpapers and the profile pictures. Works with no internet at all. The old
+  download link keeps pointing at it.
+- **`MAHDI-JYM-online.apk` — light (online):** the same code and features; exercise media come
+  from the exercise dataset and the wallpapers / profile pictures from this repository through
+  jsDelivr, pinned to a commit, when they are shown (and are cached). Wallpaper thumbnails and
+  sounds stay inside, so the pickers work offline. `npm run build:mobile` builds it
+  (`scripts/slim-online.mjs` drops the local copies); CI fails it above 40 MB.
+- Same app id, signature and version code — install one over the other and your data stays.
+- Every release ships both APKs plus `-v12.0.0` copies and `SHA256SUMS`.
+
+### 🌐 GitHub Pages: the website, the web app and the demo
+- **https://m777m44.github.io/Heroes-Jym/** — the website (English and Arabic), with all links
+  relative so it works under the project path.
+- **`/app/` — the web app** (`VITE_WEBAPP=1`): the real app with your own data in the browser —
+  no server, no account; back it up with Settings → Data → Export.
+- **`/demo/`** keeps its example data apart: its storage lives under a `demo:` prefix and it has
+  its own IndexedDB and caches, so it never touches the web app's data on the same origin.
+
+### 🔄 Updates in the app
+- Settings → **App & updates**: your version and which one it is (full, light, web app), *Check
+  for updates* against the newest GitHub release, the matching download with its size, and the
+  other versions.
+- On Android it checks quietly at most once a day and tells you once when a new version is out.
+
+### 🙂 Profile picture
+- **Type any emoji** with the keyboard — flags, skin tones and families too — or two letters;
+  the last 12 you typed stay one tap away.
+- **Ready-made pictures** kept in the repository (lion, tiger, wolf, falcon, Arabian horse,
+  lifter, footballer, boxer, runner, superhero) and the wallpaper photos (nature, seas, anime).
+- Or a photo from your phone, as before.
+
+### 🥤 Soft drinks: 48 → 144
+- Many more colas, lemon-lime, fruit sodas, mixers, malt drinks, energy drinks and homemade
+  sodas, and two new groups: **iced teas** and **sports drinks**.
+- **Compare any two** side by side at the same size: calories, sugar in teaspoons, caffeine,
+  sodium and the walk that burns it — and which is lighter, by how much.
+- **Caffeine for teens:** under 18 the meters count against about 100 mg a day instead of the
+  adult 400 mg; today's caffeine shows next to today's sugar.
+
+### 🍹 Drinks & juices: 88 → 147
+- Iraqi classics: sage tea (maramiya), cinnamon & clove tea, saffron & cardamom milk,
+  pomegranate lemonade, raqqi, mishmish and guava juice, pistachio milk, dibis w rashi milk.
+- More for weight loss, digestion, energy, protein, immunity, sleep and hydration — matcha,
+  kefir, soy milk, whey shakes, infused waters, coolers and warm milks — each worked out from
+  its ingredients, with notes and cautions.
+
+### 🥜 Nuts, seeds & sweets: 47 → 111
+- A new group, **nut butters & tahini** (counted in your daily handful).
+- Shelled pistachios and sunflower seeds, white seeds, hemp, poppy and black seed; spicy cashews,
+  chilli peanuts, spicy kerzat, soy nuts, roasted peas and broad beans; Iraqi street snacks —
+  **bagilla**, **lablabi**, boiled peanuts — edamame and fresh coconut.
+- More dates (sukkari, ajwa, sayer, halawi, khadrawi, deglet nour), dried fruit, and the sweets
+  of Iraqi gatherings: mann al-sama, baklawa, kleicha, halqoum, halawa, sweet kerzat.
+- New drawings: jars of nut butter, beans, dried-fruit strips, baklawa, kleicha and halqoum.
+
+### 🌍 Languages
+- **Arabic and English only** — the other 11 languages and their instruction packs are gone,
+  making every build smaller and faster. Everything new is translated into Arabic.
+
 ## v11.0.0 — 2026-10-24
 
 **Your school week on your own times — up at 7:00, water, breakfast, get ready, school

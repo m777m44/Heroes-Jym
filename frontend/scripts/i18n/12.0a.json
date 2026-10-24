@@ -317,5 +317,12 @@
  "Caffeine for teens": "الكافيين للمراهقين",
  "Under 18, the soft-drink screen counts caffeine against about 100 mg a day instead of the adult 400 mg.": "تحت سن 18، تحسب شاشة المشروبات الغازية الكافيين مقابل نحو 100 ملغ يوميًا بدل 400 ملغ للبالغين.",
  "Arabic and English": "العربية والإنجليزية",
- "The app now comes in Arabic and English only — smaller and faster.": "التطبيق الآن بالعربية والإنجليزية فقط — أصغر وأسرع."
+ "The app now comes in Arabic and English only — smaller and faster.": "التطبيق الآن بالعربية والإنجليزية فقط — أصغر وأسرع.",
+ "Everything is inside the app — it works with no internet.": "كل شيء داخل التطبيق — يعمل بلا إنترنت.",
+ "A small download — exercise pictures, wallpapers and profile pictures load from GitHub when you open them.": "تنزيل صغير — صور التمارين والخلفيات وصور الملف الشخصي تُحمَّل من جيت هب عندما تفتحها.",
+ "Runs in your browser — your data stays in this browser.": "يعمل في متصفحك — تبقى بياناتك في هذا المتصفح.",
+ "Live demo": "التجربة الحيّة",
+ "Example data, stored only in this browser.": "بيانات مثال، محفوظة في هذا المتصفح فقط.",
+ "Self-hosted": "استضافة ذاتية",
+ "Your own MAHDI-JYM server.": "خادم MAHDI-JYM الخاص بك."
 }

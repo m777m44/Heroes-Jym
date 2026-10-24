@@ -201,3 +201,20 @@ describe('nuts: 111, with nut butters, Iraqi street snacks and sweets', () => {
     expect(NUT_BY_ID.sukkari.shell).toBe(true)                          // dates come with their stone
   })
 })
+
+describe('everything new is in Arabic', () => {
+  it('translates the strings the app passes to t() from tables', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { default: ar } = await import('../locales/ar.js')
+    const { VARIANT_INFO } = await import('../components/AppUpdates.jsx')
+    const keys = []
+    for (const v of Object.values(VARIANT_INFO)) keys.push(v.title, v.sub)
+    for (const a of AVATAR_PICS) keys.push(a.name)
+    const src = f => readFileSync(new URL(f, import.meta.url), 'utf8')
+    for (const m of src('../components/WhatsNew.jsx').matchAll(/(title|body): '((?:[^'\\]|\\.)*)'/g)) keys.push(m[2].replace(/\\'/g, "'"))
+    for (const m of src('../components/ProfileSheet.jsx').matchAll(/key: '\w+', name: '([^']+)'/g)) keys.push(m[1])
+    for (const m of src('../views/Sodas.jsx').matchAll(/label: '([^']+)', icon:/g)) keys.push(m[1])
+    expect(keys.length).toBeGreaterThan(40)
+    expect(keys.filter(k => !(k in ar))).toEqual([])
+  })
+})

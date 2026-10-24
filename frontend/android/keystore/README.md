@@ -6,7 +6,7 @@ alias `mahdi-jym`) — it exists so that every CI build carries the *same* signa
 what lets Android install an update over the previous version without wiping the app's data.
 
 Because the key is public, anyone could sign an APK that Android would accept as an "update".
-Only install MAHDI-JYM from the official GitHub Releases / heroes-jym.com, and before handing
+Only install MAHDI-JYM from the official GitHub Releases / https://m777m44.github.io/Heroes-Jym/, and before handing
 the app to other people switch to a private key (see `docs/MOBILE.md` → *Signing*).
 
 Certificate SHA-256:
