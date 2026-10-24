@@ -46,7 +46,7 @@ node scripts/local-host.mjs                 # → http://localhost:8080
 - Exercise media is served from `./media` if you ran `scripts/fetch-media.sh`; otherwise it is
   redirected to the pinned dataset on jsDelivr, so it works right away.
 - Behind HTTPS on your own domain, pass the public URL:
-  `ORIGIN=https://app.heroes-jym.com node scripts/local-host.mjs` (`RP_ID` is derived from it).
+  `ORIGIN=https://gym.example.com node scripts/local-host.mjs` (`RP_ID` is derived from it).
 - Other knobs: `WEB_PORT` (8080), `HOST` (0.0.0.0), `API_PORT` (3000).
 
 ## 2. Understand the passkey requirement (important)

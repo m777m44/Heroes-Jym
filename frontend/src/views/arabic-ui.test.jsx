@@ -195,4 +195,4 @@ it('the Arabic UI has no stray English', async () => {
   const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
   const stray = Object.entries(found).filter(([l]) => !ALLOWED.some(r => r.test(l))).map(([l, s]) => `${[...s].join(',')}\t${l}`).sort()
   expect(stray).toEqual([])
-})
+}, 60000)   // 12.0: it renders every screen with ~400 drinks and nuts drawn — give slow CI machines time

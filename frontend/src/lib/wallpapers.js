@@ -9,6 +9,8 @@
 // applyWallpaper(wall, mode) runs right after applyTheme (which resets the surface colours), so it
 // can make the surfaces translucent over the picture and switch on the frosted-glass rules.
 import { NATURE, ANIME, SEA, IRAQ } from './wallpaperList.js'
+import { dbName } from './demo.js'
+import { assetUrl, localUrl, REMOTE_ASSETS, cachedAsset } from './assets.js'
 
 export const WALL_CATS = [
   { key: 'nature', name: 'Nature', icon: 'mountain' },
@@ -23,8 +25,9 @@ export const MAX_DIM = 0.85
 export const MAX_BLUR = 24
 export const MAX_MINE = 40
 
-const base = () => (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) || '/'
-export const photoUrl = (id, thumb = false) => base() + 'wallpapers/' + (thumb ? 't/' : '') + id + '.webp'
+// 12.0: the full pictures come from the repository in the online (light) app; thumbnails are
+// always inside the app (lib/assets.js)
+export const photoUrl = (id, thumb = false) => (thumb ? localUrl('wallpapers/t/' + id + '.webp') : assetUrl('wallpapers/' + id + '.webp'))
 
 // ---- generated art -------------------------------------------------------------------------------
 export const PALETTES = {
@@ -87,7 +90,7 @@ export function normWall(w) {
 }
 
 // ---- your photos (IndexedDB) ----------------------------------------------------------------------
-const DB = 'mj-walls', STORE = 'p'
+const DB = dbName('mj-walls'), STORE = 'p'
 function db() {
   return new Promise((res, rej) => {
     if (typeof indexedDB === 'undefined') return rej(new Error('no indexedDB'))
@@ -188,6 +191,14 @@ export function applyWallpaper(wall, mode = 'dark', doc = typeof document !== 'u
   if (cat === 'mine') {
     de.style.setProperty('--wall-bg', dark ? '#111' : '#eee')
     mineUrl(w.id.slice(5)).then(u => { if (my === token && u) de.style.setProperty('--wall-bg', `url("${u}") center/cover no-repeat, #111`) })
+    return
+  }
+  // 12.0: online (light) app — the picture comes from the repository once, then from the
+  // phone's copy (Cache Storage), so it also shows without internet
+  if (REMOTE_ASSETS) {
+    const bg = COLOR[w.id] || '#222'
+    de.style.setProperty('--wall-bg', bg)
+    cachedAsset(photoUrl(w.id)).then(u => { if (my === token && u) de.style.setProperty('--wall-bg', `url("${u}") center/cover no-repeat, ${bg}`) })
     return
   }
   // absolute: a relative url() inside a custom property resolves against the stylesheet (assets/)

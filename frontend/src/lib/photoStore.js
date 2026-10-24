@@ -10,23 +10,12 @@
 //
 // Keyed by profile + date, so two profiles signing in on one device never see each other's.
 
-const DB = 'mahdi-jym'
+import { appDB } from './idb.js'
+
 const STORE = 'weightPhotos'
 const MAX_SIDE = 1280
 
-let dbp = null
-function db() {
-  if (dbp) return dbp
-  dbp = new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') { reject(new Error('IndexedDB unavailable')); return }
-    const req = indexedDB.open(DB, 1)
-    req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE) }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-  dbp.catch(() => { dbp = null })
-  return dbp
-}
+const db = appDB
 async function tx(mode, fn) {
   const d = await db()
   return new Promise((resolve, reject) => {

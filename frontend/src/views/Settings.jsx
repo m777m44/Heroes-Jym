@@ -9,8 +9,9 @@ import { effortOf } from '../lib/history.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { wakeLockSupported } from '../lib/wakelock.js'
-import { t, U, LANGS, INSTR_LANGS, dateLocale, deviceLang } from '../lib/i18n.js'
-import { DEMO, REPO } from '../lib/demo.js'
+import { t, U, LANGS, dateLocale, deviceLang } from '../lib/i18n.js'
+import { DEMO, WEBAPP, NO_SERVER, REPO } from '../lib/demo.js'
+import { openLink, WEB_APP, apkUrl, APK_ONLINE } from '../lib/updates.js'
 import { MOBILE, shareExport, syncReminder } from '../lib/mobile.js'
 import { loadStarterPlan, confirmSheet, importFromApp } from '../sheets.jsx'
 import { suggestedReminderTime, reminderPrefs, timeFor, routineSummary } from '../lib/dailyReminder.js'
@@ -19,6 +20,7 @@ import { coachAvailable, hasConsent } from '../lib/coach.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import Icon from '../components/Icon.jsx'
 import OfflineSection from '../components/OfflineSection.jsx'
+import AppUpdates from '../components/AppUpdates.jsx'
 import AccountSection from '../components/AccountSection.jsx'
 import SecuritySection from '../components/SecuritySection.jsx'
 import { linkGoogleSheet, GoogleWebButton, signInWithGoogleToken } from '../components/GoogleWebButton.jsx'
@@ -92,11 +94,16 @@ export default function Settings() {
 
     {/* ---------- account (demo and mobile builds have nothing to sign in to) ---------- */}
     {MOBILE && <AccountSection />}
-    {!MOBILE && <Section title={DEMO ? t('Demo') : t('Account')}>
-      {MOBILE ? null : DEMO ? <>
+    {!MOBILE && <Section title={DEMO ? t('Demo') : WEBAPP ? t('Web app') : t('Account')}>
+      {MOBILE ? null : WEBAPP ? <>
+        {/* 12.0: the web app on GitHub Pages — no server, your data in this browser */}
+        <Row icon="globe" iconTint="var(--acc)" title={t('You’re using the web app')} subtitle={t('Your data stays in this browser on this device — save a backup file now and then (Data → Export).')} />
+        <Row icon="download" iconTint="var(--green)" title={t('Get the Android app')} subtitle={t('Online (light) or offline (everything inside) — Settings → App & updates')} accessory="chevron" onClick={() => openLink(apkUrl(APK_ONLINE))} />
+      </> : DEMO ? <>
         <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
         <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
           onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
+        <Row icon="globe" iconTint="var(--green)" title={t('Use the real web app')} subtitle={t('The same app with your own data, in this browser.')} accessory="chevron" onClick={() => openLink(WEB_APP)} />
         <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host MAHDI-JYM')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
           onClick={() => window.open(REPO, '_blank', 'noopener')} />
       </> : user ? <>
@@ -129,7 +136,7 @@ export default function Settings() {
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
     </Section>}
-    {!user && !DEMO && !MOBILE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
+    {!user && !NO_SERVER && !MOBILE && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- general ---------- */}
     <Section title={t('General')} footer={t('Note: switching units only changes the label — logged numbers are not converted.')}>
@@ -142,10 +149,7 @@ export default function Settings() {
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang && LANGS[S.lang] ? S.lang : 'auto'} onChange={v => update(s => { s.lang = v })}
-        options={[{ value: 'auto', label: t('Phone language'), subtitle: LANGS[deviceLang()] }, ...Object.entries(LANGS).map(([k, name]) => ({
-          value: k, label: name,
-          subtitle: INSTR_LANGS.includes(k) ? null : t("Exercise instructions aren't available in this language yet — they stay in English."),
-        }))]}
+        options={[{ value: 'auto', label: t('Phone language'), subtitle: LANGS[deviceLang()] }, ...Object.entries(LANGS).map(([k, name]) => ({ value: k, label: name }))]}
       />
       <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
         <Segmented className="seg-inline"
@@ -299,6 +303,9 @@ export default function Settings() {
         title={IS_ANDROID ? t('In Chrome: ⋮ menu → Add to Home screen') : t('In Safari: Share → Add to Home Screen')}
         subtitle={t('to install MAHDI-JYM as a full-screen app.') + ' ' + (user ? t('Your data syncs with your profile — sign in anywhere to see it.') : t('Guest data stays on this device — export a backup now and then!'))} />
     </Section>}
+
+    {/* 12.0: this version, updates with direct downloads, the other versions */}
+    <AppUpdates />
 
     <Section>
       <Row icon="sparkles" iconTint="var(--yellow)" title={t('What’s new')} subtitle={t('Version {0}', __APP_VERSION__)} accessory="chevron" onClick={whatsNewSheet} />

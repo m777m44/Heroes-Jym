@@ -8,7 +8,7 @@
  * every exercise id a proposal references actually exists (FR-16), and building payloads for
  * scheduled reviews, which run with nobody's browser open. Rather than teach the api build to
  * reach into frontend/, the index is generated and committed — the same arrangement the
- * translated instruction packs in src/instr/ already use.
+ * translated (Arabic) instruction pack in src/instr/ already uses.
  *
  * Only the fields the Coach reasons over are kept: an id, a name, and the three taxonomy
  * fields it filters on. Instructions, images and secondary muscles stay out — they would

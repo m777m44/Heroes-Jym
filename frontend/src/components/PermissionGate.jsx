@@ -39,9 +39,9 @@ export default function PermissionGate() {
   const android = plat === 'android'
   const mark = (k, v) => setSt(s => ({ ...s, [k]: v }))
   const setLang = l => update(s => { s.lang = l })
-  // Arabic / English, plus the phone's own language when it's another one (each in its own script).
+  // 12.0: the app speaks Arabic and English — each named in its own script.
   const cur = langOf(S)
-  const langOpts = [...new Set(['ar', 'en', cur])].map(l => ({ value: l, label: LANGS[l] || l }))
+  const langOpts = Object.keys(LANGS).map(l => ({ value: l, label: LANGS[l] }))
   const stop = () => cancelled.current || skipped.current
 
   // Every step is bounded (the bridge times out) and the whole run is in try/finally, so the

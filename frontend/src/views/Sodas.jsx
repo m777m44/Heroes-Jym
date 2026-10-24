@@ -4,6 +4,8 @@
 // the WHO daily limit, caffeine, the walk that burns it and what the sugar-free twin saves.
 //   sodaSheet(id, { pk, ml })   the drink: packs, sizes, numbers, log it
 //   pickSodaSheet(onPick)       choose a soft drink and its size (the day plan)
+//   compareSheet(a, b)          12.0: two soft drinks side by side at the same size
+// 12.0 — the caffeine meter counts against about 100 mg a day under 18 (caffeineLimit).
 // The data and maths live in lib/sodas.js; the art in components/SodaArt.jsx.
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
@@ -15,7 +17,9 @@ import { bodyKg } from '../lib/water.js'
 import {
   SODAS, SODA_CATS, SODA_CAT_BY_KEY, PACKS, CUP_LABEL, SHARE_ML, SODA_NOTE, SUGAR_MAX_G, SUGAR_IDEAL_G, CAFFEINE_MAX_MG,
   sodaOf, packFor, sodaNutrition, sodaEntry, searchSodas, sodaDay, recentSodas, swapSaving, walkMinutes, countsAsWater,
+  SODA_SWAP, caffeineLimit, compareSodas,
 } from '../lib/sodas.js'
+import { ageOf } from '../lib/idealBody.js'
 import { logWater } from '../components/water/WaterParts.jsx'
 import { burst, lastTap } from '../lib/motion.js'
 import SodaArt from '../components/SodaArt.jsx'
@@ -65,8 +69,9 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
   const kg = bodyKg(St) || 70
   const walk = walkMinutes(n.kcal, kg)
   const swap = swapSaving(s, ml, count)
+  const cafMax = caffeineLimit(ageOf(St))
   const choosePack = p => { const x = packFor(s, p, p === s.def.pk ? s.def.ml : null); setPk(x.pk); setMl(x.ml) }
-  const notes = [s.energy && 'e', s.zero && 'z', s.quinine && 'q', s.dairy && 'd'].filter(Boolean)
+  const notes = [s.energy && 'e', s.zero && 'z', s.quinine && 'q', s.dairy && 'd', s.tea && 't', s.sport && 'x'].filter(Boolean)
   const log = () => {
     const iso = iso0 || todayISO()
     const e = sodaEntry(s, { pk, ml, count, meal })
@@ -128,7 +133,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
       <div className="sd-stat" style={{ '--c': 'var(--orange)' }}>
         <span className="lbl2">{t('Caffeine')}</span>
         <b>{n0(n.caffeine)} <small>{U('mg')}</small></b>
-        <span className="small">{n.caffeine > 0 ? t('{0}% of a day', n0(n.caffeine / CAFFEINE_MAX_MG * 100)) : t('None')}</span>
+        <span className="small">{n.caffeine > 0 ? t('{0}% of a day', n0(n.caffeine / cafMax * 100)) : t('None')}</span>
       </div>
       <div className="sd-stat" style={{ '--c': 'var(--green)' }}>
         <span className="lbl2">{t('To burn it')}</span>
@@ -138,7 +143,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
     </div>
     {n.tsp >= 0.5 && <Cubes tsp={n.tsp} />}
     <Bar value={n.sugar} max={SUGAR_MAX_G} ideal={SUGAR_IDEAL_G} color="var(--pink)" label={t('Of the daily sugar limit (WHO)')} />
-    {n.caffeine > 0 && <Bar value={n.caffeine} max={CAFFEINE_MAX_MG} color="var(--orange)" label={t('Of the caffeine limit for a day')} />}
+    {n.caffeine > 0 && <Bar value={n.caffeine} max={cafMax} color="var(--orange)" label={cafMax < CAFFEINE_MAX_MG ? t('Of the daily caffeine limit for teens') : t('Of the caffeine limit for a day')} />}
     <div className="sd-mini">
       <span><Icon name="drop" />{t('Sodium')} <b>{n0(n.sodium)} {U('mg')}</b></span>
       <span><Icon name="fork" />{t('Carbs')} <b>{n1(n.c)} {U('g')}</b></span>
@@ -151,6 +156,9 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
         <span className="small">{t('Save {0} kcal and {1} teaspoons of sugar', n0(swap.kcal), n1(swap.tsp))}</span></span>
       <Icon name="chevronRight" className="chev" />
     </button>}
+    <button className="sd-cmpbtn" onClick={() => { close(); setTimeout(() => compareSheet(s.id, swap ? swap.to.id : undefined), 90) }}>
+      <Icon name="compare" /><span className="grow">{t('Compare with another drink')}</span><Icon name="chevronRight" className="chev" />
+    </button>
 
     <div className="sd-notes">
       <div className="sd-noteline"><Icon name="info" /><span>{t(cat.desc)}</span></div>
@@ -222,6 +230,69 @@ function Pick({ onPick, close }) {
 }
 export const pickSodaSheet = onPick => ui().openSheet(close => <Pick onPick={onPick} close={close} />)
 
+// ---- 12.0: compare two soft drinks ---------------------------------------------------------------------------
+const CMP_SIZES = [250, 330, 500, 1000]
+const CMP_ROWS = {
+  kcal: { label: 'Calories', icon: 'flame', fmt: v => n0(v) + ' ' + U('kcal') },
+  sugar: { label: 'Sugar', icon: 'square', fmt: v => t('{0} teaspoons', n1(v / 4)) },
+  caffeine: { label: 'Caffeine', icon: 'bolt', fmt: v => n0(v) + ' ' + U('mg') },
+  sodium: { label: 'Sodium', icon: 'drop', fmt: v => n0(v) + ' ' + U('mg') },
+  walk: { label: 'Walking to burn it', icon: 'figureWalk', fmt: v => n0(v) + ' ' + U('min') },
+}
+function Compare({ a: a0, b: b0 }) {
+  const St = useStore(s => s.S)
+  const [a, setA] = useState(() => sodaOf(a0) || SODAS[0])
+  const [b, setB] = useState(() => sodaOf(b0) || sodaOf(SODA_SWAP[a0]) || SODAS.find(x => x.zero && x.id !== a0) || SODAS[1])
+  const [ml, setMl] = useState(330)
+  const [pick, setPick] = useState(null)
+  const [q, setQ] = useState('')
+  if (pick) {
+    const list = searchSodas({ q, tr: t })
+    return <div className="dk-pick">
+      <div className="sd-pick-h">
+        <button className="iconbtn" aria-label={t('Back')} onClick={() => { setPick(null); setQ('') }}><Icon name="chevronLeft" /></button>
+        <h3 className="grow">{t('Choose a soft drink')}</h3>
+      </div>
+      <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search soft drinks')} />
+      <div className="list dk-pick-l">
+        {list.map(s => <button key={s.id} className="item dk-pick-i" onClick={() => { (pick === 'a' ? setA : setB)(s); setPick(null); setQ('') }}>
+          <SodaArt soda={s} size={26} />
+          <div className="grow"><div className="tt">{sodaName(s)}</div><div className="ss">{n0(sodaNutrition(s, ml).kcal)} {U('kcal')} · {sizeText(ml)}</div></div>
+          <Icon name="chevronRight" className="chev" />
+        </button>)}
+      </div>
+    </div>
+  }
+  const r = compareSodas(a, b, ml, bodyKg(St))
+  const win = r.lighter === 'a' ? a : r.lighter === 'b' ? b : null
+  const side = (s, k) => <button className={'sd-cmp-s' + (r.lighter === k ? ' win' : '')} style={{ '--b': s.br, '--c': s.col }} onClick={() => setPick(k)} aria-label={t('Change') + ': ' + sodaName(s)}>
+    <SodaArt soda={s} pk={ml <= 330 ? 'can' : 'bottle'} ml={ml} size={64} live />
+    <b>{sodaName(s)}</b>
+    <span className="small muted"><Icon name="refresh" />{t('Change')}</span>
+  </button>
+  return <div className="sd-cmp">
+    <h3><Icon name="compare" />{t('Compare soft drinks')}</h3>
+    <div className="sd-cmp-top">{side(a, 'a')}<span className="sd-cmp-vs">{t('vs')}</span>{side(b, 'b')}</div>
+    <div className="sd-sizes scroll">
+      {CMP_SIZES.map(v => <button key={v} className={'chip nocap' + (ml === v ? ' on' : '')} onClick={() => setMl(v)}>{sizeText(v)}</button>)}
+    </div>
+    <div className="sd-cmp-t" role="table">
+      {r.rows.map(x => { const R = CMP_ROWS[x.k]; return <div key={x.k} className="sd-cmp-r" role="row">
+        <span role="cell" className={x.best === 'a' ? 'best' : ''}>{R.fmt(x.a)}</span>
+        <span role="rowheader" className="sd-cmp-l"><Icon name={R.icon} />{t(R.label)}</span>
+        <span role="cell" className={x.best === 'b' ? 'best' : ''}>{R.fmt(x.b)}</span>
+      </div> })}
+    </div>
+    <div className={'sd-cmp-sum' + (win ? ' on' : '')}>
+      <Icon name={win ? 'leafy' : 'check'} />
+      <span>{win ? t('{0} has {1} kcal and {2} teaspoons of sugar less', sodaName(win), n0(r.kcal), n1(r.tsp)) : t('Both are the same in calories and sugar')}</span>
+    </div>
+    <p className="small muted sd-foot">{t('Values are typical per 100 ml — recipes differ from country to country, so check the label. Brand names belong to their owners.')}</p>
+  </div>
+}
+/** Two soft drinks side by side (b defaults to the sugar-free twin of a). */
+export const compareSheet = (a, b) => ui().openSheet(() => <Compare a={a} b={b} />)
+
 // ---- the screen ----------------------------------------------------------------------------------------------
 function SodaCard({ s, i }) {
   const n = sodaNutrition(s, s.def.ml)
@@ -247,10 +318,12 @@ export default function Sodas() {
   const recent = recentSodas(St, 21, 8)
   const c = cat && SODA_CAT_BY_KEY[cat]
   const hero = SODAS[(new Date().getDate() * 7) % SODAS.length]
+  const cafMax = caffeineLimit(ageOf(St))
   return <div className="narrow sd-page">
     <div className="hdr">
       <BackButton fallback="/drinks" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Soft drinks')}</h1><div className="sub">{t('Calories, sugar and caffeine in every can and bottle')}</div></div>
+      <button className="iconbtn" aria-label={t('Compare soft drinks')} title={t('Compare soft drinks')} onClick={() => compareSheet(hero.id)}><Icon name="compare" /></button>
     </div>
 
     {!q && !cat && <div className="card sd-top" style={{ '--b': hero.br, '--b2': hero.br2, '--c': hero.col }}>
@@ -268,6 +341,7 @@ export default function Sodas() {
           <div><b>{n1(day.sugar / 4)}</b><span>{t('Teaspoons of sugar')}</span></div>
         </div>
         <Bar value={day.sugar} max={SUGAR_MAX_G} ideal={SUGAR_IDEAL_G} color="var(--pink)" label={t('Of the daily sugar limit (WHO)')} />
+        {day.caffeine > 0 && <Bar value={day.caffeine} max={cafMax} color="var(--orange)" label={cafMax < CAFFEINE_MAX_MG ? t('Of the daily caffeine limit for teens') : t('Of the daily caffeine limit')} />}
       </div>
     </div>}
 

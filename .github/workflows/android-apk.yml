@@ -1,11 +1,18 @@
-# Builds the Android app (Capacitor) and, for version tags, publishes it as a GitHub Release.
+# Builds the Android app (Capacitor) in two versions and, for version tags, publishes both as a
+# GitHub Release.
 #
-#   push to main / PR branch  →  signed APK uploaded as a workflow artifact
-#   Every build is the offline APK: all 1,324 exercise images + animations inside (~140 MB),
-#   and the step counter's JVM unit tests must pass first.
-#   push tag v*               →  same APK attached to a GitHub Release as MAHDI-JYM.apk, so
+#   offline  MAHDI-JYM.apk         everything inside: all 1,324 exercise images + animations,
+#                                  wallpapers and profile pictures (~135 MB) — works with no internet
+#   online   MAHDI-JYM-online.apk  12.0: the same app, light — exercise media, wallpapers and the
+#                                  ready-made profile pictures come from GitHub (jsDelivr, pinned
+#                                  commits) when they are shown
+#   Same features, same app id, same signature and version code: either one installs over the
+#   other and the data stays. The step counter's JVM unit tests must pass first.
+#
+#   push to main / PR branch  →  both signed APKs uploaded as a workflow artifact
+#   push tag v*               →  both attached to a GitHub Release, so
 #                                https://github.com/m777m44/Heroes-Jym/releases/latest/download/MAHDI-JYM.apk
-#                                always points at the newest build (the website links there)
+#                                and …/MAHDI-JYM-online.apk always point at the newest build
 #
 # Signing: if the repository secrets ANDROID_KEYSTORE_BASE64 + ANDROID_KEYSTORE_PASSWORD
 # (optionally ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) exist they are used. Otherwise the
@@ -113,7 +120,7 @@ jobs:
             } >> "$GITHUB_ENV"
           fi
 
-      - name: Build release APK
+      - name: Build the offline APK
         working-directory: frontend/android
         run: |
           chmod +x gradlew
@@ -128,22 +135,52 @@ jobs:
             echo "::error title=Gradle build failed::$msg"
             exit 1
           fi
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/offline.apk"
 
-      - name: Verify signature and name the files
+      # 12.0 — the online (light) version: the same app without the bundled media. A fresh web
+      # bundle (scripts/slim-online.mjs leaves the big pictures in the repository), `cap sync`,
+      # and a second, incremental Gradle build with the same key.
+      - run: npm run build:mobile
+        working-directory: frontend
+
+      - name: Build the online APK
+        working-directory: frontend/android
+        run: |
+          set -o pipefail
+          if ! ./gradlew --no-daemon assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle-online.log"; then
+            msg=$(grep -E "FAILED|error:|ERROR:|What went wrong|Execution failed|^> " "$RUNNER_TEMP/gradle-online.log" \
+              | grep -v "^> Task" | head -60 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Gradle build failed (online APK)::$msg"
+            exit 1
+          fi
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/online.apk"
+
+      - name: Verify signatures and name the files
         id: out
         run: |
           VERSION=$(node -p "require('./frontend/package.json').version")
-          SRC=frontend/android/app/build/outputs/apk/release/app-release.apk
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
-          "$APKSIGNER" verify --verbose --print-certs "$SRC" | tee "$RUNNER_TEMP/sig.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/offline.apk" | tee "$RUNNER_TEMP/sig.txt"
+          "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/online.apk" | tee "$RUNNER_TEMP/sig-online.txt"
+          # one key for both, so either version installs over the other
+          A=$(grep -m1 "SHA-256 digest" "$RUNNER_TEMP/sig.txt"); B=$(grep -m1 "SHA-256 digest" "$RUNNER_TEMP/sig-online.txt")
+          if [ "$A" != "$B" ]; then echo "::error title=Signatures differ::$A vs $B"; exit 1; fi
+          ON_MB=$(du -m "$RUNNER_TEMP/online.apk" | cut -f1)
+          if [ "$ON_MB" -gt 40 ]; then echo "::error title=Online APK too big::${ON_MB} MB — the light version must stay small"; exit 1; fi
           mkdir -p out
-          cp "$SRC" out/MAHDI-JYM.apk
-          cp "$SRC" "out/MAHDI-JYM-v$VERSION.apk"
+          cp "$RUNNER_TEMP/offline.apk" out/MAHDI-JYM.apk
+          cp "$RUNNER_TEMP/offline.apk" "out/MAHDI-JYM-v$VERSION.apk"
+          cp "$RUNNER_TEMP/online.apk" out/MAHDI-JYM-online.apk
+          cp "$RUNNER_TEMP/online.apk" "out/MAHDI-JYM-online-v$VERSION.apk"
           (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
-          SIZE=$(du -m out/MAHDI-JYM.apk | cut -f1)
+          OFF_MB=$(du -m out/MAHDI-JYM.apk | cut -f1)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "offline_mb=$OFF_MB" >> "$GITHUB_OUTPUT"
+          echo "online_mb=$ON_MB" >> "$GITHUB_OUTPUT"
           {
-            echo "### MAHDI-JYM v$VERSION — Android APK (${SIZE} MB)"
+            echo "### MAHDI-JYM v$VERSION — Android APKs"
+            echo "- offline (everything inside): ${OFF_MB} MB"
+            echo "- online (light): ${ON_MB} MB"
             echo '```'
             grep -E "Verified using|SHA-256 digest" "$RUNNER_TEMP/sig.txt" || true
             cat out/SHA256SUMS.txt
@@ -161,17 +198,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          OFF_MB: ${{ steps.out.outputs.offline_mb }}
+          ON_MB: ${{ steps.out.outputs.online_mb }}
         run: |
           cat > "$RUNNER_TEMP/notes.md" <<EOF
           **MAHDI-JYM ${TAG}** — جسمك، خطتك، إرادتك.
 
+          ### Two versions — the same app, the same features
+          | | File | Size | |
+          |---|---|---|---|
+          | 📦 **Offline** | **MAHDI-JYM.apk** | ${OFF_MB} MB | everything inside — works with no internet |
+          | ⚡ **Online (light)** | **MAHDI-JYM-online.apk** | ${ON_MB} MB | exercise pictures, wallpapers and profile pictures load from GitHub |
+
+          Either one installs over the other — your data stays. 🌐 Or use it in the browser: https://m777m44.github.io/Heroes-Jym/app/
+
           ### Install on Android (6.0+)
-          1. Download **MAHDI-JYM.apk** below on your phone.
+          1. Download one of the two APKs below on your phone.
           2. Open it and allow *Install unknown apps* for your browser / file manager when asked.
           3. Tap **Install**. Updates install over the old version — your data stays.
 
+          ### نسختان — التطبيق نفسه وبالميزات نفسها
+          - 📦 **أوفلاين** — ملف **MAHDI-JYM.apk** (${OFF_MB} م.ب): كل شيء داخل التطبيق، يعمل بلا إنترنت.
+          - ⚡ **أونلاين (خفيف)** — ملف **MAHDI-JYM-online.apk** (${ON_MB} م.ب): صور التمارين والخلفيات وصور الملف الشخصي تُحمَّل من GitHub.
+          - تُثبَّت أي نسخة فوق الأخرى وتبقى بياناتك. 🌐 أو استخدمه في المتصفح: https://m777m44.github.io/Heroes-Jym/app/
+
           ### التثبيت على أندرويد (6.0 أو أحدث)
-          1. حمّل ملف **MAHDI-JYM.apk** من الأسفل على هاتفك.
+          1. حمّل أحد الملفين من الأسفل على هاتفك.
           2. افتحه واسمح بـ «تثبيت التطبيقات غير المعروفة» للمتصفح أو مدير الملفات عند الطلب.
           3. اضغط **تثبيت**. التحديثات تُثبَّت فوق النسخة القديمة وتبقى بياناتك.
 

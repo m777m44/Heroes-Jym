@@ -71,6 +71,7 @@ import { applyA11y } from './lib/a11y.js'
 import AppLock from './components/AppLock.jsx'
 import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
+import { autoCheck } from './lib/updates.js'
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
 import { installBackButton } from './lib/backButton.js'
@@ -157,6 +158,19 @@ function Shell() {
   useEffect(() => { if (ready && authed) syncPlanReminders(useStore.getState().S) }, [ready, authed, S.planner, S.lang]) // eslint-disable-line react-hooks/exhaustive-deps
   // 2.6: the Google account copy (when signed in) — kept in step while the app runs
   useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
+  // 12.0: a newer release on GitHub → said once per version (Settings → App & updates has the
+  // direct downloads). At most one quiet request a day, only in the Android app.
+  useEffect(() => {
+    if (!ready || !authed || !MOBILE) return
+    const tm = setTimeout(() => {
+      autoCheck().then(r => {
+        if (!r) return
+        try { if (localStorage.getItem('mj_update_told') === r.version) return; localStorage.setItem('mj_update_told', r.version) } catch { /* private mode */ }
+        useUI.getState().toast(t('MAHDI-JYM {0} is out — Settings → App & updates', r.version))
+      })
+    }, 12000)
+    return () => clearTimeout(tm)
+  }, [ready, authed])
   // 4.0: a version of your data once a day, kept on this phone (Settings → Backups & restore)
   useEffect(() => {
     if (!ready || !authed || DEMO) return

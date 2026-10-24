@@ -1,4 +1,4 @@
-// What's new (10.0, 11.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
+// What's new (10.0, 11.0, 12.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
@@ -6,19 +6,18 @@ import { MOBILE } from '../lib/mobile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 
-export const WHATS_NEW = '11.0'
+export const WHATS_NEW = '12.0'
 
 const ITEMS = [
-  { icon: 'school', c: '#c08552', title: 'Your school week, your times', body: 'Up at 7:00, water, breakfast, get ready, school 7:30–12:40 with nothing inside it, home, water, lunch and a drink — then a nap, homework, games, review, sport, dinner with water and a light snack before bed.' },
-  { icon: 'calendar', c: '#5e5ce6', title: 'Friday and Saturday too', body: 'Sleep in, an Iraqi breakfast, study, phone & games, helping at home, football, family and rest — every block with its calories.' },
-  { icon: 'nut', c: '#c68a54', title: 'Many more nuts, with Iraqi names', body: 'Melon seeds, lemon pistachios, acorns, royal and seed kerzat, shamiya, termis — and dried fruits and dates: zbeeb, kishmish, zahdi, khastawi, barhi, figs, qamar al-din, mlabbas and more.' },
-  { icon: 'cup', c: '#a0461e', title: 'More Iraqi drinks', body: 'Chai haleeb, mint and lemon tea, kakao, milk with dibis, Turkish coffee, Nescafé, hamudh hilu and the juice shop: orange, carrot, apple, grape, mango, banana and strawberry milk and the Iraqi cocktail.' },
-  { icon: 'fork', c: '#ff9f0a', title: 'Everyday Iraqi food', body: 'Eggs with samoon, cheese and labneh sandwiches, timman with fasolia or bamia, sheikh mahshi, shifta, makarona, amba, arnoos — and foods can go straight into your schedule.' },
-  { icon: 'personCircle', c: '#ff375f', title: 'A real profile picture', body: 'Your own photo from the phone, or one of hundreds of symbols — faces, sport, animals, nature, food, Iraq — on 24 colours.' },
-  { icon: 'route', c: '#30d158', title: 'From Zakho to Fao', body: 'All your steps as a walk across Iraq, city by city — and the last five weeks at a glance.' },
-  { icon: 'drop', c: '#0a84ff', title: 'Water, any amount', body: 'Add any amount up to a 1.5 L bottle, and see if you are ahead or behind right now.' },
-  { icon: 'palm', c: '#d4a017', title: 'Iraq themes', body: 'The Tigris, the Euphrates, Ishtar blue, Baghdad nights, Basra palms, Mosul marble, the marshes and more — 1,442 themes in all.' },
-  { icon: 'vibrate', c: '#8e8e93', title: 'No more buzzing on every tap', body: 'The light vibration when you tap or swipe is off — switch it back on in Settings if you liked it.' },
+  { icon: 'cube', c: '#5e5ce6', title: 'Two versions, the same app', body: 'The full version keeps everything inside the app and works with no internet. The light version is tiny and loads pictures from the app’s repository when you need them — same features, same updates.' },
+  { icon: 'wifi', c: '#0a84ff', title: 'Open it in the browser too', body: 'MAHDI-JYM now runs as a web app on GitHub Pages — on any phone or computer, nothing to install. Your data stays on your device.' },
+  { icon: 'refresh', c: '#30d158', title: 'Updates in the app', body: 'Settings shows your version, checks for a new one and opens the right download for your version.' },
+  { icon: 'keyboard', c: '#ff9f0a', title: 'Any emoji as your picture', body: 'Type an emoji or two letters with your keyboard, pick one of the new pictures (a lion, a falcon, a lifter…), a wallpaper photo, or a photo from your phone.' },
+  { icon: 'can', c: '#e0245e', title: '144 soft drinks', body: 'Iced teas, sports drinks and many more colas, fruit sodas, malt and energy drinks — and compare any two side by side.' },
+  { icon: 'cup', c: '#a0461e', title: '147 drinks and juices', body: 'Sage and thyme tea, cinnamon and clove tea, saffron milk, raqqi, mishmish and guava juice, pistachio milk, dibis w rashi milk — and many more shakes, smoothies and infused waters.' },
+  { icon: 'nut', c: '#c68a54', title: '111 nuts, seeds and sweets', body: 'Nut butters and tahini, bagilla and lablabi, more dates (sukkari, ajwa, sayer, halawi), dried fruit, mann al-sama, baklawa and kleicha.' },
+  { icon: 'coffee', c: '#8b5e3c', title: 'Caffeine for teens', body: 'Under 18, the soft-drink screen counts caffeine against about 100 mg a day instead of the adult 400 mg.' },
+  { icon: 'globe', c: '#8e8e93', title: 'Arabic and English', body: 'The app now comes in Arabic and English only — smaller and faster.' },
 ]
 
 function WhatsNewSheet({ close }) {
@@ -28,7 +27,7 @@ function WhatsNewSheet({ close }) {
       <span className="wn-orb"><Icon name="sparkles" /></span>
       {[0, 1, 2, 3, 4].map(i => <span key={i} className={'wn-spark s' + i} />)}
     </div>
-    <div className="wn-kicker">MAHDI-JYM 11.0</div>
+    <div className="wn-kicker">MAHDI-JYM {WHATS_NEW}</div>
     <h2 className="wn-title">{t('What’s new')}</h2>
     <div className="wn-list">
       {items.map((it, i) => <div key={it.title} className="wn-i" style={{ '--i': i, '--c': it.c }}>

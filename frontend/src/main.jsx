@@ -1,3 +1,4 @@
+import './lib/storageNs.js'   // 12.0: first — the demo keeps its storage apart from the web app
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'

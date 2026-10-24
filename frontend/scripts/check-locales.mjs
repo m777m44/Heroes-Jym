@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Guards the one invariant every locale in src/locales/ shares: the same key set.
-// English is the source language and has no locale file, so a key that exists in only
-// some locales falls back to English silently, mid-sentence, with nothing failing
-// anywhere. This catches that at review time instead of in the app.
+// Guards the locales in src/locales/ (12.0: Arabic only — English is the source language and
+// has no locale file).
 //
 //   node scripts/check-locales.mjs
 //
-// The reference is the union of all locales, not one blessed file: a key added to a
-// single locale then flags the other ten instead of passing unnoticed.
+// 1. Every locale carries the same key set (a key added to one locale only would fall back to
+//    English silently, mid-sentence, in the others). With a single locale this is trivially true,
+//    but it keeps working if a language is ever added again.
+// 2. Every literal key the app passes to t() exists in the locales.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -40,7 +40,7 @@ const union = [...seen.keys()]
 let failed = false
 for (const [lang, keys] of locales) {
   const missing = union.filter(k => !keys.has(k))
-  const orphans = union.filter(k => keys.has(k) && seen.get(k) === 1)
+  const orphans = locales.size > 1 ? union.filter(k => keys.has(k) && seen.get(k) === 1) : []
   if (missing.length || orphans.length) {
     failed = true
     console.error(`\n${lang}.js: ${keys.size}/${union.length} keys`)
