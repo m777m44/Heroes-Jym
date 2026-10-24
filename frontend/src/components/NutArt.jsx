@@ -8,6 +8,8 @@
 // peanuts, royal and seed kerzat; dates (each kind its own colour), raisins, figs, apricots, a sheet
 // of qamar al-din, mulberries, prunes, banana chips; sugared almonds and chickpeas, chocolate nuts,
 // simsimiya and jowziya bars and a date stuffed with an almond. Shapes may take the item's colour.
+// 12.0 — jars of nut butter and spreads, beans, dried-fruit strips, baklawa, kleicha, halqoum and
+// the new mixes (mixed nuts, trail mix, student mix, sweet and spicy kerzat).
 import { useId } from 'react'
 
 function mix(hex, to, k) {
@@ -82,7 +84,31 @@ Object.assign(PIECE, {
   nutbar: (c, _s, col = '#b07a3f') => <><rect x="-13" y="-6.4" width="26" height="12.8" rx="2.8" fill={c(col)} stroke={c(ds(col, 0.32))} strokeWidth=".9" /><g fill={c('#d8b07c')} stroke={c('#8a5a2c')} strokeWidth=".5">{[[-8, -1, 3], [-1, 1.6, 3.4], [6, -1.4, 3]].map(([x, y, r], i) => <g key={i}><ellipse cx={x} cy={y} rx={r} ry={r * 0.75} /><path d={`M${x} ${y - r * 0.7}V${y + r * 0.7}`} fill="none" /></g>)}</g></>,
   stuffed: c => <><path d="M0 -12C5.4 -12 7.6 -6 7.6 0C7.6 7 5 12 0 12S-7.6 7-7.6 0C-7.6-6-5.4-12 0-12Z" fill={c('#6b3a1f')} stroke={c('#40200f')} strokeWidth=".9" /><path d="M-2.6 -7.4C0 -9 3 -6 2.6 0C2.2 5-1 8-2.6 6.6C-4 3-4.4 -4-2.6 -7.4Z" fill={c('#e8cfa3')} stroke={c('#b8925c')} strokeWidth=".7" /><ellipse cx="-4" cy="-6" rx="1.2" ry="2.6" fill="#fff" opacity=".25" /></>,
 })
+// 12.0 — a jar of nut butter or spread, a bean (bagilla, edamame, peas), a dried-fruit strip, a
+// baklawa diamond, a kleicha swirl and a cube of halqoum — each in the item's own colour
+Object.assign(PIECE, {
+  jar: (c, _s, col = '#c68a3c') => <><rect x="-9" y="-6" width="18" height="17" rx="3.4" fill={c('#f4efe6')} stroke={c('#cfc4b1')} strokeWidth=".8" /><rect x="-7.6" y="-2" width="15.2" height="11.6" rx="2.4" fill={c(col)} /><rect x="-10" y="-11" width="20" height="5.6" rx="1.6" fill={c(mix(col, 'black', 0.35))} /><path d="M-5 1h3" stroke="#fff" strokeOpacity=".5" strokeWidth="1.2" strokeLinecap="round" /></>,
+  bean: (c, _s, col = '#a7b36b') => <><path d="M-10 -2C-10 -8 -3 -10 2 -8C5 -7 6 -4 8 -4C11 -4 12 0 11 4C9.6 9 2 10 -3 8.6C-8 7 -10 3 -10 -2Z" fill={c(col)} stroke={c(mix(col, 'black', 0.3))} strokeWidth=".9" /><path d="M-5 -3C-3 -5 0 -5 2 -4" stroke="#fff" strokeOpacity=".45" strokeWidth="1.2" fill="none" strokeLinecap="round" /></>,
+  slice: (c, _s, col = '#f6a623') => <><path d="M-12 4C-8 -6 4 -10 12 -6C9 -1 2 6 -6 9C-9 10 -12 8 -12 4Z" fill={c(col)} stroke={c(mix(col, 'black', 0.25))} strokeWidth=".9" /><path d="M-7 3C-3 -2 2 -5 7 -5" stroke="#fff" strokeOpacity=".35" strokeWidth="1.1" fill="none" strokeLinecap="round" /></>,
+  baklava: (c, _s, col = '#d9a441') => <><path d="M0 -11L12 0L0 11L-12 0Z" fill={c(col)} stroke={c(mix(col, 'black', 0.3))} strokeWidth=".9" /><path d="M-8 -3.6H8M-10 0H10M-8 3.6H8" stroke={c(mix(col, 'black', 0.18))} strokeWidth=".7" /><circle r="2.6" fill={c('#7fae4a')} /></>,
+  cookie: (c, _s, col = '#c88a4a') => <><circle r="10.6" fill={c(col)} stroke={c(mix(col, 'black', 0.3))} strokeWidth=".9" /><path d="M0 0c2 0 2.6 2.4.6 3.4c-3 1.4-6-1.2-5-4.4c1.4-4.4 7.6-5 9.6-.6c2.2 4.6-1.6 9.6-6.6 9.4" fill="none" stroke={c(mix(col, 'black', 0.35))} strokeWidth="1.3" strokeLinecap="round" /></>,
+  cube: (c, _s, col = '#f2b8c6') => <><path d="M-9 -4L0 -9L9 -4V6L0 11L-9 6Z" fill={c(col)} stroke={c(mix(col, 'black', 0.25))} strokeWidth=".9" /><path d="M-9 -4L0 1L9 -4M0 1V11" stroke={c(mix(col, 'black', 0.15))} strokeWidth=".8" fill="none" /><g fill="#fff" opacity=".85">{[[-4, -4], [3, -5], [0, -7], [5, 3], [-5, 4]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=".7" />)}</g></>,
+})
 // items drawn with another's piece
+Object.assign(PIECE, {
+  // 12.0
+  pbutter: PIECE.jar, almondbutter: PIECE.jar, tahini: PIECE.jar, cashewbutter: PIECE.jar, sunbutter: PIECE.jar, pistachiocream: PIECE.jar, hazelnutspread: PIECE.jar,
+  dibisrashi: PIECE.jar, datepaste: PIECE.jar, almondsmoked: PIECE.almond, pistachioshelled: PIECE.pistachio, mixednuts: PIECE.almond, sunflowershelled: PIECE.sunflower,
+  sunflowerbbq: PIECE.sunflower, whiteseeds: PIECE.pumpkin, pumpkinshelled: PIECE.pumpkin, hemp: PIECE.sesame, poppy: PIECE.chia, nigella: PIECE.chia,
+  cashewspicy: PIECE.cashew, peanutspicy: PIECE.peanut, kerzatspicy: PIECE.peanut, soynuts: PIECE.chickpea, peasroasted: PIECE.bean, favaroasted: PIECE.bean,
+  bagilla: PIECE.bean, lablabi: PIECE.chickpea, peanutsboiled: PIECE.peanut, edamame: PIECE.bean, coconutfresh: PIECE.coconut, coconutchips: PIECE.slice,
+  seedbar: PIECE.nutbar, granola: PIECE.crunchy, studentmix: PIECE.raisin, sukkari: PIECE.date, ajwa: PIECE.date, sayer: PIECE.date, halawi: PIECE.date,
+  khadrawi: PIECE.date, deglet: PIECE.date, cranberries: PIECE.raisin, goji: PIECE.raisin, driedcherries: PIECE.raisin, driedstrawberries: PIECE.raisin,
+  driedmango: PIECE.slice, driedpineapple: PIECE.slice, driedkiwi: PIECE.slice, applechips: PIECE.slice, driedpeach: PIECE.apricot, cashewhoney: PIECE.cashew,
+  almondhoney: PIECE.almond, peanuthoney: PIECE.peanut, pecancandied: PIECE.pecan, trailmix: PIECE.choc, kerzatsweet: PIECE.sugared, halawa: PIECE.bar,
+  mann: PIECE.sugarball, baklawa: PIECE.baklava, kleicha: PIECE.cookie, halqoum: PIECE.cube, peanutbrittle: PIECE.nutbar, datescoconut: PIECE.sugarball,
+  datenutballs: PIECE.sugarball, chocdates: PIECE.choc,
+})
 Object.assign(PIECE, { kerzat: PIECE.peanut, pistachiolemon: PIECE.pistachio, zahdi: PIECE.date, khastawi: PIECE.date, barhi: PIECE.date, medjool: PIECE.date,
   raisins: PIECE.raisin, kishmish: PIECE.raisin, figs: PIECE.fig, apricots: PIECE.apricot, qamaraldin: PIECE.sheet, mulberries: PIECE.mulberry, prunes: PIECE.prune,
   bananachips: PIECE.chip, mlabbas: PIECE.sugared, chickpeacandy: PIECE.sugarball, chocnuts: PIECE.choc, simsimiya: PIECE.bar, jowziya: PIECE.nutbar, datestuffed: PIECE.stuffed })
@@ -94,6 +120,17 @@ const MIX = {
     one: [['cashew', -8, 3, -16, 1, false], ['almond', 9, -5, 14, 0.92, false], ['hazelnut', 4, 11, 0, 0.72, false]] },
   kerzatseeds: { pile: [['sunflower', -13, 3, -30, 0.95, true], ['melon', 12, 4, 25, 0.95, true], ['pumpkin', 0, -8, 5, 0.95, true], ['watermelon', 3, 10, 70, 0.8, true]],
     one: [['sunflower', -8, 3, -25, 0.9, true], ['melon', 8, -4, 20, 0.9, true], ['pumpkin', 2, 10, 80, 0.75, true]] },
+  // 12.0
+  mixednuts: { pile: [['cashew', -13, 3, -14, 1.04, false], ['almond', 13, 4, 16, 1.04, false], ['walnut', 0, -8, 4, 1, false], ['hazelnut', 3, 10, 0, 0.9, false]],
+    one: [['almond', -8, 3, -16, 1, false], ['cashew', 8, -4, 12, 1, false], ['hazelnut', 2, 11, 0, 0.8, false]] },
+  trailmix: { pile: [['peanut', -13, 3, -14, 1, false], ['raisin', 13, 4, 16, 1, false], ['choc', 0, -8, 4, 0.95, false], ['almond', 3, 10, 20, 0.9, false]],
+    one: [['peanut', -8, 3, -16, 1, false], ['choc', 8, -4, 12, 0.9, false], ['raisin', 2, 11, 0, 0.85, false]] },
+  studentmix: { pile: [['raisin', -13, 3, -14, 1, false], ['almond', 13, 4, 16, 1, false], ['cashew', 0, -8, 4, 1, false], ['walnut', 3, 10, 0, 0.85, false]],
+    one: [['raisin', -8, 3, -16, 1, false], ['almond', 8, -4, 12, 1, false], ['walnut', 2, 11, 0, 0.8, false]] },
+  kerzatsweet: { pile: [['sugared', -13, 3, -14, 1, false], ['raisin', 13, 4, 16, 1, false], ['pistachio', 0, -8, 4, 1, true], ['sugarball', 3, 10, 0, 0.85, false]],
+    one: [['sugared', -8, 3, -16, 1, false], ['pistachio', 8, -4, 12, 1, true], ['raisin', 2, 11, 0, 0.85, false]] },
+  kerzatspicy: { pile: [['peanut', -13, 3, -14, 1, false], ['corn', 13, 4, 16, 1, false], ['cashew', 0, -8, 4, 1, false], ['chickpea', 3, 10, 0, 0.85, false]],
+    one: [['peanut', -8, 3, -16, 1, false], ['corn', 8, -4, 12, 1, false], ['cashew', 2, 11, 0, 0.8, false]] },
 }
 
 export default function NutArt({ nut, size = 48, live = false, shell = false, form = null, pile = false, className = '', label }) {
@@ -108,7 +145,7 @@ export default function NutArt({ nut, size = 48, live = false, shell = false, fo
   const salted = fm === 'salted' || fm === 'boiled'
   const draw = (kind, hasShell) => (PIECE[kind] || PIECE.almond)(c, hasShell, kind === n.id ? n.col : undefined)
   const m = MIX[n.id]
-  const flat = ['bar', 'nutbar', 'sheet'].includes(n.id) || ['simsimiya', 'jowziya', 'qamaraldin'].includes(n.id)
+  const flat = ['bar', 'nutbar', 'sheet'].includes(n.id) || ['simsimiya', 'jowziya', 'qamaraldin', 'halawa', 'seedbar', 'peanutbrittle'].includes(n.id)
   const pieces = pile
     ? (m ? m.pile : flat ? [[n.id, -6, 5, -8, 0.95, sh], [n.id, 6, -6, 10, 0.95, sh]] : [[n.id, -13, 4, -16, 1.04, sh], [n.id, 13, 5, 18, 1.04, sh], [n.id, 0, -8, 4, 1.16, sh]])
     : m ? m.one : [[n.id, 0, 0, flat ? -8 : -12, flat ? 1.5 : 1.7, sh]]

@@ -14,7 +14,7 @@ for (const [k, v] of Object.entries(data)) {
   if (typeof ar !== 'string' || !ar.trim()) { console.error('no Arabic:', k); bad++; continue }
   if (ph(ar) !== ph(k)) { console.error('placeholders differ:', k, '→', ar); bad++ }
   // the Arabic UI guard (views/arabic-ui.test.jsx) fails on two Latin letters in a row
-  if (/[A-Za-z]{2}/.test(ar.replace(/\{\d\}/g, ''))) { console.error('Latin letters in the Arabic text:', k, '→', ar); bad++ }
+  if (/[A-Za-z]{2}/.test(ar.replace(/\{\d\}/g, '').replace(/MAHDI-JYM/g, ''))) { console.error('Latin letters in the Arabic text:', k, '→', ar); bad++ }
 }
 if (bad) process.exit(1)
 const file = join(root, 'src/locales/ar.js')

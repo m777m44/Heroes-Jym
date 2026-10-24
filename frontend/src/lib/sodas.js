@@ -293,6 +293,21 @@ export const walkMinutes = (kcal, kg = 70) => Math.max(0, Math.round(kcal / ((3.
 export const sugarShare = g => g / SUGAR_MAX_G
 export const caffeineShare = mg => mg / CAFFEINE_MAX_MG
 
+// 12.0 — caffeine for teens: under 18 about 100 mg a day at most (AAP; Health Canada ≈ 2.5 mg per kg)
+export const CAFFEINE_TEEN_MG = 100
+/** The daily caffeine limit for an age (null = unknown → the adult limit). */
+export const caffeineLimit = age => (Number.isFinite(age) && age < 18 ? CAFFEINE_TEEN_MG : CAFFEINE_MAX_MG)
+
+/** Two soft drinks side by side at the same size: each one's numbers, which is lighter and by how much. */
+export function compareSodas(a, b, ml = 330, kg = 70) {
+  const A = sodaNutrition(a, ml), B = sodaNutrition(b, ml)
+  const row = (k, x, y) => ({ k, a: x, b: y, best: x === y ? null : x < y ? 'a' : 'b' })
+  const rows = [row('kcal', A.kcal, B.kcal), row('sugar', A.sugar, B.sugar), row('caffeine', A.caffeine, B.caffeine),
+    row('sodium', A.sodium, B.sodium), row('walk', walkMinutes(A.kcal, kg), walkMinutes(B.kcal, kg))]
+  const lighter = A.kcal === B.kcal && A.sugar === B.sugar ? null : A.kcal < B.kcal || (A.kcal === B.kcal && A.sugar < B.sugar) ? 'a' : 'b'
+  return { A, B, rows, lighter, kcal: Math.abs(A.kcal - B.kcal), sugar: r1(Math.abs(A.sugar - B.sugar)), tsp: r1(Math.abs(A.sugar - B.sugar) / TSP_G) }
+}
+
 /** What switching to the sugar-free twin saves (null when there is none or it is not lighter). */
 export function swapSaving(s, ml, count = 1) {
   const z = s && SODA_BY_ID[SODA_SWAP[s.id]]

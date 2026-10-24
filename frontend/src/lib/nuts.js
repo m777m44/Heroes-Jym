@@ -20,9 +20,11 @@ export const NUT_CATS = [
   { key: 'snack', name: 'Roasted snacks', icon: 'sparkles', color: '#e0a03a' },
   { key: 'dried', name: 'Dried fruits & dates', icon: 'apple', color: '#a0522d' },
   { key: 'sweet', name: 'Sweet & coated', icon: 'star', color: '#d15b8f' },
+  // 12.0
+  { key: 'butter', name: 'Nut butters & tahini', icon: 'nut', color: '#c68a3c' },
 ]
 /** Categories counted in "a handful of nuts a day" (dried fruit and sweets are not nuts). */
-export const NUTTY = new Set(['nut', 'seed', 'snack'])
+export const NUTTY = new Set(['nut', 'seed', 'snack', 'butter'])
 export const NUT_CAT_BY_KEY = Object.fromEntries(NUT_CATS.map(c => [c.key, c]))
 
 export const FORMS = { raw: 'Raw', roasted: 'Roasted', salted: 'Roasted & salted', boiled: 'Boiled & salted', dried: 'Dried', sweet: 'Sweetened' }
@@ -121,6 +123,72 @@ const ROWS = [
   ['simsimiya', 'sweet', 'Sesame bar (simsimiya)', [520, 12, 30, 52, 6, 40], null, 30, 0, 1, 'sweet', ['piece', 1], ['ca', 'fe', 'mg'], ['bones', 'energy'], ['sesame', 'sugar'], '#e2b55e'],
   ['jowziya', 'sweet', 'Walnut brittle (jowziya)', [560, 9, 38, 50, 3, 42], null, 25, 0, 1, 'sweet', ['piece', 1], ['o3', 'cu'], ['brain', 'energy'], ['sugar', 'allergy'], '#b07a3f'],
   ['datestuffed', 'sweet', 'Dates stuffed with almonds', [330, 4.5, 9, 62, 7, 52], null, 12, 0, 1, 'sweet', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar', 'allergy'], '#6b3a1f'],
+  // 12.0 — nut butters & tahini, more seeds and roasted snacks, Iraqi street snacks (bagilla, lablabi),
+  // more dates and dried fruit, and the sweets of Iraqi gatherings (mann al-sama, baklawa, kleicha)
+  ['pbutter', 'butter', 'Peanut butter', null, [588, 25, 50, 20, 6, 9], 0, 16, 1, 'roasted', ['tbsp', 1], ['b3', 'mg', 'vitE'], ['protein', 'energy', 'heart'], ['peanut', 'kcal'], '#c68a3c'],
+  ['almondbutter', 'butter', 'Almond butter', null, [614, 21, 56, 19, 10, 4.4], 0, 16, 1, 'roasted', ['tbsp', 1], ['vitE', 'mg', 'ca'], ['skin', 'heart', 'bones'], ['allergy', 'kcal'], '#b07a4a'],
+  ['tahini', 'butter', 'Tahini (rashi)', null, [595, 17, 54, 21, 9.3, 0.5], 0, 15, 1, 'roasted', ['tbsp', 1], ['ca', 'fe', 'cu'], ['bones', 'iron', 'heart'], ['sesame', 'kcal'], '#d9b77e'],
+  ['cashewbutter', 'butter', 'Cashew butter', null, [587, 17.6, 49.4, 27.6, 2, 5], 0, 16, 1, 'roasted', ['tbsp', 1], ['cu', 'zn', 'mg'], ['immune', 'energy'], ['allergy', 'kcal'], '#e3c08a'],
+  ['sunbutter', 'butter', 'Sunflower seed butter', null, [617, 17.3, 55.2, 23.3, 5.7, 10.4], 0, 16, 1, 'roasted', ['tbsp', 1], ['vitE', 'mg', 'se'], ['skin', 'heart'], ['kcal'], '#8f7a52'],
+  ['almondsmoked', 'nut', 'Smoked almonds', null, [607, 21, 54, 19.5, 11, 4.5], 1.2, 0, 1, 'roasted salted', ['handful', 1], ['vitE', 'mg'], ['heart', 'skin'], ['allergy', 'kcal'], '#a86b3c'],
+  ['pistachioshelled', 'nut', 'Shelled pistachios', [560, 20.2, 45.3, 27.2, 10.6, 7.7], [572, 21, 46, 28, 10, 7.7], 0.6, 0, 1, 'raw roasted salted', ['handful', 1], ['b6', 'k', 'fib'], ['protein', 'eyes', 'heart'], ['allergy', 'kcal'], '#9bc77a'],
+  ['mixednuts', 'nut', 'Mixed nuts (unsalted)', [607, 20, 54, 21, 7, 4.5], [620, 20, 55.5, 21, 7, 4.5], 1.2, 0, 1, 'raw roasted', ['handful', 1], ['vitE', 'mg', 'cu'], ['heart', 'energy', 'protein'], ['allergy', 'kcal'], '#b9864f'],
+  ['sunflowershelled', 'seed', 'Shelled sunflower seeds', [584, 20.8, 51.5, 20, 8.6, 2.6], [582, 19.3, 49.8, 24.1, 11.1, 2.7], 0, 9, 1, 'raw roasted salted', ['tbsp', 2], ['vitE', 'se', 'b1'], ['skin', 'heart'], ['kcal'], '#8d8a80'],
+  ['sunflowerbbq', 'seed', 'Sunflower seeds, barbecue flavour', null, [582, 19.3, 49.8, 24.1, 11.1, 2.7], 0, 9, 0.55, 'salted', ['handful', 1], ['vitE', 'se', 'b1'], ['skin', 'heart'], ['kcal'], '#6b4a3a'],
+  ['whiteseeds', 'seed', 'White seeds (habb abyad)', null, [574, 29.8, 49, 14.7, 6.5, 1.3], 0, 9, 0.75, 'roasted salted', ['handful', 1], ['mg', 'zn', 'fe'], ['protein', 'immune', 'sleep'], ['kcal'], '#f2ecd8'],
+  ['pumpkinshelled', 'seed', 'Pepitas (shelled pumpkin seeds)', [559, 30.2, 49, 10.7, 6, 1.4], [574, 29.8, 49, 14.7, 6.5, 1.3], 0, 9, 1, 'raw roasted salted', ['tbsp', 2], ['mg', 'zn', 'fe'], ['immune', 'sleep', 'protein'], ['kcal'], '#5f8a3a'],
+  ['hemp', 'seed', 'Hemp seeds', [553, 31.6, 48.8, 8.7, 4, 1.5], null, 0, 10, 1, 'raw', ['tbsp', 1], ['o3', 'mg', 'zn'], ['protein', 'brain', 'heart'], [], '#9c9a6a'],
+  ['poppy', 'seed', 'Poppy seeds', [525, 18, 41.6, 28.1, 19.5, 3], null, 0, 9, 1, 'raw', ['tbsp', 1], ['ca', 'mn', 'fe'], ['bones'], [], '#3c4b5c'],
+  ['nigella', 'seed', 'Black seed (habbat al-baraka)', [500, 18, 35, 33, 8, 1.5], null, 0, 7, 1, 'raw', ['tbsp', 0.5], ['fe', 'ca', 'mg'], ['immune', 'iron'], [], '#1e1b1a'],
+  ['cashewspicy', 'snack', 'Spicy roasted cashews', null, [580, 15, 47, 31, 3, 5], 1.6, 0, 1, 'roasted salted', ['handful', 1], ['cu', 'zn'], ['energy', 'immune'], ['allergy', 'kcal'], '#d79a55'],
+  ['peanutspicy', 'snack', 'Chilli peanuts', null, [575, 24, 48, 20, 8, 4], 0.9, 0, 1, 'roasted salted', ['handful', 1], ['b3', 'mg'], ['protein', 'energy'], ['peanut', 'kcal'], '#c0562f'],
+  ['kerzatspicy', 'snack', 'Spicy kerzat (chilli nuts & corn)', null, [560, 17, 44, 30, 7, 4], 1.2, 0, 0.85, 'roasted salted', ['handful', 1], ['vitE', 'mg'], ['energy', 'protein'], ['allergy', 'kcal'], '#c8642f'],
+  ['soynuts', 'snack', 'Roasted soy nuts', null, [471, 35.2, 25.4, 33.6, 8.1, 3], 0.25, 0, 1, 'roasted salted', ['handful', 1], ['fe', 'mg', 'fol'], ['protein', 'heart'], [], '#d8b56b'],
+  ['peasroasted', 'snack', 'Roasted green peas', null, [390, 22, 9, 59, 18, 6], 0.25, 0, 1, 'roasted salted', ['handful', 1], ['fol', 'fe', 'mn'], ['protein', 'gut'], [], '#8fb34a'],
+  ['favaroasted', 'snack', 'Roasted broad beans', null, [330, 26, 3, 55, 22, 5], 1.5, 0, 1, 'roasted salted', ['handful', 1], ['fe', 'fol', 'mg'], ['protein', 'gut', 'light'], [], '#b38b4d'],
+  ['bagilla', 'snack', 'Boiled broad beans (bagilla)', [110, 7.6, 0.4, 19.6, 5.4, 1.8], null, 1.5, 0, 1, 'boiled', ['handful', 3], ['fol', 'fe', 'mg'], ['protein', 'light', 'gut'], [], '#a7b36b', 40],
+  ['lablabi', 'snack', 'Boiled chickpeas (lablabi)', [139, 7.6, 2.6, 23, 6.6, 4], null, 0.6, 0, 1, 'boiled', ['handful', 3], ['fol', 'fe', 'mn'], ['protein', 'gut', 'light'], [], '#e0b866', 40],
+  ['peanutsboiled', 'snack', 'Boiled peanuts', [318, 13.5, 22, 21, 8.8, 2.4], null, 0.9, 0, 0.7, 'boiled', ['handful', 1], ['b3', 'fol'], ['protein', 'light'], ['peanut'], '#c9a06a', 40],
+  ['edamame', 'snack', 'Edamame', [121, 11.9, 5.2, 8.9, 5.2, 2.2], null, 0.5, 0, 0.55, 'boiled', ['handful', 2], ['fol', 'vitK', 'fe'], ['protein', 'light'], [], '#7cb342', 40],
+  ['coconutfresh', 'snack', 'Fresh coconut', [354, 3.3, 33.5, 15.2, 9, 6.2], null, 40, 0, 1, 'raw', ['piece', 1], ['mn', 'cu', 'fib'], ['energy', 'gut'], ['sat'], '#fbf6ea'],
+  ['coconutchips', 'snack', 'Toasted coconut chips', null, [680, 7, 66, 23, 15, 8], 0, 0, 1, 'roasted', ['handful', 1], ['mn', 'cu', 'fib'], ['energy', 'gut'], ['sat', 'kcal'], '#f3e3c3', 15],
+  ['seedbar', 'snack', 'Nut & seed bar', null, [470, 14, 30, 40, 7, 20], 40, 0, 1, 'roasted', ['piece', 1], ['mg', 'vitE', 'fib'], ['energy', 'protein'], ['allergy', 'kcal'], '#b8874e'],
+  ['granola', 'snack', 'Granola with nuts', null, [471, 10, 20, 64, 7, 25], 0, 0, 1, 'roasted', ['handful', 1], ['mg', 'fe', 'fib'], ['energy', 'gut'], ['sugar', 'kcal'], '#c9a063'],
+  ['studentmix', 'dried', 'Student mix (nuts & raisins)', [480, 13, 30, 42, 5, 30], null, 1, 0, 1, 'dried', ['handful', 1], ['vitE', 'mg', 'k'], ['energy', 'quick'], ['allergy', 'kcal'], '#9a6a48'],
+  ['sukkari', 'dried', 'Sukkari dates', [295, 2.4, 0.3, 77, 6, 68], null, 10, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#c79a4b'],
+  ['ajwa', 'dried', 'Ajwa dates', [280, 2.5, 0.4, 74, 7, 60], null, 8, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#2e1a12'],
+  ['sayer', 'dried', 'Sayer dates', [282, 2.5, 0.4, 75, 8, 63.4], null, 9, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#7a3e1c'],
+  ['halawi', 'dried', 'Halawi dates', [290, 2.3, 0.3, 77, 6.5, 66], null, 8, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#a35a22'],
+  ['khadrawi', 'dried', 'Khadrawi dates', [280, 2, 0.4, 74, 7, 62], null, 9, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#6a3a1a'],
+  ['deglet', 'dried', 'Deglet Nour dates', [282, 2.5, 0.4, 75, 8, 63.4], null, 7, 0, 0.9, 'dried', ['piece', 3], ['k', 'mg', 'fib'], ['quick', 'gut'], ['sugar'], '#b9813f'],
+  ['datepaste', 'dried', 'Date paste (ajwa paste)', [290, 2.2, 0.5, 76, 7, 64], null, 0, 20, 1, 'dried', ['tbsp', 1], ['k', 'mg', 'fe'], ['quick', 'iron'], ['sugar'], '#6e3b1c'],
+  ['cranberries', 'dried', 'Dried cranberries', [308, 0.2, 1.1, 82.4, 5.3, 65], null, 0.3, 10, 1, 'dried', ['tbsp', 2], ['fib', 'mn'], ['gut', 'immune'], ['sugar'], '#b0213c'],
+  ['goji', 'dried', 'Goji berries', [349, 14.3, 0.4, 77, 13, 46], null, 0.2, 9, 1, 'dried', ['tbsp', 2], ['vitA', 'fe', 'vitC'], ['eyes', 'immune', 'iron'], ['sugar'], '#e2452f'],
+  ['driedcherries', 'dried', 'Dried sour cherries', [333, 1.3, 0.8, 80, 2.5, 67], null, 0.5, 10, 1, 'dried', ['tbsp', 2], ['vitA', 'k'], ['quick', 'sleep'], ['sugar'], '#8b1a2b'],
+  ['driedstrawberries', 'dried', 'Dried strawberries', [330, 2.5, 1, 80, 6, 60], null, 2, 0, 1, 'dried', ['handful', 0.5], ['vitC', 'mn'], ['immune', 'quick'], ['sugar'], '#d4314b'],
+  ['driedmango', 'dried', 'Dried mango', [319, 2.5, 1.2, 78.6, 2.4, 66.3], null, 8, 0, 1, 'dried', ['piece', 3], ['vitA', 'vitC'], ['eyes', 'quick'], ['sugar'], '#f6a623'],
+  ['driedpineapple', 'dried', 'Dried pineapple', [347, 2, 0.5, 86, 2.3, 74], null, 8, 0, 1, 'dried', ['piece', 3], ['vitC', 'mn'], ['quick', 'immune'], ['sugar'], '#f2c94c'],
+  ['driedkiwi', 'dried', 'Dried kiwi', [340, 1.3, 0.8, 85, 4, 70], null, 6, 0, 1, 'dried', ['piece', 3], ['vitC', 'k'], ['immune', 'quick'], ['sugar'], '#8db33a'],
+  ['applechips', 'dried', 'Dried apple rings', [243, 0.9, 0.3, 65.9, 8.7, 57.2], null, 4, 0, 1, 'dried', ['piece', 5], ['fib', 'k'], ['gut', 'quick'], ['sugar'], '#e9d6a1'],
+  ['driedpeach', 'dried', 'Dried peaches', [239, 3.6, 0.8, 61.3, 8.2, 41.7], null, 13, 0, 1, 'dried', ['piece', 3], ['vitA', 'k', 'fe'], ['eyes', 'gut'], ['sugar'], '#f4a259'],
+  ['cashewhoney', 'sweet', 'Honey-roasted cashews', [560, 15, 42, 37, 3, 18], null, 1.6, 0, 1, 'sweet', ['handful', 1], ['cu', 'zn'], ['energy'], ['sugar', 'allergy', 'kcal'], '#e7c48a'],
+  ['almondhoney', 'sweet', 'Honey-roasted almonds', [575, 18, 45, 31, 10, 18], null, 1.2, 0, 1, 'sweet', ['handful', 1], ['vitE', 'mg'], ['energy', 'skin'], ['sugar', 'allergy', 'kcal'], '#c98e4b'],
+  ['peanuthoney', 'sweet', 'Honey-roasted peanuts', [580, 23, 44, 30, 7, 18], null, 0.9, 0, 1, 'sweet', ['handful', 1], ['b3', 'mg'], ['energy', 'protein'], ['sugar', 'peanut', 'kcal'], '#d9a35b'],
+  ['pecancandied', 'sweet', 'Candied pecans', [560, 6, 44, 42, 6, 33], null, 1.5, 0, 1, 'sweet', ['handful', 1], ['mn', 'cu'], ['energy'], ['sugar', 'allergy', 'kcal'], '#8c4f2b'],
+  ['trailmix', 'sweet', 'Trail mix (nuts, raisins & chocolate)', [462, 13.8, 29.4, 44.9, 4, 30], null, 1, 0, 1, 'sweet', ['handful', 1], ['mg', 'fe', 'k'], ['energy', 'quick'], ['sugar', 'allergy', 'kcal'], '#7a5236'],
+  ['kerzatsweet', 'sweet', 'Sweet kerzat (nuts, raisins & sugared almonds)', [470, 11, 26, 52, 5, 35], null, 1.5, 0, 1, 'sweet', ['handful', 1], ['vitE', 'mg'], ['energy', 'quick'], ['sugar', 'allergy', 'kcal'], '#d8a7b9'],
+  ['pistachiocream', 'sweet', 'Pistachio cream', [560, 10, 38, 48, 3, 42], null, 0, 15, 1, 'sweet', ['tbsp', 1], ['b6', 'k'], ['energy'], ['sugar', 'allergy', 'kcal'], '#a5c26b'],
+  ['hazelnutspread', 'sweet', 'Chocolate hazelnut spread', [539, 6.3, 30.9, 57.5, 3.4, 56.3], null, 0, 15, 1, 'sweet', ['tbsp', 1], ['vitE', 'ca'], ['energy'], ['sugar', 'allergy', 'kcal', 'sat'], '#5b3a29'],
+  ['dibisrashi', 'sweet', 'Date syrup & tahini (dibis w rashi)', [374, 5.8, 16.3, 55.3, 3.5, 45.6], null, 0, 18, 1, 'sweet', ['tbsp', 2], ['ca', 'fe', 'k'], ['energy', 'iron'], ['sesame', 'sugar'], '#7a4a2a'],
+  ['halawa', 'sweet', 'Tahini halva (halawa)', [516, 12.5, 29.6, 52.4, 4.5, 41], null, 30, 0, 1, 'sweet', ['piece', 1], ['ca', 'fe', 'mg'], ['energy', 'bones'], ['sesame', 'sugar', 'kcal'], '#e0c59a'],
+  ['mann', 'sweet', 'Mann al-sama (Iraqi nougat)', [400, 6, 8, 78, 1.5, 70], null, 15, 0, 1, 'sweet', ['piece', 2], ['vitE', 'mg'], ['energy'], ['sugar', 'allergy'], '#f4f1ea'],
+  ['baklawa', 'sweet', 'Baklawa with pistachios', [428, 6.7, 29, 37.6, 2.5, 21], null, 30, 0, 1, 'sweet', ['piece', 2], ['b6', 'mg'], ['energy'], ['sugar', 'allergy', 'kcal'], '#d9a441'],
+  ['kleicha', 'sweet', 'Kleicha (Iraqi date cookie)', [418, 6, 15, 66, 4, 30], null, 35, 0, 1, 'sweet', ['piece', 1], ['k', 'fe'], ['energy'], ['sugar', 'kcal'], '#c88a4a'],
+  ['halqoum', 'sweet', 'Turkish delight with pistachios (halqoum)', [360, 1.5, 3, 84, 0.5, 70], null, 12, 0, 1, 'sweet', ['piece', 2], ['mg'], ['energy'], ['sugar'], '#f2b8c6'],
+  ['peanutbrittle', 'sweet', 'Peanut brittle', [486, 7.6, 19, 71, 2.5, 50], null, 25, 0, 1, 'sweet', ['piece', 1], ['b3', 'mg'], ['energy'], ['sugar', 'peanut'], '#c88a3c'],
+  ['datescoconut', 'sweet', 'Dates rolled in coconut', [340, 3, 10, 62, 8, 50], null, 12, 0, 1, 'sweet', ['piece', 3], ['k', 'fib'], ['quick', 'gut'], ['sugar'], '#f1e6d2'],
+  ['datenutballs', 'sweet', 'Date & nut balls', [390, 7, 16, 57, 7, 45], null, 20, 0, 1, 'sweet', ['piece', 2], ['k', 'mg', 'fib'], ['quick', 'energy'], ['sugar', 'allergy'], '#6e4026'],
+  ['chocdates', 'sweet', 'Chocolate-coated dates', [420, 4, 16, 66, 5, 58], null, 12, 0, 1, 'sweet', ['piece', 2], ['k', 'mg'], ['quick'], ['sugar', 'kcal'], '#4a2c1d'],
 ]
 
 const roastOf = raw => raw && [Math.round(raw[0] * 1.03), raw[1], Math.round(raw[2] * 1.03 * 10) / 10, raw[3], raw[4], raw[5]]
@@ -131,7 +199,7 @@ export const NUTS = ROWS.map(([id, cat, name, raw, roasted, pw, sp, ef, forms, u
     unit: { u: unit[0], a: unit[1] }, mi, ben, col, hf: hf || HANDFUL_G,
     cau: [...new Set([...cau, ...(F.some(f => SALTY.has(f)) ? ['salt'] : []), ...(cat === 'nut' && pw >= 1 ? ['kids'] : [])])],
     shell: ef > 0 && ef < 1,
-    look: ['pistachio', 'pistachiolemon', 'peanut', 'sunflower', 'watermelon', 'pumpkin', 'melon'].includes(id),   // drawn in the shell in lists
+    look: ['pistachio', 'pistachiolemon', 'peanut', 'sunflower', 'watermelon', 'pumpkin', 'melon', 'sunflowerbbq', 'whiteseeds'].includes(id),   // drawn in the shell in lists
   }
 })
 export const NUT_BY_ID = Object.fromEntries(NUTS.map(n => [n.id, n]))
@@ -215,7 +283,7 @@ export function nutDay(entries) {
 /** The nut of the day (changes daily, same for everyone) — a real nut or seed, not a sweet. */
 export function nutOfDay(iso) {
   const n = String(iso || '').split('-').reduce((a, x) => a * 31 + (+x || 0), 7)
-  const pool = NUTS.filter(x => NUTTY.has(x.cat))
+  const pool = NUTS.filter(x => x.cat === 'nut' || x.cat === 'seed' || x.cat === 'snack')
   return pool[Math.abs(n) % pool.length]
 }
 /** The usual portion in grams: a handful of nuts and seeds, the default amount of dried fruit and sweets. */
