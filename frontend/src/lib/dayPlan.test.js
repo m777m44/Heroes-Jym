@@ -227,6 +227,21 @@ describe('10.0 — my schedule', () => {
     expect(typeDays(P, 1)).toEqual([0, 1, 2, 3, 4])
     expect(typeDays(normPlan({ blocks: [{ id: 'z', k: 'study', s: 600, d: 60 }] }), 2)).toBeUndefined()
   })
+  it('keeps last night\'s later sleep running this morning even when today has its own (review on PR #13)', () => {
+    const P = newPlan('school', {}, { seed: 1 })
+    // Saturday 07:30: Friday night's sleep (23:30, 9 h — Thursday and Friday nights only) runs until 08:30
+    const L = liveState(P, null, new Date(2026, 9, 24, 7, 30))
+    expect(L.cur.b.k).toBe('sleep')
+    expect(L.cur.b.s).toBe(toMin('23:30'))
+    expect(Math.round(L.cur.left)).toBe(60)
+    expect(L.next.b.k).toBe('wake')
+    expect(L.items.filter(x => x.carry)).toHaveLength(1)
+    expect(L.total).toBe(liveState(P, null, new Date(2026, 9, 24, 12, 0)).total)   // not counted as a task
+    // Thursday 06:20: Wednesday night's 22:30 sleep has 10 minutes left — not Thursday's own 23:30 one
+    const T = liveState(P, null, new Date(2026, 9, 22, 6, 20))
+    expect(T.cur.b.s).toBe(toMin('22:30'))
+    expect(Math.round(T.cur.left)).toBe(10)
+  })
   it('labels days and copies a day onto others', () => {
     const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
     expect(daysLabel(undefined, names)).toBe('Every day')

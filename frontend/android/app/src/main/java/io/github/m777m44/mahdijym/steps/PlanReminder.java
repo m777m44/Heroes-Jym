@@ -108,8 +108,47 @@ public class PlanReminder extends BroadcastReceiver {
             .putString("items", list == null ? "[]" : list.toString())
             .putString("strings", strings == null ? "{}" : strings.toString())
             .apply();
+        reconcileSnoozes(c, list);
         if (list != null && list.length() > 0) createChannel(c, strings);
         return schedule(c);
+    }
+
+    /**
+     * A snoozed reminder only rings again while its block is still planned with a reminder, and
+     * then with the block's current text (notes, food); the others are cancelled — reminders
+     * switched off, the block deleted (review on PR #13).
+     */
+    private static void reconcileSnoozes(Context c, JSONArray list) {
+        JSONObject snz = obj(c, "snooze");
+        if (snz.length() == 0) return;
+        List<String> keys = new ArrayList<>();
+        for (Iterator<String> it = snz.keys(); it.hasNext(); ) keys.add(it.next());
+        for (String k : keys) {
+            JSONObject p = snz.optJSONObject(k);
+            JSONObject fresh = p == null ? null : findBlock(list, p.optString("block", ""), p.optInt("lead", 0));
+            if (fresh == null) {
+                snz.remove(k);
+                cancel(c, againPi(c, k, PendingIntent.FLAG_NO_CREATE));
+                continue;
+            }
+            try {
+                for (String f : new String[] { "title", "body", "big", "color", "route" }) if (fresh.has(f)) p.put(f, fresh.get(f));
+            } catch (JSONException ignored) { }
+        }
+        prefs(c).edit().putString("snooze", snz.toString()).apply();
+    }
+
+    /** The new list's reminder for a block — with the same lead if there is one, else any. */
+    private static JSONObject findBlock(JSONArray list, String block, int lead) {
+        if (list == null || block.isEmpty()) return null;
+        JSONObject any = null;
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject o = list.optJSONObject(i);
+            if (o == null || !block.equals(o.optString("block", ""))) continue;
+            if (o.optInt("lead", 0) == lead) return o;
+            if (any == null) any = o;
+        }
+        return any;
     }
 
     /** What was pressed on the notifications since the last call: [{ d, b, a, at }] — and forget it. */
@@ -150,20 +189,37 @@ public class PlanReminder extends BroadcastReceiver {
         p.cancel();
     }
 
-    /** Arm every reminder still to come, and the snoozed ones. Returns how many reminders. */
+    /**
+     * Arm every reminder, and the snoozed ones. A reminder whose time passed without ringing (the
+     * phone was off) moves on to its block's next week, so it keeps recurring after a reboot
+     * (review on PR #13). Returns how many reminders.
+     */
     static int schedule(Context c) {
         JSONArray a = arr(c, "items");
         long now = System.currentTimeMillis();
         int n = 0;
+        boolean moved = false;
         for (int i = 0; i < a.length(); i++) {
             JSONObject o = a.optJSONObject(i);
             if (o == null) continue;
             int id = o.optInt("id", -1);
             long at = o.optLong("at", 0);
-            if (id < 0 || at <= now) continue;
+            if (id < 0 || at <= 0) continue;
+            if (at <= now) {
+                long when = o.optLong("when", at);
+                for (int guard = 0; at <= now && guard < 530; guard++) { at = nextWeek(at); when = nextWeek(when); }
+                if (at <= now) continue;
+                try {
+                    o.put("at", at);
+                    o.put("when", when);
+                    o.put("day", dayOf(when));
+                    moved = true;
+                } catch (JSONException e) { continue; }
+            }
             arm(c, firePi(c, id, PendingIntent.FLAG_UPDATE_CURRENT), at);
             n++;
         }
+        if (moved) prefs(c).edit().putString("items", a.toString()).apply();
         // snoozed ones (after a reboot their alarms are gone); the ones whose time has passed are dropped
         JSONObject snz = obj(c, "snooze");
         boolean changed = false;

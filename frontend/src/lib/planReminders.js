@@ -5,7 +5,8 @@
 // (PlanReminder.java): the expanded notification shows the time, your notes and the food and
 // drinks with their calories, in the block's colour, with "Done ✓" and "In 10 min" that work with
 // the app closed — what you pressed is applied when the app opens (pullPlanActions). Elsewhere
-// LocalNotifications (ids 7700–7759, channel mj_plan) without buttons.
+// (iOS) LocalNotifications (ids 7700–7759, channel mj_plan) without buttons: each one repeats
+// weekly on its weekday, so they keep coming while the app stays closed (review on PR #13).
 // Also: the notification channels are put into named groups (organizeChannels).
 import { MOBILE } from './mobile.js'
 import { t, dateLocale } from './i18n.js'
@@ -57,9 +58,9 @@ export async function syncPlanReminders(S, force = false) {
     if (perm.display !== 'granted') return
     await LocalNotifications.createChannel({ id: 'mj_plan', name: t('My schedule'), description: t('Each block of your schedule, with everything you planned'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
     await LocalNotifications.schedule({
-      notifications: list.slice(0, FALLBACK_MAX).map(n => ({
-        id: PLAN_ID_BASE + n.id, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),
-        iconColor: n.color || color, schedule: { at: n.at, allowWhileIdle: true }, extra: { route: '/dayplan' },
+      notifications: weeklyFallback(plan, S).map((n, i) => ({
+        id: PLAN_ID_BASE + i, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),
+        iconColor: n.color || color, schedule: { on: { weekday: n.at.getDay() + 1, hour: n.at.getHours(), minute: n.at.getMinutes() }, allowWhileIdle: true }, extra: { route: '/dayplan' },
       })),
     })
   } catch { /* plugin unavailable */ }
@@ -77,6 +78,22 @@ export async function pullPlanActions() {
     const { applyPlanActions } = await import('./planLog.js')
     return applyPlanActions(actions)
   } catch { return { count: 0, kcal: 0 } }
+}
+
+/**
+ * Without the native service: one weekly-repeating reminder per block and weekday (the next eight
+ * days, so today's ones that already rang come back next week), the soonest FALLBACK_MAX.
+ */
+export function weeklyFallback(plan, S, now = new Date()) {
+  const seen = new Set(), out = []
+  for (const n of planNotifications(S, plan, now, t, clock, { days: 8, max: 400 })) {
+    const k = n.block + '|' + n.at.getDay() + '|' + n.lead
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(n)
+    if (out.length >= FALLBACK_MAX) break
+  }
+  return out
 }
 
 let organized = ''

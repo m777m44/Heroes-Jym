@@ -326,10 +326,13 @@ export function planTotals(S, blocks, goal) {
 
 // ---- live -------------------------------------------------------------------------------------------
 const nowMinOf = d => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60
-/** Where a block sits in the day relative to `now`: its start / end as minutes on today's clock. */
-function span(b, nowMin) {
+/**
+ * Where a block sits in the day relative to `now`: its start / end as minutes on today's clock.
+ * A block that crosses midnight is still running from yesterday only if it ran yesterday too.
+ */
+function span(b, nowMin, ranYesterday = true) {
   let s = b.s, e = b.s + b.d
-  if (e > 1440 && nowMin < e - 1440) { s -= 1440; e -= 1440 }      // a sleep that started yesterday
+  if (ranYesterday && e > 1440 && nowMin < e - 1440) { s -= 1440; e -= 1440 }      // a sleep that started yesterday
   return [s, e]
 }
 /**
@@ -342,15 +345,25 @@ export function liveState(plan, day, now = new Date()) {
   const rec = day || {}
   const done = rec.done || {}, skip = rec.skip || {}
   let cur = null, next = null
-  const items = blocksOn(plan, now.getDay()).map(b => {
-    const [s, e] = span(b, m)
+  const wd = now.getDay(), yd = (wd + 6) % 7
+  const items = blocksOn(plan, wd).map(b => {
+    const [s, e] = span(b, m, onDay(b, yd))
     const st = done[b.id] ? 'done' : skip[b.id] ? 'skipped' : m >= s && m < e ? 'now' : m < s ? 'later' : 'missed'
     if (st === 'now' && (!cur || s > cur.s || (s === cur.s && e - s < cur.e - cur.s))) cur = { b, left: e - m, pct: (m - s) / Math.max(1, e - s), s, e }
     return { b, s, e, st }
   })
+  // 10.0 (review on PR #13): last night's block that runs on into this morning but isn't on today's
+  // plan (Friday night's later sleep on a Saturday) — it is what's happening now until it ends
+  for (const b of blocksOn(plan, yd)) {
+    if (onDay(b, wd) || b.s + b.d <= 1440) continue
+    const s = b.s - 1440, e = b.s + b.d - 1440
+    if (m >= e) continue
+    items.unshift({ b, s, e, st: 'now', carry: true })
+    if (!cur) cur = { b, left: e - m, pct: (m - s) / Math.max(1, e - s), s, e }
+  }
   const later = items.filter(x => x.st === 'later').sort((a, b) => a.s - b.s)[0]
   if (later) { next = { b: later.b, inMin: later.s - m }; later.st = 'next' }
-  const doable = items.filter(x => x.b.k !== 'sleep' && x.b.k !== 'free')
+  const doable = items.filter(x => !x.carry && x.b.k !== 'sleep' && x.b.k !== 'free')
   const finished = doable.filter(x => x.st === 'done').length
   return { items, cur, next, done: finished, total: doable.length, pct: doable.length ? finished / doable.length : 0, nowMin: m }
 }

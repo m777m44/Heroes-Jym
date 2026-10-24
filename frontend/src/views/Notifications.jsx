@@ -2,7 +2,7 @@
 // workouts, your schedule, your day, medicines, the burn plan), when the next one comes, and one
 // timeline of everything still to ring today — each row opens the screen where it is set up.
 // On the phone: the system's notification settings (now grouped by kind) and a test notification.
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
@@ -76,6 +76,13 @@ export default function Notifications() {
   const day = safe(() => dayPrefs(S), { remind: false })
   const nextPlan = safe(() => planNotifications(S, plan, now, t, clockMin, { days: 7, max: 1 })[0], null)
   const list = useMemo(() => upcoming(S, now), [S]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the phone's notification settings open through the Android service (review on PR #13: hidden where it isn't)
+  const [native, setNative] = useState(false)
+  useEffect(() => {
+    let on = true
+    if (MOBILE) import('../lib/stepService.js').then(m => m.hasStepService()).then(v => { if (on) setNative(!!v) }).catch(() => {})
+    return () => { on = false }
+  }, [])
   const rows = [
     { on: !!(plan && plan.remind), icon: 'calendar', tint: 'var(--indigo)', title: t('My schedule'), sub: plan ? (plan.remind ? (nextPlan ? t('Next: {0}', nextPlan.title) : t('{0} blocks today', n0(blocksOn(plan, now.getDay()).length))) : t('Off — switch it on in your schedule')) : t('Plan school, meals, drinks and work first'), to: '/dayplan' },
     { on: !!water.on, icon: 'drop', tint: 'var(--blue)', title: t('Water reminders'), sub: water.on ? t('Every {0} min · {1} – {2}', n0(water.every), water.from, water.to) : t('Off'), to: '/water' },
@@ -116,8 +123,8 @@ export default function Notifications() {
       {list.length > 12 && <div className="small muted nf-more">{t('And {0} more', n0(list.length - 12))}</div>}
     </div> : <div className="empty small"><div className="ico"><Icon name="bellSlash" /></div>{t('Nothing more today')}</div>}
 
-    {MOBILE && <Section title={t('Phone')} footer={t('In the phone settings the notifications are grouped: steps & activity, water, schedule & meals, workouts, health.')}>
-      <Row icon="gear" iconTint="var(--grey)" title={t('Notification settings')} subtitle={t('Sounds, banners and lock screen for each kind')} accessory="chevron" onClick={openSystem} />
+    {MOBILE && <Section title={t('Phone')} footer={native ? t('In the phone settings the notifications are grouped: steps & activity, water, schedule & meals, workouts, health.') : undefined}>
+      {native && <Row icon="gear" iconTint="var(--grey)" title={t('Notification settings')} subtitle={t('Sounds, banners and lock screen for each kind')} accessory="chevron" onClick={openSystem} />}
       <Row icon="bell" iconTint="var(--green)" title={t('Send a test notification')} accessory="chevron" onClick={testNotification} />
     </Section>}
     {!MOBILE && <p className="small muted dk-foot">{t('Reminders ring in the phone app.')}</p>}
