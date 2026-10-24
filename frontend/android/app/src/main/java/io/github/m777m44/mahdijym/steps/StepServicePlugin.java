@@ -57,6 +57,9 @@ import java.util.List;
  *   setWater({ day, ml, at, celebrated })  a change made in the app (the later `at` wins)
  *   testWaterReminder()           posts a reminder now
  *   scheduleWorkoutReminders({ items, strings }) → { scheduled } — 2.10 heads-up workout reminders
+ *   schedulePlanReminders({ items, strings }) → { scheduled } — 10.0 "My schedule" reminders
+ *   takePlanActions()             → { actions: [{ d, b, a, at }] } — Done ✓ pressed on them since last time
+ *   organizeChannels({ groups })  → { moved } — 10.0 notification channels in named groups
  *   getCelebrationStatus()        → { fullScreen, overlay, sdk }
  *   openFullScreenSettings() / openOverlaySettings()
  *   previewCelebration({ spec, mode: 'screen' | 'notification' })
@@ -494,6 +497,49 @@ public class StepServicePlugin extends Plugin {
         int n = WorkoutReminder.setPlan(ctx(), list, strings);
         JSObject r = new JSObject();
         r.put("scheduled", n);
+        call.resolve(r);
+    }
+
+    // ---- 10.0: "My schedule" reminders and tidy channels ----------------------------------
+
+    @PluginMethod
+    public void schedulePlanReminders(PluginCall call) {
+        JSArray items = call.getArray("items");
+        JSObject strings = call.getObject("strings");
+        JSONArray list = new JSONArray();
+        if (items != null) {
+            try {
+                for (int i = 0; i < items.length(); i++) {
+                    JSONObject o = items.optJSONObject(i);
+                    if (o != null) list.put(o);
+                }
+            } catch (RuntimeException ignored) { }
+        }
+        int n = PlanReminder.setPlan(ctx(), list, strings);
+        JSObject r = new JSObject();
+        r.put("scheduled", n);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void takePlanActions(PluginCall call) {
+        JSONArray a = PlanReminder.takeActions(ctx());
+        JSArray out = new JSArray();
+        for (int i = 0; i < a.length(); i++) {
+            JSONObject o = a.optJSONObject(i);
+            if (o != null) out.put(o);
+        }
+        JSObject r = new JSObject();
+        r.put("actions", out);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void organizeChannels(PluginCall call) {
+        JSObject groups = call.getObject("groups");
+        int n = Channels.organize(ctx(), groups);
+        JSObject r = new JSObject();
+        r.put("moved", n);
         call.resolve(r);
     }
 

@@ -18,6 +18,10 @@ import {
 } from '../../lib/food.js'
 import { estimateFood, scaleFood, kcalFromMacros, ingredientsIn, plateShare } from '../../lib/foodEstimate.js'
 import { itemsTotals, saveBuiltMeal, searchIngredients, ING_BY_ID } from '../../lib/kitchen.js'
+import { searchSodas, sodaNutrition } from '../../lib/sodas.js'
+import { searchNuts, nutNutrition, HANDFUL_G } from '../../lib/nuts.js'
+import SodaArt from '../SodaArt.jsx'
+import NutArt from '../NutArt.jsx'
 import Icon from '../Icon.jsx'
 import { Button, Segmented } from '../ui.jsx'
 
@@ -64,6 +68,11 @@ function AddFood({ iso, meal: meal0, close }) {
   const [meal, setMeal] = useState(meal0 || mealAt())
   const fav = new Set(St.foodFav || [])
   const list = q.trim() ? searchFoods(St, q, null) : tab === 'recent' ? recent : searchFoods(St, '', tab)
+  // 10.0: soft drinks and nuts & seeds come up in the same search — each opens its own sheet
+  const sodaHits = q.trim().length > 1 ? searchSodas({ q, tr: t }).slice(0, 4) : []
+  const nutHits = q.trim().length > 1 ? searchNuts({ q, tr: t }).slice(0, 4) : []
+  const openSoda = id => { close(); import('../../views/Sodas.jsx').then(m => setTimeout(() => m.sodaSheet(id, { iso, meal }), 120)) }
+  const openNut = id => { close(); import('../../views/Nuts.jsx').then(m => setTimeout(() => m.nutSheet(id, { iso, meal }), 120)) }
   const totals = dayTotals(St, iso)
   const tabs = [
     ...(recent.length ? [{ key: 'recent', name: 'Recent', icon: 'history' }] : []),
@@ -87,6 +96,18 @@ function AddFood({ iso, meal: meal0, close }) {
     {!q.trim() && <div className="chips food-tabs" role="tablist">
       {tabs.map(x => <button key={String(x.key)} role="tab" aria-selected={tab === x.key} className={'chip nocap' + (tab === x.key ? ' on' : '')} onClick={() => setTab(x.key)}>
         <Icon name={x.icon} />{t(x.name)}
+      </button>)}
+    </div>}
+    {(sodaHits.length > 0 || nutHits.length > 0) && <div className="list food-list food-x">
+      {sodaHits.map(x => <button key={'s' + x.id} className="item" onClick={() => openSoda(x.id)}>
+        <span className="food-x-art"><SodaArt soda={x} size={26} /></span>
+        <div className="grow"><div className="tt">{t(x.name)}</div><div className="ss">{t('Soft drinks')}</div></div>
+        <b className="food-kcal">{n0(sodaNutrition(x, x.def.ml).kcal)} <small>{U('kcal')}</small></b>
+      </button>)}
+      {nutHits.map(x => <button key={'n' + x.id} className="item" onClick={() => openNut(x.id)}>
+        <span className="food-x-art"><NutArt nut={x} shell={x.look} size={32} /></span>
+        <div className="grow"><div className="tt">{t(x.name)}</div><div className="ss">{t('per handful')}</div></div>
+        <b className="food-kcal">{n0(nutNutrition(x, HANDFUL_G).kcal)} <small>{U('kcal')}</small></b>
       </button>)}
     </div>}
     <div className="list food-list">
@@ -118,6 +139,16 @@ function AddFood({ iso, meal: meal0, close }) {
       <span className="grow"><b>{t('What can I cook?')}</b><span className="small muted">{t('Recipes from what you have at home')}</span></span>
       <Icon name="chevronRight" className="chev" />
     </button>
+    <div className="dk-promos food-promos">
+      <button className="sd-promo" style={{ '--c1': '#e41e2b', '--c2': '#0b4ea2' }} onClick={() => { close(); nav('/sodas') }}>
+        <span className="sd-promo-art" aria-hidden="true"><Icon name="can" /></span>
+        <span className="grow"><b>{t('Soft drinks')}</b><small>{t('Cans, bottles and glasses')}</small></span>
+      </button>
+      <button className="sd-promo" style={{ '--c1': '#b9783f', '--c2': '#93c572' }} onClick={() => { close(); nav('/nuts') }}>
+        <span className="sd-promo-art" aria-hidden="true"><Icon name="nut" /></span>
+        <span className="grow"><b>{t('Nuts & seeds')}</b><small>{t('Pistachios, kerzat and more')}</small></span>
+      </button>
+    </div>
     <div style={{ height: 8 }} />
     <Button variant="primary" icon="check" onClick={close}>{t('Done')}</Button>
   </div>

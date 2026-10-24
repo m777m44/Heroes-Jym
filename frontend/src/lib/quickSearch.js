@@ -45,8 +45,11 @@ export const PLACES = [
   ['History', '/history', 'history', 'var(--grey)', 'past workouts log'],
   ['Library', '/library', 'dumbbell', 'var(--orange)', 'exercises'],
   ['Tools', '/tools', 'widget', 'var(--purple)', 'utilities'],
-  ['Day plan', '/dayplan', 'calendar', 'var(--indigo)', 'schedule day study work rest timetable routine خطة يوم دراسة جدول'],
+  ['My schedule', '/dayplan', 'calendar', 'var(--indigo)', 'day plan schedule school study work rest timetable routine reminders خطة يوم دراسة جدول جدولي مدرسة دوام'],
   ['Drinks & juices', '/drinks', 'cup', 'var(--green)', 'juice smoothie tea shake detox laban عصير مشروبات شاي'],
+  ['Soft drinks', '/sodas', 'can', 'var(--red)', 'soda fizzy cola coke pepsi 7up sprite fanta mirinda mountain dew energy red bull monster power horse barbican malt sparkling tonic mojito غازي غازية كولا بيبسي سفن اب سبرايت ميرندا بربيكان ريد بول موهيتو'],
+  ['Nuts & seeds', '/nuts', 'nut', 'var(--orange)', 'nuts pistachio peanut almond walnut cashew hazelnut seeds sunflower pumpkin watermelon kerzat chickpeas مكسرات كرزات فستق لوز جوز كاجو بندق حب شمسي رقي قرع'],
+  ['Notifications', '/notifications', 'bellBadge', 'var(--orange)', 'reminders alerts notify alarm اشعارات إشعارات تنبيه تذكير'],
   ['Interval timer', '/timer', 'timer', 'var(--red)', 'tabata hiit emom stopwatch rounds boxing'],
   ['Breathe', '/breathe', 'wind', 'var(--teal)', 'breathing calm relax meditation box 4-7-8'],
   ['Fasting tracker', '/fasting', 'moon', 'var(--orange)', 'intermittent 16:8 ramadan iftar suhoor omad'],
@@ -70,11 +73,11 @@ export const PLACES = [
 ]
 
 /**
- * Search everything → [{ kind: 'place'|'routine'|'exercise', title, sub, icon, tint, to?, id?, score }],
+ * Search everything → [{ kind: 'place'|'routine'|'exercise'|'soda'|'nut'|'drink', title, sub, icon, tint, to?, id?, score }],
  * best first, at most `limit`. `tr` translates an i18n key; `exName(ex)`/`exSearch(ex)` come from
  * lib/i18n.js so exercise names match in the app's language too.
  */
-export function search(query, { routines = [], exercises = [], tr = s => s, exName = e => e.n, exSearch = e => e.n, routineName = r => r.name, limit = 30 } = {}) {
+export function search(query, { routines = [], exercises = [], items = [], tr = s => s, exName = e => e.n, exSearch = e => e.n, routineName = r => r.name, limit = 30 } = {}) {
   const q = fold(query)
   if (!q) return []
   const out = []
@@ -85,6 +88,11 @@ export function search(query, { routines = [], exercises = [], tr = s => s, exNa
   for (const r of routines || []) {
     const s = score(q, routineName(r), r.name)
     if (s) out.push({ kind: 'routine', title: routineName(r), icon: 'list', tint: 'var(--blue)', id: r.id, to: '/plan/r/' + r.id, score: s + 10 })
+  }
+  // 10.0: soft drinks, nuts & seeds and drinks — [{ kind, id, title, en, kw?, sub?, icon, tint }]
+  for (const it of items || []) {
+    const s = score(q, it.title, it.en, it.kw || '')
+    if (s) out.push({ ...it, score: s + 5 })
   }
   let ex = 0
   for (const e of exercises || []) {

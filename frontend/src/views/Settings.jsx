@@ -169,8 +169,11 @@ export default function Settings() {
 
     {/* ---------- 8.0: tools ---------- */}
     <Section title={t('Tools')}>
-      <Row icon="calendar" iconTint="var(--indigo)" title={t('Day plan')} subtitle={t('Workout, study, rest and meals — on time')} accessory="chevron" onClick={() => nav('/dayplan')} />
+      <Row icon="calendar" iconTint="var(--indigo)" title={t('My schedule')} subtitle={t('School, meals, drinks, work — everything on time')} accessory="chevron" onClick={() => nav('/dayplan')} />
+      <Row icon="bellBadge" iconTint="var(--orange)" title={t('All notifications')} subtitle={t('Water, workouts, schedule, medicines — in one place')} accessory="chevron" onClick={() => nav('/notifications')} />
       <Row icon="cup" iconTint="var(--green)" title={t('Drinks & juices')} subtitle={t('Healthy recipes with calories')} accessory="chevron" onClick={() => nav('/drinks')} />
+      <Row icon="can" iconTint="var(--red)" title={t('Soft drinks')} subtitle={t('Cans, bottles and glasses')} accessory="chevron" onClick={() => nav('/sodas')} />
+      <Row icon="nut" iconTint="var(--orange)" title={t('Nuts & seeds')} subtitle={t('Pistachios, kerzat and more')} accessory="chevron" onClick={() => nav('/nuts')} />
       <Row icon="timer" iconTint="var(--red)" title={t('Interval timer')} subtitle={t('Tabata, HIIT, EMOM and your own')} accessory="chevron" onClick={() => nav('/timer')} />
       <Row icon="wind" iconTint="var(--teal)" title={t('Breathe')} subtitle={t('Box, 4-7-8, coherent')} accessory="chevron" onClick={() => nav('/breathe')} />
       <Row icon="moon" iconTint="var(--purple)" title={t('Fasting tracker')} subtitle={t('Intermittent fasting and Ramadan')} accessory="chevron" onClick={() => nav('/fasting')} />

@@ -58,6 +58,9 @@ const Fasting = lazy(() => import('./views/Fasting.jsx'))
 const Recovery = lazy(() => import('./views/Recovery.jsx'))
 const Drinks = lazy(() => import('./views/Drinks.jsx'))       // 9.0
 const DayPlan = lazy(() => import('./views/DayPlan.jsx'))     // 9.0
+const Sodas = lazy(() => import('./views/Sodas.jsx'))         // 10.0
+const Nuts = lazy(() => import('./views/Nuts.jsx'))           // 10.0
+const Notifications = lazy(() => import('./views/Notifications.jsx'))   // 10.0
 import CelebrationOverlay from './components/pedometer/CelebrationOverlay.jsx'
 import StartCountdown from './components/workout/StartCountdown.jsx'
 import PermissionGate from './components/PermissionGate.jsx'
@@ -74,7 +77,7 @@ import { installBackButton } from './lib/backButton.js'
 import { bindSoundPrefs, prefetchPack, packOf } from './lib/celebrate.js'
 import { initBatterySaver, refreshSaver } from './lib/battery.js'
 import { syncNativeTheme } from './lib/nativeTheme.js'
-import { syncPlanReminders } from './lib/planReminders.js'
+import { syncPlanReminders, pullPlanActions, organizeChannels } from './lib/planReminders.js'
 
 bindUI(useUI)   // lets the shared controls open sheets without importing the store at module scope
 
@@ -140,9 +143,15 @@ function Shell() {
   // 9.0: date-specific reminders are re-armed when the app comes back (a new day, a new plan)
   useEffect(() => {
     if (!ready || !authed) return
-    const onVis = () => { if (document.visibilityState === 'visible') { const st = useStore.getState().S; syncDayReminders(st); syncPlanReminders(st) } }
+    // 10.0: "Done ✓" pressed on schedule reminders while the app was closed is logged now
+    const pull = () => pullPlanActions().then(r => { if (r && r.count) useUI.getState().toast(r.kcal ? t('From your reminders: {0} done · {1} kcal logged', r.count, r.kcal) : t('From your reminders: {0} done', r.count)) })
+    const onVis = () => { if (document.visibilityState === 'visible') { const st = useStore.getState().S; syncDayReminders(st); pull().finally(() => syncPlanReminders(useStore.getState().S)) } }
+    pull()
+    organizeChannels()
+    // Done ✓ tapped while the app stays on screen (the shade pulled over it) is picked up too
+    const iv = MOBILE ? setInterval(() => { if (document.visibilityState === 'visible') pull() }, 60000) : null
     document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis) }
   }, [ready, authed])
   // 9.0: day-plan reminders follow the plan (and are re-made for a new day when the app opens)
   useEffect(() => { if (ready && authed) syncPlanReminders(useStore.getState().S) }, [ready, authed, S.planner, S.lang]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -224,6 +233,10 @@ function Shell() {
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/drinks" element={<Drinks />} />
               <Route path="/dayplan" element={<DayPlan />} />
+              <Route path="/schedule" element={<DayPlan />} />
+              <Route path="/sodas" element={<Sodas />} />
+              <Route path="/nuts" element={<Nuts />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/burn/review" element={<BurnReview />} />
               <Route path="/burn/:mode" element={<BurnSelect />} />
               <Route path="/themes" element={<Themes />} />

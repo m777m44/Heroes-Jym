@@ -14,6 +14,12 @@ import {
 } from '../lib/food.js'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Button, Section, Row, Switch } from '../components/ui.jsx'
+import SodaArt from '../components/SodaArt.jsx'
+import NutArt from '../components/NutArt.jsx'
+import DrinkGlass from '../components/DrinkGlass.jsx'
+import { SODA_BY_ID, PACKS } from '../lib/sodas.js'
+import { NUT_BY_ID, FORMS } from '../lib/nuts.js'
+import { drinkOf } from '../lib/drinks.js'
 import {
   FoodRing, FoodBubble, addFoodSheet, entrySheet, foodGoalSheet, customFoodSheet, GOAL_SOURCE, n0, qtyLabel,
 } from '../components/food/FoodSheets.jsx'
@@ -113,9 +119,15 @@ export default function Food() {
         {list.length > 0 ? <div className="list food-items">
           {list.map(e => {
             const f = foodOf(S, e.f)
+            // 10.0: soft drinks, nuts & seeds and drinks show their own picture and what they were
+            const sd = e.sd && SODA_BY_ID[e.sd], nt = e.nut && NUT_BY_ID[e.nut], dr = !sd && !nt && e.dr ? drinkOf(S, e.dr) : null
+            const sub = f ? servingText(f, U) : sd ? t(PACKS[e.pk] ? PACKS[e.pk].name : 'Soft drinks') : nt ? t(FORMS[e.fm] || 'Nuts') : dr ? t('Drinks') : e.r ? t('Home recipe') : t('Quick calories')
             return <div key={e.id} className="item" role="button" tabIndex={0} onClick={() => entrySheet(iso, e)} onKeyDown={ev => { if (ev.key === 'Enter') entrySheet(iso, e) }}>
-              <FoodBubble food={f} size={32} />
-              <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{f ? servingText(f, U) : e.r ? t('Home recipe') : t('Quick calories')}</div></div>
+              {sd ? <span className="food-x-art"><SodaArt soda={sd} pk={e.pk} ml={e.ml} size={24} /></span>
+                : nt ? <span className="food-x-art"><NutArt nut={nt} form={e.fm} size={32} /></span>
+                  : dr ? <span className="food-x-art"><DrinkGlass drink={dr} size={28} /></span>
+                    : <FoodBubble food={f} size={32} />}
+              <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{sub}</div></div>
               <b className="food-kcal">{n0(entryKcal(e))}</b>
             </div>
           })}

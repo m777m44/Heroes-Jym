@@ -40,6 +40,7 @@ describe('food log', () => {
   it('picks the meal from the time of day', () => {
     const at = h => mealAt(new Date(2026, 9, 22, h))
     expect([at(7), at(12), at(16), at(20), at(23)]).toEqual(['b', 'l', 's', 'd', 's'])
+    expect([at(1), at(3), at(4)]).toEqual(['s', 's', 'b'])                    // 10.0: late night is a snack
     expect(MEALS.map(m => m.key)).toEqual(['b', 'l', 'd', 's'])
   })
 

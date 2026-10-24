@@ -1,31 +1,97 @@
-// 9.0 — day-plan reminders on the phone: one date-specific notification per block still ahead
-// today (and tomorrow with "Run it every day"), in the theme's accent colour. Each carries its
-// own text for its date, so a reminder never shows yesterday's plan. Ids 7700–7799, channel mj_plan.
+// 9.0 — day-plan reminders on the phone, in the theme's accent colour, each carrying its own text
+// for its date (so a reminder never shows yesterday's plan).
+// 10.0 — "My schedule": every block on its weekdays, at its start or the minutes before that you
+// chose, a week ahead (lib/dayPlan.js planNotifications). On Android they are armed natively
+// (PlanReminder.java): the expanded notification shows the time, your notes and the food and
+// drinks with their calories, in the block's colour, with "Done ✓" and "In 10 min" that work with
+// the app closed — what you pressed is applied when the app opens (pullPlanActions). Elsewhere
+// LocalNotifications (ids 7700–7759, channel mj_plan) without buttons.
+// Also: the notification channels are put into named groups (organizeChannels).
 import { MOBILE } from './mobile.js'
 import { t, dateLocale } from './i18n.js'
 import { normPlan, planNotifications, PLAN_ID_BASE } from './dayPlan.js'
 import { themeAccent } from './themes.js'
 
-const clock = m => new Date(2000, 0, 1, Math.floor(m / 60), m % 60).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
+const FALLBACK_MAX = 60
+const clock = m => new Date(2000, 0, 1, Math.floor((((m % 1440) + 1440) % 1440) / 60), ((m % 60) + 60) % 60).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
 let lastSig = ''
+
+async function native() {
+  try {
+    const { hasStepService, call } = await import('./stepService.js')
+    return (await hasStepService()) ? call : null
+  } catch { return null }
+}
+
 export async function syncPlanReminders(S, force = false) {
   if (!MOBILE || !S) return
   try {
     const plan = normPlan(S.planner)
     const list = plan && plan.remind ? planNotifications(S, plan, new Date(), t, clock) : []
     const color = themeAccent()
-    const sig = JSON.stringify([list.map(n => [n.id, +n.at, n.title, n.body]), S.lang, color])
+    const sig = JSON.stringify([list.map(n => [n.id, +n.at, n.title, n.body, n.lines.join('|')]), S.lang, color])
     if (!force && sig === lastSig) return
     lastSig = sig
     const { LocalNotifications } = await import('@capacitor/local-notifications')
+    // whatever the 9.0 build (or the fallback) left behind
     await LocalNotifications.cancel({ notifications: Array.from({ length: 100 }, (_, i) => ({ id: PLAN_ID_BASE + i })) }).catch(() => {})
+    const call = await native()
+    if (call) {
+      if (list.length) {
+        let perm = await LocalNotifications.checkPermissions()
+        if (perm.display !== 'granted' && force) perm = await LocalNotifications.requestPermissions()
+        if (perm.display !== 'granted') { await call('schedulePlanReminders', { items: [], strings: {} }); return }
+      }
+      const r = await call('schedulePlanReminders', {
+        items: list.map(n => ({
+          id: n.id, at: n.at.getTime(), when: n.at.getTime() + n.lead * 60000, title: n.title, body: n.body, big: n.lines.join('\n'),
+          color: n.color, day: n.day, block: n.block, lead: n.lead, route: '/dayplan', ttl: 2 * 3600000,
+        })),
+        strings: { channel: t('My schedule'), channelDesc: t('Each block of your schedule, with everything you planned'), done: t('Done ✓'), later: t('In {0} min', 10), sub: t('My schedule') },
+      })
+      if (r && typeof r.scheduled === 'number') { organizeChannels(); return }
+    }
     if (!list.length) return
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && force) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return
-    await LocalNotifications.createChannel({ id: 'mj_plan', name: t('Day plan'), description: t('Each block of your day plan as it starts'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.createChannel({ id: 'mj_plan', name: t('My schedule'), description: t('Each block of your schedule, with everything you planned'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
     await LocalNotifications.schedule({
-      notifications: list.map(n => ({ id: n.id, channelId: 'mj_plan', title: n.title, body: n.body, iconColor: color, schedule: { at: n.at, allowWhileIdle: true }, extra: { route: '/dayplan' } })),
+      notifications: list.slice(0, FALLBACK_MAX).map(n => ({
+        id: PLAN_ID_BASE + n.id, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),
+        iconColor: n.color || color, schedule: { at: n.at, allowWhileIdle: true }, extra: { route: '/dayplan' },
+      })),
     })
   } catch { /* plugin unavailable */ }
+}
+
+/** Done ✓ pressed on reminders while the app was closed → logged now. Returns { count, kcal }. */
+export async function pullPlanActions() {
+  if (!MOBILE) return { count: 0, kcal: 0 }
+  try {
+    const call = await native()
+    if (!call) return { count: 0, kcal: 0 }
+    const r = await call('takePlanActions', {})
+    const actions = (r && Array.isArray(r.actions)) ? r.actions : []
+    if (!actions.length) return { count: 0, kcal: 0 }
+    const { applyPlanActions } = await import('./planLog.js')
+    return applyPlanActions(actions)
+  } catch { return { count: 0, kcal: 0 } }
+}
+
+let organized = ''
+/** The phone's notification settings in named groups, in the app's language (once per language). */
+export async function organizeChannels(force = false) {
+  if (!MOBILE) return
+  const groups = {
+    g_activity: t('Steps & activity'), g_water: t('Water'), g_plan: t('Schedule & meals'), g_train: t('Workouts'), g_health: t('Health & medicines'),
+  }
+  const sig = JSON.stringify(groups)
+  if (!force && sig === organized) return
+  try {
+    const call = await native()
+    if (!call) return
+    await call('organizeChannels', { groups })
+    organized = sig
+  } catch { /* older build */ }
 }

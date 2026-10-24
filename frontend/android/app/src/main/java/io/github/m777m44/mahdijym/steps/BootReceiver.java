@@ -29,5 +29,7 @@ public class BootReceiver extends BroadcastReceiver {
         catch (RuntimeException ignored) { }
         try { WorkoutReminder.schedule(c); }
         catch (RuntimeException ignored) { }
+        try { PlanReminder.schedule(c); }     // 10.0: "My schedule"
+        catch (RuntimeException ignored) { }
     }
 }

@@ -21,6 +21,11 @@ import { stepText, qtyText } from '../lib/recipeText.js'
 import { logWater } from '../components/water/WaterParts.jsx'
 import { burst, lastTap } from '../lib/motion.js'
 import DrinkGlass from '../components/DrinkGlass.jsx'
+import SodaArt from '../components/SodaArt.jsx'
+import NutArt from '../components/NutArt.jsx'
+import { SODA_BY_ID } from '../lib/sodas.js'
+import { NUT_BY_ID } from '../lib/nuts.js'
+import { nav } from '../lib/nav.js'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Button, Segmented, SearchField, Switch, TextField } from '../components/ui.jsx'
@@ -49,7 +54,7 @@ export function drinkVars(col) {
 const COLORS = ['#7cc35a', '#ffb627', '#ff5e6c', '#b0124a', '#f4d35e', '#8b5e3c', '#f3e6cf', '#5e5ce6', '#40c8e0', '#ff8c1a']
 
 /** Log a drink: a food-log entry (exact calories) and, if wanted, the water it adds. */
-export function logDrink(d, { servings = 1, meal = mealAt().key || 's', withOpt = [], water = true } = {}) {
+export function logDrink(d, { servings = 1, meal = mealAt(), withOpt = [], water = true } = {}) {
   const st = useStore.getState()
   const iso = todayISO()
   const e = drinkEntry(d, { servings, meal, withOpt })
@@ -98,7 +103,7 @@ function DrinkView({ id, close }) {
   const [opt, setOpt] = useState([])
   const [batch, setBatch] = useState(() => (d ? d.sv : 1))
   const [cups, setCups] = useState(1)
-  const [meal, setMeal] = useState(() => mealAt().key || 's')
+  const [meal, setMeal] = useState(() => mealAt())
   const [water, setWater] = useState(true)
   if (!d) return <div className="empty">{t('This drink no longer exists.')}</div>
   const n = drinkNutrition(d, opt)
@@ -385,6 +390,17 @@ export default function Drinks() {
       <div><b>{n0(today.length)}</b><span>{t('Drinks today')}</span></div>
       <div><b>{n0(todayKcal)}</b><span>{t('kcal from drinks')}</span></div>
       <div><b>{n0(mine.length)}</b><span>{t('My drinks')}</span></div>
+    </div>}
+
+    {!q && !cat && <div className="dk-promos">
+      <button className="sd-promo" style={{ '--c1': '#e41e2b', '--c2': '#0b4ea2' }} onClick={() => nav('/sodas')}>
+        <span className="sd-promo-art" aria-hidden="true"><SodaArt soda={SODA_BY_ID.coke} pk="can" ml={330} size={30} /><SodaArt soda={SODA_BY_ID['7up']} pk="glassb" ml={250} size={26} /></span>
+        <span className="grow"><b>{t('Soft drinks')}</b><small>{t('Cans, bottles and glasses')}</small></span>
+      </button>
+      <button className="sd-promo" style={{ '--c1': '#b9783f', '--c2': '#93c572' }} onClick={() => nav('/nuts')}>
+        <span className="sd-promo-art" aria-hidden="true"><NutArt nut={NUT_BY_ID.pistachio} shell size={34} /><NutArt nut={NUT_BY_ID.almond} size={28} /></span>
+        <span className="grow"><b>{t('Nuts & seeds')}</b><small>{t('Pistachios, kerzat and more')}</small></span>
+      </button>
     </div>}
 
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search drinks or ingredients')} />

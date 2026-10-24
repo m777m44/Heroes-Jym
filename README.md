@@ -15,7 +15,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-9.0.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-10.0.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)

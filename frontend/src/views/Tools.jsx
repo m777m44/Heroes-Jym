@@ -2,6 +2,7 @@
 // timer, guided breathing, fasting, muscle recovery and heart-rate zones, next to the trackers
 // that already existed (water, food, steps, body, health, reports). Live tiles show their state
 // (a running fast, today's readiness) so the hub is useful at a glance.
+// 10.0: soft drinks and nuts & seeds tiles, "My schedule", and the rest grouped by kind.
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -22,25 +23,38 @@ export default function Tools() {
   const hiitWeek = (Array.isArray(S.intervals) ? S.intervals : []).filter(e => e.at > now - 7 * 864e5).length
 
   const plan = S.planner && Array.isArray(S.planner.blocks) ? S.planner : null
+  const blocksToday = plan ? plan.blocks.filter(b => !Array.isArray(b.w) || !b.w.length || b.w.includes(new Date(now).getDay())).length : 0
   const featured = [
-    { to: '/dayplan', icon: 'calendar', title: 'Day plan', sub: plan ? t('{0} blocks', plan.blocks.length) : t('Workout, study, rest, meals'), c1: '#5e5ce6', c2: '#ff375f' },
+    { to: '/dayplan', icon: 'calendar', title: 'My schedule', sub: plan ? t('{0} blocks today', blocksToday) : t('School, meals, drinks, work'), c1: '#5e5ce6', c2: '#ff375f' },
     { to: '/drinks', icon: 'cup', title: 'Drinks & juices', sub: t('Healthy recipes with calories'), c1: '#30d158', c2: '#ffb627' },
+    { to: '/sodas', icon: 'can', title: 'Soft drinks', sub: t('Cans, bottles and glasses'), c1: '#e41e2b', c2: '#0b4ea2' },
+    { to: '/nuts', icon: 'nut', title: 'Nuts & seeds', sub: t('Pistachios, kerzat and more'), c1: '#c68a54', c2: '#93c572' },
     { to: '/timer', icon: 'timer', title: 'Interval timer', sub: hiitWeek ? t('{0} this week', hiitWeek) : t('Tabata, HIIT, EMOM'), c1: '#ff375f', c2: '#ff9f0a' },
     { to: '/breathe', icon: 'wind', title: 'Breathe', sub: t('Box, 4-7-8, coherent'), c1: '#30b0c7', c2: '#5e5ce6' },
     { to: '/fasting', icon: 'moon', title: 'Fasting tracker', sub: fast ? (fast.done ? t('Goal reached!') : hmText(fast.elapsedMs)) : t('16:8, Ramadan, custom'), c1: '#ff9f0a', c2: '#bf5af2', live: !!fast },
     { to: '/recovery', icon: 'heartPulse', title: 'Recovery', sub: t('{0}% ready', ready), c1: '#30d158', c2: '#0a84ff' },
   ]
-  const more = [
-    { icon: 'heart', tint: 'var(--red)', title: 'Heart-rate zones', sub: 'Five training zones from your age', on: zonesSheet },
-    { icon: 'drop', tint: 'var(--blue)', title: 'Water', sub: 'Daily goal and reminders', to: '/water' },
-    { icon: 'fork', tint: 'var(--orange)', title: 'Food & calories', sub: 'Meals, calories, macros', to: '/food' },
-    { icon: 'leafy', tint: 'var(--green)', title: 'Kitchen', sub: 'Healthy recipes', to: '/kitchen' },
-    { icon: 'figureWalk', tint: 'var(--acc)', title: 'Walking & steps', sub: 'Step counter and daily goal', to: '/walk' },
-    { icon: 'flame', tint: 'var(--red)', title: 'Burn calories', sub: 'A plan of exercises with reminders', to: '/calories' },
-    { icon: 'scale', tint: 'var(--teal)', title: 'Body weight', sub: 'Trend, goal and photos', to: '/weight' },
-    { icon: 'person', tint: 'var(--green)', title: 'Ideal body', sub: 'Ideal weight and your plan', to: '/ideal' },
-    { icon: 'heartPulse', tint: 'var(--pink)', title: 'Health log', sub: 'Sleep, mood, blood pressure, sugar, medicines', to: '/health' },
-    { icon: 'chartLine', tint: 'var(--indigo)', title: 'Reports', sub: 'Weekly and monthly summaries', to: '/reports' },
+  // 10.0: the rest, grouped
+  const groups = [
+    { title: 'Food & drinks', rows: [
+      { icon: 'fork', tint: 'var(--orange)', title: 'Food & calories', sub: 'Meals, calories, macros', to: '/food' },
+      { icon: 'leafy', tint: 'var(--green)', title: 'Kitchen', sub: 'Healthy recipes', to: '/kitchen' },
+      { icon: 'drop', tint: 'var(--blue)', title: 'Water', sub: 'Daily goal and reminders', to: '/water' },
+    ] },
+    { title: 'Activity', rows: [
+      { icon: 'figureWalk', tint: 'var(--acc)', title: 'Walking & steps', sub: 'Step counter and daily goal', to: '/walk' },
+      { icon: 'flame', tint: 'var(--red)', title: 'Burn calories', sub: 'A plan of exercises with reminders', to: '/calories' },
+      { icon: 'heart', tint: 'var(--red)', title: 'Heart-rate zones', sub: 'Five training zones from your age', on: zonesSheet },
+    ] },
+    { title: 'Body & health', rows: [
+      { icon: 'scale', tint: 'var(--teal)', title: 'Body weight', sub: 'Trend, goal and photos', to: '/weight' },
+      { icon: 'person', tint: 'var(--green)', title: 'Ideal body', sub: 'Ideal weight and your plan', to: '/ideal' },
+      { icon: 'heartPulse', tint: 'var(--pink)', title: 'Health log', sub: 'Sleep, mood, blood pressure, sugar, medicines', to: '/health' },
+    ] },
+    { title: 'Reports & reminders', rows: [
+      { icon: 'chartLine', tint: 'var(--indigo)', title: 'Reports', sub: 'Weekly and monthly summaries', to: '/reports' },
+      { icon: 'bellBadge', tint: 'var(--orange)', title: 'Notifications', sub: 'Every reminder of the app in one place', to: '/notifications' },
+    ] },
   ]
 
   return <div className="narrow tl-page">
@@ -56,8 +70,8 @@ export default function Tools() {
         <small>{f.live && <span className="tl-live" aria-hidden="true" />}{f.sub}</small>
       </button>)}
     </div>
-    <Section title={t('More tools')}>
-      {more.map(m => <Row key={m.title} icon={m.icon} iconTint={m.tint} title={t(m.title)} subtitle={t(m.sub)} accessory="chevron" onClick={m.on || (() => nav(m.to))} />)}
-    </Section>
+    {groups.map(g => <Section key={g.title} title={t(g.title)}>
+      {g.rows.map(m => <Row key={m.title} icon={m.icon} iconTint={m.tint} title={t(m.title)} subtitle={t(m.sub)} accessory="chevron" onClick={m.on || (() => nav(m.to))} />)}
+    </Section>)}
   </div>
 }

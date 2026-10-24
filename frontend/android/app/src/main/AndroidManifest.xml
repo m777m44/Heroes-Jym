@@ -63,6 +63,12 @@
             android:name=".steps.WorkoutReminder"
             android:exported="false" />
 
+        <!-- MAHDI-JYM 10.0 — "My schedule" reminders: everything planned for the block, with
+             Done ✓ and In 10 min that work with the app closed. -->
+        <receiver
+            android:name=".steps.PlanReminder"
+            android:exported="false" />
+
         <!-- The full-screen celebration: over the lock screen (full-screen intent) and, with
              "Display over other apps", on top of whatever is open. Own task, no recents entry. -->
         <activity
