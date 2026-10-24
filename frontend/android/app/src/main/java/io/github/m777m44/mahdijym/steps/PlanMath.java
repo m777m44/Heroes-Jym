@@ -35,6 +35,17 @@ final class PlanMath {
         } catch (RuntimeException e) { return -1; }
     }
 
+    /** Whether a block with weekdays `w` and quiet days `skip` still rings on the day `iso`. */
+    static boolean ringsOn(int[] w, Set<String> skip, String iso) {
+        int wd = iso == null ? -1 : weekdayOf(iso);
+        return wd >= 0 && runsOn(w, wd) && (skip == null || !skip.contains(iso));
+    }
+
+    /** What a reminder says, in short — the same text gives the same value. */
+    static String textSig(String title, String body, String big) {
+        return Integer.toHexString((title + '\u0001' + body + '\u0001' + big).hashCode());
+    }
+
     /**
      * A block's next ring after `after`: { ring time, the block's start that day } — on a weekday it
      * runs, not on a day in `skip`, `leadMin` minutes before its start (`start`, minutes after

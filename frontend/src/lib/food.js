@@ -272,13 +272,18 @@ export function foodInsights(totals, goal, { hour = 12, kg = 70, sweetKcal = 0 }
   return out
 }
 
-/** Calories from sweets and sugary drinks on a day (for the pointer above). */
+/**
+ * Calories from sweets and sugary drinks on a day (for the pointer above) — with the soft drinks
+ * from the soft-drinks screen that have more than 2.5 g of sugar per 100 ml (not the zero ones,
+ * soda water or doogh) (review on PR #13).
+ */
 export function sweetKcalOn(S, iso) {
   const SWEET = new Set(['soda', 'energydrink', 'teasugar', 'lemonmint', 'orangejuice', 'coffeemilk'])
   let k = 0
   for (const e of dayEntries(S, iso)) {
     const f = e.f && FOOD_BY_ID[e.f]
-    if (f && (f.cat === 'sweets' || SWEET.has(f.id))) k += entryKcal(e)
+    const sd = e.sd && SODA_BY_ID[e.sd]
+    if ((f && (f.cat === 'sweets' || SWEET.has(f.id))) || (sd && sd.s100 > 2.5 && !sd.dairy)) k += entryKcal(e)
   }
   return k
 }

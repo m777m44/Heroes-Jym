@@ -16,8 +16,8 @@ import { todayISO, DAYS, DAYN, weekOrder, weekStartOf } from '../lib/format.js'
 import { MEALS, foodGoalOf, dayTotals } from '../lib/food.js'
 import {
   KINDS, KIND_KEYS, TEMPLATES, REMIND_OPTS, DAY_ALL, SCHOOL_DAYS, WEEKEND, NOTE_MAX, toHHMM, toMin, newPlan, normPlan, liveState, dayRec, isLive,
-  planTotals, mealTargets, itemInfo, blockKcal, blockMl, startDay, stopDay, markBlock, upsertBlock, removeBlock, shiftFrom, planPrefs,
-  blocksOn, typeDays, daysLabel, copyDay, hasItems, cleanDays,
+  planTotals, mealTargets, itemInfo, blockKcal, blockMl, startDay, stopDay, markBlock, upsertBlock, removeBlock, extendNow, planPrefs,
+  blocksOn, dayBlocks, typeDays, daysLabel, copyDay, hasItems, cleanDays,
 } from '../lib/dayPlan.js'
 import { RECIPES, recipeNutrition } from '../lib/kitchen.js'
 import { drinkOf } from '../lib/drinks.js'
@@ -340,7 +340,11 @@ function LiveCard({ St, live, iso, targets }) {
     <div className="dp-live-act">
       <Button variant="primary" icon="check" onClick={done}>{its.length || b.k === 'water' ? t('Log & done') : t('Done')}</Button>
       {go && <Button variant="tinted" icon={go[2]} onClick={() => nav(go[0])}>{t(go[1])}</Button>}
-      <button className="iconbtn" aria-label={t('10 more minutes')} title={t('10 more minutes')} onClick={() => update(s => { shiftFrom(s, b.id, 10, new Date().getDay()); const P = s.planner; const x = P.blocks.find(y => y.id === b.id); if (x) { x.s -= 10; x.d += 10 } })}><b className="dp-plus10">+10</b></button>
+      <button className="iconbtn" aria-label={t('10 more minutes')} title={t('10 more minutes')} onClick={() => {
+        // today only: this block and the rest of today move, the schedule stays (review on PR #13)
+        update(s => { extendNow(s, cur, 10) })
+        toast(t('10 more minutes') + ' · ' + t('Today only'))
+      }}><b className="dp-plus10">+10</b></button>
       <button className="iconbtn" aria-label={t('Skip')} onClick={() => update(s => { markBlock(s, iso, b.id, 'skip') })}><Icon name="chevronRight" /></button>
     </div>
     {next && <div className="dp-next"><span className="lbl2">{t('Next')}</span><Icon name={KINDS[next.b.k].icon} style={{ color: KINDS[next.b.k].color }} /><b>{kindName(next.b)}</b><span className="small muted">{clock(next.b.s)}</span></div>}
@@ -381,7 +385,8 @@ export default function DayPlan() {
   const goal = foodGoalOf(St, iso).kcal
   const isToday = wd === today
   const live = plan && isToday && isLive(plan, iso) ? liveState(plan, dayRec(plan, iso), now) : null
-  const blocks = useMemo(() => (plan ? blocksOn(plan, wd) : []), [plan, wd])
+  // today with today's own changes (+10), the other days as planned
+  const blocks = useMemo(() => (plan ? (isToday ? dayBlocks(plan, iso) : blocksOn(plan, wd)) : []), [plan, wd, isToday, iso])
   const targets = useMemo(() => (plan ? mealTargets(St, blocks, goal) : {}), [St, plan, blocks, goal])
   const tot = useMemo(() => (plan ? planTotals(St, blocks, goal) : null), [St, plan, blocks, goal])
   const eaten = dayTotals(St, iso).kcal
@@ -457,7 +462,7 @@ export default function DayPlan() {
         return <div key={b.id} role="listitem" className={'dp-b' + (st ? ' ' + st : '')} style={{ '--c': K.color, '--i': Math.min(i, 14) }}>
           <span className="dp-b-time">{clock(b.s)}</span>
           <span className="dp-b-rail"><i /></span>
-          <button className="dp-b-card" onClick={() => blockSheet(b, targets[b.id] || 0)}>
+          <button className="dp-b-card" onClick={() => blockSheet(plan.blocks.find(x => x.id === b.id) || b, targets[b.id] || 0)}>
             <span className="dp-b-ic"><Icon name={st === 'done' ? 'check' : K.icon} /></span>
             <span className="grow">
               <b>{kindName(b)}</b>
@@ -469,6 +474,7 @@ export default function DayPlan() {
               {b.nt && <span className="dp-b-note" dir="auto"><Icon name="pencil" />{b.nt}</span>}
               {its.length > 0 && <span className="dp-b-items" dir="auto">{its.map(itemName).join(' · ')}</span>}
               <span className="sc-b-meta">
+                {b.mv && <span className="sc-pill moved"><Icon name="clock" />{t('Today only')}</span>}
                 {oddDays(b.w) && <span className="sc-pill"><Icon name="calendar" />{dayLabel(b.w)}</span>}
                 {MOBILE && plan.remind && <span className={'sc-pill' + (rm < 0 ? ' off' : '')}><Icon name={rm < 0 ? 'bellSlash' : 'bell'} />{rm > 0 ? '−' + n0(rm) + ' ' + U('mn') : rm < 0 ? t('Off') : clock(b.s)}</span>}
               </span>

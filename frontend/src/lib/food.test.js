@@ -190,6 +190,9 @@ describe('food goal & insights', () => {
     const sweet = FOODS.find(f => f.cat === 'sweets')
     const s = { food: { [D]: [{ f: sweet.id, kcal: sweet.kcal, q: 2 }, { f: 'dolma', kcal: 400 }] } }
     expect(sweetKcalOn(s, D)).toBe(Math.round(sweet.kcal * 2))
+    // soft drinks from the soft-drinks screen: the sugary ones count, zero / soda water / doogh don't (review on PR #13)
+    const sd = { food: { [D]: [{ sd: 'pepsi', ml: 500, kcal: 220, q: 1 }, { sd: 'cokezero', ml: 330, kcal: 1, q: 2 }, { sd: 'soda', ml: 330, kcal: 0, q: 1 }, { sd: 'doogh', ml: 300, kcal: 90, q: 1 }] } }
+    expect(sweetKcalOn(sd, D)).toBe(220)
     const U = u => u
     expect(servingText(FOOD_BY_ID.dolma, U)).toBe('1 plate · 250 g')
     expect(servingText({ custom: true }, U)).toBe('1 serving')

@@ -15,7 +15,8 @@
 //                w? ([0–6] weekdays, getDay numbers; missing = every day), nt? (notes), rm? (reminder:
 //                -1 off, 0 at the start, N minutes before), meal? ('b'|'l'|'d'|'s'),
 //                items?: [{ t: 'r'|'d'|'f'|'s'|'n', id, q, ml?, pk?, g?, fm? }], ml? (water) }],
-//     days: { 'YYYY-MM-DD': { on (started at), off? (stopped: no reminders), done: { blockId: at }, skip: { blockId: at } } }
+//     days: { 'YYYY-MM-DD': { on (started at), off? (stopped: no reminders), done: { blockId: at }, skip: { blockId: at },
+//                             mv?: { blockId: [start, minutes] } (that day only — +10 in the live view) } }
 //   }
 import { uid } from './format.js'
 import { RECIPE_BY_ID, recipeNutrition } from './kitchen.js'
@@ -69,6 +70,9 @@ export const toMin = s => { const [h, m] = String(s).split(':').map(Number); ret
 export const toHHMM = m => { const x = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') }
 const num = v => (Number.isFinite(+v) ? +v : 0)
 const h = s => toMin(s)
+const isoOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+const dayAfter = (iso, n) => { const [y, m, d] = String(iso).split('-').map(Number); return isoOf(new Date(y, m - 1, d + n)) }
+const weekdayOfIso = iso => { const [y, m, d] = String(iso).split('-').map(Number); return new Date(y, m - 1, d).getDay() }
 
 // [kind, start (on a 07:00–23:00 day), minutes, extra]
 const T = {
@@ -251,6 +255,25 @@ export function normPlan(P) {
 // ---- weekdays ---------------------------------------------------------------------------------------
 /** The blocks that run on a weekday (0 = Sunday … 6 = Saturday). */
 export const blocksOn = (plan, wd) => (plan ? plan.blocks.filter(b => onDay(b, wd)) : [])
+/** A day's own changes (+10 in the live view): { blockId: [start, minutes] }, cleaned. */
+function movesOf(rec) {
+  const out = {}
+  const mv = rec && rec.mv
+  if (!mv || typeof mv !== 'object') return out
+  for (const [id, v] of Object.entries(mv)) {
+    if (!Array.isArray(v) || !Number.isFinite(+v[0]) || !Number.isFinite(+v[1])) continue
+    out[id] = [Math.min(1439, Math.max(0, Math.round(+v[0]))), Math.min(1440, Math.max(5, Math.round(+v[1])))]
+  }
+  return out
+}
+const withMoves = (blocks, mv) => (Object.keys(mv).length
+  ? blocks.map(b => (mv[b.id] ? { ...b, s: mv[b.id][0], d: mv[b.id][1], mv: 1 } : b)).sort((a, b) => a.s - b.s)
+  : blocks)
+/**
+ * The blocks of one date: its weekday's blocks with that day's own changes (a block you gave 10
+ * more minutes, and the ones after it, run later that day only — marked `mv`).
+ */
+export const dayBlocks = (plan, iso) => (plan ? withMoves(blocksOn(plan, weekdayOfIso(iso)), movesOf(dayRec(plan, iso))) : [])
 /** Whether any block runs on chosen weekdays only (the week strip shows then). */
 export const isWeekly = plan => !!plan && plan.blocks.some(b => Array.isArray(b.w) && b.w.length)
 /**
@@ -327,18 +350,11 @@ export function planTotals(S, blocks, goal) {
 // ---- live -------------------------------------------------------------------------------------------
 const nowMinOf = d => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60
 /**
- * Where a block sits in the day relative to `now`: its start / end as minutes on today's clock.
- * A block that crosses midnight is still running from yesterday only if it ran yesterday too.
- */
-function span(b, nowMin, ranYesterday = true) {
-  let s = b.s, e = b.s + b.d
-  if (ranYesterday && e > 1440 && nowMin < e - 1440) { s -= 1440; e -= 1440 }      // a sleep that started yesterday
-  return [s, e]
-}
-/**
  * The live state of today's blocks: each with a status (done, skipped, now, next, later, missed),
  * the block running now (the most recent one when two overlap — a water break inside school),
- * the next one, minutes left in the current one and how much of the day is done.
+ * the next one, minutes left in the current one and how much of the day is done. Start / end are
+ * minutes on today's clock; a block that crosses midnight is still running from yesterday only if
+ * it ran yesterday too (then s < 0). Each day's own changes (+10) count.
  */
 export function liveState(plan, day, now = new Date()) {
   const m = nowMinOf(now)
@@ -346,15 +362,20 @@ export function liveState(plan, day, now = new Date()) {
   const done = rec.done || {}, skip = rec.skip || {}
   let cur = null, next = null
   const wd = now.getDay(), yd = (wd + 6) % 7
-  const items = blocksOn(plan, wd).map(b => {
-    const [s, e] = span(b, m, onDay(b, yd))
+  const yIso = isoOf(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  const last = withMoves(blocksOn(plan, yd), movesOf(dayRec(plan, yIso)))
+  const lastById = Object.fromEntries(last.map(b => [b.id, b]))
+  const items = withMoves(blocksOn(plan, wd), movesOf(rec)).map(b => {
+    let s = b.s, e = b.s + b.d
+    const y = lastById[b.id]
+    if (y && y.s + y.d > 1440 && m < y.s + y.d - 1440) { s = y.s - 1440; e = y.s + y.d - 1440 }   // a sleep that started yesterday
     const st = done[b.id] ? 'done' : skip[b.id] ? 'skipped' : m >= s && m < e ? 'now' : m < s ? 'later' : 'missed'
     if (st === 'now' && (!cur || s > cur.s || (s === cur.s && e - s < cur.e - cur.s))) cur = { b, left: e - m, pct: (m - s) / Math.max(1, e - s), s, e }
     return { b, s, e, st }
   })
   // 10.0 (review on PR #13): last night's block that runs on into this morning but isn't on today's
   // plan (Friday night's later sleep on a Saturday) — it is what's happening now until it ends
-  for (const b of blocksOn(plan, yd)) {
+  for (const b of last) {
     if (onDay(b, wd) || b.s + b.d <= 1440) continue
     const s = b.s - 1440, e = b.s + b.d - 1440
     if (m >= e) continue
@@ -382,8 +403,11 @@ function rec(s, iso) {
   return d
 }
 export function startDay(s, iso, now = Date.now()) { const d = rec(s, iso); d.on = d.on || now; delete d.off }
-/** Stop today: the live view closes and today's remaining reminders are silenced. */
-export function stopDay(s, iso, now = Date.now()) { const d = rec(s, iso); d.on = 0; d.off = now; if (s.planner) s.planner.auto = false }
+/**
+ * Stop today: the live view closes and today's remaining reminders are silenced. "Run it every
+ * day" stays as it is — tomorrow starts by itself again (review on PR #13).
+ */
+export function stopDay(s, iso, now = Date.now()) { const d = rec(s, iso); d.on = 0; d.off = now }
 export function markBlock(s, iso, id, how = 'done', now = Date.now()) {
   const d = rec(s, iso)
   delete d.done[id]; delete d.skip[id]
@@ -395,17 +419,37 @@ export function upsertBlock(s, b) {
   const i = P.blocks.findIndex(x => x.id === b.id)
   const clean = block(b.k, b.s, b.d, { n: b.n, w: b.w, nt: b.nt, rm: b.rm, meal: b.meal, items: (b.items || []).slice(0, ITEMS_MAX), ml: b.ml })
   clean.id = b.id || clean.id
+  // a new time replaces what was changed for one day only (+10)
+  if (i >= 0 && (P.blocks[i].s !== clean.s || P.blocks[i].d !== clean.d)) for (const d of Object.values(P.days || {})) if (d && d.mv) delete d.mv[clean.id]
   if (i >= 0) P.blocks[i] = clean; else if (P.blocks.length < MAX_BLOCKS) P.blocks.push(clean)
   P.blocks = fitBlocks(P.blocks)
   return clean.id
 }
 export function removeBlock(s, id) { s.planner.blocks = s.planner.blocks.filter(b => b.id !== id) }
-/** Move every block of that day from `fromId` on by `min` minutes (a late start, an extra 10 minutes…). */
-export function shiftFrom(s, fromId, min, wd = null) {
+/** Blocks at fixed times — a delay before them ends there (+10). */
+export const FIXED_KINDS = new Set(['school', 'prayer', 'sleep'])
+/**
+ * "+10" in the live view: the block running now (`cur` from liveState: { b, s, e } on today's
+ * clock) gets `min` more minutes and the blocks after it today start `min` later — up to the next
+ * block at a fixed time (school, prayer, sleep), which keeps its time. Today only: the schedule
+ * and the other days stay as they are, even when the block runs on several weekdays (review on
+ * PR #13). A block that started yesterday (a sleep) is lengthened on yesterday's date.
+ */
+export function extendNow(s, cur, min = 10, now = new Date()) {
   const P = s.planner
-  const from = P.blocks.find(b => b.id === fromId)
-  if (!from) return
-  P.blocks = fitBlocks(P.blocks.map(b => (b.id === fromId || (b.k !== 'sleep' && b.s > from.s && (wd === null || onDay(b, wd)) && shareDay(b, from)) ? { ...b, s: b.s + min } : b)))
+  if (!P || !cur || !cur.b || !P.blocks.some(b => b.id === cur.b.id)) return
+  const iso = isoOf(now)
+  const own = cur.s < 0 ? isoOf(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)) : iso
+  const o = rec(s, own)
+  o.mv = { ...movesOf(o), [cur.b.id]: [cur.s < 0 ? cur.s + 1440 : cur.s, cur.e - cur.s + min] }
+  const d = rec(s, iso)
+  const mv = movesOf(d)
+  const after = withMoves(blocksOn(P, now.getDay()), mv).filter(b => b.id !== cur.b.id && b.s >= cur.e).sort((a, b) => a.s - b.s)
+  for (const b of after) {
+    if (FIXED_KINDS.has(b.k)) break
+    mv[b.id] = [Math.min(1439, b.s + min), b.d]
+  }
+  d.mv = mv
 }
 /** Make the days in `to` run exactly the blocks of weekday `from`. */
 export function copyDay(s, from, to) {
@@ -427,7 +471,6 @@ export function copyDay(s, from, to) {
 }
 
 // ---- reminders ------------------------------------------------------------------------------------
-const isoOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 const defTr = (k, ...a) => String(k).replace(/\{(\d)\}/g, (_, i) => a[i])
 
 /** What a block's reminder says: { title, body, lines } — everything you wrote and chose. */
@@ -468,10 +511,11 @@ export function blockText(S, b, lead = 0, tr = defTr, fmtTime = toHHMM) {
 
 /**
  * The reminders of the week ahead: every block on its weekdays, at its start or N minutes
- * before (its own setting), skipping blocks you finished or skipped and days you stopped.
+ * before (its own setting), skipping blocks you finished or skipped and days you stopped; a
+ * block moved on one day (+10) rings at its new time that day (`moved`).
  * Nearest first, at most PLAN_REMIND_MAX. Each carries the text for its date, so a reminder never
  * shows a stale plan. `tr(key, ...args)` translates; `fmtTime(min)` formats a clock time.
- * → [{ id (0…), at, title, body, lines, kind, color, day (ISO), block (id), lead }]
+ * → [{ id (0…), at, title, body, lines, kind, color, day (ISO), block (id), lead, moved }]
  */
 export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime = toHHMM, { days = PLAN_REMIND_DAYS, max = PLAN_REMIND_MAX } = {}) {
   if (!plan || !plan.remind) return []
@@ -481,7 +525,7 @@ export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime
     const iso = isoOf(base)
     const r = dayRec(plan, iso) || {}
     if (r.off) continue
-    for (const b of blocksOn(plan, base.getDay())) {
+    for (const b of withMoves(blocksOn(plan, base.getDay()), movesOf(r))) {
       if (b.k === 'sleep' && b.s < 6 * 60) continue
       const lead = b.rm === undefined ? 0 : b.rm
       if (lead < 0) continue
@@ -489,7 +533,7 @@ export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime
       const at = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(b.s / 60), b.s % 60 - lead)
       if (at.getTime() <= now.getTime() + 30000) continue
       const txt = blockText(S, b, lead, tr, fmtTime)
-      out.push({ at, title: txt.title, body: txt.body, lines: txt.lines, kind: b.k, color: (KINDS[b.k] || KINDS.other).color, day: iso, block: b.id, lead })
+      out.push({ at, title: txt.title, body: txt.body, lines: txt.lines, kind: b.k, color: (KINDS[b.k] || KINDS.other).color, day: iso, block: b.id, lead, moved: !!b.mv })
     }
   }
   out.sort((a, b) => a.at - b.at)
@@ -502,28 +546,41 @@ export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime
  * days it must stay quiet (done or skipped, or a day you stopped). The phone works out each next
  * time itself and re-arms after every ring, so the whole schedule keeps reminding with the app
  * closed, however many blocks it has (review on PR #13).
- * → [{ id, block, w, start, lead, title, body, lines, kind, color, skip: ['YYYY-MM-DD'] }]
+ * A block moved on one day (+10) stays quiet at its usual time that day and gets one more entry
+ * for that day only (`once`): its weekday, the new time and the same day a week later as quiet,
+ * so it rings once and is not armed again.
+ * → [{ id, block, w, start, lead, title, body, lines, kind, color, skip: ['YYYY-MM-DD'], once? }]
  */
 export function planAlarms(S, plan, now = new Date(), tr = defTr, fmtTime = toHHMM) {
   if (!plan || !plan.remind) return []
   const today = isoOf(now)
-  const quiet = { all: [] }
+  const quiet = { all: [] }, done = {}, moved = []
   for (const [iso, r] of Object.entries(plan.days || {})) {
     if (iso < today || !r) continue
     if (r.off) quiet.all.push(iso)
-    for (const id of [...Object.keys(r.done || {}), ...Object.keys(r.skip || {})]) (quiet[id] = quiet[id] || []).push(iso)
+    for (const id of [...Object.keys(r.done || {}), ...Object.keys(r.skip || {})]) { (quiet[id] = quiet[id] || []).push(iso); (done[id] = done[id] || []).push(iso) }
+    for (const [id, v] of Object.entries(movesOf(r))) { (quiet[id] = quiet[id] || []).push(iso); if (!r.off) moved.push([iso, id, v]) }
   }
   const out = []
-  for (const b of plan.blocks) {
-    if (b.k === 'sleep' && b.s < 6 * 60) continue
+  const add = (b, w, skip, once) => {
+    if (b.k === 'sleep' && b.s < 6 * 60) return
     const lead = b.rm === undefined ? 0 : b.rm
-    if (lead < 0) continue
+    if (lead < 0) return
     const txt = blockText(S, b, lead, tr, fmtTime)
-    out.push({
-      id: out.length, block: b.id, w: Array.isArray(b.w) ? b.w : [], start: b.s, lead,
+    const x = {
+      id: out.length, block: b.id, w, start: b.s, lead,
       title: txt.title, body: txt.body, lines: txt.lines, kind: b.k, color: (KINDS[b.k] || KINDS.other).color,
-      skip: [...new Set([...quiet.all, ...(quiet[b.id] || [])])].sort(),
-    })
+      skip: [...new Set(skip)].sort(),
+    }
+    if (once) x.once = once
+    out.push(x)
+  }
+  for (const b of plan.blocks) add(b, Array.isArray(b.w) ? b.w : [], [...quiet.all, ...(quiet[b.id] || [])])
+  moved.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[2][0] - b[2][0]))
+  for (const [iso, id, [s, d]] of moved.slice(0, MAX_BLOCKS)) {
+    const b = plan.blocks.find(x => x.id === id), wd = weekdayOfIso(iso)
+    if (!b || !onDay(b, wd) || (done[id] || []).includes(iso)) continue
+    add({ ...b, s, d }, [wd], [dayAfter(iso, 7)], iso)
   }
   return out
 }

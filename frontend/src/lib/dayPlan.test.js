@@ -1,8 +1,8 @@
 // 9.0 — the day plan: templates, calorie targets, the live state and date-specific reminders.
 import { describe, it, expect } from 'vitest'
 import {
-  buildTemplate, newPlan, normPlan, fitBlocks, planPrefs, mealTargets, planTotals, liveState, isLive, planNotifications, itemInfo,
-  startDay, stopDay, markBlock, upsertBlock, removeBlock, shiftFrom, toMin, TEMPLATES, KINDS,
+  buildTemplate, newPlan, normPlan, fitBlocks, planPrefs, mealTargets, planTotals, liveState, isLive, planNotifications, itemInfo, dayRec,
+  startDay, stopDay, markBlock, upsertBlock, removeBlock, extendNow, dayBlocks, toMin, TEMPLATES, KINDS,
   blocksOn, isWeekly, typeDays, daysLabel, copyDay, cleanDays, blockText, onDay, SCHOOL_DAYS, WEEKEND, PLAN_REMIND_MAX, REMIND_OPTS, planAlarms,
 } from './dayPlan.js'
 
@@ -142,13 +142,16 @@ describe('live', () => {
     expect(s.planner.days[iso].done[id]).toBeUndefined()
     const nid = upsertBlock(s, { k: 'study', s: 600, d: 60 })
     expect(s.planner.blocks.some(b => b.id === nid)).toBe(true)
-    const before = s.planner.blocks.find(b => b.id === nid).s
-    shiftFrom(s, nid, 10)
-    expect(s.planner.blocks.find(b => b.id === nid).s).toBe(before + 10)
     removeBlock(s, nid)
     expect(s.planner.blocks.some(b => b.id === nid)).toBe(false)
     stopDay(s, iso)
     expect(isLive(s.planner, iso)).toBe(false)
+    // stopping today keeps "Run it every day": tomorrow starts by itself (review on PR #13)
+    s.planner.auto = true
+    stopDay(s, iso)
+    expect(s.planner.auto).toBe(true)
+    expect(isLive(s.planner, iso)).toBe(false)
+    expect(isLive(s.planner, '2026-10-24')).toBe(true)
   })
 })
 
@@ -260,6 +263,67 @@ describe('10.0 — my schedule', () => {
     const T = liveState(P, null, new Date(2026, 9, 22, 6, 20))
     expect(T.cur.b.s).toBe(toMin('22:30'))
     expect(Math.round(T.cur.left)).toBe(10)
+  })
+  it('gives the block now 10 more minutes and moves the rest of today — today only (review on PR #13)', () => {
+    const s = { planner: { ...newPlan('school', {}, { seed: 1 }), remind: true } }
+    const P0 = JSON.parse(JSON.stringify(s.planner.blocks))
+    const mon = new Date(2026, 9, 19, 15, 0), iso = '2026-10-19'               // Monday 15:00, homework 14:30–16:00
+    const L = liveState(s.planner, dayRec(s.planner, iso), mon)
+    expect(L.cur.b.n).toBe('Homework')
+    extendNow(s, L.cur, 10, mon)
+    expect(s.planner.blocks).toEqual(P0)                                        // the schedule itself is untouched
+    const today = dayBlocks(s.planner, iso)
+    const hw = today.find(b => b.n === 'Homework'), snack = today.find(b => b.k === 'meal' && b.meal === 's')
+    expect([hw.s, hw.d, hw.mv]).toEqual([toMin('14:30'), 100, 1])
+    expect(snack.s).toBe(toMin('16:10'))
+    expect(today.find(b => b.k === 'sleep').s).toBe(toMin('22:30'))           // bedtime stays
+    expect(today.find(b => b.k === 'school').mv).toBeUndefined()               // before it: untouched
+    // Tuesday (the same Sunday–Thursday blocks) and next Monday are as planned
+    expect(dayBlocks(s.planner, '2026-10-20').find(b => b.n === 'Homework')).toMatchObject({ s: toMin('14:30'), d: 90 })
+    expect(dayBlocks(s.planner, '2026-10-26').find(b => b.k === 'meal' && b.meal === 's').s).toBe(toMin('16:00'))
+    expect(Math.round(liveState(s.planner, dayRec(s.planner, iso), mon).cur.left)).toBe(70)
+    // pressed again: 10 more
+    extendNow(s, liveState(s.planner, dayRec(s.planner, iso), mon).cur, 10, mon)
+    expect(dayBlocks(s.planner, iso).find(b => b.k === 'meal' && b.meal === 's').s).toBe(toMin('16:20'))
+    // the reminders follow: today's snack at 16:20, Tuesday's at 16:00
+    const list = planNotifications({}, s.planner, mon, undefined, undefined, { days: 2 })
+    const sn = list.filter(n => n.block === snack.id)
+    expect(sn.map(n => [n.day, n.at.getHours() * 60 + n.at.getMinutes(), n.moved])).toEqual([[iso, toMin('16:20'), true], ['2026-10-20', toMin('16:00'), false]])
+    expect(sn[0].title).toMatch(/16:20/)
+    // the phone: the usual alarm stays quiet today, one more rings once today at the new time
+    const al = planAlarms({}, s.planner, mon).filter(n => n.block === snack.id)
+    expect(al).toHaveLength(2)
+    expect(al[0]).toMatchObject({ start: toMin('16:00'), w: [0, 1, 2, 3, 4], skip: [iso] })
+    expect(al[1]).toMatchObject({ start: toMin('16:20'), w: [1], skip: ['2026-10-26'], once: iso })
+    // done → no extra alarm; a stopped day → none either
+    markBlock(s, iso, snack.id, 'done')
+    expect(planAlarms({}, s.planner, mon).filter(n => n.block === snack.id)).toHaveLength(1)
+    // editing the notes keeps today's change, a new time replaces it
+    const work = today.find(b => b.k === 'work')
+    upsertBlock(s, { ...s.planner.blocks.find(b => b.id === work.id), nt: 'Shop' })
+    expect(dayBlocks(s.planner, iso).find(b => b.id === work.id).s).toBe(toMin('16:50'))
+    upsertBlock(s, { ...s.planner.blocks.find(b => b.id === work.id), s: toMin('17:00') })
+    expect(dayBlocks(s.planner, iso).find(b => b.id === work.id)).toMatchObject({ s: toMin('17:00'), d: 120 })
+    expect(dayBlocks(s.planner, iso).find(b => b.id === work.id).mv).toBeUndefined()
+  })
+  it('lengthens a sleep that started yesterday on yesterday\'s date and moves this morning', () => {
+    const s = { planner: newPlan('school', {}, { seed: 1 }) }
+    const thu = new Date(2026, 9, 22, 6, 25)                                  // Thursday 06:25: Wednesday night's sleep ends 06:30
+    const L = liveState(s.planner, null, thu)
+    expect(L.cur.b.k).toBe('sleep')
+    extendNow(s, L.cur, 10, thu)
+    expect(s.planner.days['2026-10-21'].mv[L.cur.b.id]).toEqual([toMin('22:30'), 490])
+    const L2 = liveState(s.planner, dayRec(s.planner, '2026-10-22'), thu)
+    expect(L2.cur.b.k).toBe('sleep')
+    expect(Math.round(L2.cur.left)).toBe(15)
+    expect(L2.next.b.k).toBe('wake')
+    expect(L2.next.b.s).toBe(toMin('06:40'))
+    const thuBlocks = dayBlocks(s.planner, '2026-10-22')
+    expect(thuBlocks.find(b => b.k === 'meal' && b.meal === 'b').s).toBe(toMin('07:00'))
+    // school keeps its time (the delay ends there), and so does all that comes after it and tonight's sleep
+    expect(thuBlocks.find(b => b.k === 'school')).toMatchObject({ s: toMin('07:30'), d: 310 })
+    expect(thuBlocks.find(b => b.k === 'meal' && b.meal === 'l').s).toBe(toMin('13:00'))
+    expect(thuBlocks.find(b => b.k === 'sleep').d).toBe(540)
   })
   it('labels days and copies a day onto others', () => {
     const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']

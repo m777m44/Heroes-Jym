@@ -89,11 +89,13 @@ export async function pullPlanActions() {
 
 /**
  * Without the native service: one weekly-repeating reminder per block and weekday (the next eight
- * days, so today's ones that already rang come back next week), the soonest FALLBACK_MAX.
+ * days, so today's ones that already rang come back next week), the soonest FALLBACK_MAX. A block
+ * moved for one day (+10) keeps its usual weekly time here — a repeating reminder can't move once.
  */
 export function weeklyFallback(plan, S, now = new Date()) {
   const seen = new Set(), out = []
   for (const n of planNotifications(S, plan, now, t, clock, { days: 8, max: 400 })) {
+    if (n.moved) continue
     const k = n.block + '|' + n.at.getDay() + '|' + n.lead
     if (seen.has(k)) continue
     seen.add(k)

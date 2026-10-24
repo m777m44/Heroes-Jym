@@ -11,6 +11,8 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.service.notification.StatusBarNotification;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -62,6 +64,8 @@ public class PlanReminder extends BroadcastReceiver {
     private static final int NOTIF_SLOTS = 200;
     private static final int MAX_ACTIONS = 200;
     private static final int MAX_SNOOZED = 30;
+    /** What a posted reminder is about (in its extras), to take it away when the plan changes. */
+    private static final String X_BLOCK = "mj_block", X_DAY = "mj_day", X_LEAD = "mj_lead", X_SIG = "mj_sig";
 
     @Override public void onReceive(Context c, Intent intent) {
         String a = intent == null ? null : intent.getAction();
@@ -101,6 +105,7 @@ public class PlanReminder extends BroadcastReceiver {
     /** Replace the list (from the app) and arm it. Returns how many reminders are armed. */
     static int setPlan(Context c, JSONArray list, JSONObject strings) {
         cancelAll(c);
+        retirePosted(c, list);
         prefs(c).edit()
             .putString("items", list == null ? "[]" : list.toString())
             .putString("strings", strings == null ? "{}" : strings.toString())
@@ -121,12 +126,6 @@ public class PlanReminder extends BroadcastReceiver {
 
     private static String dayOf(long t) { return PlanMath.dayOf(t); }
 
-    private static boolean has(JSONArray a, String v) {
-        if (a == null) return false;
-        for (int i = 0; i < a.length(); i++) if (v.equals(a.optString(i, null))) return true;
-        return false;
-    }
-
     private static int[] ints(JSONArray a) {
         if (a == null) return new int[0];
         int[] out = new int[a.length()];
@@ -140,7 +139,21 @@ public class PlanReminder extends BroadcastReceiver {
         return out;
     }
 
-    private static boolean runsOn(JSONArray w, int wd) { return PlanMath.runsOn(ints(w), wd); }
+    /** The entry of `list` that still rings for this block, lead and day (null when none does). */
+    private static JSONObject entryFor(JSONArray list, String block, int lead, String day) {
+        if (list == null || block == null || day == null) return null;
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject o = list.optJSONObject(i);
+            if (o == null || !block.equals(o.optString("block", "")) || o.optInt("lead", 0) != lead) continue;
+            if (PlanMath.ringsOn(ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), day)) return o;
+        }
+        return null;
+    }
+
+    private static String sigOf(JSONObject o) {
+        String body = o.optString("body", "");
+        return PlanMath.textSig(o.optString("title", ""), body, o.optString("big", body));
+    }
 
     /** A block's next ring after `after`: { ring time, the block's start that day }, or null. */
     static long[] nextRing(JSONObject o, long after) {
@@ -239,16 +252,7 @@ public class PlanReminder extends BroadcastReceiver {
         for (Iterator<String> it = snz.keys(); it.hasNext(); ) keys.add(it.next());
         for (String k : keys) {
             JSONObject p = snz.optJSONObject(k);
-            JSONObject fresh = null;
-            if (p != null && list != null) {
-                String block = p.optString("block", ""), day = p.optString("day", "");
-                int wd = PlanMath.weekdayOf(day);
-                for (int i = 0; i < list.length(); i++) {
-                    JSONObject o = list.optJSONObject(i);
-                    if (o == null || !block.equals(o.optString("block", ""))) continue;
-                    if (wd >= 0 && runsOn(o.optJSONArray("w"), wd) && !has(o.optJSONArray("skip"), day)) { fresh = o; break; }
-                }
-            }
+            JSONObject fresh = p == null ? null : entryFor(list, p.optString("block", ""), p.optInt("lead", 0), p.optString("day", ""));
             if (fresh == null) {
                 snz.remove(k);
                 cancel(c, againPi(c, k, PendingIntent.FLAG_NO_CREATE));
@@ -262,6 +266,30 @@ public class PlanReminder extends BroadcastReceiver {
     }
 
     private static int slot(int id) { return NOTIF_BASE + Math.abs(id) % NOTIF_SLOTS; }
+
+    /**
+     * Reminders already in the shade that the new list no longer stands behind are taken away, so
+     * no stale details or buttons stay: the block deleted, its reminder or all reminders switched
+     * off, done or skipped that day, the day stopped, moved (+10) or its text changed (review on
+     * PR #13). The others stay where they are.
+     */
+    private static void retirePosted(Context c, JSONArray list) {
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        StatusBarNotification[] shown;
+        try { shown = nm.getActiveNotifications(); } catch (RuntimeException e) { return; }
+        if (shown == null) return;
+        for (StatusBarNotification sb : shown) {
+            int n = sb.getId();
+            if (n < NOTIF_BASE || n >= NOTIF_BASE + NOTIF_SLOTS || sb.getTag() != null) continue;
+            Bundle x = sb.getNotification() == null ? null : sb.getNotification().extras;
+            String block = x == null ? null : x.getString(X_BLOCK);
+            JSONObject fresh = block == null ? null : entryFor(list, block, x.getInt(X_LEAD, 0), x.getString(X_DAY));
+            if (fresh == null || !sigOf(fresh).equals(x.getString(X_SIG))) {
+                try { nm.cancel(n); } catch (RuntimeException ignored) { }
+            }
+        }
+    }
 
     /** A block's reminder rang: show it, then work out its next day and arm that. */
     private static void fire(Context c, int id) {
@@ -388,6 +416,11 @@ public class PlanReminder extends BroadcastReceiver {
         PendingIntent laterPi = PendingIntent.getBroadcast(c, REQ_LATER + n % 1000, li, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         long when = p.optLong("when", System.currentTimeMillis());
         long ttl = p.optLong("ttl", 2 * 60 * 60_000L);
+        Bundle about = new Bundle();
+        about.putString(X_BLOCK, p.optString("block", ""));
+        about.putString(X_DAY, p.optString("day", ""));
+        about.putInt(X_LEAD, p.optInt("lead", 0));
+        about.putString(X_SIG, sigOf(p));
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH)
             .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle(title)
@@ -407,6 +440,7 @@ public class PlanReminder extends BroadcastReceiver {
             .setContentIntent(Celebration.openApp(c, REQ_OPEN + n % 1000, route))
             .addAction(0, s.optString("done", "Done ✓"), donePi)
             .addAction(0, s.optString("later", "In 10 min"), laterPi)
+            .addExtras(about)
             .setLocalOnly(true);
         try { NotificationManagerCompat.from(c).notify(n, b.build()); }
         catch (SecurityException ignored) { /* notifications not allowed */ }

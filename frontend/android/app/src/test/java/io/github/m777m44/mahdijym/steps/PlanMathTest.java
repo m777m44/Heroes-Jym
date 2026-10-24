@@ -63,4 +63,23 @@ public class PlanMathTest {
     @Test public void noWeekdayNoRing() {
         assertNull(PlanMath.nextRing(600, 0, new int[] { 9 }, null, at(19, 8, 0)));
     }
+
+    @Test public void aBlockMovedForOneDayRingsOnceThatDay() {
+        // Monday's homework moved to 14:40 on that Monday only: its weekday, the next Monday quiet
+        int[] monday = { 1 };
+        Set<String> skip = new HashSet<>(Collections.singletonList("2026-10-26"));
+        assertArrayEquals(new long[] { at(19, 14, 40), at(19, 14, 40) }, PlanMath.nextRing(14 * 60 + 40, 0, monday, skip, at(19, 14, 0)));
+        assertNull(PlanMath.nextRing(14 * 60 + 40, 0, monday, skip, at(19, 14, 41)));
+    }
+
+    @Test public void aReminderInTheShadeStaysOnlyWhileItsDayStillRings() {
+        Set<String> done = new HashSet<>(Collections.singletonList("2026-10-19"));
+        assertTrue(PlanMath.ringsOn(SCHOOL, null, "2026-10-20"));       // Tuesday
+        assertFalse(PlanMath.ringsOn(SCHOOL, done, "2026-10-19"));      // done that Monday
+        assertFalse(PlanMath.ringsOn(SCHOOL, null, "2026-10-23"));      // Friday: no school
+        assertFalse(PlanMath.ringsOn(SCHOOL, null, null));
+        assertTrue(PlanMath.ringsOn(new int[0], null, "2026-10-24"));
+        assertEquals(PlanMath.textSig("School", "Back at 12:40", "⏰ 07:30"), PlanMath.textSig("School", "Back at 12:40", "⏰ 07:30"));
+        assertFalse(PlanMath.textSig("School", "Back at 12:40", "⏰ 07:30").equals(PlanMath.textSig("School", "Back at 12:50", "⏰ 07:30")));
+    }
 }

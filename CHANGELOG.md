@@ -49,12 +49,17 @@ tidier notification settings, and many fixes.**
   calmer plan.
 - A week strip (Saturday first) shows and edits each day; copy a day onto other days. Your own
   blocks keep their times — overlaps are allowed (a water break during school).
+- **+10 in the live view is for today only:** the block now gets 10 more minutes and the blocks
+  after it move later up to the next one at a fixed time (school, prayer, sleep) — the schedule and
+  the other days stay as they are, and the reminders follow today's new times. *Stop today's plan*
+  no longer switches off *Run it every day*.
 - **Reminders that show everything:** on Android each block rings as its own notification with
   the time, your notes and the food and drinks with their calories, in the block's colour, with
   **Done ✓** (logs what you planned, even with the app closed — applied when it opens) and **In
   10 min**. Each block has its own alarm on the phone that works out its next day and re-arms
   itself after ringing and after a reboot, so the whole schedule keeps reminding week after week
-  even if the app is not opened; on iPhone they repeat weekly. A new schedule turns them on.
+  even if the app is not opened; on iPhone they repeat weekly. A new schedule turns them on. A
+  reminder still showing goes away when its block is done, skipped, deleted or changed.
 
 ### 🔔 Notifications
 - A notifications centre (`/notifications`, from Settings and Tools): which reminders are on —
@@ -73,6 +78,7 @@ tidier notification settings, and many fixes.**
 ### 🛠 Fixes
 - Drinks are logged to the meal of the time of day (they always went to snacks).
 - After midnight a log goes to snacks, not breakfast.
+- Sugary soft drinks count in the food screen's "sweet drinks and sweets" pointer.
 - New tests: soft-drink and nut maths, the school week, weekday blocks, reminders a week ahead
   and what they say; the Arabic screen guard covers every new screen and sheet.
 
