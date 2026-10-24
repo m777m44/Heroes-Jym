@@ -44,6 +44,8 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -61,6 +63,12 @@
         <!-- MAHDI-JYM 2.10 — workout / home-workout reminders: heads-up with a light vibration. -->
         <receiver
             android:name=".steps.WorkoutReminder"
+            android:exported="false" />
+
+        <!-- MAHDI-JYM 10.0 — "My schedule" reminders: everything planned for the block, with
+             Done ✓ and In 10 min that work with the app closed. -->
+        <receiver
+            android:name=".steps.PlanReminder"
             android:exported="false" />
 
         <!-- The full-screen celebration: over the lock screen (full-screen intent) and, with

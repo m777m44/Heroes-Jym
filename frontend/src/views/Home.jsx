@@ -41,8 +41,10 @@ function QuickTools({ nav }) {
   const S = useStore(s => s.S)
   const fast = fastStatus(normFasting(S.fasting).active)
   const items = [
-    ['/dayplan', 'calendar', t('Day plan'), '#5e5ce6'],
+    ['/dayplan', 'calendar', t('My schedule'), '#5e5ce6'],
     ['/drinks', 'cup', t('Drinks'), '#30d158'],
+    ['/sodas', 'can', t('Soft drinks'), '#e41e2b'],
+    ['/nuts', 'nut', t('Nuts & seeds'), '#c68a54'],
     ['/timer', 'timer', t('Timer'), '#ff375f'],
     ['/breathe', 'wind', t('Breathe'), '#30b0c7'],
     ['/fasting', 'moon', fast ? hmText(fast.elapsedMs) : t('Fasting tracker'), '#bf5af2', !!fast],
@@ -57,6 +59,8 @@ function QuickTools({ nav }) {
 }
 
 // 9.0: the day plan while it runs — what is on now, what comes next.
+// 10.0: long blocks (school) count down in hours and minutes, and your note shows.
+const leftText = m => (m >= 60 ? t('{0} h {1} min', Math.floor(m / 60), m % 60) : t('{0} min', m))
 function DayPlanCard({ nav }) {
   const S = useStore(s => s.S)
   const [now, setNow] = useState(() => new Date())
@@ -74,7 +78,8 @@ function DayPlanCard({ nav }) {
     <div className="grow">
       <div className="lbl2">{live.cur ? t('Now') : t('Up next')} · {t('{0} of {1} done', live.done, live.total)}</div>
       <b>{b.n ? t(b.n) : t(K.name)}</b>
-      <div className="small muted">{live.cur ? t('{0} min left', left) : t('In {0} min', left)}</div>
+      <div className="small muted">{live.cur ? t('{0} left', leftText(left)) : t('In {0}', leftText(left))}</div>
+      {b.nt && <div className="small dp-home-note" dir="auto"><Icon name="pencil" />{b.nt}</div>}
     </div>
     <div className="dp-home-bar"><i style={{ width: Math.round(live.pct * 100) + '%' }} /></div>
     <Icon name="chevronRight" className="chev" />

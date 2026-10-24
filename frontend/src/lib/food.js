@@ -9,7 +9,7 @@
 //
 // The day's goal: set by hand → the calorie calculator's "eat" number while that goal runs →
 // the Ideal body screen's calories → 2,000.
-import { t } from './i18n.js'
+import { t, U, dateLocale } from './i18n.js'
 import { isoOf, uid } from './format.js'
 import { idealBodyOf, macrosFor, goalPlanOf } from './idealBody.js'
 import { bodyKg } from './water.js'
@@ -17,6 +17,8 @@ import { workoutKcalOn } from './workoutTimer.js'
 import { FOODS, FOOD_BY_ID } from './foodDb.js'
 import { RECIPE_BY_ID } from './kitchen.js'
 import { DRINK_BY_ID } from './drinks.js'
+import { SODA_BY_ID } from './sodas.js'
+import { NUT_BY_ID } from './nuts.js'
 
 export const MEALS = [
   { key: 'b', name: 'Breakfast', icon: 'sun', color: 'var(--orange)' },
@@ -35,7 +37,8 @@ export const RECENT_DAYS = 21
 /** The meal for a time of day: before 11 breakfast, before 15 lunch, before 18 a snack, before 22 dinner. */
 export function mealAt(date = new Date()) {
   const h = date.getHours()
-  return h < 11 ? 'b' : h < 15 ? 'l' : h < 18 ? 's' : h < 22 ? 'd' : 's'
+  // 10.0: after midnight it is a late snack, not breakfast (breakfast from 4:00)
+  return h < 4 ? 's' : h < 11 ? 'b' : h < 15 ? 'l' : h < 18 ? 's' : h < 22 ? 'd' : 's'
 }
 
 const num = v => (Number.isFinite(+v) ? +v : 0)
@@ -54,6 +57,9 @@ export function foodName(S, x) {
   if (x.f) { const f = foodOf(S, x.f); if (f) return f.custom || !FOOD_BY_ID[f.id] ? f.n : t(f.name) }
   if (x.r && RECIPE_BY_ID[x.r]) return t(RECIPE_BY_ID[x.r].name)
   if (x.dr && DRINK_BY_ID[x.dr]) return t(DRINK_BY_ID[x.dr].name)   // 9.0: a drink from the library
+  // 10.0: a soft drink (with its size) and nuts & seeds (with the grams)
+  if (x.sd && SODA_BY_ID[x.sd]) return t(SODA_BY_ID[x.sd].name) + (x.ml ? ' · ' + (x.ml >= 1000 ? (x.ml / 1000).toLocaleString(dateLocale()) + ' ' + U('L') : (+x.ml).toLocaleString(dateLocale()) + ' ' + U('ml')) : '')
+  if (x.nut && NUT_BY_ID[x.nut]) return t(NUT_BY_ID[x.nut].name) + (x.g ? ' · ' + Math.round(x.g).toLocaleString(dateLocale()) + ' ' + U('g') : '')
   if (x.name) return t(x.name)
   return x.n || t('Quick calories')
 }
@@ -266,13 +272,18 @@ export function foodInsights(totals, goal, { hour = 12, kg = 70, sweetKcal = 0 }
   return out
 }
 
-/** Calories from sweets and sugary drinks on a day (for the pointer above). */
+/**
+ * Calories from sweets and sugary drinks on a day (for the pointer above) — with the soft drinks
+ * from the soft-drinks screen that have more than 2.5 g of sugar per 100 ml (not the zero ones,
+ * soda water or doogh) (review on PR #13).
+ */
 export function sweetKcalOn(S, iso) {
   const SWEET = new Set(['soda', 'energydrink', 'teasugar', 'lemonmint', 'orangejuice', 'coffeemilk'])
   let k = 0
   for (const e of dayEntries(S, iso)) {
     const f = e.f && FOOD_BY_ID[e.f]
-    if (f && (f.cat === 'sweets' || SWEET.has(f.id))) k += entryKcal(e)
+    const sd = e.sd && SODA_BY_ID[e.sd]
+    if ((f && (f.cat === 'sweets' || SWEET.has(f.id))) || (sd && sd.s100 > 2.5 && !sd.dairy)) k += entryKcal(e)
   }
   return k
 }

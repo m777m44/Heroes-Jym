@@ -1,4 +1,5 @@
 // Quick search (8.0) — the 🔍 on Home: type and jump to any screen, tool, routine or exercise.
+// 10.0: soft drinks, nuts & seeds and drinks too — a result opens its sheet.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
@@ -7,9 +8,23 @@ import { EXDB } from '../lib/exercises.js'
 import { routineLabel } from '../lib/routines.js'
 import { search } from '../lib/quickSearch.js'
 import { exerciseDetailSheet } from '../sheets.jsx'
+import { SODAS, SODA_CAT_BY_KEY } from '../lib/sodas.js'
+import { NUTS } from '../lib/nuts.js'
+import { DRINKS } from '../lib/drinks.js'
 import Icon from './Icon.jsx'
 
-const KIND = { place: 'Screens & tools', routine: 'Your routines', exercise: 'Exercises' }
+const KIND = { place: 'Screens & tools', routine: 'Your routines', soda: 'Soft drinks', nut: 'Nuts & seeds', drink: 'Drinks & juices', exercise: 'Exercises' }
+// 10.0: every soft drink, nut and drink can be found by name (in the app's language or English)
+const foodItems = () => [
+  ...SODAS.map(x => ({ kind: 'soda', id: x.id, title: t(x.name), en: x.name, kw: t(SODA_CAT_BY_KEY[x.cat].name), sub: t(SODA_CAT_BY_KEY[x.cat].name), icon: 'can', tint: x.br })),
+  ...NUTS.map(x => ({ kind: 'nut', id: x.id, title: t(x.name), en: x.name, sub: t('Nuts & seeds'), icon: 'nut', tint: x.col })),
+  ...DRINKS.map(x => ({ kind: 'drink', id: x.id, title: t(x.name), en: x.name, sub: t('Drinks & juices'), icon: 'cup', tint: x.col || 'var(--green)' })),
+]
+const SHEETS = {
+  soda: id => import('../views/Sodas.jsx').then(m => m.sodaSheet(id)),
+  nut: id => import('../views/Nuts.jsx').then(m => m.nutSheet(id)),
+  drink: id => import('../views/Drinks.jsx').then(m => m.drinkSheet(id)),
+}
 const SUGGEST = ['Interval timer', 'Fasting tracker', 'Breathe', 'Recovery', 'Water', 'Backups & restore']
 
 function QuickSearch({ close, nav, extra }) {
@@ -18,20 +33,22 @@ function QuickSearch({ close, nav, extra }) {
   const ref = useRef(null)
   useEffect(() => { const tm = setTimeout(() => ref.current && ref.current.focus(), 220); return () => clearTimeout(tm) }, [])
   const all = useMemo(() => [...EXDB, ...(S.customEx || [])], [S.customEx])
-  const res = useMemo(() => search(q, { routines: S.routines, exercises: all, tr: t, exName, exSearch, routineName: r => routineLabel(r.name) }), [q, S.routines, all])
+  const items = useMemo(foodItems, [])
+  const res = useMemo(() => search(q, { routines: S.routines, exercises: all, items, tr: t, exName, exSearch, routineName: r => routineLabel(r.name) }), [q, S.routines, all, items])
   const go = r => {
     close()
     if (r.kind === 'exercise') { setTimeout(() => exerciseDetailSheet(r.ex), 120); return }
+    if (SHEETS[r.kind]) { setTimeout(() => SHEETS[r.kind](r.id), 120); return }
     if (r.to && r.to[0] === '#') { setTimeout(() => extra[r.to.slice(1)] && extra[r.to.slice(1)](), 120); return }
     nav(r.to)
   }
-  const groups = ['place', 'routine', 'exercise'].map(k => [k, res.filter(r => r.kind === k)]).filter(([, l]) => l.length)
+  const groups = ['place', 'routine', 'soda', 'nut', 'drink', 'exercise'].map(k => [k, res.filter(r => r.kind === k)]).filter(([, l]) => l.length)
   const quick = useMemo(() => SUGGEST.map(s => search(s, { tr: t })[0]).filter(Boolean), [])
 
   return <div className="qs">
     <div className="qs-box">
       <Icon name="magnifier" />
-      <input ref={ref} className="qs-in" value={q} onChange={e => setQ(e.target.value)} placeholder={t('Search screens, tools, exercises…')}
+      <input ref={ref} className="qs-in" value={q} onChange={e => setQ(e.target.value)} placeholder={t('Search screens, drinks, nuts, exercises…')}
         onKeyDown={e => { if (e.key === 'Enter' && res[0]) go(res[0]) }} enterKeyHint="search" aria-label={t('Search')} />
       {q && <button className="qs-x" onClick={() => { setQ(''); ref.current && ref.current.focus() }} aria-label={t('Clear')}><Icon name="xmark" /></button>}
     </div>
@@ -43,7 +60,7 @@ function QuickSearch({ close, nav, extra }) {
     <div className="qs-res">
       {groups.map(([k, list]) => <div key={k}>
         <div className="qs-h">{t(KIND[k])}</div>
-        {list.slice(0, k === 'exercise' ? 12 : 8).map((r, i) => <button key={k + (r.id || r.to) + i} className="qs-r" style={{ '--i': i }} onClick={() => go(r)}>
+        {list.slice(0, k === 'exercise' ? 12 : k === 'place' || k === 'routine' ? 8 : 5).map((r, i) => <button key={k + (r.id || r.to) + i} className="qs-r" style={{ '--i': i }} onClick={() => go(r)}>
           <span className="lrow-i" style={{ '--tint': r.tint }}><Icon name={r.icon} /></span>
           <span className="grow"><b>{r.title}</b>{r.sub && <small>{r.sub}</small>}</span>
           <Icon name="chevronRight" className="lrow-c" />

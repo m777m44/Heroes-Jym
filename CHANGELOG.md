@@ -3,6 +3,89 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v10.0.0 — 2026-10-24
+
+**Soft drinks in every can, bottle and glass, nuts & seeds by the handful, and "My schedule" —
+arrange school, meals, drinks, work and anything else yourself, on the days you choose, with
+reminders that show everything you wrote and chose (Done ✓ and In 10 min right on the
+notification). A school-week template (7:30–12:40, Sunday to Thursday), a notifications centre,
+tidier notification settings, and many fixes.**
+*مشروبات غازية بكل قوطية وبطل وكلاص وبكل الأحجام، ومكسرات وحَب بالحفنة، و«جدولي» — رتّب المدرسة والأكل والشرب والعمل وكل شيء بنفسك على الأيام التي تختارها، مع تذكيرات تعرض كل ما كتبته واخترته (وزرّا «تم ✓» و«بعد 10 دقائق» على الإشعار نفسه). قالب أسبوع الدوام (7:30–12:40 من الأحد إلى الخميس)، ومركز للإشعارات، وإعدادات إشعارات مرتّبة، وإصلاحات كثيرة.*
+
+### 🥤 Soft drinks (new screen: Tools → Soft drinks, `/sodas`)
+- 48 drinks: colas (Coca-Cola, Pepsi and their zero / diet versions, Kinza), lemon-lime (7Up,
+  Sprite, Mountain Dew), fruit sodas (Mirinda, Fanta, Shani, Vimto), soda and sparkling water,
+  tonic, ginger ale, 0.0 % malt drinks (Barbican flavours, Moussy, Fayrouz), energy drinks (Red
+  Bull, Power Horse, Monster, Sting) and homemade sodas (mint & lemon soda, mojitos, rose soda,
+  sparkling doogh).
+- Every drink in the packs it is sold in — a can (150–500 ml, slim for energy drinks), a plastic
+  bottle (250 ml–2.25 L), a glass bottle, a glass with ice, lemon and mint, a restaurant cup —
+  drawn in its own colours (generic, no logos). The pack grows with the size; in the drink's sheet
+  bubbles rise, the fizz pops and a shine passes over it.
+- Calories, sugar in teaspoons (with sugar cubes) against the WHO daily limit, caffeine against
+  the 400 mg day, sodium, carbs, the minutes of brisk walking that burn it, and the sugar-free
+  twin with what switching saves. A big bottle suggests logging one glass.
+- Logged to the right meal with its size ("Pepsi · 500 ml"); plain soda water and zero drinks
+  without caffeine can count towards water. Today's soft drinks, sugar and recent picks on top.
+
+### 🥜 Nuts & seeds (new screen: Tools → Nuts & seeds, `/nuts`)
+- Pistachios, peanuts, almonds, walnuts, cashews, hazelnuts, pine nuts, macadamia, Brazil nuts,
+  pecans, roasted chestnuts, sunflower, watermelon and pumpkin seeds, sesame, chia, flax, roasted
+  chickpeas, dried coconut and **kerzat** (mixed nuts & seeds).
+- Raw, roasted or roasted & salted; counted in handfuls, grams, pieces or spoons; weighed with
+  or without the shell (the edible share is worked out). Calories, protein, fat, carbs, fibre,
+  sugar, sodium, what it is rich in, why it is good for you and its cautions (allergies, salt,
+  selenium, choking risk for small children).
+- Each nut drawn — a pistachio opening its shell, a peanut in its pod, the striped sunflower seed
+  … — bobbing in a small bowl, salted ones sparkling. A nut of the day and today's handful ring.
+
+### 📅 My schedule (the day plan, rebuilt — `/dayplan`)
+- **Arrange everything yourself:** every block has a kind (now also School, Prayer and Other), your
+  own title, a start **and** end time, the weekdays it runs on (every day, school days, the weekend
+  or any days), its own reminder (off, at the start, or 5–60 minutes before), notes, and food,
+  drinks, soft drinks and nuts with their calories.
+- **School week template:** school 7:30–12:40 Sunday to Thursday, then lunch, rest, homework, a
+  snack, work, water, a workout, a recovery drink and dinner; Friday and Saturday have their own
+  calmer plan.
+- A week strip (Saturday first) shows and edits each day; copy a day onto other days. Your own
+  blocks keep their times — overlaps are allowed (a water break during school).
+- **+10 in the live view is for today only:** the block now gets 10 more minutes and the blocks
+  after it move later up to the next one at a fixed time (school, prayer, sleep) — the schedule and
+  the other days stay as they are, and the reminders follow today's new times. *Stop today's plan*
+  no longer switches off *Run it every day*.
+- **Reminders that show everything:** on Android each block rings as its own notification with
+  the time, your notes and the food and drinks with their calories, in the block's colour, with
+  **Done ✓** (logs what you planned, even with the app closed — applied when it opens) and **In
+  10 min**. Each block has its own alarm on the phone that works out its next day and re-arms
+  itself after ringing and after a reboot, so the whole schedule keeps reminding week after week
+  even if the app is not opened; on iPhone they repeat weekly. A new schedule turns them on. A
+  reminder still showing goes away when its block is done, skipped, deleted or changed. Reminders
+  follow a change of the phone's clock or time zone (water reminders too).
+
+### 🔔 Notifications
+- A notifications centre (`/notifications`, from Settings and Tools): which reminders are on —
+  schedule, water, workouts, your day, medicines, the burn plan, a running fast — and one timeline
+  of everything still to ring today; a test notification and the phone's settings.
+- The phone's notification settings are grouped: steps & activity, water, schedule & meals,
+  workouts, health & medicines.
+
+### ✨ Everywhere
+- Tools grouped by kind with the new tiles; Home shortcuts for soft drinks and nuts; Home's plan
+  card counts long blocks in hours and shows your note.
+- Quick search finds every soft drink, nut and drink by name and opens it; the food search shows
+  soft drinks and nuts too, and the food log draws them with their size.
+- Every new string in all 13 languages (4,058 keys each); "What's new" shows the 10.0 highlights.
+
+### 🛠 Fixes
+- Drinks are logged to the meal of the time of day (they always went to snacks).
+- After midnight a log goes to snacks, not breakfast.
+- Sugary soft drinks count in the food screen's "sweet drinks and sweets" pointer.
+- Nuts weighed in the shell keep their amount when you switch between grams and handfuls.
+- The fasting reminder has its own notification id — it shared one with the burn plan's first
+  reminder, so ending a fast could take that one away.
+- New tests: soft-drink and nut maths, the school week, weekday blocks, reminders a week ahead
+  and what they say; the Arabic screen guard covers every new screen and sheet.
+
 ## v9.0.0 — 2026-10-23
 
 **Drinks & juices with calories worked out from the ingredients, your own drink builder, 28 new

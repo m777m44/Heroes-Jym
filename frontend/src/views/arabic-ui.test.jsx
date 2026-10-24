@@ -27,10 +27,16 @@ it('the Arabic UI has no stray English', async () => {
   // 9.0: a drink of your own (named in Arabic), a favourite, and today's drink log
   st.myDrinks = [{ id: 'md1', n: 'عصيري الصباحي', col: '#ff8c1a', t: 'c', sv: 1, ing: [['orangejuice', 200, 'ml'], ['banana', 1, 'piece'], ['ice', 75, 'g']], note: 'أخلطه وأشربه باردًا', at: t8 }]
   st.drinkFavs = ['zbeeb', 'md1']
+  // 10.0: soft drinks and nuts in today's food log (the Food screen draws them), and the soft-drink screen's "recently"
+  {
+    const SD = await import('../lib/sodas.js'), NT = await import('../lib/nuts.js')
+    const d0 = new Date().toISOString().slice(0, 10)
+    st.food = { ...(st.food || {}), [d0]: [...((st.food || {})[d0] || []), SD.sodaEntry(SD.SODA_BY_ID.coke, { pk: 'can', ml: 330, meal: 'l' }), SD.sodaEntry(SD.SODA_BY_ID.mintlemon, { pk: 'glass', ml: 300, meal: 's' }), NT.nutEntry(NT.NUT_BY_ID.pistachio, { g: 30, form: 'salted', meal: 's' })] }
+  }
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery', '/drinks': 'Drinks', '/drinks?c=iraqi': 'Drinks', '/drinks?c=mine': 'Drinks', '/drinks?c=fav': 'Drinks', '/dayplan': 'DayPlan' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery', '/drinks': 'Drinks', '/drinks?c=iraqi': 'Drinks', '/drinks?c=mine': 'Drinks', '/drinks?c=fav': 'Drinks', '/dayplan': 'DayPlan', '/sodas': 'Sodas', '/nuts': 'Nuts', '/notifications': 'Notifications', '/schedule': 'DayPlan' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -99,6 +105,10 @@ it('the Arabic UI has no stray English', async () => {
   const DR = await import('../lib/drinks.js')
   const SP = await import('../components/SoundPacks.jsx')
   const DPV = await import('./DayPlan.jsx')
+  const SDV = await import('./Sodas.jsx')
+  const NTV = await import('./Nuts.jsx')
+  const SDL = await import('../lib/sodas.js')
+  const NTL = await import('../lib/nuts.js')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -121,6 +131,14 @@ it('the Arabic UI has no stray English', async () => {
     drinkEdit: () => DK.drinkBuilderSheet(useStore.getState().S.myDrinks[0]), drinkPick: () => DK.pickDrinkSheet(() => {}), sounds: () => SP.soundPacksSheet(),
     blockMeal: () => DPV.blockSheet({ k: 'meal', s: 780, d: 45, meal: 'l', items: [{ t: 'r', id: 'masgouf', q: 1 }, { t: 'd', id: 'shineena', q: 1 }] }, 650),
     blockNew: () => DPV.blockSheet({ s: 600 }), blockWater: () => DPV.blockSheet({ id: 'bw', k: 'water', s: 600, d: 5, ml: 300 }),
+    // 10.0: every soft drink and nut, in every pack / form; the pickers; a school block with notes, a soft drink and nuts
+    ...Object.fromEntries(SDL.SODAS.map(x => ['soda_' + x.id, () => SDV.sodaSheet(x.id)])),
+    ...Object.fromEntries(Object.keys(SDL.PACKS).map(pk => ['sodaPack_' + pk, () => SDV.sodaSheet('coke', { pk, ml: SDL.PACKS[pk].sizes[1] })])),
+    sodaBig: () => SDV.sodaSheet('pepsi', { pk: 'bottle', ml: 2250 }), sodaPick: () => SDV.pickSodaSheet(() => {}),
+    ...Object.fromEntries(NTL.NUTS.map(x => ['nut_' + x.id, () => NTV.nutSheet(x.id)])),
+    nutPick: () => NTV.pickNutSheet(() => {}),
+    blockSchool: () => DPV.blockSheet({ id: 'bs', k: 'school', s: 450, d: 310, w: [0, 1, 2, 3, 4], rm: 10, nt: 'امتحان رياضيات — خذ الحاسبة', items: [{ t: 's', id: 'sprite', pk: 'can', ml: 250, q: 1 }, { t: 'n', id: 'almond', fm: 'raw', g: 25, q: 1 }] }),
+    blockWeekend: () => DPV.blockSheet({ id: 'bf', k: 'prayer', s: 750, d: 20, w: [5], rm: -1 }),
   }
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })
