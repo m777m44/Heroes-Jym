@@ -1,20 +1,16 @@
-// Tiny dependency-free i18n. English source strings are the keys; locale files in
-// src/locales/ map them to translations and are lazy-loaded (Vite code-splits each
+// Tiny dependency-free i18n. English source strings are the keys; the Arabic locale file in
+// src/locales/ maps them to translations and is lazy-loaded (Vite code-splits each
 // import.meta.glob entry), so the initial bundle stays English-only.
-// Exercise instructions come from separately generated packs in src/instr/ (one per
-// language, from the upstream dataset) — also lazy-loaded on language switch.
+// 12.0: the app speaks two languages — Arabic and English. The eleven other UI languages and
+// their exercise-instruction packs were removed (smaller app, every string checked by hand).
 import { useSyncExternalStore } from 'react'
 
-// UI languages. de/pt have no instruction pack upstream — instructions fall back to English.
-// Arabic has a hand-written, sentence-keyed pack that covers part of the library (see instr/ar.js).
-export const LANGS = {
-  en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano',
-  pt: 'Português', pl: 'Polski', tr: 'Türkçe', ru: 'Русский', zh: '中文',
-  ko: '한국어', hi: 'हिन्दी', ar: 'العربية'
-}
+// UI languages. Arabic has a hand-written, sentence-keyed instruction pack that covers part of
+// the library (see instr/ar.js); the rest of the exercises keep their English steps.
+export const LANGS = { ar: 'العربية', en: 'English' }
 // Languages written right to left — the shell sets <html dir> from this.
 export const RTL_LANGS = ['ar']
-/** The phone's / browser's language when we have it, else English. */
+/** The phone's / browser's language when it is Arabic or English, else English. */
 export function deviceLang() {
   try {
     for (const l of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])) {
@@ -24,13 +20,13 @@ export function deviceLang() {
   } catch { /* no navigator (SSR, tests) */ }
   return 'en'
 }
-/** The language to show: S.lang, or the phone's when it is 'auto' (2.10 default) / unknown. */
+/** The language to show: S.lang, or the phone's when it is 'auto' (2.10 default) / unknown
+ *  (a language removed in 12.0 — German, French… — falls back to the phone's, then English). */
 export const langOf = S => (S && S.lang && S.lang !== 'auto' && LANGS[S.lang] ? S.lang : deviceLang())
 export const isRTL = l => RTL_LANGS.includes(l)
-export const INSTR_LANGS = ['en', 'es', 'fr', 'it', 'tr', 'ru', 'zh', 'hi', 'pl', 'ko', 'ar']
+export const INSTR_LANGS = ['en', 'ar']
 const DATE_LOCALES = {
-  en: 'en-GB', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-PT',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN',
+  en: 'en-GB',
   ar: 'ar-u-nu-latn'   // Arabic text, Western digits — the number fields take 0-9, so both read alike
 }
 

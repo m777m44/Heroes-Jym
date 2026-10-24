@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
-import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
+import { DEMO, NO_SERVER, DEMO_SEEDED } from '../lib/demo.js'
 import { MOBILE, nativeLoad, nativeSave, syncReminder, syncMedReminders, syncDayReminders } from '../lib/mobile.js'
 import { hasData } from '../lib/hasData.js'
 
@@ -212,9 +212,10 @@ export const useStore = create((set, get) => {
         set({ ready: true })
         return
       }
-      // Demo build (GitHub Pages): no backend at all — seed once, stay in guest mode.
-      if (DEMO) {
-        if (!localStorage.getItem(DEMO_SEEDED)) {
+      // Demo and web app builds (GitHub Pages): no backend at all — stay in guest mode
+      // (the demo seeds its example history once).
+      if (NO_SERVER) {
+        if (DEMO && !localStorage.getItem(DEMO_SEEDED)) {
           localStorage.setItem(DEMO_SEEDED, '1')
           await get().resetDemo()
         }

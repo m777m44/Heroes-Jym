@@ -9,6 +9,7 @@
 // applyWallpaper(wall, mode) runs right after applyTheme (which resets the surface colours), so it
 // can make the surfaces translucent over the picture and switch on the frosted-glass rules.
 import { NATURE, ANIME, SEA, IRAQ } from './wallpaperList.js'
+import { dbName } from './demo.js'
 
 export const WALL_CATS = [
   { key: 'nature', name: 'Nature', icon: 'mountain' },
@@ -87,7 +88,7 @@ export function normWall(w) {
 }
 
 // ---- your photos (IndexedDB) ----------------------------------------------------------------------
-const DB = 'mj-walls', STORE = 'p'
+const DB = dbName('mj-walls'), STORE = 'p'
 function db() {
   return new Promise((res, rej) => {
     if (typeof indexedDB === 'undefined') return rej(new Error('no indexedDB'))

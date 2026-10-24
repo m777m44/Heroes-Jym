@@ -13,6 +13,7 @@
 //           before-restore: the newest MANUAL_KEEP each
 //
 // No store import (lib rule): callers pass S in and do replaceState themselves.
+import { appDB } from './idb.js'
 import { MOBILE } from './mobile.js'
 import { hasData } from './hasData.js'
 
@@ -57,13 +58,7 @@ const fsStore = {
   },
 }
 function idbStore() {
-  let dbp = null
-  const db = () => dbp || (dbp = new Promise((res, rej) => {
-    const rq = indexedDB.open('mahdi-jym', 1)
-    rq.onupgradeneeded = () => rq.result.createObjectStore('snapshots')
-    rq.onsuccess = () => res(rq.result)
-    rq.onerror = () => rej(rq.error)
-  }))
+  const db = appDB
   const tx = async (mode, fn) => {
     const d = await db()
     return new Promise((res, rej) => {

@@ -83,15 +83,14 @@ const nf = n => (+n).toLocaleString(dateLocale())
 export function listOf(names) {
   try { return new Intl.ListFormat(dateLocale(), { style: 'long', type: 'conjunction' }).format(names) } catch { return names.join(', ') }
 }
-// Inside a sentence an ingredient starts with a small letter in these languages (German keeps
-// its capital nouns; Arabic, Chinese, Korean and Hindi have no case). Proper names stay as they are.
-const LOWER = new Set(['en', 'es', 'fr', 'it', 'pt', 'pl', 'tr', 'ru'])
+// Inside an English sentence an ingredient starts with a small letter (Arabic has no case).
+// Proper names stay as they are.
+const LOWER = new Set(['en'])
 const PROPER = new Set(['baharat', 'arabiccoffee', 'greekyogurt', 'qamaraldin'])
 function inSentence(text, id) {
   const lang = getLang()
   if (!LOWER.has(lang) || PROPER.has(id) || !text) return text
-  const loc = lang === 'tr' ? 'tr' : lang
-  return text.charAt(0).toLocaleLowerCase(loc) + text.slice(1)
+  return text.charAt(0).toLocaleLowerCase(lang) + text.slice(1)
 }
 export const minText = m => t('{0} min', nf(m))
 export const hourText = h => nf(h) + ' ' + U('h')
