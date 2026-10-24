@@ -94,6 +94,18 @@ export function drink(c) {
   useUI.getState().toast('💧 +' + fmtMl(c.ml) + ' ' + t('ml') + ' · ' + t(CONTAINER_NAME[c.key]))
 }
 
+const MAX_ONE = 3000
+/** 11.0: any amount (the custom sheet) — logged, confirmed and undoable like a container; negative takes some back. */
+export function drinkMl(ml) {
+  const v = Math.max(-MAX_ONE, Math.min(MAX_ONE, Math.round(+ml || 0)))
+  if (!v) return
+  logWater(v)
+  if (v > 0) burst(lastTap(), { count: 12, spread: 60, colors: ['#64D2FF', '#0A84FF', '#5AC8FA', '#BFEFFF'] })
+  const day = todayISO()
+  useWaterUndo.setState(s => ({ stack: [...s.stack.filter(x => x.day === day), { ml: v, day }].slice(-20) }))
+  useUI.getState().toast('💧 ' + (v > 0 ? '+' : '−') + fmtMl(Math.abs(v)) + ' ' + t('ml'))
+}
+
 export function undoLast() {
   const { stack } = useWaterUndo.getState()
   const last = stack[stack.length - 1]

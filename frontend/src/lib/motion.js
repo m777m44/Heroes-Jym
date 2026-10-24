@@ -1,7 +1,8 @@
 // 7.0 — how the app feels under your finger.
 //   installTouchFeedback(getS)  one delegated listener: a ripple from where you touched (buttons,
-//                               rows, tiles) and a light haptic tick on native builds. Off with
-//                               S.tapHaptics === false (haptics) / reduce motion (ripple).
+//                               rows, tiles) and — only if you switch it on (S.tapHaptics === true,
+//                               11.0: off by default, it buzzed on every swipe and tap) — a light
+//                               haptic tick on native builds. Reduce motion turns the ripple off.
 //   burst(target, opts)         a small burst of coloured particles from an element or a point —
 //                               for wins: a glass of water, a finished set, a new record.
 // Nothing here throws: no DOM, no plugin, reduced motion → it quietly does nothing.
@@ -59,7 +60,7 @@ export function installTouchFeedback(getS) {
     const tgt = e.target && e.target.closest ? e.target.closest(TAPPABLE) : null
     if (!tgt || tgt.disabled || tgt.getAttribute('aria-disabled') === 'true') return
     const S = (getS && getS()) || {}
-    if (S.tapHaptics !== false) tick()
+    if (S.tapHaptics === true) tick()
     const rp = e.target.closest(RIPPLE)
     if (rp && !rp.disabled) ripple(rp, e.clientX, e.clientY)
   }

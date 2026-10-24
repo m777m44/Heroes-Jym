@@ -177,6 +177,13 @@ const P = {
   school: <><path d="M2.8 9.4 12 5l9.2 4.4L12 13.8Z" /><path d="M6.4 11.3v4.1c0 1.5 2.6 2.9 5.6 2.9s5.6-1.4 5.6-2.9v-4.1M21.2 9.4v5.2" /></>,
   bubbles: <><circle cx="8.6" cy="15.4" r="3.8" /><circle cx="15.8" cy="9.8" r="2.7" /><circle cx="16.4" cy="17.2" r="1.7" /><circle cx="9.8" cy="6.2" r="1.5" /></>,
   prayer: <><path d="M5.2 20.4v-6.6a6.8 6.8 0 0 1 13.6 0v6.6" /><path d="M3.4 20.4h17.2M12 7V3.6M10.1 20.4v-3a1.9 1.9 0 0 1 3.8 0v3" /></>,
+  // 11.0 — the schedule's own blocks (phone & games, football, TV, family, school bag, clothes)
+  gamepad: <><path d="M7.2 8.4h9.6a4 4 0 0 1 3.9 3.1l.9 4.2a2.5 2.5 0 0 1-4.4 2.1L15.6 16H8.4l-1.6 1.8a2.5 2.5 0 0 1-4.4-2.1l.9-4.2a4 4 0 0 1 3.9-3.1Z" /><path d="M7.6 10.8v3.2M6 12.4h3.2" /><circle cx="15.6" cy="11.6" r=".9" /><circle cx="17.6" cy="13.6" r=".9" /></>,
+  ball: <><circle cx="12" cy="12" r="8.6" /><path d="m12 8.6 3.2 2.3-1.2 3.8h-4l-1.2-3.8Z" /><path d="M12 8.6V3.4M15.2 10.9l4.7-1.5M14 14.7l2.9 4.1M10 14.7l-2.9 4.1M8.8 10.9 4.1 9.4" /></>,
+  tv: <><rect x="3.4" y="6.4" width="17.2" height="11.6" rx="2.4" /><path d="M8.6 20.8h6.8M9 3.2l3 3.2 3-3.2" /></>,
+  people: <><circle cx="9" cy="8.4" r="3" /><path d="M3.6 19.6c.4-3.2 2.6-5.2 5.4-5.2s5 2 5.4 5.2" /><circle cx="16.8" cy="9.4" r="2.4" /><path d="M15.6 14.5c2.6-.4 4.5 1.3 4.9 4.5" /></>,
+  backpack: <><path d="M6.2 10a5.8 5.8 0 0 1 11.6 0v8.8a1.8 1.8 0 0 1-1.8 1.8H8a1.8 1.8 0 0 1-1.8-1.8Z" /><path d="M9.6 4.8V4a1.2 1.2 0 0 1 1.2-1.2h2.4A1.2 1.2 0 0 1 14.4 4v.8" /><rect x="9" y="13.8" width="6" height="3.8" rx="1" /></>,
+  shirt: <path d="M8.6 3.6 3.8 6.3l1.9 4 2.3-1.1v11.2h8V9.2l2.3 1.1 1.9-4-4.8-2.7c-.6 1.4-1.9 2.3-3.4 2.3S9.2 5 8.6 3.6Z" />,
 }
 
 // A few keys are aliases so call sites can say what they mean.

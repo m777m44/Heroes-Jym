@@ -267,7 +267,7 @@ export default function Settings() {
         <Switch checked={!!S.reduceMotion} onChange={v => update(s => { s.reduceMotion = v })} />
       </Row>
       <Row icon="bolt" iconTint="var(--orange)" title={t('Vibrate on tap')} subtitle={t('A light tick when you press a button')}>
-        <Switch checked={S.tapHaptics !== false} onChange={v => update(s => { s.tapHaptics = v })} />
+        <Switch checked={S.tapHaptics === true} onChange={v => update(s => { s.tapHaptics = v })} />
       </Row>
     </Section>
 

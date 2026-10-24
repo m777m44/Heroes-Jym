@@ -1,4 +1,4 @@
-// What's new (10.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
+// What's new (10.0, 11.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
@@ -6,16 +6,19 @@ import { MOBILE } from '../lib/mobile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 
-export const WHATS_NEW = '10.0'
+export const WHATS_NEW = '11.0'
 
 const ITEMS = [
-  { icon: 'calendar', c: '#5e5ce6', title: 'My schedule', body: 'Arrange everything yourself — school, meals, drinks, work, prayer — on the days you choose, with an end time and your own notes.' },
-  { icon: 'school', c: '#c08552', title: 'School week', body: 'School Sunday to Thursday, 7:30 to 12:40, then lunch, rest, homework, work, drinks and dinner — and a calmer weekend.' },
-  { icon: 'bellBadge', c: '#ff9f0a', title: 'Reminders that show everything', body: 'Each reminder shows the time, your notes and the food and drinks you chose with their calories — with Done ✓ and In 10 min.', mobile: true },
-  { icon: 'can', c: '#e41e2b', title: 'Soft drinks', body: 'Colas, lemon-lime, fruit sodas, malt and energy drinks and homemade mojitos — in cans, bottles and glasses of every size, with sugar in teaspoons.' },
-  { icon: 'nut', c: '#c68a54', title: 'Nuts & seeds', body: 'Pistachios, almonds, walnuts, cashews, the seeds you crack and kerzat — raw, roasted or salted, by the handful, with what each is good for.' },
-  { icon: 'bell', c: '#30b0c7', title: 'All notifications in one place', body: 'Which reminders are on, what still rings today, and the phone’s notification settings grouped by kind.' },
-  { icon: 'sparkles', c: '#bf5af2', title: 'Smoother everywhere', body: 'Tidier tools, smoother animations and many small fixes — drinks are now logged to the right meal.' },
+  { icon: 'school', c: '#c08552', title: 'Your school week, your times', body: 'Up at 7:00, water, breakfast, get ready, school 7:30–12:40 with nothing inside it, home, water, lunch and a drink — then a nap, homework, games, review, sport, dinner with water and a light snack before bed.' },
+  { icon: 'calendar', c: '#5e5ce6', title: 'Friday and Saturday too', body: 'Sleep in, an Iraqi breakfast, study, phone & games, helping at home, football, family and rest — every block with its calories.' },
+  { icon: 'nut', c: '#c68a54', title: 'Many more nuts, with Iraqi names', body: 'Melon seeds, lemon pistachios, acorns, royal and seed kerzat, shamiya, termis — and dried fruits and dates: zbeeb, kishmish, zahdi, khastawi, barhi, figs, qamar al-din, mlabbas and more.' },
+  { icon: 'cup', c: '#a0461e', title: 'More Iraqi drinks', body: 'Chai haleeb, mint and lemon tea, kakao, milk with dibis, Turkish coffee, Nescafé, hamudh hilu and the juice shop: orange, carrot, apple, grape, mango, banana and strawberry milk and the Iraqi cocktail.' },
+  { icon: 'fork', c: '#ff9f0a', title: 'Everyday Iraqi food', body: 'Eggs with samoon, cheese and labneh sandwiches, timman with fasolia or bamia, sheikh mahshi, shifta, makarona, amba, arnoos — and foods can go straight into your schedule.' },
+  { icon: 'personCircle', c: '#ff375f', title: 'A real profile picture', body: 'Your own photo from the phone, or one of hundreds of symbols — faces, sport, animals, nature, food, Iraq — on 24 colours.' },
+  { icon: 'route', c: '#30d158', title: 'From Zakho to Fao', body: 'All your steps as a walk across Iraq, city by city — and the last five weeks at a glance.' },
+  { icon: 'drop', c: '#0a84ff', title: 'Water, any amount', body: 'Add any amount up to a 1.5 L bottle, and see if you are ahead or behind right now.' },
+  { icon: 'palm', c: '#d4a017', title: 'Iraq themes', body: 'The Tigris, the Euphrates, Ishtar blue, Baghdad nights, Basra palms, Mosul marble, the marshes and more — 1,442 themes in all.' },
+  { icon: 'vibrate', c: '#8e8e93', title: 'No more buzzing on every tap', body: 'The light vibration when you tap or swipe is off — switch it back on in Settings if you liked it.' },
 ]
 
 function WhatsNewSheet({ close }) {
@@ -25,7 +28,7 @@ function WhatsNewSheet({ close }) {
       <span className="wn-orb"><Icon name="sparkles" /></span>
       {[0, 1, 2, 3, 4].map(i => <span key={i} className={'wn-spark s' + i} />)}
     </div>
-    <div className="wn-kicker">MAHDI-JYM 10.0</div>
+    <div className="wn-kicker">MAHDI-JYM 11.0</div>
     <h2 className="wn-title">{t('What’s new')}</h2>
     <div className="wn-list">
       {items.map((it, i) => <div key={it.title} className="wn-i" style={{ '--i': i, '--c': it.c }}>

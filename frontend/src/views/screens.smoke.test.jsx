@@ -43,7 +43,10 @@ describe('2.0 screens render', () => {
     // live clock (the phone's local time — no city since 2.9) with the midnight countdown, hourly chart, mottos
     expect(html).toContain('lc-time big')
     expect(html).toContain('Local time')
-    expect(html).not.toMatch(/Baghdad|بغداد/)
+    // no city on the clock (2.9) — the cities live only in the 11.0 journey card further down
+    expect(html.slice(0, html.indexOf('class="card jr"'))).not.toMatch(/Baghdad|بغداد/)
+    expect(html).toContain('From Zakho to Fao')
+    expect(html).toContain('Last 5 weeks')
     expect(html).toContain('GMT')
     expect(html).toContain('Day ends in')
     expect(html).toContain('hourchart')
@@ -61,7 +64,8 @@ describe('2.0 screens render', () => {
     expect((html.match(/class="theme-card[" ]/g) || []).length).toBe(49)
     expect((html.match(/class="theme-card on"/g) || []).length).toBe(1)
     expect(html).toContain('Follow the phone')
-    expect(html).toContain('2,722,930 themes in all')
+    expect(html).toContain('2,723,042 themes in all')                   // 11.0: + Iraq (16 families)
+    expect(html).toContain('>Iraq<')
     expect(html).toContain('>Glass style<'); expect(html).toContain('>Minimal<'); expect(html).toContain('Theme file')
     for (const c of ['Golden', 'Royal', 'Premium', 'Dark', 'Light', 'Theme Studio']) expect(html).toContain('>' + c + '<')
     expect((html.match(/class="theme-tab[" ]/g) || []).length).toBeGreaterThanOrEqual(15)
@@ -197,7 +201,8 @@ describe('2.0 screens render', () => {
       expect(html).toContain('المشي')
       expect(html).toContain('icn-dir')            // the back chevron is the mirrored kind
       expect(html).toContain('التوقيت المحلي')       // the clock label, translated
-      expect(html).not.toContain('بغداد')           // 2.9: no city anywhere
+      expect(html.slice(0, html.indexOf('class="card jr"'))).not.toContain('بغداد')   // 2.9: no city on the clock
+      expect(html).toContain('من زاخو إلى الفاو')    // 11.0: the walk across Iraq
       expect(html).toContain('ينتهي اليوم بعد')
       expect(html).toContain('dir="ltr"')          // digits of the clock stay left-to-right
     } finally { await setLang('en') }

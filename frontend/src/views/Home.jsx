@@ -7,7 +7,7 @@ import { t, dateLocale, U } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
-import { normPlan, isLive, liveState, dayRec, KINDS as PLAN_KINDS } from '../lib/dayPlan.js'
+import { normPlan, isLive, liveState, dayRec, noteText, KINDS as PLAN_KINDS } from '../lib/dayPlan.js'
 import { useVisibleInterval } from '../lib/battery.js'
 import { Button } from '../components/ui.jsx'
 import { glyphOf } from '../lib/glyphs.js'
@@ -74,12 +74,12 @@ function DayPlanCard({ nav }) {
   const K = PLAN_KINDS[b.k]
   const left = live.cur ? Math.max(0, Math.round(live.cur.left)) : Math.max(1, Math.round(live.next.inMin))
   return <div className="card tappable dp-home" style={{ '--c': K.color }} onClick={() => nav('/dayplan')}>
-    <span className="dp-home-ic"><Icon name={K.icon} /></span>
+    <span className="dp-home-ic"><Icon name={b.ic || K.icon} /></span>
     <div className="grow">
       <div className="lbl2">{live.cur ? t('Now') : t('Up next')} · {t('{0} of {1} done', live.done, live.total)}</div>
       <b>{b.n ? t(b.n) : t(K.name)}</b>
       <div className="small muted">{live.cur ? t('{0} left', leftText(left)) : t('In {0}', leftText(left))}</div>
-      {b.nt && <div className="small dp-home-note" dir="auto"><Icon name="pencil" />{b.nt}</div>}
+      {b.nt && <div className="small dp-home-note" dir="auto"><Icon name="pencil" />{noteText(b.nt, t)}</div>}
     </div>
     <div className="dp-home-bar"><i style={{ width: Math.round(live.pct * 100) + '%' }} /></div>
     <Icon name="chevronRight" className="chev" />

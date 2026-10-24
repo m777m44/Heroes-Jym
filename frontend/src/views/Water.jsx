@@ -8,16 +8,61 @@ import { MOBILE } from '../lib/mobile.js'
 import {
   CONTAINERS, CONTAINER_NAME, CONTAINER_COUNT, GOALS_ML, REMIND_EVERY, containerOf, waterGoalParts, mlOn, waterDays,
   waterStreak, waterAverage, countIn, recommendedMl, waterRemindPrefs, nextReminder, waterPanelOn, fixedGoalMlOf,
-  ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE, waterSchedule,
+  ML_PER_1000_STEPS, ML_PER_WORKOUT_MIN, STEP_FREE, waterSchedule, waterPace,
 } from '../lib/water.js'
 import { useNow } from '../lib/liveClock.js'
 import { bodyKg, testWaterReminder, dayMoves } from '../lib/waterSync.js'
 import { goalOf, stepsOn } from '../lib/stepMetrics.js'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Button, BackButton } from '../components/ui.jsx'
-import { ContainerIcon, Vessel, drink, undoLast, useWaterUndo, fmtMl } from '../components/water/WaterParts.jsx'
+import { ContainerIcon, Vessel, drink, drinkMl, undoLast, useWaterUndo, fmtMl } from '../components/water/WaterParts.jsx'
 
 const everyLabel = m => m % 60 === 0 ? t('Every {0} h', m / 60) : t('Every {0} min', m)
+
+// 11.0 — any amount: a stepper, a slider and the usual sizes (up to a 1.5 L bottle); add it, or take some back
+const SIZES = [100, 150, 300, 400, 600, 750, 1000, 1500]
+function CustomAmount({ close }) {
+  const [v, setV] = useState(300)
+  const set = x => setV(Math.max(25, Math.min(1500, Math.round(x / 25) * 25)))
+  return <div className="w-custom">
+    <h3>{t('Custom amount')}</h3>
+    <div className="w-custom-v">
+      <button className="iconbtn" aria-label={t('Less')} onClick={() => set(v - 25)}><Icon name="minus" /></button>
+      <b>{fmtMl(v)}<span> {t('ml')}</span></b>
+      <button className="iconbtn" aria-label={t('More')} onClick={() => set(v + 25)}><Icon name="plus" /></button>
+    </div>
+    <input className="w-custom-r" type="range" min="25" max="1500" step="25" value={v} onChange={e => set(+e.target.value)} aria-label={t('Custom amount')} />
+    <div className="w-custom-q">{SIZES.map(x => <button key={x} className={'chip nocap' + (v === x ? ' on' : '')} onClick={() => set(x)}>{x >= 1000 ? t('{0} L', (x / 1000).toLocaleString(dateLocale())) : fmtMl(x) + ' ' + t('ml')}</button>)}</div>
+    <div className="w-custom-act">
+      <Button variant="plain" icon="minus" onClick={() => { drinkMl(-v); close() }}>{t('Take back')}</Button>
+      <Button variant="primary" icon="plus" onClick={() => { drinkMl(v); close() }}>{t('Add {0} ml', fmtMl(v))}</Button>
+    </div>
+  </div>
+}
+export const customWaterSheet = () => useUI.getState().openSheet(close => <CustomAmount close={close} />)
+
+/** 11.0 — the pace: how much should be in by now, ahead or behind, and what an hour needs from here. */
+function PaceLine({ goal, ml, rp, now, unit }) {
+  const p = waterPace(goal, ml, now, rp.from, rp.to)
+  const time = v => { const [h, m] = v.split(':').map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' }) }
+  const msg = p.state === 'done' ? t('Goal reached')
+    : p.state === 'early' ? t('Your water day starts at {0}', time(rp.from))
+    : p.state === 'ahead' ? t('Ahead by {0} ml', fmtMl(p.diff))
+    : p.state === 'behind' ? t('{0} ml behind', fmtMl(-p.diff))
+    : p.state === 'late' ? t('{0} ml to go', fmtMl(p.left))
+    : t('On track')
+  return <div className={'wpace ' + p.state}>
+    <div className="wpace-bar" aria-hidden="true">
+      <i style={{ width: Math.min(100, ml / Math.max(1, goal) * 100) + '%' }} />
+      {p.state !== 'done' && p.state !== 'early' && <em style={{ insetInlineStart: Math.min(100, p.pct * 100) + '%' }} />}
+    </div>
+    <div className="wpace-t">
+      <b><Icon name={{ behind: 'timer', done: 'checkCircle', early: 'sun', late: 'moon', ahead: 'bolt' }[p.state] || 'check'} />{msg}</b>
+      {p.state !== 'done' && p.state !== 'early' && p.state !== 'late' && <span>{t('By now: {0} ml', fmtMl(p.due))}{p.perHour > 0 ? ' · ' + t('{0} ml an hour until {1}', fmtMl(p.perHour), time(rp.to)) : ''}</span>}
+      {p.state === 'behind' && <button className="wsched-catch" onClick={() => drink(unit)}><ContainerIcon kind={unit.key} />+{fmtMl(unit.ml)}</button>}
+    </div>
+  </div>
+}
 
 // Water & reminders (2.5): the glass for today, what you drink from, the goal (with a
 // recommendation from your body weight), the reminders — hours, interval, a short exercise
@@ -91,6 +136,8 @@ export default function Water() {
           </button>
         ))}
       </div>
+      <button className="w-custom-btn" onClick={customWaterSheet}><Icon name="pencil" />{t('Custom amount')}</button>
+      <PaceLine goal={goal} ml={ml} rp={rp} now={now} unit={unit} />
     </div>
 
     <Section title={t('I usually drink from')} footer={t('The reminder’s “Drank it” button and the “+” on the step notification add one of these.')}>

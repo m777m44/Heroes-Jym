@@ -64,6 +64,17 @@ it('the Arabic UI has no stray English', async () => {
       for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('DayPlan:' + tp.id)
     }
   }
+  // 11.0: a school week made before 11.0 — the card offering the new one
+  {
+    const DP = await import('./DayPlan.jsx')
+    const { newPlan } = await import('../lib/dayPlan.js')
+    const S0 = useStore.getInitialState().S
+    const P = newPlan('school', {}, { seed: 1 }); delete P.tv
+    S0.planner = P
+    const html = renderToString(React.createElement(MemoryRouter, { initialEntries: ['/dayplan'] }, React.createElement(DP.default)))
+    expect(html).toContain('sc-upd')
+    for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add('DayPlan:oldSchool')
+  }
   // 3.0: the other Ideal body tabs, and the Theme Studio (wheel, HEX)
   const IB = await import('./IdealBody.jsx')
   for (const tab of ['body', 'plan', 'compare']) {
@@ -109,6 +120,7 @@ it('the Arabic UI has no stray English', async () => {
   const NTV = await import('./Nuts.jsx')
   const SDL = await import('../lib/sodas.js')
   const NTL = await import('../lib/nuts.js')
+  const WAV = await import('./Water.jsx')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -139,6 +151,11 @@ it('the Arabic UI has no stray English', async () => {
     nutPick: () => NTV.pickNutSheet(() => {}),
     blockSchool: () => DPV.blockSheet({ id: 'bs', k: 'school', s: 450, d: 310, w: [0, 1, 2, 3, 4], rm: 10, nt: 'امتحان رياضيات — خذ الحاسبة', items: [{ t: 's', id: 'sprite', pk: 'can', ml: 250, q: 1 }, { t: 'n', id: 'almond', fm: 'raw', g: 25, q: 1 }] }),
     blockWeekend: () => DPV.blockSheet({ id: 'bf', k: 'prayer', s: 750, d: 20, w: [5], rm: -1 }),
+    // 11.0: foods in a block (eggs and bread), a template note, a block icon; the food picker; any amount of water
+    blockFood: () => DPV.blockSheet({ id: 'bfd', k: 'meal', s: 440, d: 5, meal: 'b', ic: 'shirt', nt: 'Clothes, school bag and a water bottle', items: [{ t: 'f', id: 'egg', q: 2 }, { t: 'f', id: 'khubz', q: 1 }] }),
+    foodPick: () => DPV.foodPickSheet(() => {}), waterCustom: () => WAV.customWaterSheet(),
+    profileIcon: () => { useStore.getState().S.profile = { name: 'مهدي', icon: 'dumbbell', color: '#ce1126' }; PF.profileSheet() },
+    profilePhoto: () => { useStore.getState().S.profile = { name: 'مهدي', photo: 'data:image/jpeg;base64,AAAA', color: '#007a3d' }; PF.profileSheet() },
   }
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })

@@ -94,7 +94,7 @@ describe('nuts & seeds', () => {
       expect(n.forms).toContain(n.def)
       for (const f of n.forms) expect(FORMS[f], n.id + f).toBeTruthy()
       const base = n.roasted || n.raw
-      expect(base[0], n.id).toBeGreaterThan(200)
+      expect(base[0], n.id).toBeGreaterThan(n.def === 'boiled' ? 100 : 200)      // lupini are boiled — mostly water
       expect(Math.abs(base[1] * 4 + base[2] * 9 + (base[3] - base[4]) * 4 + base[4] * 2 - base[0]) / base[0], n.id).toBeLessThan(0.12)
       for (const k of n.mi) expect(MICRO[k], n.id + k).toBeTruthy()
       for (const k of n.ben) expect(BENEFIT[k], n.id + k).toBeTruthy()
@@ -103,6 +103,29 @@ describe('nuts & seeds', () => {
       expect(n.ef).toBeLessThanOrEqual(1)
     }
     for (const id of ['pistachio', 'peanut', 'almond', 'walnut', 'cashew', 'sunflower', 'watermelon', 'pumpkin', 'kerzat']) expect(NUT_BY_ID[id], id).toBeTruthy()
+  })
+  it('11.0: many more with their Iraqi names — dried fruits and dates, the sweet ones, popcorn and lupini', () => {
+    expect(NUTS.length).toBeGreaterThanOrEqual(45)
+    for (const c of ['nut', 'seed', 'snack', 'dried', 'sweet']) expect(NUTS.filter(n => n.cat === c).length, c).toBeGreaterThanOrEqual(3)
+    for (const id of ['melon', 'acorn', 'popcorn', 'lupin', 'kerzatroyal', 'kerzatseeds', 'raisins', 'kishmish', 'zahdi', 'khastawi', 'barhi', 'medjool', 'figs', 'apricots', 'qamaraldin', 'mlabbas', 'simsimiya', 'jowziya']) expect(NUT_BY_ID[id], id).toBeTruthy()
+    // dates: weighed with the stone, counted in pieces; 3 zahdi dates ≈ 59 kcal
+    const z = NUT_BY_ID.zahdi
+    expect(z.shell).toBe(true)
+    expect(nutNutrition(z, edibleGrams(z, 3, 'piece'), 'dried').kcal).toBe(59)
+    expect(edibleGrams(z, 100, 'g', true)).toBeCloseTo(90, 5)
+    // a handful of popcorn is light, a handful of lupini heavier — and lupini are salted
+    expect(edibleGrams(NUT_BY_ID.popcorn, 1, 'handful')).toBe(10)
+    expect(edibleGrams(NUT_BY_ID.lupin, 1, 'handful')).toBe(40)
+    expect(nutNutrition(NUT_BY_ID.lupin, 40).na).toBeGreaterThan(150)
+    expect(NUT_BY_ID.lupin.cau).toContain('salt')
+    // dried fruit keeps its own values (no roasting bump); sweets warn about sugar
+    expect(nutNutrition(NUT_BY_ID.raisins, 100).kcal).toBe(299)
+    for (const n of NUTS.filter(x => x.cat === 'sweet')) expect(n.cau, n.id).toContain('sugar')
+    // only real nuts count toward the daily handful, and the nut of the day is a nut
+    const d = nutDay([nutEntry(NUT_BY_ID.almond, { g: 20 }), nutEntry(NUT_BY_ID.medjool, { g: 48 })])
+    expect(d.g).toBe(20)
+    expect(d.kcal).toBe(nutEntry(NUT_BY_ID.almond, { g: 20 }).kcal + nutEntry(NUT_BY_ID.medjool, { g: 48 }).kcal)
+    for (const iso of ['2026-10-24', '2026-11-02', '2027-01-15']) expect(['nut', 'seed', 'snack']).toContain(nutOfDay(iso).cat)
   })
   it('weighs a handful, in or out of the shell, and counts pieces and spoons', () => {
     const p = NUT_BY_ID.pistachio

@@ -347,6 +347,25 @@ const ROWS = [
   ['watermelonjuice', 'drinks', 'Watermelon juice', 70, 1, 17, 0.4, 'glass', 250],
   ['greentea', 'drinks', 'Green tea', 2, 0, 0, 0, 'cup', 240],
   ['lemonmintsugar', 'drinks', 'Lemon with mint and sugar', 110, 0.2, 28, 0, 'glass', 300],
+  // 11.0 — everyday Iraqi food: breakfasts, sandwiches, rice with stew, the light dinner, street snacks
+  ['iraqibreakfast', 'dishes', 'Iraqi breakfast plate (eggs, cheese, bread & tea)', 510, 25, 54, 21, 'serving', 320],
+  ['eggsamoon', 'dishes', 'Two boiled eggs with samoon', 406, 20.6, 51.2, 12.1, 'serving', 190],
+  ['eggkhubz', 'dishes', 'Two fried eggs with bread', 345, 18.1, 33.8, 14.7, 'serving', 152],
+  ['jibinzaitoon', 'dishes', 'Cheese, olives and bread (light dinner)', 430, 16, 40, 23, 'serving', 260],
+  ['timmanfasolia', 'dishes', 'Rice with white bean stew (timman w fasolia)', 500, 17, 86, 8.6, 'plate', 450],
+  ['timmanbamia', 'dishes', 'Rice with okra stew (timman w bamia)', 460, 19, 70, 10.6, 'plate', 450],
+  ['fasoliakhadra', 'dishes', 'Green bean stew (fasolia khadra)', 220, 13, 18, 11, 'bowl', 250],
+  ['sheikhmahshi', 'dishes', 'Sheikh mahshi (stuffed eggplant)', 420, 18, 22, 29, 'plate', 300],
+  ['makarona', 'dishes', 'Baked pasta with béchamel (makarona)', 520, 22, 55, 23, 'plate', 300],
+  ['shifta', 'meat', 'Shifta (grilled meat patties)', 280, 20, 4, 20, 'serving', 120],
+  ['cheesesandwich', 'fast', 'White cheese sandwich (laffat jibin)', 330, 15.5, 35, 12.7, 'piece', 150],
+  ['labnehsandwich', 'fast', 'Labneh sandwich (laffat labneh)', 300, 9.5, 35, 13.5, 'piece', 140],
+  ['laffatchips', 'fast', 'French fries sandwich (laffat chips)', 520, 9, 68, 24, 'piece', 230],
+  ['halawakhubz', 'sweets', 'Halva sandwich (halawa w khubz)', 430, 11.5, 56, 18.7, 'piece', 110],
+  ['shamiya', 'sweets', 'Popcorn (shamiya)', 150, 2.7, 17, 8.4, 'bowl', 30],
+  ['arnoos', 'veg', 'Grilled corn on the cob (arnoos)', 130, 4.5, 27, 1.8, 'piece', 150],
+  ['amba', 'veg', 'Amba (mango pickle)', 35, 0.3, 6, 1.2, 'tbsp', 20],
+  ['nescafe3in1', 'drinks', 'Instant coffee 3-in-1 (sachet)', 80, 1, 13, 2.8, 'cup', 200],
 ]
 
 export const FOODS = ROWS.map(([id, cat, name, kcal, p, c, f, unit, g]) => ({ id, cat, name, kcal, p, c, f, unit, g, ml: ML_UNITS.has(unit) || cat === 'drinks' && unit !== 'scoop' }))
