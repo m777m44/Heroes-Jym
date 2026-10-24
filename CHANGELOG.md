@@ -52,8 +52,9 @@ tidier notification settings, and many fixes.**
 - **Reminders that show everything:** on Android each block rings as its own notification with
   the time, your notes and the food and drinks with their calories, in the block's colour, with
   **Done ✓** (logs what you planned, even with the app closed — applied when it opens) and **In
-  10 min**. They are armed natively a week ahead, survive a reboot and roll on week after week
-  even if the app is not opened. A new schedule turns them on.
+  10 min**. Each block has its own alarm on the phone that works out its next day and re-arms
+  itself after ringing and after a reboot, so the whole schedule keeps reminding week after week
+  even if the app is not opened; on iPhone they repeat weekly. A new schedule turns them on.
 
 ### 🔔 Notifications
 - A notifications centre (`/notifications`, from Settings and Tools): which reminders are on —

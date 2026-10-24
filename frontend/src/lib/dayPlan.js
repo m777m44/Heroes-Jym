@@ -495,3 +495,35 @@ export function planNotifications(S, plan, now = new Date(), tr = defTr, fmtTime
   out.sort((a, b) => a.at - b.at)
   return out.slice(0, max).map((x, i) => ({ id: i, ...x }))
 }
+
+/**
+ * The schedule's reminders for the phone's own alarms (Android, steps/PlanReminder.java): one per
+ * block — its weekdays (empty = every day), start, lead and text (the same every day), and the
+ * days it must stay quiet (done or skipped, or a day you stopped). The phone works out each next
+ * time itself and re-arms after every ring, so the whole schedule keeps reminding with the app
+ * closed, however many blocks it has (review on PR #13).
+ * → [{ id, block, w, start, lead, title, body, lines, kind, color, skip: ['YYYY-MM-DD'] }]
+ */
+export function planAlarms(S, plan, now = new Date(), tr = defTr, fmtTime = toHHMM) {
+  if (!plan || !plan.remind) return []
+  const today = isoOf(now)
+  const quiet = { all: [] }
+  for (const [iso, r] of Object.entries(plan.days || {})) {
+    if (iso < today || !r) continue
+    if (r.off) quiet.all.push(iso)
+    for (const id of [...Object.keys(r.done || {}), ...Object.keys(r.skip || {})]) (quiet[id] = quiet[id] || []).push(iso)
+  }
+  const out = []
+  for (const b of plan.blocks) {
+    if (b.k === 'sleep' && b.s < 6 * 60) continue
+    const lead = b.rm === undefined ? 0 : b.rm
+    if (lead < 0) continue
+    const txt = blockText(S, b, lead, tr, fmtTime)
+    out.push({
+      id: out.length, block: b.id, w: Array.isArray(b.w) ? b.w : [], start: b.s, lead,
+      title: txt.title, body: txt.body, lines: txt.lines, kind: b.k, color: (KINDS[b.k] || KINDS.other).color,
+      skip: [...new Set([...quiet.all, ...(quiet[b.id] || [])])].sort(),
+    })
+  }
+  return out
+}

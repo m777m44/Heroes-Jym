@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildTemplate, newPlan, normPlan, fitBlocks, planPrefs, mealTargets, planTotals, liveState, isLive, planNotifications, itemInfo,
   startDay, stopDay, markBlock, upsertBlock, removeBlock, shiftFrom, toMin, TEMPLATES, KINDS,
-  blocksOn, isWeekly, typeDays, daysLabel, copyDay, cleanDays, blockText, onDay, SCHOOL_DAYS, WEEKEND, PLAN_REMIND_MAX, REMIND_OPTS,
+  blocksOn, isWeekly, typeDays, daysLabel, copyDay, cleanDays, blockText, onDay, SCHOOL_DAYS, WEEKEND, PLAN_REMIND_MAX, REMIND_OPTS, planAlarms,
 } from './dayPlan.js'
 
 const ends = b => b.s + b.d
@@ -196,6 +196,25 @@ describe('reminders', () => {
     expect(planNotifications({}, P, now).some(n => n.block === 'l' && n.day === sat)).toBe(false)
     P.days = { [sat]: { on: 0, off: 1, done: {}, skip: {} } }
     expect(planNotifications({}, P, now).some(n => n.day === sat)).toBe(false)
+  })
+  it('give the phone one alarm per block — weekdays, start, lead, text and the days to stay quiet', () => {
+    const P = newPlan('school', {}, { seed: 1 })
+    expect(planAlarms({}, P, now)).toEqual([])                              // reminders off
+    P.remind = true
+    const sch = P.blocks.find(b => b.k === 'school')
+    P.days = { '2026-10-25': { on: 1, done: { [sch.id]: 1 }, skip: {} }, '2026-10-26': { on: 0, off: 1, done: {}, skip: {} }, '2026-10-01': { off: 1 } }
+    const list = planAlarms({}, P, now)
+    expect(list.length).toBe(P.blocks.filter(b => !(b.k === 'sleep' && b.s < 360) && b.rm !== -1).length)
+    expect(list.map(n => n.id)).toEqual(list.map((_, i) => i))
+    const a = list.find(n => n.block === sch.id)
+    expect(a).toMatchObject({ w: [0, 1, 2, 3, 4], start: toMin('07:30'), lead: 10, kind: 'school' })
+    expect(a.title).toMatch(/^In 10 min/)
+    expect(a.skip).toEqual(['2026-10-25', '2026-10-26'])                  // done that day, and a stopped day (not the past one)
+    const other = list.find(n => n.block !== sch.id)
+    expect(other.skip).toEqual(['2026-10-26'])
+    // many blocks — no cap: every block gets its alarm
+    const big = normPlan({ remind: true, blocks: Array.from({ length: 50 }, (_, i) => ({ id: 'x' + i, k: 'study', s: 360 + i * 15, d: 10 })) })
+    expect(planAlarms({}, big, now)).toHaveLength(50)
   })
   it('say everything you wrote and chose', () => {
     const b = { id: 'x', k: 'drink', s: toMin('16:15'), d: 10, nt: 'With friends', items: [{ t: 's', id: 'mintlemon', pk: 'glass', ml: 300, q: 2 }] }

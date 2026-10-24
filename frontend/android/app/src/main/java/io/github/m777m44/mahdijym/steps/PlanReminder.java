@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
@@ -18,36 +19,32 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
+import java.util.Set;
 
 import io.github.m777m44.mahdijym.R;
 
 /**
- * MAHDI-JYM 10.0 — "My schedule" reminders. One per block of the schedule on its weekdays, at its
- * start or the minutes before that the user chose, armed natively so they keep coming with the app
- * closed and come back after a reboot (BootReceiver).
+ * MAHDI-JYM 10.0 — "My schedule" reminders, armed by the phone itself so they keep coming with
+ * the app closed and come back after a reboot (BootReceiver).
  *
- * Each notification shows everything that was written and chosen for the block — the time, the
- * notes, the food and drinks with their calories — in the block's colour, with two buttons that
- * work without opening the app:
+ * The app hands over one entry per block (lib/dayPlan.js planAlarms, already in the user's
+ * language): its weekdays (empty = every day), its start (minutes after midnight), how many
+ * minutes before it rings, the days it must stay quiet (done, skipped, a stopped day) and the
+ * text — the time, the notes, the food and drinks with their calories. Each entry is one alarm:
+ * it works out its next time, rings, and re-arms itself for the block's next day, so the whole
+ * schedule reminds week after week however many blocks it has. The app replaces the list with
+ * fresh text whenever it opens or the schedule changes (schedulePlanReminders()).
+ *
+ * The notification, in the block's colour, has two buttons that work without opening the app:
  *   "Done ✓"    remembers {day, block, at}; the app logs the planned food and marks the block done
  *               the next time it opens (takeActions()).
- *   "In 10 min" rings the same reminder again ten minutes later (its own alarm, so it never
- *               disturbs the next ones).
- * Tapping it opens the schedule.
- *
- * The app plans the next week (lib/dayPlan.js planNotifications, already in the user's language)
- * and hands it over with schedulePlanReminders(); it replaces whatever was armed before. A reminder
- * that rang is moved seven days on and armed again — the block comes back on the same weekday — so
- * the schedule keeps reminding even when the app is not opened for weeks; the app refreshes the
- * whole list with fresh text whenever it opens.
- * Request codes: class base + id % 1000; notification ids 8200–8399.
+ *   "In 10 min" rings the same reminder again ten minutes later (its own alarm, identified by the
+ *               occurrence, so it never disturbs the others).
+ * Tapping it opens the schedule. Request codes: class base + id; notification ids 8200–8399.
  */
 public class PlanReminder extends BroadcastReceiver {
     static final String ACTION_FIRE = "io.github.m777m44.mahdijym.plan.FIRE";
@@ -98,10 +95,10 @@ public class PlanReminder extends BroadcastReceiver {
         try { return new JSONObject(p); } catch (JSONException e) { return null; }
     }
 
-    /** One occurrence: the day, the block and how many minutes before it rings. */
+    /** One occurrence: the block's day, the block and how many minutes before it rings. */
     private static String key(JSONObject o) { return o == null ? "" : o.optString("day", "") + "|" + o.optString("block", "") + "|" + o.optInt("lead", 0); }
 
-    /** Replace the list (from the app) and arm it. Returns how many are armed. */
+    /** Replace the list (from the app) and arm it. Returns how many reminders are armed. */
     static int setPlan(Context c, JSONArray list, JSONObject strings) {
         cancelAll(c);
         prefs(c).edit()
@@ -113,49 +110,42 @@ public class PlanReminder extends BroadcastReceiver {
         return schedule(c);
     }
 
-    /**
-     * A snoozed reminder only rings again while its block is still planned with a reminder, and
-     * then with the block's current text (notes, food); the others are cancelled — reminders
-     * switched off, the block deleted (review on PR #13).
-     */
-    private static void reconcileSnoozes(Context c, JSONArray list) {
-        JSONObject snz = obj(c, "snooze");
-        if (snz.length() == 0) return;
-        List<String> keys = new ArrayList<>();
-        for (Iterator<String> it = snz.keys(); it.hasNext(); ) keys.add(it.next());
-        for (String k : keys) {
-            JSONObject p = snz.optJSONObject(k);
-            JSONObject fresh = p == null ? null : findBlock(list, p.optString("block", ""), p.optInt("lead", 0));
-            if (fresh == null) {
-                snz.remove(k);
-                cancel(c, againPi(c, k, PendingIntent.FLAG_NO_CREATE));
-                continue;
-            }
-            try {
-                for (String f : new String[] { "title", "body", "big", "color", "route" }) if (fresh.has(f)) p.put(f, fresh.get(f));
-            } catch (JSONException ignored) { }
-        }
-        prefs(c).edit().putString("snooze", snz.toString()).apply();
-    }
-
-    /** The new list's reminder for a block — with the same lead if there is one, else any. */
-    private static JSONObject findBlock(JSONArray list, String block, int lead) {
-        if (list == null || block.isEmpty()) return null;
-        JSONObject any = null;
-        for (int i = 0; i < list.length(); i++) {
-            JSONObject o = list.optJSONObject(i);
-            if (o == null || !block.equals(o.optString("block", ""))) continue;
-            if (o.optInt("lead", 0) == lead) return o;
-            if (any == null) any = o;
-        }
-        return any;
-    }
-
     /** What was pressed on the notifications since the last call: [{ d, b, a, at }] — and forget it. */
     static JSONArray takeActions(Context c) {
         JSONArray a = arr(c, "actions");
         prefs(c).edit().putString("actions", "[]").apply();
         return a;
+    }
+
+    // ---- when (the maths is in PlanMath, unit-tested) -----------------------------------------
+
+    private static String dayOf(long t) { return PlanMath.dayOf(t); }
+
+    private static boolean has(JSONArray a, String v) {
+        if (a == null) return false;
+        for (int i = 0; i < a.length(); i++) if (v.equals(a.optString(i, null))) return true;
+        return false;
+    }
+
+    private static int[] ints(JSONArray a) {
+        if (a == null) return new int[0];
+        int[] out = new int[a.length()];
+        for (int i = 0; i < out.length; i++) out[i] = a.optInt(i, -1);
+        return out;
+    }
+
+    private static Set<String> strs(JSONArray a) {
+        Set<String> out = new HashSet<>();
+        if (a != null) for (int i = 0; i < a.length(); i++) { String v = a.optString(i, null); if (v != null) out.add(v); }
+        return out;
+    }
+
+    private static boolean runsOn(JSONArray w, int wd) { return PlanMath.runsOn(ints(w), wd); }
+
+    /** A block's next ring after `after`: { ring time, the block's start that day }, or null. */
+    static long[] nextRing(JSONObject o, long after) {
+        if (o == null || !o.has("start")) return null;
+        return PlanMath.nextRing(o.optInt("start", 0), o.optInt("lead", 0), ints(o.optJSONArray("w")), strs(o.optJSONArray("skip")), after);
     }
 
     // ---- alarms -----------------------------------------------------------------------------
@@ -165,9 +155,12 @@ public class PlanReminder extends BroadcastReceiver {
         return PendingIntent.getBroadcast(c, REQ_ALARM + id % 1000, i, PendingIntent.FLAG_IMMUTABLE | flags);
     }
 
+    /** A snooze is identified by its occurrence (in the intent's data), so two can never collide. */
     private static PendingIntent againPi(Context c, String key, int flags) {
-        Intent i = new Intent(c, PlanReminder.class).setAction(ACTION_AGAIN).putExtra("key", key);
-        return PendingIntent.getBroadcast(c, REQ_AGAIN + (key.hashCode() & 0x3FF), i, PendingIntent.FLAG_IMMUTABLE | flags);
+        Intent i = new Intent(c, PlanReminder.class).setAction(ACTION_AGAIN)
+            .setData(Uri.parse("mahdijym://plan/snooze/" + Uri.encode(key)))
+            .putExtra("key", key);
+        return PendingIntent.getBroadcast(c, REQ_AGAIN, i, PendingIntent.FLAG_IMMUTABLE | flags);
     }
 
     private static void arm(Context c, PendingIntent p, long when) {
@@ -189,37 +182,26 @@ public class PlanReminder extends BroadcastReceiver {
         p.cancel();
     }
 
-    /**
-     * Arm every reminder, and the snoozed ones. A reminder whose time passed without ringing (the
-     * phone was off) moves on to its block's next week, so it keeps recurring after a reboot
-     * (review on PR #13). Returns how many reminders.
-     */
+    /** Work out and arm every block's next ring, and the snoozed ones. Returns how many blocks. */
     static int schedule(Context c) {
         JSONArray a = arr(c, "items");
         long now = System.currentTimeMillis();
         int n = 0;
-        boolean moved = false;
         for (int i = 0; i < a.length(); i++) {
             JSONObject o = a.optJSONObject(i);
             if (o == null) continue;
             int id = o.optInt("id", -1);
-            long at = o.optLong("at", 0);
-            if (id < 0 || at <= 0) continue;
-            if (at <= now) {
-                long when = o.optLong("when", at);
-                for (int guard = 0; at <= now && guard < 530; guard++) { at = nextWeek(at); when = nextWeek(when); }
-                if (at <= now) continue;
-                try {
-                    o.put("at", at);
-                    o.put("when", when);
-                    o.put("day", dayOf(when));
-                    moved = true;
-                } catch (JSONException e) { continue; }
-            }
-            arm(c, firePi(c, id, PendingIntent.FLAG_UPDATE_CURRENT), at);
+            long[] r = nextRing(o, now);
+            if (id < 0 || r == null) continue;
+            try {
+                o.put("at", r[0]);
+                o.put("when", r[1]);
+                o.put("day", dayOf(r[1]));
+            } catch (JSONException e) { continue; }
+            arm(c, firePi(c, id, PendingIntent.FLAG_UPDATE_CURRENT), r[0]);
             n++;
         }
-        if (moved) prefs(c).edit().putString("items", a.toString()).apply();
+        prefs(c).edit().putString("items", a.toString()).apply();
         // snoozed ones (after a reboot their alarms are gone); the ones whose time has passed are dropped
         JSONObject snz = obj(c, "snooze");
         boolean changed = false;
@@ -245,33 +227,58 @@ public class PlanReminder extends BroadcastReceiver {
         }
     }
 
-    /** The same local time seven days on (calendar days, so a clock change keeps the time). */
-    private static long nextWeek(long t) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(t);
-        cal.add(Calendar.DAY_OF_YEAR, 7);
-        return cal.getTimeInMillis();
+    /**
+     * A snoozed reminder only rings again while its block still runs, with a reminder, on that day
+     * — and then with the block's current text (notes, food). The others are cancelled: reminders
+     * switched off, the block deleted or moved to other weekdays (review on PR #13).
+     */
+    private static void reconcileSnoozes(Context c, JSONArray list) {
+        JSONObject snz = obj(c, "snooze");
+        if (snz.length() == 0) return;
+        List<String> keys = new ArrayList<>();
+        for (Iterator<String> it = snz.keys(); it.hasNext(); ) keys.add(it.next());
+        for (String k : keys) {
+            JSONObject p = snz.optJSONObject(k);
+            JSONObject fresh = null;
+            if (p != null && list != null) {
+                String block = p.optString("block", ""), day = p.optString("day", "");
+                int wd = PlanMath.weekdayOf(day);
+                for (int i = 0; i < list.length(); i++) {
+                    JSONObject o = list.optJSONObject(i);
+                    if (o == null || !block.equals(o.optString("block", ""))) continue;
+                    if (wd >= 0 && runsOn(o.optJSONArray("w"), wd) && !has(o.optJSONArray("skip"), day)) { fresh = o; break; }
+                }
+            }
+            if (fresh == null) {
+                snz.remove(k);
+                cancel(c, againPi(c, k, PendingIntent.FLAG_NO_CREATE));
+                continue;
+            }
+            try {
+                for (String f : new String[] { "title", "body", "big", "color", "route" }) if (fresh.has(f)) p.put(f, fresh.get(f));
+            } catch (JSONException ignored) { }
+        }
+        prefs(c).edit().putString("snooze", snz.toString()).apply();
     }
-
-    private static String dayOf(long t) { return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date(t)); }
 
     private static int slot(int id) { return NOTIF_BASE + Math.abs(id) % NOTIF_SLOTS; }
 
-    /** A reminder rang: show it, then move it to the same weekday next week and arm it again. */
+    /** A block's reminder rang: show it, then work out its next day and arm that. */
     private static void fire(Context c, int id) {
         JSONArray a = arr(c, "items");
         for (int i = 0; i < a.length(); i++) {
             JSONObject o = a.optJSONObject(i);
             if (o == null || o.optInt("id", -1) != id) continue;
+            long rang = o.optLong("at", 0);
             try { post(c, new JSONObject(o.toString())); } catch (JSONException ignored) { }
+            long[] r = nextRing(o, Math.max(System.currentTimeMillis(), rang) + 60_000L);
+            if (r == null) return;
             try {
-                long at = nextWeek(o.optLong("at", 0));
-                long when = nextWeek(o.optLong("when", o.optLong("at", 0)));
-                o.put("at", at);
-                o.put("when", when);
-                o.put("day", dayOf(when));
+                o.put("at", r[0]);
+                o.put("when", r[1]);
+                o.put("day", dayOf(r[1]));
                 prefs(c).edit().putString("items", a.toString()).apply();
-                if (at > System.currentTimeMillis()) arm(c, firePi(c, id, PendingIntent.FLAG_UPDATE_CURRENT), at);
+                arm(c, firePi(c, id, PendingIntent.FLAG_UPDATE_CURRENT), r[0]);
             } catch (JSONException ignored) { }
             return;
         }
@@ -317,6 +324,7 @@ public class PlanReminder extends BroadcastReceiver {
                 }
                 if (oldest == null) break;
                 snz.remove(oldest);
+                cancel(c, againPi(c, oldest, PendingIntent.FLAG_NO_CREATE));
             }
             prefs(c).edit().putString("snooze", snz.toString()).apply();
         } catch (JSONException ignored) { }

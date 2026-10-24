@@ -1,8 +1,8 @@
 // 9.0 — day-plan reminders on the phone, in the theme's accent colour, each carrying its own text
 // for its date (so a reminder never shows yesterday's plan).
 // 10.0 — "My schedule": every block on its weekdays, at its start or the minutes before that you
-// chose, a week ahead (lib/dayPlan.js planNotifications). On Android they are armed natively
-// (PlanReminder.java): the expanded notification shows the time, your notes and the food and
+// chose. On Android the phone arms them itself (PlanReminder.java, one self-rescheduling alarm per
+// block from lib/dayPlan.js planAlarms): the expanded notification shows the time, your notes and the food and
 // drinks with their calories, in the block's colour, with "Done ✓" and "In 10 min" that work with
 // the app closed — what you pressed is applied when the app opens (pullPlanActions). Elsewhere
 // (iOS) LocalNotifications (ids 7700–7759, channel mj_plan) without buttons: each one repeats
@@ -10,7 +10,7 @@
 // Also: the notification channels are put into named groups (organizeChannels).
 import { MOBILE } from './mobile.js'
 import { t, dateLocale } from './i18n.js'
-import { normPlan, planNotifications, PLAN_ID_BASE } from './dayPlan.js'
+import { normPlan, planNotifications, planAlarms, PLAN_ID_BASE } from './dayPlan.js'
 import { themeAccent } from './themes.js'
 
 const FALLBACK_MAX = 60
@@ -26,44 +26,51 @@ async function native() {
 
 export async function syncPlanReminders(S, force = false) {
   if (!MOBILE || !S) return
+  let sig = ''
   try {
     const plan = normPlan(S.planner)
-    const list = plan && plan.remind ? planNotifications(S, plan, new Date(), t, clock) : []
     const color = themeAccent()
-    const sig = JSON.stringify([list.map(n => [n.id, +n.at, n.title, n.body, n.lines.join('|')]), S.lang, color])
+    const call = await native()
+    // Android: one self-rescheduling alarm per block (planAlarms); elsewhere the weekly fallback
+    const alarms = call && plan && plan.remind ? planAlarms(S, plan, new Date(), t, clock) : []
+    const list = !call && plan && plan.remind ? weeklyFallback(plan, S) : []
+    sig = JSON.stringify([!!call, alarms.map(n => [n.block, n.w, n.start, n.lead, n.title, n.body, n.lines.join('|'), n.skip]),
+      list.map(n => [n.block, n.at.getDay(), n.at.getHours(), n.at.getMinutes(), n.title, n.lines.join('|')]), S.lang, color])
     if (!force && sig === lastSig) return
     lastSig = sig
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     // whatever the 9.0 build (or the fallback) left behind
     await LocalNotifications.cancel({ notifications: Array.from({ length: 100 }, (_, i) => ({ id: PLAN_ID_BASE + i })) }).catch(() => {})
-    const call = await native()
     if (call) {
-      if (list.length) {
+      if (alarms.length) {
         let perm = await LocalNotifications.checkPermissions()
         if (perm.display !== 'granted' && force) perm = await LocalNotifications.requestPermissions()
-        if (perm.display !== 'granted') { await call('schedulePlanReminders', { items: [], strings: {} }); return }
+        // not allowed (yet): nothing is armed, and the next sync tries again (review on PR #13)
+        if (perm.display !== 'granted') { lastSig = ''; await call('schedulePlanReminders', { items: [], strings: {} }); return }
       }
       const r = await call('schedulePlanReminders', {
-        items: list.map(n => ({
-          id: n.id, at: n.at.getTime(), when: n.at.getTime() + n.lead * 60000, title: n.title, body: n.body, big: n.lines.join('\n'),
-          color: n.color, day: n.day, block: n.block, lead: n.lead, route: '/dayplan', ttl: 2 * 3600000,
+        items: alarms.map(n => ({
+          id: n.id, block: n.block, w: n.w, start: n.start, lead: n.lead, skip: n.skip, title: n.title, body: n.body, big: n.lines.join('\n'),
+          color: n.color, route: '/dayplan', ttl: 2 * 3600000,
         })),
         strings: { channel: t('My schedule'), channelDesc: t('Each block of your schedule, with everything you planned'), done: t('Done ✓'), later: t('In {0} min', 10), sub: t('My schedule') },
       })
-      if (r && typeof r.scheduled === 'number') { organizeChannels(); return }
+      if (r && typeof r.scheduled === 'number') organizeChannels()
+      else lastSig = ''
+      return
     }
     if (!list.length) return
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && force) perm = await LocalNotifications.requestPermissions()
-    if (perm.display !== 'granted') return
+    if (perm.display !== 'granted') { lastSig = ''; return }
     await LocalNotifications.createChannel({ id: 'mj_plan', name: t('My schedule'), description: t('Each block of your schedule, with everything you planned'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
     await LocalNotifications.schedule({
-      notifications: weeklyFallback(plan, S).map((n, i) => ({
+      notifications: list.map((n, i) => ({
         id: PLAN_ID_BASE + i, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),
         iconColor: n.color || color, schedule: { on: { weekday: n.at.getDay() + 1, hour: n.at.getHours(), minute: n.at.getMinutes() }, allowWhileIdle: true }, extra: { route: '/dayplan' },
       })),
     })
-  } catch { /* plugin unavailable */ }
+  } catch { if (lastSig === sig) lastSig = '' /* plugin unavailable — try again next time */ }
 }
 
 /** Done ✓ pressed on reminders while the app was closed → logged now. Returns { count, kcal }. */

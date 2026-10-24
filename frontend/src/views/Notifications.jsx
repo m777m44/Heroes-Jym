@@ -13,7 +13,7 @@ import { normPlan, planNotifications, blocksOn, KINDS } from '../lib/dayPlan.js'
 import { dayPrefs, dayReminderItems } from '../lib/daySchedule.js'
 import { idealBodyOf } from '../lib/idealBody.js'
 import { medReminders } from '../lib/health.js'
-import { burnReminders } from '../lib/burnPlan.js'
+import { burnReminders, burnReminderText } from '../lib/burnPlan.js'
 import { MEALS } from '../lib/food.js'
 import { MOBILE } from '../lib/mobile.js'
 import { nav } from '../lib/nav.js'
@@ -53,6 +53,11 @@ function upcoming(S, now) {
   for (const m of safe(() => medReminders(S), [])) {
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), m.hour, m.minute)
     if (at > now) out.push({ at, icon: 'pill', color: '#ff9f0a', title: m.name, sub: t('Medicine reminders'), to: '/health' })
+  }
+  // the burn plan's exercises (review on PR #13)
+  for (const b of safe(() => burnReminders(S, bodyKg(S), now), [])) {
+    if (b.at <= now || b.at >= end) continue
+    out.push({ at: b.at, icon: 'flame', color: '#ff375f', title: safe(() => burnReminderText(b).title.replace(/^🔥\s*/, ''), t('Burn plan')), sub: t('Burn plan'), to: '/burn/review' })
   }
   const r = safe(() => idealBodyOf(S), null)
   for (const x of safe(() => dayReminderItems(S, r, iso), [])) {
