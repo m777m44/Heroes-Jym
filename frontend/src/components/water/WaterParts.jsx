@@ -97,7 +97,8 @@ export function drink(c) {
 const MAX_ONE = 3000
 /** 11.0: any amount (the custom sheet) — logged, confirmed and undoable like a container; negative takes some back. */
 export function drinkMl(ml) {
-  const v = Math.max(-MAX_ONE, Math.min(MAX_ONE, Math.round(+ml || 0)))
+  let v = Math.max(-MAX_ONE, Math.min(MAX_ONE, Math.round(+ml || 0)))
+  if (v < 0) v = Math.max(v, -mlOn(useStore.getState().S, todayISO()))   // never take back more than is there (Undo stays exact)
   if (!v) return
   logWater(v)
   if (v > 0) burst(lastTap(), { count: 12, spread: 60, colors: ['#64D2FF', '#0A84FF', '#5AC8FA', '#BFEFFF'] })
