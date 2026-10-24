@@ -18,7 +18,7 @@ describe('schedule reminders without the native service', () => {
     expect(w.map(n => n.at.getDay()).sort()).toEqual([0, 1, 2, 3, 4])
     expect(w.every(n => n.at.getHours() === 7 && n.at.getMinutes() === 20)).toBe(true)
   })
-  it('keep the usual weekly time when a block was moved for one day (+10)', () => {
+  it('ring once at the new time when a block was moved for one day (+10), and once next week at the usual one (review on PR #13)', () => {
     const s = { planner: { ...newPlan('custom'), remind: true, blocks: [
       { id: 'hw', k: 'study', n: 'Homework', s: toMin('14:30'), d: 90, w: [0, 1, 2, 3, 4] },
       { id: 'sn', k: 'meal', meal: 's', s: toMin('16:00'), d: 15, w: [0, 1, 2, 3, 4], items: [] },
@@ -27,9 +27,13 @@ describe('schedule reminders without the native service', () => {
     extendNow(s, liveState(s.planner, null, mon).cur, 10, mon)
     expect(s.planner.days['2026-10-19'].mv.sn).toEqual([toMin('16:10'), 15])
     const w = weeklyFallback(s.planner, {}, mon).filter(n => n.block === 'sn')
-    expect(w.map(n => n.at.getDay()).sort()).toEqual([0, 1, 2, 3, 4])
-    const monday = w.find(n => n.at.getDay() === 1)
-    expect(monday.at.getHours() * 60 + monday.at.getMinutes()).toBe(toMin('16:00'))
-    expect(monday.day).toBe('2026-10-26')
+    const hm = n => n.at.getHours() * 60 + n.at.getMinutes()
+    // Monday: once today at 16:10, once next Monday at 16:00 — no weekly one that would ring at 16:00 today
+    expect(w.filter(n => n.once).map(n => [n.day, hm(n)])).toEqual([['2026-10-19', toMin('16:10')], ['2026-10-26', toMin('16:00')]])
+    // the other school days repeat weekly as usual
+    expect(w.filter(n => !n.once).map(n => n.at.getDay()).sort()).toEqual([0, 2, 3, 4])
+    expect(w.filter(n => !n.once).every(n => hm(n) === toMin('16:00'))).toBe(true)
+    // homework (lengthened, same start — today's reminder has rung) stays weekly
+    expect(weeklyFallback(s.planner, {}, mon).filter(n => n.block === 'hw').every(n => !n.once)).toBe(true)
   })
 })

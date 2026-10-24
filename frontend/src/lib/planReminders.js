@@ -6,7 +6,8 @@
 // drinks with their calories, in the block's colour, with "Done ✓" and "In 10 min" that work with
 // the app closed — what you pressed is applied when the app opens (pullPlanActions). Elsewhere
 // (iOS) LocalNotifications (ids 7700–7759, channel mj_plan) without buttons: each one repeats
-// weekly on its weekday, so they keep coming while the app stays closed (review on PR #13).
+// weekly on its weekday, so they keep coming while the app stays closed (review on PR #13); a
+// block moved for one day (+10) rings once at each time that week instead.
 // Also: the notification channels are put into named groups (organizeChannels).
 import { MOBILE } from './mobile.js'
 import { t, dateLocale } from './i18n.js'
@@ -34,8 +35,8 @@ export async function syncPlanReminders(S, force = false) {
     // Android: one self-rescheduling alarm per block (planAlarms); elsewhere the weekly fallback
     const alarms = call && plan && plan.remind ? planAlarms(S, plan, new Date(), t, clock) : []
     const list = !call && plan && plan.remind ? weeklyFallback(plan, S) : []
-    sig = JSON.stringify([!!call, alarms.map(n => [n.block, n.w, n.start, n.lead, n.title, n.body, n.lines.join('|'), n.skip]),
-      list.map(n => [n.block, n.at.getDay(), n.at.getHours(), n.at.getMinutes(), n.title, n.lines.join('|')]), S.lang, color])
+    sig = JSON.stringify([!!call, alarms.map(n => [n.block, n.w, n.start, n.lead, n.title, n.body, n.lines.join('|'), n.skip, n.once || '']),
+      list.map(n => [n.block, n.at.getDay(), n.at.getHours(), n.at.getMinutes(), n.title, n.lines.join('|'), n.once ? n.at.getTime() : 0]), S.lang, color])
     if (!force && sig === lastSig) return
     lastSig = sig
     const { LocalNotifications } = await import('@capacitor/local-notifications')
@@ -67,7 +68,8 @@ export async function syncPlanReminders(S, force = false) {
     await LocalNotifications.schedule({
       notifications: list.map((n, i) => ({
         id: PLAN_ID_BASE + i, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),
-        iconColor: n.color || color, schedule: { on: { weekday: n.at.getDay() + 1, hour: n.at.getHours(), minute: n.at.getMinutes() }, allowWhileIdle: true }, extra: { route: '/dayplan' },
+        iconColor: n.color || color, extra: { route: '/dayplan' },
+        schedule: n.once ? { at: n.at, allowWhileIdle: true } : { on: { weekday: n.at.getDay() + 1, hour: n.at.getHours(), minute: n.at.getMinutes() }, allowWhileIdle: true },
       })),
     })
   } catch { if (lastSig === sig) lastSig = '' /* plugin unavailable — try again next time */ }
@@ -90,16 +92,23 @@ export async function pullPlanActions() {
 /**
  * Without the native service: one weekly-repeating reminder per block and weekday (the next eight
  * days, so today's ones that already rang come back next week), the soonest FALLBACK_MAX. A block
- * moved for one day (+10) keeps its usual weekly time here — a repeating reminder can't move once.
+ * moved for one day (+10) can't skip that day in a repeating reminder, so on that weekday it rings
+ * once at each time instead (`once`): today at the new time, next week at the usual one — the next
+ * sync brings the weekly one back (review on PR #13).
  */
 export function weeklyFallback(plan, S, now = new Date()) {
+  const all = planNotifications(S, plan, now, t, clock, { days: 8, max: 400 })
+  const dayKey = n => n.block + '|' + new Date(n.day + 'T12:00:00').getDay() + '|' + n.lead
+  const moved = new Set(all.filter(n => n.moved).map(dayKey))
   const seen = new Set(), out = []
-  for (const n of planNotifications(S, plan, now, t, clock, { days: 8, max: 400 })) {
-    if (n.moved) continue
-    const k = n.block + '|' + n.at.getDay() + '|' + n.lead
-    if (seen.has(k)) continue
-    seen.add(k)
-    out.push(n)
+  for (const n of all) {
+    if (moved.has(dayKey(n))) out.push({ ...n, once: true })
+    else {
+      const k = n.block + '|' + n.at.getDay() + '|' + n.lead
+      if (seen.has(k)) continue
+      seen.add(k)
+      out.push(n)
+    }
     if (out.length >= FALLBACK_MAX) break
   }
   return out

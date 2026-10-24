@@ -1,6 +1,8 @@
 package io.github.m777m44.mahdijym.steps;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -22,6 +24,8 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import com.capacitorjs.plugins.localnotifications.NotificationStorage;
+import com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,6 +64,7 @@ import java.util.List;
  *   schedulePlanReminders({ items, strings }) → { scheduled } — 10.0 "My schedule" reminders
  *   takePlanActions()             → { actions: [{ d, b, a, at }] } — Done ✓ pressed on them since last time
  *   organizeChannels({ groups })  → { moved } — 10.0 notification channels in named groups
+ *   cancelLegacyFastAlarm()       → { done } — 10.0 the 9.0 fasting reminder (id 7600), unarmed only
  *   getCelebrationStatus()        → { fullScreen, overlay, sdk }
  *   openFullScreenSettings() / openOverlaySettings()
  *   previewCelebration({ spec, mode: 'screen' | 'notification' })
@@ -540,6 +545,32 @@ public class StepServicePlugin extends Plugin {
         int n = Channels.organize(ctx(), groups);
         JSObject r = new JSObject();
         r.put("moved", n);
+        call.resolve(r);
+    }
+
+    /** The fasting reminder's id until 9.0 — also the burn plan's first notification slot. */
+    private static final int LEGACY_FAST_ID = 7600;
+
+    /**
+     * 10.0: the fasting reminder moved to its own id (7680). One armed by 9.0 is taken out of the
+     * LocalNotifications schedule — its alarm and its saved copy, as that plugin's cancel does —
+     * but nothing is taken out of the notification shade, where 7600 may be a burn reminder
+     * (review on PR #13).
+     */
+    @PluginMethod
+    public void cancelLegacyFastAlarm(PluginCall call) {
+        boolean done = false;
+        try {
+            Context c = ctx();
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;   // as LocalNotifications arms it
+            PendingIntent pi = PendingIntent.getBroadcast(c, LEGACY_FAST_ID, new Intent(c, TimedNotificationPublisher.class), flags);
+            AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+            if (am != null && pi != null) am.cancel(pi);
+            new NotificationStorage(c).deleteNotification(String.valueOf(LEGACY_FAST_ID));
+            done = true;
+        } catch (RuntimeException ignored) { }
+        JSObject r = new JSObject();
+        r.put("done", done);
         call.resolve(r);
     }
 

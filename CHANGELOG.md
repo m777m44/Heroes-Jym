@@ -59,7 +59,8 @@ tidier notification settings, and many fixes.**
   10 min**. Each block has its own alarm on the phone that works out its next day and re-arms
   itself after ringing and after a reboot, so the whole schedule keeps reminding week after week
   even if the app is not opened; on iPhone they repeat weekly. A new schedule turns them on. A
-  reminder still showing goes away when its block is done, skipped, deleted or changed.
+  reminder still showing goes away when its block is done, skipped, deleted or changed. Reminders
+  follow a change of the phone's clock or time zone (water reminders too).
 
 ### 🔔 Notifications
 - A notifications centre (`/notifications`, from Settings and Tools): which reminders are on —

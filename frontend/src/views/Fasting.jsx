@@ -28,9 +28,14 @@ export async function syncFastNotification(F) {
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: [{ id: NOTIFY_ID }] }).catch(() => {})
-    // one armed by 9.0 or older under the old id — only while it is still waiting to ring
+    // one armed by 9.0 or older under the old id: taken out only while it still waits to ring — on
+    // Android natively, so a burn reminder showing under that id stays (review on PR #13)
     const old = await LocalNotifications.getPending().catch(() => null)
-    if (old && (old.notifications || []).some(n => +n.id === LEGACY_ID)) await LocalNotifications.cancel({ notifications: [{ id: LEGACY_ID }] }).catch(() => {})
+    if (old && (old.notifications || []).some(n => +n.id === LEGACY_ID)) {
+      const { Capacitor } = await import('@capacitor/core')
+      if (Capacitor.getPlatform() === 'android') await (await import('../lib/stepService.js')).call('cancelLegacyFastAlarm', {})
+      else await LocalNotifications.cancel({ notifications: [{ id: LEGACY_ID }] }).catch(() => {})
+    }
     const f = normFasting(F)
     if (!f.active || !f.remind) return
     const at = f.active.start + f.active.goalH * 3600000

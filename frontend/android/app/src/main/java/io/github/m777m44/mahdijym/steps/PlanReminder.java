@@ -205,7 +205,8 @@ public class PlanReminder extends BroadcastReceiver {
             if (o == null) continue;
             int id = o.optInt("id", -1);
             long[] r = nextRing(o, now);
-            if (id < 0 || r == null) continue;
+            if (id < 0) continue;
+            if (r == null) { cancel(c, firePi(c, id, PendingIntent.FLAG_NO_CREATE)); continue; }   // e.g. a day's own entry, gone by
             try {
                 o.put("at", r[0]);
                 o.put("when", r[1]);
@@ -297,9 +298,15 @@ public class PlanReminder extends BroadcastReceiver {
         for (int i = 0; i < a.length(); i++) {
             JSONObject o = a.optJSONObject(i);
             if (o == null || o.optInt("id", -1) != id) continue;
-            long rang = o.optLong("at", 0);
-            try { post(c, new JSONObject(o.toString())); } catch (JSONException ignored) { }
-            long[] r = nextRing(o, Math.max(System.currentTimeMillis(), rang) + 60_000L);
+            long rang = o.optLong("at", 0), when = o.optLong("when", 0), now = System.currentTimeMillis();
+            // the clock or the time zone moved before it could be armed again (review on PR #13): a ring
+            // far too early, or long after its block began, is not shown — the next one counts from now
+            boolean early = rang > now + 5 * 60_000L;
+            boolean stale = when > 0 && now > when + Math.max(15 * 60_000L, o.optLong("ttl", 2 * 60 * 60_000L));
+            if (!early && !stale) {
+                try { post(c, new JSONObject(o.toString())); } catch (JSONException ignored) { }
+            }
+            long[] r = nextRing(o, early ? now : Math.max(now, rang) + 60_000L);
             if (r == null) return;
             try {
                 o.put("at", r[0]);
