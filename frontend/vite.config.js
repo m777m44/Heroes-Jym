@@ -38,11 +38,11 @@ function precacheSW() {
       for (const f of files) h.update(f).update(readFileSync(join(outDir, f)))
       const version = pkg.version + '-' + h.digest('hex').slice(0, 10)
       // 12.0: media bases that point at a CDN (the Pages builds) are cached by the worker too
-      const media = [process.env.VITE_IMG_BASE, process.env.VITE_GIF_BASE].filter(u => /^https:\/\//.test(u || ''))
+      const cdnMedia = [process.env.VITE_IMG_BASE, process.env.VITE_GIF_BASE].filter(u => /^https:\/\//.test(u || ''))
       const sw = readFileSync(swPath, 'utf8')
         .replace(/const VERSION = '[^']*'/, `const VERSION = '${version}'`)
         .replace(/const PRECACHE = \[[^\]]*\]/, `const PRECACHE = ${JSON.stringify(['./', ...files])}`)
-        .replace(/const MEDIA_PREFIXES = \[[^\]]*\]/, `const MEDIA_PREFIXES = ${JSON.stringify(media)}`)
+        .replace(/const MEDIA_PREFIXES = \[[^\]]*\]/, `const MEDIA_PREFIXES = ${JSON.stringify(cdnMedia)}`)
       writeFileSync(swPath, sw)
     },
   }

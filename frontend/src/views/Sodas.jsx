@@ -66,7 +66,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
   const walk = walkMinutes(n.kcal, kg)
   const swap = swapSaving(s, ml, count)
   const choosePack = p => { const x = packFor(s, p, p === s.def.pk ? s.def.ml : null); setPk(x.pk); setMl(x.ml) }
-  const notes = [s.energy && 'e', s.zero && 'z', s.quinine && 'q', s.dairy && 'd'].filter(Boolean)
+  const notes = [s.energy && 'e', s.zero && 'z', s.quinine && 'q', s.dairy && 'd', s.tea && 't', s.sport && 'x'].filter(Boolean)
   const log = () => {
     const iso = iso0 || todayISO()
     const e = sodaEntry(s, { pk, ml, count, meal })

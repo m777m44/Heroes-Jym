@@ -3843,3 +3843,34 @@ html[data-saver] :is(.sa.live,.na.live) *{animation:none!important}
 .wpace.behind .wpace-t b .icn{color:var(--orange)}
 .wpace.done .wpace-t b .icn,.wpace.ahead .wpace-t b .icn{color:var(--green)}
 .wpace .wsched-catch{margin-inline-start:auto}
+
+/* ---- 12.0 — profile: any emoji from the keyboard, recent ones, the picture collection ---- */
+.pf-kb{display:flex;align-items:center;gap:8px;margin:10px 0 4px;position:relative}
+.pf-kb-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--acc-soft);color:var(--acc);flex:none}
+.pf-kb-ic .icn{width:20px;height:20px}
+.pf-kb-in{flex:1;font-size:22px;text-align:center;letter-spacing:.04em;min-height:44px}
+.pf-kb-hint{margin:2px 2px 6px;line-height:1.45}
+.pf-recent{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.pf-recent::-webkit-scrollbar{display:none}
+.pf-recent-h{font-size:12px;font-weight:600;color:var(--label-2);margin-inline-end:2px;white-space:nowrap}
+.pf-recent .pf-pick{width:42px;flex:none}
+.pf-src-h{flex-basis:100%;font-size:13px;font-weight:700;color:var(--label-2);margin:8px 2px 0;text-transform:none}
+.pf-photo .pf-grps{flex-basis:100%;overflow-x:auto;margin:4px -2px 2px}
+.pf-pics{flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;max-height:300px;overflow-y:auto;padding:2px;overscroll-behavior:contain}
+.pf-pic{position:relative;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--surface-2);display:grid;place-items:center;color:var(--label-3);
+  animation:v9up .3s var(--ease) both;animation-delay:calc(var(--i) * 10ms);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
+.pf-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.pf-pic:active{transform:scale(.94)}
+.pf-pic:disabled{opacity:.6}
+.pf-pic.busy{opacity:1;box-shadow:0 0 0 3px var(--acc)}
+.pf-pic-spin{position:absolute;inset:0;display:block;border-radius:50%;border:3px solid transparent;border-top-color:var(--acc);animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---- 12.0 — Settings → App & updates ---- */
+.upd-row.busy .lrow-i .icn{animation:spin 1s linear infinite}
+.upd-new{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-top:.5px solid var(--sep);background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 16%,transparent),transparent 70%)}
+.upd-new-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--acc);color:#fff;flex:none}
+.upd-new-ic .icn{width:20px;height:20px}
+.upd-new b{display:block;font-size:15px}
+.upd-new p{margin:2px 0 8px}
+.upd-new-btns{display:flex;flex-wrap:wrap;gap:6px}
