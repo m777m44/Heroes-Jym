@@ -4061,3 +4061,59 @@ html.theme-anim .sheet,html.theme-anim .iconbtn,html.theme-anim .fdb-row,html.th
 .fdb-live-m{display:flex;gap:8px;flex:1;min-width:0;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
 .fdb-live-m i{font-style:normal;display:inline-flex;align-items:center;gap:4px}
 .fdb-live-m i::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}
+
+/* 13.1 — the week at a glance: kinds of day as cards with a day bar, the sheet's list of times */
+.wg-kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 12px}
+.wg-kind{display:flex;flex-direction:column;gap:8px;padding:12px 12px 10px;border-radius:18px;text-align:start;min-width:0;animation:v9up .4s var(--ease) both;animation-delay:calc(var(--i) * 60ms)}
+.wg-kind:active{transform:scale(.98)}
+.wg-kind-h{display:flex;align-items:center;gap:6px;min-width:0}
+.wg-kind-h b{flex:1;min-width:0;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wg-kind-h .chev{width:14px;height:14px;color:var(--label-3);flex:none}
+.wg-kind-s{color:var(--label-2);font-variant-numeric:tabular-nums;line-height:1.35}
+.wg-barw{display:flex;flex-direction:column;gap:4px}
+.wg-bar{position:relative;height:12px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.wg-kind .wg-bar{height:9px}
+.wg-bar i{position:absolute;top:0;bottom:0;background:var(--c);box-shadow:inset -1px 0 0 var(--surface)}
+:root[dir=rtl] .wg-bar i{box-shadow:inset 1px 0 0 var(--surface)}
+.wg-axis{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:11px}
+.wg{display:flex;flex-direction:column;gap:12px}
+.wg h3{margin:0}
+.wg-chips{display:flex;flex-wrap:wrap;gap:6px}
+.wg-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;font-size:12.5px;font-weight:600;background:color-mix(in srgb,var(--c) 14%,var(--surface-2));color:var(--label);font-variant-numeric:tabular-nums}
+.wg-chip .icn{width:14px;height:14px;color:var(--c)}
+.wg-list{display:flex;flex-direction:column}
+.wg-part-h{display:flex;align-items:center;gap:6px;margin:10px 2px 6px;font-size:13px;color:var(--label-2)}
+.wg-part:first-child .wg-part-h{margin-top:0}
+.wg-part-h .icn{width:15px;height:15px;color:var(--acc)}
+.wg-row{position:relative;overflow:hidden;display:grid;grid-template-columns:auto 30px minmax(0,1fr) auto;align-items:start;gap:10px;padding:9px 10px 9px 12px;margin-bottom:5px;border-radius:14px;background:var(--surface-2)}
+:root[dir=rtl] .wg-row{padding:9px 12px 9px 10px}
+.wg-row::before{content:"";position:absolute;top:8px;bottom:8px;inset-inline-start:0;width:3px;border-radius:2px;background:var(--c)}
+.wg-t{display:flex;flex-direction:column;align-items:flex-end;min-width:50px;padding-top:1px;font-variant-numeric:tabular-nums;line-height:1.25}
+.wg-t b{font-size:13.5px}
+.wg-t small{font-size:11.5px;color:var(--label-3)}
+.wg-ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+.wg-ic .icn{width:16px;height:16px}
+.wg-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wg-txt b{font-size:14.5px;font-weight:600}
+.wg-txt small{font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;line-height:1.35}
+.wg-txt small.wg-note{color:var(--label-3)}
+.wg-menu{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.wg-menu small i{display:inline-block;min-width:22px;font-style:normal;font-weight:700;color:var(--c);margin-inline-end:8px}
+.wg-bell{align-self:center;color:var(--c)}
+.wg-bell .icn{width:15px;height:15px}
+.wg-bell.off{color:var(--label-3)}
+.dp-we-hint{margin-top:3px;color:var(--acc)}
+
+/* 13.1 — the "Shops & markets" card and its aisles */
+.fdb-mkt{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:16px;border:0;border-radius:22px;text-align:start;font:inherit;color:inherit;cursor:pointer;--c:var(--teal)}
+.fdb-mkt .grow{position:relative;display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.fdb-mkt b{font-size:18px;font-weight:700;letter-spacing:-.015em}
+.fdb-mkt .small{color:var(--label-2);line-height:1.35}
+.fdb-mkt:active,.fdb-indo:active{transform:scale(.985)}
+.fdb-mkt-ic{position:relative;flex:none;width:54px;height:54px;border-radius:18px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#30d1b5,#0a84ff);box-shadow:0 12px 26px -12px #1fa9c9}
+.fdb-mkt-ic .icn{width:30px;height:30px}
+.fdb-mkt .fdb-indo-n{background:color-mix(in srgb,var(--teal) 22%,transparent)}
+.fdb-mkt-aisles{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.fdb-mkt-aisles i{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--cc);background:color-mix(in srgb,var(--cc) 16%,transparent)}
+.fdb-mkt-aisles .icn{width:14px;height:14px}
+.fdb-aisles{margin-top:-2px}

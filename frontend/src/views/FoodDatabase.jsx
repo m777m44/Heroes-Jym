@@ -3,6 +3,9 @@
 // protein, carbs and fat, and the sodium and sugars where the label has them. Search in Arabic
 // or English, shelves (categories) plus an "Iraqi" shelf, sort by calories or protein; the list
 // draws in pages as you scroll (components/LazyList.jsx).
+// 13.1 — "Shops & markets": everything sold packaged in Iraqi shops (cakes, canned mahshi, Indomie
+// and other noodles, halqoum, alij, chocolate, biscuits, chips, dairy cups, bread, frozen food, ice
+// cream, juices and jars), browsed by aisle.
 //   foodCardSheet(food)   the food: per serving and per 100 g, sizes, salt and sugar, log it
 //   indomieSheet(cfg)     the Indomie builder: pack, how it is made, the sachets, what goes in
 // Data: lib/foodDb.js + lib/foods/ (the Indomie maths: lib/foods/indomie.js).
@@ -11,8 +14,8 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { todayISO } from '../lib/format.js'
-import { FOODS, FOOD_CATS, IRAQI_COUNT } from '../lib/foodDb.js'
-import { MEALS, mealAt, normalize, makeEntry, addEntry, toggleFav, servingText, foodName } from '../lib/food.js'
+import { FOODS, FOOD_CATS, IRAQI_COUNT, MARKET_COUNT, MARKET_AISLES } from '../lib/foodDb.js'
+import { MEALS, mealAt, normalize, makeEntry, addEntry, toggleFav, servingText, foodName, hasWord } from '../lib/food.js'
 import {
   PACKS, PACK_BY_ID, PREPS, ADDONS, ADDON_KCAL, INDOMIE_FOODS, normIndomie, indomieNutrition, indomieLabel, indomieKey,
 } from '../lib/foods/indomie.js'
@@ -29,6 +32,7 @@ const update = fn => useStore.getState().update(fn)
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const n1 = v => (Math.round((+v || 0) * 10) / 10).toLocaleString(dateLocale())
 const catOf = key => FOOD_CATS.find(c => c.key === key)
+const AISLE_AT = Object.fromEntries(MARKET_AISLES.map((a, i) => [a.key, i]))
 const mealName = key => t((MEALS.find(m => m.key === key) || MEALS[3]).name)
 /** WHO: under 2,000 mg of sodium a day; a serving with 800 mg or more is a salty one. */
 export const SODIUM_DAY = 2000
@@ -50,20 +54,24 @@ export function per100Of(f) {
   return { kcal: Math.round(f.kcal * k), p: f.p * k, c: f.c * k, f: f.f * k, sug: f.sug != null ? f.sug * k : null, na: f.na != null ? f.na * k : null }
 }
 
-/** Foods matching the search (translated name, English name or id), on a shelf, sorted. */
-export function findFoods({ q = '', cat = null, sort = 'usual' } = {}) {
-  let list = cat === 'iraqi' ? FOODS.filter(f => f.iraqi) : cat ? FOODS.filter(f => f.cat === cat) : FOODS
+/** Foods matching the search (translated name, English name or id), on a shelf (an aisle of the market), sorted. */
+export function findFoods({ q = '', cat = null, sort = 'usual', aisle = null } = {}) {
+  let list = cat === 'iraqi' ? FOODS.filter(f => f.iraqi) : cat === 'market' ? FOODS.filter(f => f.mk && (!aisle || f.mk === aisle))
+    : cat ? FOODS.filter(f => f.cat === cat) : FOODS
   const nq = normalize(q)
   if (nq) {
     const words = nq.split(' ')
     const hits = []
     for (const f of list) {
       const local = normalize(t(f.name)), en = normalize(f.name)
-      if (!words.every(w => local.includes(w) || en.includes(w) || f.id.includes(w))) continue
+      const hay = local + ' ' + en + ' ' + f.id
+      if (!words.every(w => hasWord(hay, w))) continue
       hits.push([local.startsWith(nq) || en.startsWith(nq) ? 0 : 1, f])
     }
     list = hits.sort((a, b) => a[0] - b[0]).map(h => h[1])
   }
+  // the market shelf by aisle, as a shop shows it — cakes, cans, noodles, sweets… (a stable sort)
+  if (cat === 'market' && !aisle && !nq && sort === 'usual') list = [...list].sort((a, b) => AISLE_AT[a.mk] - AISLE_AT[b.mk])
   if (sort === 'kcal') list = [...list].sort((a, b) => a.kcal - b.kcal)
   else if (sort === 'protein') list = [...list].sort((a, b) => b.p - a.p)
   return list
@@ -99,14 +107,17 @@ const FoodRow = memo(function FoodRow({ f, fav, onOpen }) {
 export default function FoodDatabase() {
   const St = useStore(s => s.S)
   const [q, setQ] = useState('')
-  const [cat, setCat] = useState(null)
+  const [cat, setCat0] = useState(null)
+  const [aisle, setAisle] = useState(null)
+  const setCat = k => { setCat0(k); setAisle(null) }
   const [sort, setSort] = useState('usual')
   const dq = useDeferredValue(q)
-  const list = useMemo(() => findFoods({ q: dq, cat: dq.trim() ? null : cat, sort }), [dq, cat, sort])
-  const inc = useIncremental(list.length, 40, dq + '|' + cat + '|' + sort)
+  const list = useMemo(() => findFoods({ q: dq, cat: dq.trim() ? null : cat, sort, aisle }), [dq, cat, sort, aisle])
+  const inc = useIncremental(list.length, 40, dq + '|' + cat + '|' + aisle + '|' + sort)
   const fav = useMemo(() => new Set(St.foodFav || []), [St.foodFav])
   const shelves = useMemo(() => [
     { key: null, name: 'All', icon: 'list', color: 'var(--acc)', n: FOODS.length },
+    { key: 'market', name: 'Shops & markets', icon: 'basket', color: 'var(--teal)', n: MARKET_COUNT },
     { key: 'iraqi', name: 'Iraqi', icon: 'palm', color: 'var(--green)', n: IRAQI_COUNT },
     ...FOOD_CATS.map(c => ({ ...c, n: FOODS.filter(f => f.cat === c.key).length })),
   ], [])
@@ -130,6 +141,17 @@ export default function FoodDatabase() {
         </span>
         <Icon name="chevronRight" className="chev" />
       </button>
+      <button type="button" className="card fdb-mkt" onClick={() => setCat('market')}>
+        <span className="sd-top-bg" aria-hidden="true" />
+        <span className="fdb-mkt-ic" aria-hidden="true"><Icon name="basket" /></span>
+        <span className="grow">
+          <b>{t('Shops & markets')}</b>
+          <span className="small">{t('Everything packaged from Iraqi shops — cakes, canned mahshi, Indomie, halqoum, alij and much more')}</span>
+          <span className="fdb-mkt-aisles" aria-hidden="true">{MARKET_AISLES.slice(0, 8).map(a => <i key={a.key} style={{ '--cc': a.color }}><Icon name={a.icon} /></i>)}</span>
+          <span className="fdb-indo-n">{t('{0} foods in {1} aisles', n0(MARKET_COUNT), n0(MARKET_AISLES.length))}</span>
+        </span>
+        <Icon name="chevronRight" className="chev" />
+      </button>
       <div className="fdb-shelves">
         {shelves.slice(1).filter(s => ['iraqi', 'noodles', 'cakes', 'canned', 'snacks'].includes(s.key)).map(s => (
           <button key={s.key} type="button" className="fdb-shelf" style={{ '--cc': s.color }} onClick={() => setCat(s.key)}>
@@ -141,11 +163,20 @@ export default function FoodDatabase() {
     </div>}
 
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} type="search" enterKeyHint="search"
-      placeholder={t('Search — Indomie, date cake, tuna, Snickers, dolma…')} aria-label={t('Search foods')} />
+      placeholder={t('Search — Indomie, halqoum, mahshi, cake, tuna, dolma…')} aria-label={t('Search foods')} />
     {!q.trim() && <div className="dk-chips scroll" role="tablist" aria-label={t('Shelves')}>
       {shelves.map(s => <button key={String(s.key)} role="tab" aria-selected={cat === s.key} className={'chip nocap dk-chip' + (cat === s.key ? ' on' : '')}
         style={s.color ? { '--cc': s.color } : undefined} onClick={() => setCat(s.key)}>
         <Icon name={s.icon} />{t(s.name)}<span className="fdb-chip-n">{n0(s.n)}</span>
+      </button>)}
+    </div>}
+    {cat === 'market' && !q.trim() && <div className="dk-chips scroll fdb-aisles" role="tablist" aria-label={t('Aisles')}>
+      <button role="tab" aria-selected={!aisle} className={'chip nocap dk-chip' + (!aisle ? ' on' : '')} style={{ '--cc': 'var(--teal)' }} onClick={() => setAisle(null)}>
+        {t('All aisles')}<span className="fdb-chip-n">{n0(MARKET_COUNT)}</span>
+      </button>
+      {MARKET_AISLES.map(a => <button key={a.key} role="tab" aria-selected={aisle === a.key} className={'chip nocap dk-chip' + (aisle === a.key ? ' on' : '')}
+        style={{ '--cc': a.color }} onClick={() => setAisle(a.key)}>
+        <Icon name={a.icon} />{t(a.name)}<span className="fdb-chip-n">{n0(a.n)}</span>
       </button>)}
     </div>}
     <div className="fdb-bar">

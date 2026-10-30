@@ -4,7 +4,7 @@ import {
   buildTemplate, newPlan, normPlan, fitBlocks, planPrefs, mealTargets, planTotals, liveState, isLive, planNotifications, itemInfo, dayRec,
   startDay, stopDay, markBlock, upsertBlock, removeBlock, extendNow, dayBlocks, toMin, TEMPLATES, KINDS,
   blocksOn, isWeekly, typeDays, daysLabel, copyDay, cleanDays, blockText, onDay, SCHOOL_DAYS, WEEKEND, PLAN_REMIND_MAX, REMIND_OPTS, planAlarms,
-  blockKcal, SCHOOL_TV, oldSchoolPlan, TEMPLATE_TEXTS, noteText, partOf, BLOCK_ICONS,
+  blockKcal, SCHOOL_TV, oldSchoolPlan, TEMPLATE_TEXTS, noteText, partOf, BLOCK_ICONS, dayOrder, toHHMM, DAY_ALL, blockMl,
 } from './dayPlan.js'
 
 const ends = b => b.s + b.d
@@ -29,70 +29,86 @@ describe('templates', () => {
       }
     }
   })
-  it('11.0: the school week on your own times — up at 7:00, school 7:30–12:40 with nothing inside, a full afternoon, evening and weekend', () => {
+  it('13.1: your school & work week at your own times — school 7:30–12:40 with nothing inside, work, study, sleep at 12:00', () => {
     const P = newPlan('school', {}, { seed: 3 })
     expect(isWeekly(P)).toBe(true)
-    expect([P.wake, P.sleep, P.tv]).toEqual(['07:00', '22:00', SCHOOL_TV])
+    expect([P.wake, P.sleep, P.tv]).toEqual(['07:00', '00:00', SCHOOL_TV])
+    expect(SCHOOL_TV).toBe(3)
     expect(oldSchoolPlan(P)).toBe(false)
+    expect(oldSchoolPlan({ ...P, tv: 2 })).toBe(true)                        // an 11.0 school week is offered the new one
     expect(oldSchoolPlan({ ...P, tv: undefined })).toBe(true)
     expect(oldSchoolPlan(normPlan(P))).toBe(false)                          // the version survives cleaning
+    const row = b => [toHHMM(b.s), toHHMM(b.s + b.d), b.k, b.n || b.meal]
+    // Sunday–Thursday, exactly as asked
+    const SUN_THU = [
+      ['07:00', '07:10', 'water', 'Drink water'],
+      ['07:10', '07:20', 'meal', 'b'],
+      ['07:20', '07:30', 'other', 'Get dressed'],
+      ['07:30', '12:40', 'school', 'Go to school'],
+      ['12:40', '13:00', 'other', 'Back home from school'],
+      ['13:00', '13:40', 'meal', 'Lunch & rest'],
+      ['13:40', '15:10', 'work', 'Go to work'],
+      ['15:10', '16:44', 'rest', 'Take a break'],
+      ['16:44', '18:15', 'work', 'Back to work'],
+      ['18:15', '18:20', 'other', 'Finish all your work'],
+      ['18:20', '18:30', 'water', 'Drink water'],
+      ['18:30', '19:00', 'meal', 'd'],
+      ['19:00', '20:00', 'walk', 'Walk with water'],
+      ['20:00', '22:00', 'study', 'Study'],
+      ['22:00', '22:30', 'water', 'Water & a break'],
+      ['22:30', '23:45', 'study', 'Back to studying'],
+      ['23:45', '00:00', 'meal', 'Light snack'],
+      ['00:00', '07:00', 'sleep', 'Lock up & sleep'],
+    ]
     for (const wd of SCHOOL_DAYS) {
-      const day = blocksOn(P, wd)
-      const at = hhmm => day.filter(x => x.s === toMin(hhmm))
-      expect(at('07:00').map(x => x.k)).toEqual(['wake'])
-      expect(at('07:15')[0]).toMatchObject({ k: 'water', ml: 250, d: 5 })
-      expect(at('07:20')[0]).toMatchObject({ k: 'meal', meal: 'b', d: 5 })
-      expect(at('07:25')[0]).toMatchObject({ k: 'other', n: 'Get ready for school', d: 5, ic: 'shirt' })
+      const day = dayOrder(blocksOn(P, wd))
+      expect(day.map(row), String(wd)).toEqual(SUN_THU)
       const school = day.find(x => x.k === 'school')
-      expect([school.s, school.s + school.d]).toEqual([toMin('07:30'), toMin('12:40')])
-      // nothing inside school: no rest, no water, no food
-      expect(day.filter(x => x !== school && x.s >= school.s && x.s < school.s + school.d)).toEqual([])
-      expect(at('12:40')[0]).toMatchObject({ n: 'Back home', rm: -1 })
-      expect(at('12:50')[0]).toMatchObject({ k: 'water' })
-      const lunch = at('13:00')[0]
-      expect(lunch).toMatchObject({ k: 'meal', meal: 'l' })
-      expect(blockKcal({}, lunch)).toBeGreaterThan(400)
-      expect(at('13:40')[0].k).toBe('drink')
-      // dinner with water after it, and a light snack before bed — food and a drink
-      const dinner = day.find(x => x.k === 'meal' && x.meal === 'd')
-      expect(day.some(x => x.k === 'water' && x.s >= dinner.s + dinner.d && x.s <= dinner.s + dinner.d + 10)).toBe(true)
-      const bedSnack = day.find(x => x.n === 'Light snack before bed')
-      expect(bedSnack.items.map(it => it.t).sort()).toEqual(['d', 'f'])
-      for (const k of ['rest', 'study', 'free', 'water', 'drink']) expect(day.some(x => x.k === k), k).toBe(true)
-      checkPlan(day)
-      for (const m of day.filter(x => x.k === 'meal')) expect(blockKcal({}, m), m.meal + wd).toBeGreaterThan(150)
+      expect(day.filter(x => x !== school && x.s > school.s && x.s < school.s + school.d)).toEqual([])   // nothing inside school
+      expect(day.filter(b => b.rm === -1)).toEqual([])                      // a reminder at every step
+      expect(day.find(b => b.k === 'meal' && b.meal === 'l').nt).toBe('Eat slowly, then rest until 1:40')
+      checkPlan(blocksOn(P, wd))
     }
-    // a different Iraqi lunch every school day
-    expect(new Set(SCHOOL_DAYS.map(wd => blocksOn(P, wd).find(x => x.k === 'meal' && x.meal === 'l').items.map(i => i.id).join())).size).toBe(5)
-    // bed at 22:00 before a school day, 23:30 on Thursday and Friday nights — up on time either way
-    for (const wd of [0, 1, 2, 3, 6]) expect(blocksOn(P, wd).find(x => x.k === 'sleep'), String(wd)).toMatchObject({ s: toMin('22:00'), d: 540 })
-    for (const wd of [4, 5]) expect(blocksOn(P, wd).find(x => x.k === 'sleep'), String(wd)).toMatchObject({ s: toMin('23:30'), d: 570 })
+    // Friday & Saturday: the same times without school or work — the afternoon for study, with water and a walk
     for (const wd of WEEKEND) {
-      const day = blocksOn(P, wd)
-      expect(day.some(x => x.k === 'school')).toBe(false)
-      expect(day.find(x => x.k === 'wake').s).toBe(toMin('09:00'))
-      for (const k of ['study', 'free', 'rest', 'workout', 'meal', 'drink', 'water']) expect(day.some(x => x.k === k), k + wd).toBe(true)
-      expect(day.some(x => x.n === 'Phone & games')).toBe(true)
-      checkPlan(day)
+      const day = dayOrder(blocksOn(P, wd))
+      expect(day.some(x => x.k === 'school' || x.k === 'work')).toBe(false)
+      const noon = day.filter(x => x.s >= toMin('13:40') && x.s < toMin('18:15'))
+      expect(noon.map(x => x.k)).toEqual(['study', 'water', 'study', 'walk', 'study'])
+      expect([noon[0].s, noon.at(-1).s + noon.at(-1).d]).toEqual([toMin('13:40'), toMin('18:15')])
+      expect(noon.find(x => x.k === 'walk').ml).toBeGreaterThan(0)
+      for (const at of ['07:00', '07:10', '13:00', '18:20', '18:30', '19:00', '20:00', '22:00', '22:30', '23:45', '00:00']) expect(day.some(x => x.s === toMin(at)), wd + ' ' + at).toBe(true)
+      expect(day.filter(x => x.k === 'free').length).toBe(2)               // a morning you shape yourself — quiet
+      expect(day.filter(x => x.k === 'free').every(x => x.rm === -1)).toBe(true)
+      checkPlan(blocksOn(P, wd))
     }
-    // breakfast: two eggs and bread, counted per serving
+    // a walk carries its water; the day's water adds up
+    const walk = blocksOn(P, 1).find(x => x.n === 'Walk with water')
+    expect([walk.ml, blockMl({}, walk)]).toEqual([500, 500])
+    expect(planTotals({}, blocksOn(P, 1), 2400).ml).toBe(300 + 300 + 500 + 300)
+    // a different Iraqi lunch and dinner every day; eggs and bread on school mornings
+    for (const meal of ['l', 'd']) expect(new Set(DAY_ALL.map(wd => blocksOn(P, wd).find(x => x.k === 'meal' && x.meal === meal).items.map(i => i.id).join())).size, meal).toBe(7)
     const bf = blocksOn(P, 1).find(x => x.k === 'meal' && x.meal === 'b')
     expect(bf.items).toEqual([{ t: 'f', id: 'egg', q: 2 }, { t: 'f', id: 'khubz', q: 1 }])
     expect(blockKcal({}, bf)).toBe(78 * 2 + 165)
     expect(itemInfo({}, bf.items[0])).toMatchObject({ kind: 'f', kcal: 156, p: 12.6 })
-    // the snack after school carries a handful of almonds, counted
-    const snack = blocksOn(P, 1).find(x => x.k === 'meal' && x.meal === 's' && x.s === toMin('16:00'))
-    expect(itemInfo({}, snack.items[0])).toMatchObject({ kind: 'n', g: 25 })
-    expect(itemInfo({}, snack.items[0]).kcal).toBeGreaterThan(130)
-    // the day adds up: calories, protein, carbs and fat
+    // the late snack: nuts, fruit or chips — counted
+    const snacks = DAY_ALL.map(wd => blocksOn(P, wd).find(x => x.n === 'Light snack'))
+    expect(new Set(snacks.map(x => x.items[0].t + x.items[0].id))).toEqual(new Set(['nkerzat', 'fapple', 'fchips']))
+    expect(itemInfo({}, snacks[0].items[0])).toMatchObject({ kind: 'n', g: 30 })
+    for (const x of snacks) expect(blockKcal({}, x)).toBeGreaterThan(100)
+    for (const wd of DAY_ALL) for (const m of blocksOn(P, wd).filter(x => x.k === 'meal')) expect(blockKcal({}, m), m.meal + wd).toBeGreaterThan(150)
+    // the day adds up: calories, protein, carbs, fat and the hours of school, work and study
     const tot = planTotals({}, blocksOn(P, 0), 2400)
     expect(tot.kcal).toBeGreaterThan(1500)
     expect(tot.p).toBeGreaterThan(40)
     expect(tot.c).toBeGreaterThan(150)
-    expect(tot.ml).toBeGreaterThan(1500)
+    expect(tot.min).toMatchObject({ school: 310, work: 181, study: 195, walk: 60 })
     // names and notes are translation keys; a template note shows in your language, your own words as they are
-    expect(TEMPLATE_TEXTS).toContain('Get ready for school')
+    expect(TEMPLATE_TEXTS).toContain('Lock up & sleep')
+    expect(TEMPLATE_TEXTS).toContain('Get ready for school')               // an 11.0 week you keep still reads in your language
     expect(noteText('Clothes, school bag and a water bottle', s => 'AR:' + s)).toBe('AR:Clothes, school bag and a water bottle')
+    expect(noteText('Tomorrow’s books, your clothes and a water bottle', s => 'AR:' + s)).toBe('AR:Tomorrow’s books, your clothes and a water bottle')
     expect(noteText('{0} my own note', s => 'AR:' + s)).toBe('{0} my own note')
     expect(P.blocks.every(b => !b.ic || BLOCK_ICONS.includes(b.ic))).toBe(true)
   })
@@ -263,7 +279,9 @@ describe('reminders', () => {
     const sch = P.blocks.find(b => b.k === 'school')
     P.days = { '2026-10-25': { on: 1, done: { [sch.id]: 1 }, skip: {} }, '2026-10-26': { on: 0, off: 1, done: {}, skip: {} }, '2026-10-01': { off: 1 } }
     const list = planAlarms({}, P, now)
-    expect(list.length).toBe(P.blocks.filter(b => !(b.k === 'sleep' && b.s < 360) && b.rm !== -1).length)
+    // every block but the quiet ones — and the midnight bedtime rings too (13.1)
+    expect(list.length).toBe(P.blocks.filter(b => !(b.k === 'sleep' && b.s >= 60 && b.s < 360) && b.rm !== -1).length)
+    expect(list.some(n => n.kind === 'sleep' && n.start === 0)).toBe(true)
     expect(list.map(n => n.id)).toEqual(list.map((_, i) => i))
     const a = list.find(n => n.block === sch.id)
     expect(a).toMatchObject({ w: [0, 1, 2, 3, 4], start: toMin('07:30'), lead: 0, kind: 'school' })
@@ -305,8 +323,21 @@ describe('10.0 — my schedule', () => {
     expect(typeDays(P, 1)).toEqual([0, 1, 2, 3, 4])
     expect(typeDays(normPlan({ blocks: [{ id: 'z', k: 'study', s: 600, d: 60 }] }), 2)).toBeUndefined()
   })
+  // the 11.0 school week's nights: bed at 22:00 before a school day, 23:30 on Thursday and Friday nights
+  const twoBedtimes = () => normPlan({ tpl: 'custom', blocks: [
+    { id: 'w1', k: 'wake', s: toMin('07:00'), d: 15, w: SCHOOL_DAYS },
+    { id: 'w2', k: 'wake', s: toMin('09:00'), d: 15, w: WEEKEND },
+    { id: 'bf', k: 'meal', s: toMin('07:20'), d: 5, meal: 'b', w: SCHOOL_DAYS },
+    { id: 'sc', k: 'school', s: toMin('07:30'), d: 310, w: SCHOOL_DAYS },
+    { id: 'lu', k: 'meal', s: toMin('13:00'), d: 40, meal: 'l' },
+    { id: 'hw', k: 'study', s: toMin('14:30'), d: 90, n: 'Homework', w: SCHOOL_DAYS },
+    { id: 'sn', k: 'meal', s: toMin('16:00'), d: 15, meal: 's', w: SCHOOL_DAYS },
+    { id: 'rv', k: 'study', s: toMin('17:30'), d: 45, n: 'Review', w: SCHOOL_DAYS },
+    { id: 's1', k: 'sleep', s: toMin('22:00'), d: 540, w: [0, 1, 2, 3, 6] },
+    { id: 's2', k: 'sleep', s: toMin('23:30'), d: 570, w: [4, 5] },
+  ] })
   it('keeps last night\'s later sleep running this morning even when today has its own (review on PR #13)', () => {
-    const P = newPlan('school', {}, { seed: 1 })
+    const P = twoBedtimes()
     // Saturday 07:30: Friday night's sleep (23:30, 9½ h — Thursday and Friday nights only) runs until 09:00
     const L = liveState(P, null, new Date(2026, 9, 24, 7, 30))
     expect(L.cur.b.k).toBe('sleep')
@@ -321,7 +352,7 @@ describe('10.0 — my schedule', () => {
     expect(Math.round(T.cur.left)).toBe(40)
   })
   it('gives the block now 10 more minutes and moves the rest of today — today only (review on PR #13)', () => {
-    const s = { planner: { ...newPlan('school', {}, { seed: 1 }), remind: true } }
+    const s = { planner: { ...twoBedtimes(), remind: true } }
     const P0 = JSON.parse(JSON.stringify(s.planner.blocks))
     const mon = new Date(2026, 9, 19, 15, 0), iso = '2026-10-19'               // Monday 15:00, homework 14:30–16:00
     const L = liveState(s.planner, dayRec(s.planner, iso), mon)
@@ -363,7 +394,7 @@ describe('10.0 — my schedule', () => {
     expect(dayBlocks(s.planner, iso).find(b => b.id === rv.id).mv).toBeUndefined()
   })
   it('lengthens a sleep that started yesterday on yesterday\'s date and moves this morning', () => {
-    const s = { planner: newPlan('school', {}, { seed: 1 }) }
+    const s = { planner: twoBedtimes() }
     const thu = new Date(2026, 9, 22, 6, 55)                                  // Thursday 06:55: Wednesday night's sleep ends 07:00
     const L = liveState(s.planner, null, thu)
     expect(L.cur.b.k).toBe('sleep')

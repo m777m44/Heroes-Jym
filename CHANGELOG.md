@@ -3,6 +3,68 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v13.1.0 — 2026-10-30
+
+**Your school & work week, at your own times, with a reminder at every step — and the shelves of
+the Iraqi shop: 111 more packaged foods (632 in all), 316 of them on a new "Shops & markets" shelf
+in 14 aisles. Both Android versions have all of it.**
+*أسبوع المدرسة والعمل بأوقاتك أنت مع تذكير عند كل خطوة — ورفوف المحلات العراقية: 111 طعاماً مغلّفاً
+جديداً (632 بالمجموع)، منها 316 في قسم جديد "المحلات والأسواق" بـ14 قسماً. النسختان على أندرويد فيهما كل ذلك.*
+
+### 🗓️ The school & work week (template v3)
+- **Sunday–Thursday, exactly as asked:** water 07:00 · breakfast 07:10 (eggs and bread) · get
+  dressed 07:20 · school 07:30–12:40 with nothing inside it · back home 12:40 · lunch & rest
+  13:00–13:40 (a different Iraqi lunch each day) · work 13:40–15:10 · a break until 16:44 (a
+  cheese sandwich and water) · work 16:44–18:15 · finish everything 18:15 · water 18:20 · dinner
+  18:30 (a different one each day) · a walk with 500 ml of water 19:00–20:00 · study 20:00–22:00 ·
+  water & a break until 22:30 · study until 23:45 · a light snack (nuts, fruit or chips) ·
+  everything off and **sleep at 00:00**.
+- **Friday & Saturday:** the same times without school or work — an Iraqi breakfast, a morning
+  you shape yourself (quiet, editable), lunch & rest, **the afternoon for study** (13:40–15:10,
+  water & a break, 15:30–16:30, a short walk with water, a review until 18:15), the same evening.
+- Older school weeks (11.0) are offered the new one with *Update* / *Keep mine*; taking it turns
+  the reminders on. Plans you keep still read in your language.
+
+### 🔔 Reminders and the day
+- **A reminder at every step** — a bedtime up to 00:59 now rings too (a sleep after suhoor,
+  01:00–06:00, stays quiet as before).
+- **A walk can carry water** (`b.ml`): "Water on the way" in the block editor, counted in the
+  day's water, logged with *Log & done*, and said in the reminder.
+- **The day in the order you live it** (`dayOrder`): a night that starts after midnight closes
+  the timeline instead of opening it.
+
+### 📋 Your week at a glance
+- A new sheet (the list button, or Settings): each **kind of day** (`weekTypes` — Sunday–Thursday,
+  Friday & Saturday) as a **bar of coloured blocks** from the morning to bedtime and a clean list
+  of times in parts of the day, with the hours of school, work, study and moving, the water, the
+  calories (a range when the menu changes), **each day's menu** and whether each block reminds.
+  Small cards on the schedule screen open it.
+- **Share my schedule** (`planText`): the week as text with an emoji for each step — WhatsApp,
+  notes or print (the share sheet on the phone, else copied).
+
+### 🛒 Shops & markets (`lib/foods/market.js`)
+- **111 new packaged foods**: Samyang Buldak (hot, 2×, carbonara, cheese, cup), Maggi, Nissin Cup
+  Noodles, Koka, Shin Ramyun; 15 packaged cakes & croissants; canned **mahshi** (eggplant,
+  peppers, zucchini, cabbage, vine leaves with meat), spaghetti, ravioli, beans with meat,
+  meatballs, foul with tahini or chili, soups, stuffed olives, pickled turnips; **halqoum** with
+  pistachio, walnut, coconut or cream; tahini halva, fistuqiya, nougat, mlabbas, toffee, candies,
+  marshmallows, jelly, cotton candy, chocolate dates; **alij** (gum with sugar, bubble gum, mastic,
+  gum balls), mints and chews; Dubai chocolate and more bars; biscuits; chips; cheese triangles,
+  Kiri-style cubes, kashkaval, yogurt and pudding cups; buns, toast, grissini, kaak; frozen kubba,
+  spring rolls, chicken strips, pizza, oven fries, hot dogs, burger patties; mouta (ice cream);
+  boxed nectars and banana milk; date paste. Label values per packet (per 100 g for cans), with
+  salt and sugar; kcal matches 4p + 4c + 9f.
+- **The "Shops & markets" shelf**: 316 packaged foods (these and the noodles, cakes, cans, snacks,
+  sweets, dairy and bread the app already had — each with its aisle, `mk`) in 14 aisles.
+- **Search the way you speak** (`SYNONYMS`): جبس / چبس find شيبس, علچ / علك find علج, موطا finds
+  ice cream, اندوني finds إندومي, شجر finds كوسا, لهانة finds ملفوف…
+- The *Date cakes* shelf is now **Cakes** (date cakes first, then the packaged ones).
+
+### 🧪 Tests
+- `lib/v13_1.test.js` (11): the order of the day, the midnight reminder, the walk's water, +10 at
+  06:55, the kinds of day, the shared text, Arabic for every block and food, the shelf and its
+  aisles, and the Iraqi search words. The 11.0 schedule tests now use a fixture with the same nights.
+
 ## v13.0.0 — 2026-10-30
 
 **A food database that knows how you cook it: 521 foods (190 new), each with calories for the

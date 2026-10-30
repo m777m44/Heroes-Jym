@@ -15,7 +15,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-13.0.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-13.1.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
@@ -28,6 +28,18 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 </div>
 
 <br>
+
+> ### 🗓️ New in 13.1 — your school & work week, and the shops' shelves
+>
+> A **school & work week** at your own times — water 7:00, school 7:30–12:40, lunch and rest,
+> work 1:40–6:15 with a break, a walk with water 7–8, study 8–11:45, a snack and **sleep at
+> 12:00**; Friday and Saturday keep the times with the afternoon for study — with **a reminder at
+> every step** (the midnight bedtime too). Your **week at a glance** (a bar of each day, every
+> time, each day's menu) shares as text on WhatsApp. **Shops & markets**: 111 more packaged foods
+> from Iraqi shops — packaged cakes, canned mahshi, Samyang/Maggi/Nissin/Koka noodles, halqoum,
+> alij, Dubai chocolate, biscuits, chips, dairy cups, frozen food, mouta, boxed juices — 316 in
+> 14 aisles, and the search understands جبس, علچ, موطا and اندوني. See the
+> [changelog](CHANGELOG.md#v1310--2026-10-30).
 
 > ### 🍜 New in 13.0 — a food database that knows how you cook it
 >
@@ -311,6 +323,11 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 
 متتبّع للتمارين والخطوات ووزن الجسم تستضيفه بنفسك: بياناتك على خادمك أنت، تسجيل دخول
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
+
+**الجديد في الإصدار 13.1:** أسبوع المدرسة والعمل بأوقاتك — ماء 7:00، مدرسة 7:30–12:40، غداء وراحة، عمل 1:40–6:15
+مع استراحة، مشي مع الماء 7–8، دراسة 8–11:45، سناك ونوم الساعة 12:00؛ والجمعة والسبت بنفس الأوقات وبعد الظهر للدراسة —
+مع تذكير عند كل خطوة. الأسبوع بنظرة واحدة وتشاركه كنص على واتساب. والمحلات والأسواق: 111 طعاماً مغلّفاً جديداً — كيك،
+محشي معلّب، نودلز، حلقوم، علج، شوكولاتة دبي، شيبس، مجمّدات، موطا وعصائر — 316 صنفاً في 14 قسماً، والبحث يفهم جبس وعلچ وموطا واندوني.
 
 **الجديد في الإصدار 13.0:** قاعدة بيانات أطعمة فيها 521 صنفاً بسعرات حسب طريقة التحضير — الإندومي بـ41 طريقة
 (ناشفة، مسلوقة، مقلية، شوربة، بالكريمة) مع مُنشئ يحسب السعرات من الكيس والبهارات والإضافات، و15 نوعاً من كيك التمر

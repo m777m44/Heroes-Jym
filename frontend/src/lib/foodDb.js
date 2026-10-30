@@ -9,7 +9,8 @@
 // shop snacks, more Iraqi dishes) — objects with the same fields plus sodium (na, mg), sugars
 // (sug), values per 100 g (per100), piece sizes (sizes) and, for Indomie, the builder config.
 // Every Iraqi food carries `iraqi: true`.
-import { NEW_CATS, MORE_FOODS, MOVED, IRAQI_IDS } from './foods/index.js'
+// 13.1: every food sold packaged in Iraqi shops carries its aisle, `mk` (lib/foods/market.js).
+import { NEW_CATS, MORE_FOODS, MOVED, IRAQI_IDS, marketOf, MARKET_TYPES } from './foods/index.js'
 
 const BASE_CATS = [
   { key: 'dishes', name: 'Home dishes', icon: 'flame', color: 'var(--orange)' },
@@ -377,13 +378,17 @@ const ROWS = [
   ['nescafe3in1', 'drinks', 'Instant coffee 3-in-1 (sachet)', 80, 1, 13, 2.8, 'cup', 200],
 ]
 
+const withMarket = f => { const mk = marketOf(f); return mk ? { ...f, mk } : f }
 export const FOODS = [
   ...ROWS.map(([id, cat0, name, kcal, p, c, f, unit, g]) => {
     const cat = MOVED[id] || cat0
-    return { id, cat, name, kcal, p, c, f, unit, g, ml: mlOf(unit, cat), ...(IRAQI_IDS.has(id) ? { iraqi: true } : null) }
+    return withMarket({ id, cat, name, kcal, p, c, f, unit, g, ml: mlOf(unit, cat), ...(IRAQI_IDS.has(id) ? { iraqi: true } : null) })
   }),
-  ...MORE_FOODS.map(x => ({ ...x, ml: x.ml === true || mlOf(x.unit, x.cat) })),
+  ...MORE_FOODS.map(x => withMarket({ ...x, ml: x.ml === true || mlOf(x.unit, x.cat) })),
 ]
 export const FOOD_BY_ID = Object.fromEntries(FOODS.map(x => [x.id, x]))
 /** How many Iraqi foods there are (the food database's "Iraqi" shelf). */
 export const IRAQI_COUNT = FOODS.filter(x => x.iraqi).length
+/** 13.1 — how many packaged foods from Iraqi shops (the "Shops & markets" shelf) and its aisles that have any. */
+export const MARKET_COUNT = FOODS.filter(x => x.mk).length
+export const MARKET_AISLES = MARKET_TYPES.map(a => ({ ...a, n: FOODS.filter(x => x.mk === a.key).length })).filter(a => a.n > 0)

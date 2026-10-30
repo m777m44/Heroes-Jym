@@ -223,6 +223,21 @@ export async function onNotificationTap(go) {
   } catch { /* no step service */ }
 }
 
+/**
+ * 13.1 — share plain text (the schedule): the phone's share sheet, the browser's Web Share, else it
+ * is copied. → 'shared' | 'copied' | '' (cancelled or failed)
+ */
+export async function shareText(text, title = '') {
+  try {
+    if (MOBILE) { const { Share } = await import('@capacitor/share'); await Share.share({ title, text, dialogTitle: title }); return 'shared' }
+    if (typeof navigator !== 'undefined' && navigator.share) { await navigator.share({ title, text }); return 'shared' }
+  } catch (e) {
+    if (e && (e.name === 'AbortError' || /cancel/i.test(String(e.message || e)))) return ''
+  }
+  const { copyText } = await import('./clipboard.js')
+  return (await copyText(text)) ? 'copied' : ''
+}
+
 export async function shareExport(json, filename) {
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
   const { Share } = await import('@capacitor/share')

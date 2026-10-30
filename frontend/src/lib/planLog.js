@@ -38,6 +38,7 @@ export function completeBlock(b, iso) {
     markBlock(s, iso, b.id, 'done')
   })
   if (b.k === 'water') ml += b.ml || 250
+  else if (b.k === 'walk' && b.ml > 0) ml += b.ml      // 13.1: the bottle you took on the walk
   if (ml >= 50 && iso === todayISO()) logWater(Math.round(ml))
   return { kcal: Math.round(kcal), ml: Math.round(ml) }
 }
