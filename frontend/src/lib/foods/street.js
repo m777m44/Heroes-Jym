@@ -131,6 +131,11 @@ export const STREET_IDS = new Set([
   'kebabplate', 'tikkaplate', 'sushi', 'ramen', 'chowmein', 'chap', 'arnoos', 'shalgham', 'chickpeas', 'kahi', 'baqilla', 'shamiya',
 ])
 
+/** The street-food section's first cards, in this order (then the rest of the fast-food shelf, then the others). */
+export const STREET_TOP = ['burger', 'cheeseburger', 'doubleburger', 'zinger', 'chickenburger', 'shawarmachicken', 'shawarmameat', 'shawarmaarabi',
+  'falafelsandwich', 'kebabsandwich', 'tikkasandwich', 'tawooksandwich', 'guss', 'laffatkibda', 'kubbasandwich', 'hotdog', 'pizza', 'pepperonipizza',
+  'friedchicken', 'fries', 'onionrings']
+
 /** Every ingredient a build uses exists (checked by the tests). */
 export const buildIngredients = () => [...new Set(Object.values(PARSED).flat().map(x => x.id))].filter(id => !ING_BY_ID[id])
 

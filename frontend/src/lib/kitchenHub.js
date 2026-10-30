@@ -11,7 +11,7 @@
 // State (all optional): S.kitchenFav = [uids] (soft drinks, nuts, recipes — foods keep S.foodFav,
 // drinks S.drinkFavs), S.kitchenSeen = [uids] (recently opened, newest first).
 import { FOODS, MARKET_AISLES } from './foodDb.js'
-import { STREET_IDS } from './foods/street.js'
+import { STREET_IDS, STREET_TOP } from './foods/street.js'
 import { DRINKS, drinkNutrition, DING_BY_ID } from './drinks.js'
 import { SODAS, sodaNutrition } from './sodas.js'
 import { NUTS, nutNutrition, usualGrams } from './nuts.js'
@@ -98,7 +98,8 @@ export const SECTIONS = [
   { key: 'fit', group: 'food', part: 'cook', name: 'Gym & healthy meals', icon: 'dumbbell', color: 'var(--green)', ph: 'chickenveg', test: x => (x.kind === 'R' || (x.kind === 'F' && !x.drink)) && x.fit },
   // 14.0: street food — burgers, shawarma, falafel, kebab and tikka sandwiches, Iraqi laffat, pizza and
   // manakish, grills and street snacks; most of it opens in the meal builder (lib/foods/street.js)
-  { key: 'street', group: 'food', part: 'ready', name: 'Street food', icon: 'bolt', color: 'var(--purple)', ph: 'shawarma', test: x => F(x, 'fast') || (x.kind === 'F' && !x.drink && STREET_IDS.has(x.id)) },
+  { key: 'street', group: 'food', part: 'ready', name: 'Street food', icon: 'bolt', color: 'var(--purple)', ph: 'shawarma', test: x => F(x, 'fast') || (x.kind === 'F' && !x.drink && STREET_IDS.has(x.id)),
+    rank: x => { const i = STREET_TOP.indexOf(x.id); return i >= 0 ? i : x.cat === 'fast' ? 100 : 200 } },
   { key: 'noodles', group: 'food', part: 'ready', name: 'Indomie & noodles', icon: 'noodles', color: 'var(--yellow)', ph: 'shinramyun', test: x => F(x, 'noodles') },
   { key: 'ready', group: 'food', part: 'ready', name: 'From the shops', icon: 'basket', color: 'var(--teal)', ph: 'chips', test: x => x.kind === 'F' && !x.drink && !!x.mk },
   { key: 'canned', group: 'food', part: 'ready', name: 'Canned food', icon: 'can', color: 'var(--teal)', ph: 'tuna', test: x => F(x, 'canned') },
@@ -153,7 +154,8 @@ export const FOOD_PARTS = [
 export function sectionItems(key, aisle = null) {
   const s = SECTION_BY_KEY[key]
   if (!s) return []
-  const list = kitchenItems().filter(s.test)
+  let list = kitchenItems().filter(s.test)
+  if (s.rank) list = list.map((x, i) => [s.rank(x), i, x]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(r => r[2])   // stable
   return aisle ? list.filter(x => x.mk === aisle) : list
 }
 let counts = null

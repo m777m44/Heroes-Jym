@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- 14.0 — the online (light) app: its own name on the home screen and on its widgets, so it can sit
+     next to the offline MAHDI-JYM (src/main/res/values/strings.xml has the rest). -->
+<resources>
+    <string name="app_name">MAHDI-JYM Online</string>
+    <string name="title_activity_main">MAHDI-JYM Online</string>
+    <string name="package_name">io.github.m777m44.mahdijym.online</string>
+    <string name="custom_url_scheme">io.github.m777m44.mahdijym.online</string>
+    <string name="widget_steps_label">MAHDI-JYM Online · Steps</string>
+    <string name="widget_today_label">MAHDI-JYM Online · Today</string>
+</resources>

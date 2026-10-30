@@ -15,7 +15,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-13.1.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-14.0.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
@@ -28,6 +28,20 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 </div>
 
 <br>
+
+> ### 🍳 New in 14.0 — the Kitchen, a real photo for every food, and a meal builder
+>
+> **The Kitchen** (Foods → Kitchen): Food, Drinks and Tools, with six big doors — **street food**,
+> **make your Indomie**, canned food & shops, drinks, sweets and Iraqi food — plus *my own cooking*
+> (your dishes with your photo, ingredients by weight, steps and time), ready foods and fresh food.
+> **780 real photographs** from Wikimedia Commons — every food, dish, drink, soft drink, nut and
+> ingredient — drift slowly and smoothly, each credited. **The meal builder**: a burger, shawarma,
+> falafel or kebab sandwich, a pizza or any recipe opens with what goes into it — change the grams,
+> take out the mayonnaise, add cheese — and calories, macros and sodium follow live (60 dishes built
+> from 140 ingredients). **85+ street dishes**, **100+ new dishes and 30 recipes** with every detail.
+> On Android, **two apps side by side**: *MAHDI-JYM* (blue OFF badge, everything inside) and
+> *MAHDI-JYM Online* (green WEB badge, light) — and **the online app updates itself inside the app**,
+> no new APK. See the [changelog](CHANGELOG.md#v1400--2026-10-30).
 
 > ### 🗓️ New in 13.1 — your school & work week, and the shops' shelves
 >
@@ -323,6 +337,13 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 
 متتبّع للتمارين والخطوات ووزن الجسم تستضيفه بنفسك: بياناتك على خادمك أنت، تسجيل دخول
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
+
+**الجديد في الإصدار 14.0:** **المطبخ** (الأطعمة ← المطبخ): الطعام والشراب والأدوات، مع ستة أبواب كبيرة — أكلات الشوارع،
+صناعة الأندومي، معلبات ومحلات، مشروبات، حلويات، مأكولات عراقية — وطبخي الخاص بصورتك والأطعمة الجاهزة والطازجة.
+**780 صورة حقيقية** من ويكيميديا كومنز لكل أكلة ومشروب ومكوّن، تتحرك ببطء وبسلاسة مع اسم مصوّرها. **مُركِّب الوجبة**:
+البرغر والشاورما والفلافل وأي وصفة تُفتح بمكوّناتها — غيّر الغرامات، أزل المايونيز، أضف الجبن — والسعرات والملح تتبعك مباشرة.
+أكثر من 85 أكلة شوارع وأكثر من 100 أكلة جديدة و30 وصفة. وعلى أندرويد **تطبيقان جنباً إلى جنب**: MAHDI-JYM (شارة OFF زرقاء،
+كل شيء داخله) و«MAHDI-JYM Online» (شارة WEB خضراء، خفيف) — **ونسخة الأونلاين تحدّث نفسها من داخل التطبيق** بلا ملف APK جديد.
 
 **الجديد في الإصدار 13.1:** أسبوع المدرسة والعمل بأوقاتك — ماء 7:00، مدرسة 7:30–12:40، غداء وراحة، عمل 1:40–6:15
 مع استراحة، مشي مع الماء 7–8، دراسة 8–11:45، سناك ونوم الساعة 12:00؛ والجمعة والسبت بنفس الأوقات وبعد الظهر للدراسة —

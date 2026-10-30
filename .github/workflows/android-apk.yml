@@ -2,12 +2,16 @@
 # GitHub Release.
 #
 #   offline  MAHDI-JYM.apk         everything inside: all 1,324 exercise images + animations,
-#                                  wallpapers and profile pictures (~135 MB) — works with no internet
-#   online   MAHDI-JYM-online.apk  12.0: the same app, light — exercise media, wallpapers and the
-#                                  ready-made profile pictures come from GitHub (jsDelivr, pinned
-#                                  commits) when they are shown
-#   Same features, same app id, same signature and version code: either one installs over the
-#   other and the data stays. The step counter's JVM unit tests must pass first.
+#                                  wallpapers, profile pictures and food photos (~145 MB) — works with
+#                                  no internet. App id io.github.m777m44.mahdijym, "MAHDI-JYM", OFF badge
+#   online   MAHDI-JYM-online.apk  12.0: the same app, light — exercise media, wallpapers, profile
+#                                  pictures and food photos come from GitHub (jsDelivr, pinned commits)
+#                                  when they are shown. 14.0: its own app — io.github.m777m44.mahdijym.online,
+#                                  "MAHDI-JYM Online", WEB badge — that updates itself inside the app
+#                                  (the web bundle on GitHub Pages, live/online.json — scripts/build-site.sh)
+#   14.0: two Gradle product flavors (frontend/android/app/build.gradle), so both install side by side,
+#   each with its own data; same features, same signature, same version code. The step counter's JVM
+#   unit tests must pass first.
 #
 #   push to main / PR branch  →  both signed APKs uploaded as a workflow artifact
 #   push tag v*               →  both attached to a GitHub Release, so
@@ -127,7 +131,7 @@ jobs:
           set -o pipefail
           # JVM unit tests of the step counter arithmetic (StepMathTest) run first — a failing
           # test stops the build, so a step-counting regression never ships.
-          if ! ./gradlew --no-daemon testReleaseUnitTest assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
+          if ! ./gradlew --no-daemon testOfflineReleaseUnitTest assembleOfflineRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log"; then
             # Surface compiler / resource errors as annotations — they are readable through the
             # checks API even where the raw job log isn't.
             msg=$(grep -E "FAILED|AssertionError|expected:|error:|ERROR:|warning: \[|\.java:[0-9]+|\.xml:[0-9]+|AAPT|What went wrong|Execution failed|^> |^  " "$RUNNER_TEMP/gradle.log" \
@@ -135,7 +139,7 @@ jobs:
             echo "::error title=Gradle build failed::$msg"
             exit 1
           fi
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/offline.apk"
+          cp app/build/outputs/apk/offline/release/app-offline-release.apk "$RUNNER_TEMP/offline.apk"
 
       # 12.0 — the online (light) version: the same app without the bundled media. A fresh web
       # bundle (scripts/slim-online.mjs leaves the big pictures in the repository), `cap sync`,
@@ -147,13 +151,13 @@ jobs:
         working-directory: frontend/android
         run: |
           set -o pipefail
-          if ! ./gradlew --no-daemon assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle-online.log"; then
+          if ! ./gradlew --no-daemon assembleOnlineRelease 2>&1 | tee "$RUNNER_TEMP/gradle-online.log"; then
             msg=$(grep -E "FAILED|error:|ERROR:|What went wrong|Execution failed|^> " "$RUNNER_TEMP/gradle-online.log" \
               | grep -v "^> Task" | head -60 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=Gradle build failed (online APK)::$msg"
             exit 1
           fi
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/online.apk"
+          cp app/build/outputs/apk/online/release/app-online-release.apk "$RUNNER_TEMP/online.apk"
 
       - name: Verify signatures and name the files
         id: out
@@ -162,9 +166,24 @@ jobs:
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/offline.apk" | tee "$RUNNER_TEMP/sig.txt"
           "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/online.apk" | tee "$RUNNER_TEMP/sig-online.txt"
-          # one key for both, so either version installs over the other
+          # one key for both
           A=$(grep -m1 "SHA-256 digest" "$RUNNER_TEMP/sig.txt"); B=$(grep -m1 "SHA-256 digest" "$RUNNER_TEMP/sig-online.txt")
           if [ "$A" != "$B" ]; then echo "::error title=Signatures differ::$A vs $B"; exit 1; fi
+          # 14.0: two apps — check each one's id and name on the home screen
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
+          "$AAPT2" dump badging "$RUNNER_TEMP/offline.apk" > "$RUNNER_TEMP/badging-offline.txt"
+          "$AAPT2" dump badging "$RUNNER_TEMP/online.apk" > "$RUNNER_TEMP/badging-online.txt"
+          OFF_ID=$(grep -m1 -o "^package: name='[^']*'" "$RUNNER_TEMP/badging-offline.txt" | cut -d"'" -f2)
+          ON_ID=$(grep -m1 -o "^package: name='[^']*'" "$RUNNER_TEMP/badging-online.txt" | cut -d"'" -f2)
+          OFF_LABEL=$(grep -m1 "^application-label:" "$RUNNER_TEMP/badging-offline.txt" | cut -d"'" -f2)
+          ON_LABEL=$(grep -m1 "^application-label:" "$RUNNER_TEMP/badging-online.txt" | cut -d"'" -f2)
+          echo "offline: $OFF_ID \"$OFF_LABEL\"   online: $ON_ID \"$ON_LABEL\""
+          if [ "$OFF_ID" != "io.github.m777m44.mahdijym" ] || [ "$ON_ID" != "io.github.m777m44.mahdijym.online" ]; then
+            echo "::error title=App ids::offline $OFF_ID, online $ON_ID"; exit 1
+          fi
+          if [ "$OFF_LABEL" != "MAHDI-JYM" ] || [ "$ON_LABEL" != "MAHDI-JYM Online" ]; then
+            echo "::error title=App names::offline $OFF_LABEL, online $ON_LABEL"; exit 1
+          fi
           ON_MB=$(du -m "$RUNNER_TEMP/online.apk" | cut -f1)
           if [ "$ON_MB" -gt 40 ]; then echo "::error title=Online APK too big::${ON_MB} MB — the light version must stay small"; exit 1; fi
           mkdir -p out
@@ -179,8 +198,8 @@ jobs:
           echo "online_mb=$ON_MB" >> "$GITHUB_OUTPUT"
           {
             echo "### MAHDI-JYM v$VERSION — Android APKs"
-            echo "- offline (everything inside): ${OFF_MB} MB"
-            echo "- online (light): ${ON_MB} MB"
+            echo "- offline (everything inside): ${OFF_MB} MB — $OFF_ID \"$OFF_LABEL\""
+            echo "- online (light, updates itself): ${ON_MB} MB — $ON_ID \"$ON_LABEL\""
             echo '```'
             grep -E "Verified using|SHA-256 digest" "$RUNNER_TEMP/sig.txt" || true
             cat out/SHA256SUMS.txt
@@ -204,28 +223,28 @@ jobs:
           cat > "$RUNNER_TEMP/notes.md" <<EOF
           **MAHDI-JYM ${TAG}** — جسمك، خطتك، إرادتك.
 
-          ### Two versions — the same app, the same features
-          | | File | Size | |
-          |---|---|---|---|
-          | 📦 **Offline** | **MAHDI-JYM.apk** | ${OFF_MB} MB | everything inside — works with no internet |
-          | ⚡ **Online (light)** | **MAHDI-JYM-online.apk** | ${ON_MB} MB | exercise pictures, wallpapers and profile pictures load from GitHub |
+          ### Two apps — side by side on one phone, the same features
+          | | File | Size | On the home screen | |
+          |---|---|---|---|---|
+          | 📦 **Offline** | **MAHDI-JYM.apk** | ${OFF_MB} MB | MAHDI-JYM · blue OFF badge | everything inside — works with no internet |
+          | ⚡ **Online (light)** | **MAHDI-JYM-online.apk** | ${ON_MB} MB | MAHDI-JYM Online · green WEB badge | pictures load from GitHub · **updates itself inside the app** |
 
-          Either one installs over the other — your data stays. 🌐 Or use it in the browser: https://m777m44.github.io/Heroes-Jym/app/
+          Each is its own app with its own data — install one or both. The offline app installs over every earlier MAHDI-JYM and keeps your data. To move data into the online app: Settings → Data → Export backup, then Import backup in the other app. 🌐 Or use it in the browser: https://m777m44.github.io/Heroes-Jym/app/
 
           ### Install on Android (6.0+)
-          1. Download one of the two APKs below on your phone.
+          1. Download one (or both) of the APKs below on your phone.
           2. Open it and allow *Install unknown apps* for your browser / file manager when asked.
-          3. Tap **Install**. Updates install over the old version — your data stays.
+          3. Tap **Install**. The online app then updates itself (Settings → App & updates); the offline app updates by installing the new APK over it — your data stays.
 
-          ### نسختان — التطبيق نفسه وبالميزات نفسها
-          - 📦 **أوفلاين** — ملف **MAHDI-JYM.apk** (${OFF_MB} م.ب): كل شيء داخل التطبيق، يعمل بلا إنترنت.
-          - ⚡ **أونلاين (خفيف)** — ملف **MAHDI-JYM-online.apk** (${ON_MB} م.ب): صور التمارين والخلفيات وصور الملف الشخصي تُحمَّل من GitHub.
-          - تُثبَّت أي نسخة فوق الأخرى وتبقى بياناتك. 🌐 أو استخدمه في المتصفح: https://m777m44.github.io/Heroes-Jym/app/
+          ### تطبيقان — جنباً إلى جنب على الهاتف نفسه وبالميزات نفسها
+          - 📦 **أوفلاين** — ملف **MAHDI-JYM.apk** (${OFF_MB} م.ب): اسمه MAHDI-JYM مع شارة OFF زرقاء، كل شيء داخل التطبيق ويعمل بلا إنترنت.
+          - ⚡ **أونلاين (خفيف)** — ملف **MAHDI-JYM-online.apk** (${ON_MB} م.ب): اسمه MAHDI-JYM Online مع شارة WEB خضراء، الصور تُحمَّل من GitHub، **ويحدّث نفسه من داخل التطبيق** بلا إعادة تثبيت.
+          - لكل تطبيق بياناته الخاصة — ثبّت واحداً أو الاثنين. نسخة الأوفلاين تُثبَّت فوق أي MAHDI-JYM سابق وتبقى بياناتك. لنقل بياناتك إلى نسخة الأونلاين: الإعدادات ← البيانات ← تصدير نسخة احتياطية، ثم استيرادها في التطبيق الآخر. 🌐 أو استخدمه في المتصفح: https://m777m44.github.io/Heroes-Jym/app/
 
           ### التثبيت على أندرويد (6.0 أو أحدث)
-          1. حمّل أحد الملفين من الأسفل على هاتفك.
+          1. حمّل أحد الملفين (أو كليهما) من الأسفل على هاتفك.
           2. افتحه واسمح بـ «تثبيت التطبيقات غير المعروفة» للمتصفح أو مدير الملفات عند الطلب.
-          3. اضغط **تثبيت**. التحديثات تُثبَّت فوق النسخة القديمة وتبقى بياناتك.
+          3. اضغط **تثبيت**. بعدها تحدّث نسخة الأونلاين نفسها (الإعدادات ← التطبيق والتحديثات)، ونسخة الأوفلاين تُحدَّث بتثبيت الملف الجديد فوقها — وتبقى بياناتك.
 
           See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md) for what's new.
           EOF

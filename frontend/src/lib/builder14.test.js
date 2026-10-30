@@ -5,7 +5,7 @@ import { describe, it, expect, afterAll } from 'vitest'
 import ar from '../locales/ar.js'
 import { FOOD_BY_ID, FOODS } from './foodDb.js'
 import { INGREDIENTS, ING_BY_ID, itemsTotals, RECIPE_BY_ID, RECIPES } from './kitchen.js'
-import { BUILDS, STREET_NEW, STREET_IDS, buildOf, builtValues, parseBuild, buildIngredients } from './foods/street.js'
+import { BUILDS, STREET_NEW, STREET_IDS, STREET_TOP, buildOf, builtValues, parseBuild, buildIngredients } from './foods/street.js'
 import { stepOf, clampG, piecesOf, diffBuild, builtEntry, buildTotals, baseOf, changesForLog } from './mealBuilder.js'
 import { builtLabel, foodName } from './food.js'
 import { sectionItems, sectionCounts, FEATURED, featuredCount, SECTION_BY_KEY } from './kitchenHub.js'
@@ -57,6 +57,8 @@ describe('14.0 — street food, built from parts', () => {
       'friedchicken', 'kebabsandwich', 'fries', 'onionrings', 'tacos', 'fishburger', 'kubbasandwich', 'tikka', 'lambchops', 'zaatar', 'lahmbajeen',
       'sushi', 'ramen', 'dimsum', 'nuggets', 'chickenstrips', 'veggieburger', 'laffatkibda', 'chickpeas']) expect(ids.has(id), id).toBe(true)
     for (const id of STREET_IDS) expect(FOOD_BY_ID[id], id).toBeTruthy()
+    for (const id of STREET_TOP) expect(ids.has(id), id).toBe(true)
+    expect(list.slice(0, 4).map(x => x.id)).toEqual(['burger', 'cheeseburger', 'doubleburger', 'zinger'])   // the classics first
     expect(SECTION_BY_KEY.fast).toBeUndefined()
   })
   it('six big doors: street food, Indomie, canned & shops, drinks, sweets, Iraqi', () => {

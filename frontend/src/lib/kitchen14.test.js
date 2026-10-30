@@ -63,7 +63,7 @@ describe('14.0 — real photos', () => {
       expect(existsSync(join(pub, 't', key + '.webp')), 't/' + key).toBe(true)
       const c = credits[key]
       expect(Array.isArray(c) && c.length === 3, key).toBe(true)
-      expect(c[0].length > 3 && c[1].length > 1, key).toBe(true)
+      expect(c[0].length > 3 && c[1].length >= 1, key).toBe(true)   // a photographer may go by one letter (Ɱ)
       expect(/^(CC BY(-SA)? [0-9.]+( [a-z]{2})?|CC0|Public domain|No restrictions)$/i.test(c[2]), key + ': ' + c[2]).toBe(true)
     }
     expect(Object.keys(credits).sort()).toEqual(PHOTO_ROWS.map(r => r[0]).sort())

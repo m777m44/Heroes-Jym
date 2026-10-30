@@ -50,7 +50,9 @@ function precacheSW() {
 
 export default defineConfig({
   plugins: [react(), precacheSW()],
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // 14.0: __NATIVE_LEVEL__ — what the Android shell offers (plugins, the app's own native code); a web
+  // bundle the online app downloads (lib/liveUpdate.js) needs an APK with at least this level
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __NATIVE_LEVEL__: JSON.stringify(pkg.mjNative || 1) },
   base: './',
   server: {
     proxy: {
@@ -59,5 +61,6 @@ export default defineConfig({
       '/gif': { target: media, changeOrigin: true }
     }
   },
-  build: { chunkSizeWarningLimit: 1500 }
+  // MJ_OUT_DIR: build somewhere else (scripts/build-site.sh puts the online app's bundle into the site)
+  build: { chunkSizeWarningLimit: 1500, ...(process.env.MJ_OUT_DIR ? { outDir: process.env.MJ_OUT_DIR, emptyOutDir: true } : null) }
 })

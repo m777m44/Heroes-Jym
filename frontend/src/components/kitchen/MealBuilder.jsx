@@ -3,7 +3,7 @@
 // sauce and fries; a recipe's ingredients — and nothing is logged until you tap Add:
 //   − / +    change any amount (a whole patty or falafel at a time, a spoon of sauce, 0.5 g of salt)
 //   ✕        take it out (it waits under "Taken out" to come back)
-//   Add an ingredient   anything from the kitchen's 180+ ingredients, each with its photo
+//   Add an ingredient   anything from the kitchen's 140 ingredients, each with its photo
 //   Reset    back to the usual recipe
 // The calories, protein, carbs, fat and sodium follow live, with the difference to the usual one.
 // Logged unchanged it is the food itself; changed, it keeps its own values and says what changed

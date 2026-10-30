@@ -10,7 +10,8 @@ import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const dist = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
+// MJ_OUT_DIR: the build went somewhere else (scripts/build-site.sh — the bundle the online app downloads)
+const dist = process.env.MJ_OUT_DIR ? resolve(process.env.MJ_OUT_DIR) : resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 if (!existsSync(dist)) { console.error('✗ dist/ is missing — run the vite build first.'); process.exit(1) }
 const size = d => readdirSync(d).reduce((a, n) => { const p = join(d, n); const st = statSync(p); return a + (st.isDirectory() ? size(p) : st.size) }, 0)
 const before = size(dist)

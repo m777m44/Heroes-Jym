@@ -3,6 +3,96 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v14.0.0 — 2026-10-30
+
+**The Kitchen (المطبخ): every food, dish, recipe and drink in one place, each with a real photograph
+that drifts slowly — 780 of them, every one credited — street food and recipes that open in a meal
+builder, 120+ new dishes, and on Android two apps side by side, the online one updating itself
+inside the app.**
+*المطبخ: كل الأطعمة والأطباق والوصفات والمشروبات في مكان واحد، لكل منها صورة حقيقية تتحرك ببطء — 780 صورة
+مع اسم مصوّر كل واحدة — وأكلات الشوارع والوصفات تُفتح في مُركِّب الوجبة، وأكثر من 120 أكلة جديدة، وعلى أندرويد
+تطبيقان جنباً إلى جنب، ونسخة الأونلاين تحدّث نفسها من داخل التطبيق.*
+
+### 🍳 The Kitchen
+- **Foods → Kitchen** (`/kitchen`): tabs **Food**, **Drinks** and **Tools**, a slideshow of the dish
+  of the day, one search for all 1,258 items (Arabic or English), favourites and *recently*.
+- **Six big doors** on top: **street food**, **make your Indomie**, **canned food & shops**,
+  **drinks**, **sweets** and **Iraqi food**, each with its count.
+- **Food**: *my own cooking*; *cooking* (recipes step by step, the Iraqi kitchen, home cooking,
+  breakfast, gym & healthy meals); *ready foods* (street food, Indomie & noodles, from the shops,
+  canned, cakes, chocolate/biscuits/chips, sweets); *fresh food & basics* (fruit, dates, vegetables,
+  meat & fish, dairy, grains, beans, nuts). **Drinks**: hot, juices & coolers, milk drinks & shakes,
+  soft drinks & iced tea, energy & sports, Iraqi drinks. **Tools**: what can I cook, pantry &
+  shopping list, build a meal, compare two foods, the cooking timer, the food log and database.
+- Every section has search, the filters that matter there (Iraqi, high protein, low calorie, quick,
+  low sugar), sorting, and the shops' aisles.
+
+### 📸 A real photo for every food
+- **780 real photographs from Wikimedia Commons** (CC BY / BY-SA / CC0 / public domain) cover every
+  food, dish, recipe, drink, soft drink, nut, kitchen ingredient and drink ingredient — no drawings,
+  no AI pictures. A shimmer while loading, a soft fade-in, and a slow **Ken Burns drift on transform
+  only** (the compositor does it — smooth on any phone), paused while off screen; *Moving photos*
+  can turn it off. Thumbnails drift too.
+- Who took each photo is one tap away (and in *Photo credits*); `scripts/food-photos/fetch.mjs`
+  (the **Food photos** workflow) finds, checks (real photo, free licence, size, colour), crops and
+  sizes them: `public/food/m` 640×480 and `public/food/t` 200×200 WebP. The offline app has them
+  inside; the online app loads them from the repository (jsDelivr, pinned commit).
+
+### 🧮 The meal builder
+- A **burger, shawarma, falafel or kebab sandwich, a pizza, a wrap, any recipe** opens with what goes
+  into it, by weight — nothing is counted until you add it. − / + by a whole patty, a falafel, a
+  slice, a spoon of sauce or half a gram of salt; take anything out (it waits under *Taken out*),
+  add anything from **140 ingredients** (45 new, every one with its photo and **sodium**); *Reset*.
+- Calories, protein, carbs, fat and sodium follow live, with the difference to the usual one; ×½ to
+  ×3; log it, or save it to *My cooking*. A changed dish is logged with what changed — "Beef burger
+  (without Mayonnaise · + Cheddar cheese)" — in the app's language.
+- **Street food is built from parts** (`lib/foods/street.js`): 60 dishes take their values from
+  their ingredients, so the builder starts exactly at them.
+
+### 🌯 Street food & 120+ new dishes
+- **18 new street foods**: cheeseburger, double cheeseburger, zinger, fish and veggie burgers, hot dog,
+  shawarma arabi, shish tawook, liver laffa (meelaq), grilled chicken sandwich and wrap, tuna and
+  halloumi sandwiches, chicken escalope, pepperoni pizza, onion rings, dim sum, corn cup — **88 in
+  the street-food section** with manakish, pies, grills and Iraqi laffat.
+- **104 more dishes** (Iraqi, Gulf, Levant, Egyptian, Turkish, Persian, Indian, Asian, Western, gym
+  meals, coffee-shop and milk drinks) and **30 new recipes** with real steps, ingredients and photos.
+- Every food card has **all its details**: kJ, fibre, protein per 100 kcal, how filling, its share of
+  your day, the walk or run that burns it, tags, possible allergens, its recipe, *Compare*.
+
+### 🍜 Make your Indomie
+- **About this pack**: the noodle block, the seasoning powder and oil, the sauces and the whole pack
+  in calories; how long the chosen way takes and how to make it, with a **cooking timer**.
+- **The oil sachet** on or off (36 kcal) — the 41 ready-made ways stay as they were.
+
+### ✍️ My own cooking
+- **New dish** (`/kitchen/dish`): your photo (kept on the phone), ingredients by weight, servings,
+  steps (each with its own timer when it says how long), time and a note; calories and macros work
+  themselves out. *My cooking* lists your dishes, foods and drinks.
+
+### 📱 Two apps side by side
+- Two Gradle **product flavors**: **MAHDI-JYM** (`io.github.m777m44.mahdijym`, the id every earlier
+  version had — it installs over them and keeps your data; blue **OFF** badge) and **MAHDI-JYM
+  Online** (`io.github.m777m44.mahdijym.online`; green **WEB** badge). Each is its own app with its
+  own data — move data with *Export backup* / *Import backup*. CI checks both ids and names
+  (`aapt2 dump badging`); the badged icons come from `scripts/flavor-icons.sh`.
+- *Sign in with Google* in the online app needs a second Android OAuth client for its package
+  (docs/GOOGLE_SIGN_IN.md); the no-setup Drive file works in both.
+
+### 🚀 The online app updates itself
+- GitHub Pages now carries the online app's web bundle (`/live/<version>/` and `/live/online.json`
+  with every file's SHA-256 and the native level it needs). **MAHDI-JYM Online** checks at most once
+  a day, offers a newer version on a card above the tab bar (*Update now* / *Later*) and in Settings →
+  *App & updates*, downloads only what changed, verifies every file, and restarts into it with
+  `WebView.setServerBasePath` — **no new APK, your data stays** (same origin).
+- Safe by design: the switch becomes permanent only after the new version has run; one that can't
+  start is dropped at the next launch; a new APK resets to its own version; *Go back to the built-in
+  version* any time. Versions that need new native code (`mjNative`) send you to the new APK instead.
+
+### 🧹 And
+- Home's *Foods* opens the food log with the Kitchen's door on top; Tools, Settings and search lead to
+  the Kitchen; the Arabic UI is complete (≈5,540 strings) and RTL throughout.
+- Tests: `kitchen14`, `builder14`, `liveUpdate` (+ the Arabic-UI scan of every new sheet).
+
 ## v13.1.0 — 2026-10-30
 
 **Your school & work week, at your own times, with a reminder at every step — and the shelves of

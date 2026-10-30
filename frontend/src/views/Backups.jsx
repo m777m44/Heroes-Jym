@@ -29,7 +29,8 @@ import { Section, Row, Switch, Segmented, Button, BackButton } from '../componen
 const ui = () => useUI.getState()
 const KIND = { auto: 'Automatic', manual: 'Saved by you', restore: 'Before a restore' }
 const KIND_ICON = { auto: 'clock', manual: 'starFill', restore: 'reset' }
-export const PACKAGE = 'io.github.m777m44.mahdijym'
+// 14.0: the online app is its own app — io.github.m777m44.mahdijym.online (android/app/build.gradle)
+export const PACKAGE = 'io.github.m777m44.mahdijym' + (MOBILE && import.meta.env.VITE_OFFLINE_MEDIA !== '1' ? '.online' : '')
 export const SHA1 = '8F:72:13:9B:43:D8:29:DA:2A:00:A3:2A:B6:A5:3C:90:20:C4:1D:76'
 const when = at => new Date(at).toLocaleString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const kb = n => (n >= 1048576 ? t('{0} MB', fmtNum(Math.round(n / 104857.6) / 10)) : t('{0} KB', fmtNum(Math.max(1, Math.round(n / 1024)))))
