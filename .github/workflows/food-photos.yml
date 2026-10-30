@@ -1,0 +1,68 @@
+# 14.0 — the kitchen's real photos. When the photo list (frontend/src/lib/photos/manifest.js)
+# changes on a working branch, this downloads the new or changed photos from Wikimedia Commons,
+# saves them as WebP in frontend/public/food/ with their credits (who took each one, its
+# licence) in frontend/src/lib/photos/credits.json, and commits them back to the same branch.
+# The app and both APKs then use those files — nothing is fetched from Wikimedia at run time.
+#
+# frontend/scripts/food-photos/candidates.txt (photo keys) also writes review sheets — the six
+# best search results of each key side by side — to choose an exact file from.
+name: Food photos
+
+on:
+  push:
+    branches: ['arena/**']
+    paths:
+      - 'frontend/src/lib/photos/manifest.js'
+      - 'frontend/scripts/food-photos/**'
+      - '.github/workflows/food-photos.yml'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Fetch every photo again'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: food-photos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install sharp
+        run: |
+          mkdir -p "$RUNNER_TEMP/sharp" && cd "$RUNNER_TEMP/sharp"
+          npm init -y > /dev/null
+          npm i --no-audit --no-fund sharp@0.35.5
+
+      - name: Fetch the photos
+        env:
+          SHARP_FROM: ${{ runner.temp }}/sharp
+        run: node frontend/scripts/food-photos/fetch.mjs ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit them to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A frontend/public/food frontend/src/lib/photos/credits.json frontend/scripts/food-photos
+          if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
+          N=$(git diff --cached --name-only -- frontend/public/food/m | wc -l)
+          git commit -q -m "Food photos: $N updated from Wikimedia Commons"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
