@@ -139,3 +139,29 @@ export function qtyText(amount, unit) {
   const k = UNIT_KEYS[unit]
   return k ? t(k, amountText(amount)) : amountText(amount) + ' ' + unit
 }
+
+/**
+ * 14.0 — how many minutes a step takes, for its cooking timer (0 when it has no time): the
+ * minutes argument of a template ('m'), or "20 minutes" / "8–10 minutes" / "1 hour" in a plain
+ * sentence (the longer end of a range).
+ */
+export function stepMinutes(step) {
+  if (Array.isArray(step)) {
+    const tp = TPL[step[0]]
+    if (!tp) return 0
+    const kinds = tp[1] || ''
+    for (let i = 0; i < kinds.length; i++) {
+      if (kinds[i] === 'm' && step[i + 1] > 0) return +step[i + 1]
+      if (kinds[i] === 'h' && step[i + 1] > 0 && step[i + 1] <= 3) return +step[i + 1] * 60
+    }
+    return 0
+  }
+  if (typeof step !== 'string') return 0
+  // your own steps may be Arabic, with Arabic digits: "اطبخه ١٥ دقيقة"
+  const s = step.replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+  const m = /(\d+)(?:\s*[–-]\s*(\d+))?\s*(?:minutes?|mins?\b|دقيقة|دقائق|دقايق)/i.exec(s)
+  if (m) return Math.min(600, +(m[2] || m[1]))
+  const h = /(\d+)\s*(?:hours?|ساعة|ساعات)/i.exec(s)
+  if (h && +h[1] <= 3) return +h[1] * 60
+  return /(?:نص|نصف)\s*ساعة|half an hour/i.test(s) ? 30 : /ساعة|an hour/i.test(s) ? 60 : 0
+}

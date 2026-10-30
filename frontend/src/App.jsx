@@ -65,6 +65,8 @@ const BurnSelect = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ defaul
 const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnReview })))
 const Food = lazy(() => import('./views/Food.jsx'))
 const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
+const KitchenSection = lazy(() => import('./views/KitchenSection.jsx'))   // 14.0
+const DishEditor = lazy(() => import('./views/DishEditor.jsx'))           // 14.0
 const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
 const Reports = lazy(() => import('./views/Reports.jsx'))
 // 8.0
@@ -283,6 +285,8 @@ function Shell() {
               <Route path="/food" element={<Food />} />
               <Route path="/foods" element={<FoodDatabase />} />
               <Route path="/kitchen" element={<Kitchen />} />
+              <Route path="/kitchen/s/:key" element={<KitchenSection />} />
+              <Route path="/kitchen/dish" element={<DishEditor />} />
               <Route path="/wallpapers" element={<Wallpapers />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/tools" element={<Tools />} />

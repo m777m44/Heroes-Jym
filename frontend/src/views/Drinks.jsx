@@ -28,6 +28,8 @@ import { NUT_BY_ID } from '../lib/nuts.js'
 import { nav } from '../lib/nav.js'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
+import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
+import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch, TextField } from '../components/ui.jsx'
 import { confirmSheet } from '../sheets.jsx'
 
@@ -124,10 +126,12 @@ function DrinkView({ id, close }) {
     title: t('Delete this drink?'), message: nameOf, confirmText: t('Delete'), danger: true,
     onConfirm: () => { update(s => { deleteMyDrink(s, d.id) }); close() },
   })
+  const ph = d.mine ? null : photoKey('D', d.id)
   return <div className="dk-view" style={drinkVars(d.col)}>
-    <div className="dk-hero">
+    <PhotoHero k={ph} alt={nameOf} />
+    <div className={'dk-hero' + (ph ? ' with-ph' : '')}>
       <div className="dk-hero-bg" aria-hidden="true" />
-      <DrinkGlass drink={d} size={110} live label={nameOf} />
+      {!ph && <DrinkGlass drink={d} size={110} live label={nameOf} />}
       <div className="dk-hero-t">
         <h2 dir="auto">{nameOf}</h2>
         {d.story && <p className="dk-story">{t(d.story)}</p>}
@@ -275,7 +279,7 @@ function Builder({ existing, from, close }) {
   return <div className="dk-build" style={{ '--c': col }}>
     <h3>{existing ? t('Edit drink') : t('Create your drink')}</h3>
     <div className="dk-build-live card">
-      <DrinkGlass drink={preview} size={74} level={level} live />
+      <DrinkGlass drink={preview} size={74} level={level} live drawn />
       <div className="grow">
         <div className="lbl2">{t('Per glass')}</div>
         <div className="dk-build-k"><b><AnimatedNumber value={per.kcal} /></b> {U('kcal')}</div>
@@ -370,7 +374,7 @@ export default function Drinks() {
 
   return <div className="narrow dk-page">
     <div className="hdr">
-      <BackButton fallback="/tools" />
+      <BackButton fallback="/kitchen" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Drinks & juices')}</h1><div className="sub">{t('Healthy recipes with calories')}</div></div>
       <button className="iconbtn" aria-label={t('Create your drink')} onClick={() => drinkBuilderSheet()}><Icon name="plus" /></button>
     </div>

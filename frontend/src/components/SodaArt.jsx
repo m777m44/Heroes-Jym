@@ -7,6 +7,7 @@
 // saver stop it (index.css).
 import { useId } from 'react'
 import { packDims } from '../lib/sodas.js'
+import { Photo, usePhotos } from './FoodPhoto.jsx'
 
 function mix(hex, to, k) {
   const h = String(hex || '#888888').replace('#', '')
@@ -196,7 +197,7 @@ function Cup({ s, w, h, id, live }) {
 const DRAW = { can: Can, bottle: Bottle, glassb: GlassBottle, glass: Glass, cup: Cup }
 
 /** <SodaArt soda={s} pk="can" ml={330} size={56} live />  — the pack drawn at its size. */
-export default function SodaArt({ soda, pk, ml, size = 56, live = false, className = '', label }) {
+function SodaDrawn({ soda, pk, ml, size = 56, live = false, className = '', label }) {
   const raw = useId()
   const id = 'sa' + raw.replace(/[^a-zA-Z0-9]/g, '')
   const s = soda || {}
@@ -224,4 +225,19 @@ export default function SodaArt({ soda, pk, ml, size = 56, live = false, classNa
     </defs>
     <g className="sa-in" key={P + v}><Draw s={s} w={w} h={h} id={id} live={live} /></g>
   </svg>
+}
+
+/**
+ * 14.0 — the real photo of the soft drink (lib/photos) when it has one; the drawing otherwise, or with
+ * `drawn` (the pack, form and mix pickers, where the drawing's shape is the point).
+ */
+export default function SodaArt(props) {
+  const ph = usePhotos()
+  const k = !props.drawn && ph && props.soda ? ph.photoKey('S', props.soda.id) : null
+  const art = <SodaDrawn {...props} />
+  if (!k) return art
+  const size = props.size || 48
+  return <span className={'art-ph' + (props.className ? ' ' + props.className : '')} style={{ width: size, height: size }} role={props.label ? 'img' : undefined} aria-label={props.label || undefined}>
+    <Photo k={k} size="t" alt="" fallback={art} />
+  </span>
 }

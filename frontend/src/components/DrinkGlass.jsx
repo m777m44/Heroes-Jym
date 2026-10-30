@@ -4,6 +4,7 @@
 // Pure SVG; `live` animates the surface, bubbles and steam (the detail screen only — a list of
 // seventy drinks stays still, which is kinder to the battery).
 import { useId } from 'react'
+import { Photo, usePhotos } from './FoodPhoto.jsx'
 
 // viewBox 0 0 100 120 · body path, liquid top (fraction of the inner height) and the inner span
 const V = {
@@ -28,7 +29,7 @@ function mix(hex, to, k) {
  * <DrinkGlass drink={d} size={56} live />  — d needs { g, col, t, ing } (library or your own).
  * `level` overrides how full it is (0–1), e.g. while building a drink.
  */
-export default function DrinkGlass({ drink, size = 56, live = false, level = null, className = '', label }) {
+function GlassDrawn({ drink, size = 56, live = false, level = null, className = '', label }) {
   const uidRaw = useId()
   const id = 'dg' + uidRaw.replace(/[^a-zA-Z0-9]/g, '')
   const d = drink || {}
@@ -91,4 +92,20 @@ export default function DrinkGlass({ drink, size = 56, live = false, level = nul
       <path d={`M60 ${v.y0 - 4}c-5 -6 5 -9 0 -16`} />
     </g>}
   </svg>
+}
+
+/**
+ * 14.0 — the real photo of the drink (lib/photos) when it has one; the drawing otherwise, or with
+ * `drawn` (the pack, form and mix pickers, where the drawing's shape is the point).
+ */
+export default function DrinkGlass(props) {
+  const ph = usePhotos()
+  const d = props.drink
+  const k = !props.drawn && ph && d && !d.mine ? ph.photoKey('D', d.id) : null
+  const art = <GlassDrawn {...props} />
+  if (!k) return art
+  const size = props.size || 48
+  return <span className={'art-ph' + (props.className ? ' ' + props.className : '')} style={{ width: size, height: size }} role={props.label ? 'img' : undefined} aria-label={props.label || undefined}>
+    <Photo k={k} size="t" alt="" fallback={art} />
+  </span>
 }

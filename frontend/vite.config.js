@@ -28,7 +28,7 @@ function precacheSW() {
         for (const n of readdirSync(d)) {
           const p = join(d, n)
           const rel = relative(outDir, p).split(sep).join('/')
-          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif' && rel !== 'wallpapers' && rel !== 'sounds') walk(p) }
+          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif' && rel !== 'wallpapers' && rel !== 'sounds' && rel !== 'food') walk(p) }   // 14.0: the kitchen's photos load when shown
           else if (rel !== 'sw.js' && !rel.endsWith('.map')) files.push(rel)
         }
       }

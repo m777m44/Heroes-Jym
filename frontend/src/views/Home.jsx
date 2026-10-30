@@ -58,10 +58,8 @@ function QuickTools({ nav }) {
   const fast = fastStatus(normFasting(S.fasting).active)
   const items = [
     ['/dayplan', 'calendar', t('My schedule'), '#5e5ce6'],
-    ['/drinks', 'cup', t('Drinks'), '#30d158'],
-    ['/foods', 'noodles', t('Food database'), '#ff9f0a'],
-    ['/sodas', 'can', t('Soft drinks'), '#e41e2b'],
-    ['/nuts', 'nut', t('Nuts & seeds'), '#c68a54'],
+    // 14.0: one door for everything to eat and drink — Foods (the food log), with the Kitchen on top
+    ['/food', 'fork', t('Foods'), '#ff9f0a'],
     ['/timer', 'timer', t('Timer'), '#ff375f'],
     ['/breathe', 'wind', t('Breathe'), '#30b0c7'],
     ['/fasting', 'moon', fast ? hmText(fast.elapsedMs) : t('Fasting tracker'), '#bf5af2', !!fast],

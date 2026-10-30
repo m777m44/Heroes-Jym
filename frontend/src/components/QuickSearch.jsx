@@ -28,7 +28,7 @@ const dbItems = (FOODS, CATS) => FOODS.map(x => {
 const SHEETS = {
   food: id => Promise.all([import('../views/FoodDatabase.jsx'), import('../lib/foodDb.js')]).then(([m, db]) => {
     const f = db.FOOD_BY_ID[id]
-    if (f) (f.indomie ? m.indomieSheet({ cfg: f.indomie }) : m.foodCardSheet(f))
+    if (f) m.openFoodSheet(f)
   }),
   soda: id => import('../views/Sodas.jsx').then(m => m.sodaSheet(id)),
   nut: id => import('../views/Nuts.jsx').then(m => m.nutSheet(id)),

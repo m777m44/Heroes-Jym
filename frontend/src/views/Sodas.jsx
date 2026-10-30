@@ -25,6 +25,8 @@ import { burst, lastTap } from '../lib/motion.js'
 import SodaArt from '../components/SodaArt.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
+import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
+import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
 
 const ui = () => useUI.getState()
@@ -82,10 +84,12 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
     close()
     toast(wml >= 50 ? t('Added {0} · {1} kcal · +{2} ml water', sodaName(s), n0(n.kcal), n0(wml)) : t('Added {0} · {1} kcal', sodaName(s), n0(n.kcal)))
   }
+  const ph = photoKey('S', s.id)
   return <div className="sd-view" style={{ '--b': s.br, '--b2': s.br2, '--c': s.col }}>
-    <div className="sd-hero">
+    <PhotoHero k={ph} alt={sodaName(s)} />
+    <div className={'sd-hero' + (ph ? ' with-ph' : '')}>
       <div className="sd-hero-bg" aria-hidden="true" />
-      <div className="sd-hero-art"><SodaArt soda={s} pk={pk} ml={ml} size={112} live label={sodaName(s)} /></div>
+      <div className="sd-hero-art"><SodaArt soda={s} pk={pk} ml={ml} size={ph ? 64 : 112} live label={sodaName(s)} drawn={!!ph} /></div>
       <div className="sd-hero-t">
         <h2>{sodaName(s)}</h2>
         <div className="sd-tags">
@@ -101,7 +105,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
     <div className="sd-sec-t">{t('Pack')}</div>
     <div className="sd-packs" role="radiogroup" aria-label={t('Pack')}>
       {s.packs.map(p => <button key={p} role="radio" aria-checked={pk === p} className={'sd-pack' + (pk === p ? ' on' : '')} onClick={() => choosePack(p)}>
-        <SodaArt soda={s} pk={p} ml={p === pk ? ml : packFor(s, p, p === s.def.pk ? s.def.ml : null).ml} size={30} />
+        <SodaArt soda={s} pk={p} ml={p === pk ? ml : packFor(s, p, p === s.def.pk ? s.def.ml : null).ml} size={30} drawn />
         <span>{t(PACKS[p].name)}</span>
       </button>)}
     </div>
@@ -195,7 +199,7 @@ function Pick({ onPick, close }) {
       </div>
       <div className="sd-packs">
         {s.packs.map(p => <button key={p} className={'sd-pack' + (pk === p ? ' on' : '')} onClick={() => { const x = packFor(s, p, null); setPk(x.pk); setMl(x.ml) }}>
-          <SodaArt soda={s} pk={p} size={26} /><span>{t(PACKS[p].name)}</span></button>)}
+          <SodaArt soda={s} pk={p} size={26} drawn /><span>{t(PACKS[p].name)}</span></button>)}
       </div>
       <div className="sd-sizes scroll">
         {PACKS[pk].sizes.map(v => <button key={v} className={'chip nocap' + (ml === v ? ' on' : '')} onClick={() => setMl(v)}>{sizeText(v, pk)}</button>)}
@@ -321,7 +325,7 @@ export default function Sodas() {
   const cafMax = caffeineLimit(ageOf(St))
   return <div className="narrow sd-page">
     <div className="hdr">
-      <BackButton fallback="/drinks" />
+      <BackButton fallback="/kitchen/s/soft" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Soft drinks')}</h1><div className="sub">{t('Calories, sugar and caffeine in every can and bottle')}</div></div>
       <button className="iconbtn" aria-label={t('Compare soft drinks')} title={t('Compare soft drinks')} onClick={() => compareSheet(hero.id)}><Icon name="compare" /></button>
     </div>
@@ -329,9 +333,7 @@ export default function Sodas() {
     {!q && !cat && <div className="card sd-top" style={{ '--b': hero.br, '--b2': hero.br2, '--c': hero.col }}>
       <span className="sd-top-bg" aria-hidden="true" />
       <button className="sd-top-art" onClick={() => sodaSheet(hero.id)} aria-label={sodaName(hero)}>
-        <SodaArt soda={hero} pk="glass" ml={300} size={54} live />
-        <SodaArt soda={hero} pk="can" ml={330} size={62} live />
-        <SodaArt soda={hero} pk="bottle" ml={500} size={54} live />
+        <SodaArt soda={hero} pk="can" ml={330} size={84} live />
       </button>
       <div className="sd-top-t">
         <span className="lbl2">{t('Today')}</span>

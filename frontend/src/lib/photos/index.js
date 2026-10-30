@@ -9,7 +9,8 @@
 //   loadCredits()            → { key: [file, author, licence] } — who took each photo (lazy:
 //                              only the photo sheets and the credits list need it)
 import { PHOTO_ROWS } from './manifest.js'
-export { photoUrl, driftOf } from './url.js'
+import { cleanAuthor } from './url.js'
+export { photoUrl, driftOf, cleanAuthor } from './url.js'
 
 const BY_ITEM = new Map()
 const KEYS = new Set()
@@ -32,7 +33,7 @@ export function loadCredits() {
     credits = import('./credits.json').then(m => {
       const raw = m.default || m
       const out = {}
-      for (const [k, v] of Object.entries(raw)) out[k] = Array.isArray(v) ? v : [v.f, v.a, v.l]
+      for (const [k, v] of Object.entries(raw)) { const c = Array.isArray(v) ? v : [v.f, v.a, v.l]; out[k] = [c[0], cleanAuthor(c[1]), c[2]] }
       return out
     }).catch(() => { credits = null; return {} })
   }

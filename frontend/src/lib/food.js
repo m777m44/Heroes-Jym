@@ -63,8 +63,22 @@ export function foodName(S, x) {
   if (x.sd && SODA_BY_ID[x.sd]) return t(SODA_BY_ID[x.sd].name) + (x.ml ? ' · ' + (x.ml >= 1000 ? (x.ml / 1000).toLocaleString(dateLocale()) + ' ' + U('L') : (+x.ml).toLocaleString(dateLocale()) + ' ' + U('ml')) : '')
   if (x.nut && NUT_BY_ID[x.nut]) return t(NUT_BY_ID[x.nut].name) + (x.g ? ' · ' + Math.round(x.g).toLocaleString(dateLocale()) + ' ' + U('g') : '')
   if (x.ind) return indomieLabel(x.ind, t)   // 13.0: an Indomie mix from the builder, in the current language
+  if (x.mb) return builtLabel(x.mb, t)        // 14.0: a dish from the meal builder, with what was changed
   if (x.name) return t(x.name)
   return x.n || t('Quick calories')
+}
+
+/**
+ * 14.0 — the name of a dish from the meal builder: its name and what was changed, in the current
+ * language — "Beef burger (without Mayonnaise · + Cheddar cheese · extra Onions)". `mb`: { n: the
+ * dish's English name, x: [[kind, English ingredient name]] } — kind '-' out, '+' in, '^' more, 'v' less.
+ */
+const MB_WORDS = { '-': 'without {0}', '+': '+ {0}', '^': 'extra {0}', v: 'less {0}' }
+export function builtLabel(mb, tr = t) {
+  const x = (mb && Array.isArray(mb.x)) ? mb.x : []
+  const parts = x.slice(0, 3).map(([k, n]) => tr(MB_WORDS[k] || '{0}', tr(n)))
+  if (x.length > 3) parts.push(tr('+{0} more changes', x.length - 3))
+  return tr((mb && mb.n) || '') + (parts.length ? ' (' + parts.join(' · ') + ')' : '')
 }
 
 export const dayEntries = (S, iso) => (S && S.food && Array.isArray(S.food[iso]) ? S.food[iso] : [])

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Online (light) Android app: after the vite build, drop the pictures that this build takes from
-// the GitHub repository instead (VITE_ASSET_BASE → lib/assets.js) — the full-size wallpapers and
-// the ready-made profile pictures. Wallpaper thumbnails (wallpapers/t/) and the sound packs stay:
-// the pickers need the thumbnails offline, and Android plays the sounds from inside the app.
+// the GitHub repository instead (VITE_ASSET_BASE → lib/assets.js) — the full-size wallpapers,
+// the ready-made profile pictures and (14.0) the kitchen's food photos. Wallpaper thumbnails
+// (wallpapers/t/) and the sound packs stay: the pickers need the thumbnails offline, and Android
+// plays the sounds from inside the app.
 //
 //   node scripts/slim-online.mjs        (run by `npm run build:mobile`)
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
@@ -18,5 +19,8 @@ const walls = join(dist, 'wallpapers')
 if (existsSync(walls)) for (const n of readdirSync(walls)) if (n.endsWith('.webp')) { rmSync(join(walls, n)); removed++ }
 const avatars = join(dist, 'avatars')
 if (existsSync(avatars)) { removed += readdirSync(avatars).length; rmSync(avatars, { recursive: true }) }
+// 14.0: the kitchen's real photos (food/m, food/t — about 25 MB) come from the repository too
+const food = join(dist, 'food')
+if (existsSync(food)) { for (const d of ['m', 't']) { const p = join(food, d); if (existsSync(p)) removed += readdirSync(p).length } rmSync(food, { recursive: true }) }
 const mb = b => (b / 1048576).toFixed(1) + ' MB'
 console.log(`✓ online build: ${removed} pictures left in the repository — dist/ ${mb(before)} → ${mb(size(dist))}`)

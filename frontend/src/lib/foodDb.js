@@ -10,7 +10,7 @@
 // (sug), values per 100 g (per100), piece sizes (sizes) and, for Indomie, the builder config.
 // Every Iraqi food carries `iraqi: true`.
 // 13.1: every food sold packaged in Iraqi shops carries its aisle, `mk` (lib/foods/market.js).
-import { NEW_CATS, MORE_FOODS, MOVED, IRAQI_IDS, marketOf, MARKET_TYPES } from './foods/index.js'
+import { NEW_CATS, MORE_FOODS, MOVED, IRAQI_IDS, marketOf, MARKET_TYPES, withBuild } from './foods/index.js'
 
 const BASE_CATS = [
   { key: 'dishes', name: 'Home dishes', icon: 'flame', color: 'var(--orange)' },
@@ -378,7 +378,7 @@ const ROWS = [
   ['nescafe3in1', 'drinks', 'Instant coffee 3-in-1 (sachet)', 80, 1, 13, 2.8, 'cup', 200],
 ]
 
-const withMarket = f => { const mk = marketOf(f); return mk ? { ...f, mk } : f }
+const withMarket = f => { f = withBuild(f); const mk = marketOf(f); return mk ? { ...f, mk } : f }
 export const FOODS = [
   ...ROWS.map(([id, cat0, name, kcal, p, c, f, unit, g]) => {
     const cat = MOVED[id] || cat0

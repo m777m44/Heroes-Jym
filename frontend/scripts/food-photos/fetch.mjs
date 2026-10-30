@@ -23,6 +23,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
+import { cleanAuthor } from '../../src/lib/photos/url.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const front = resolve(here, '..', '..')
@@ -242,7 +243,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
               .webp({ quality: q, effort: 6, smartSubsample: true }).toFile(join(OUT, dir, key + '.webp'))
           }
           const em = ii.extmetadata || {}
-          credits[key] = [file, plain(em.Artist && em.Artist.value) || plain(em.Credit && em.Credit.value) || 'Wikimedia Commons', plain(em.LicenseShortName && em.LicenseShortName.value, 40)]
+          credits[key] = [file, cleanAuthor(plain(em.Artist && em.Artist.value, 160) || plain(em.Credit && em.Credit.value, 160)).slice(0, 90), plain(em.LicenseShortName && em.LicenseShortName.value, 40)]
           state[key] = src
           used.set(file, key)
           report.picked[key] = file
