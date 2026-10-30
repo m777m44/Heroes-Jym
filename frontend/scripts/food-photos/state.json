@@ -174,7 +174,7 @@
   "cookie": "w:Chocolate chip cookie",
   "cookingoil": "w:Vegetable oil|s:sunflower oil bottle",
   "corn": "w:Sweet corn|s:sweet corn kernels",
-  "corncup": "w:Esquites|s:corn cup|s:corn kernels butter cup",
+  "corncup": "f:Esquites at Coyoacan neighborhood in Mexico City.jpg|f:Esquites CDMX.jpg",
   "cornedbeef": "w:Corned beef",
   "cornetto": "s:Cornetto ice cream|s:ice cream cone wrapped|s:cone ice cream",
   "cornflakes": "w:Corn flakes",
@@ -417,7 +417,7 @@
   "lablabi": "s:boiled chickpeas bowl|s:boiled chickpeas|s:chickpeas cumin lemon",
   "labneh": "w:Labneh|s:labneh olive oil",
   "laffatchips": "s:french fries sandwich|s:chips sandwich",
-  "laffatkibda": "s:liver sandwich|s:kibda sandwich|w:Kibda",
+  "laffatkibda": "f:Kebda eskandarani.jpg|f:Kebda Iskandarani( Alexandria Liver) sandowichs.jpg",
   "lahmacun": "f:Mosul Lahmacun.jpg|f:Lahm Bjin.jpg|w:Lahmacun",
   "lamb": "s:roast lamb|w:Lamb and mutton",
   "lambchops": "s:grilled lamb chops|w:Lamb chop",
@@ -776,7 +776,7 @@
   "zahdi": "s:zahidi dates|s:zahdi dates",
   "zalabia": "f:Jalebi from Iraq.jpg|w:Zalabiya",
   "zarda": "s:sholeh zard|s:saffron rice pudding|s:zarda",
-  "zinger": "s:crispy chicken burger|s:spicy chicken sandwich|s:fried chicken sandwich",
+  "zinger": "f:Fried chicken sandwich.jpg|f:Fried chicken sandwich (25471346390).jpg",
   "zucchini": "w:Zucchini",
   "zucchinistew": "s:zucchini stew tomato"
 }
