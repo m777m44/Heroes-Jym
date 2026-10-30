@@ -1,12 +1,54 @@
 {
  "picked": {
-  "melon": "Starr-100611-6937-Cucumis melo-Korean melon fruit cut in bowl-Olinda-Maui (24409355074).jpg",
-  "banana": "Bananas on black background 02.jpg",
-  "figs": "Fig (Ficus carica) fruit halved.jpg",
-  "potato": "Pee wee potatoes - Boston, MA.jpg",
-  "asparagus": "Fresh asparagus spears for pickling.jpg",
-  "cabbage": "Upper of cabbage with other vegetables 2023 western Taiwan.jpg"
+  "broccoli": "Brocoli 03.jpg",
+  "salad": "Salad, Romaine lettuce, cucumber, tomato, green pepper, radish, alfalfa sprouts, black olives, lemon juice, salt & olive oil (7765310086).jpg",
+  "greenbeans": "Green beans in a pile.JPG",
+  "parsley": "Parsley bunches - Wellington, New Zealand.jpg",
+  "apricots": "Apricot fruits on tree, Niğde 2017-08-05 01-1.jpg",
+  "greenapple": "Granny Smith apples 2017 A.jpg",
+  "redbeans": "Red kidney beans 2024-11-27.jpg",
+  "apple": "Apples in basket 2018 G1.jpg",
+  "cheeseburger": "Cheeseburger.jpg",
+  "zinger": "Crispy 'Chicken' burger with Tater Tots - The Vurger Co., Brighton.jpg",
+  "doubleburger": "McDonald's Double Cheeseburger (2024).png",
+  "fishburger": "Burger King BK Big Fish sandwich.jpg",
+  "veggieburger": "המבורגר טבעוני.jpg",
+  "hotdog": "2021-07-11 18 20 37 Two hot dog buns with freshly cooked beef hot dogs, mustard and ketchup in the Dulles section of Sterling, Loudoun County, Virginia.jpg",
+  "shawarmaarabi": "Shaworma arabi.JPG",
+  "laffatkibda": "Sandwiches with liver pâté.jpg",
+  "chickensandwich": "Grilled Chicken Sandwich.jpg",
+  "tunasandwich": "Tuna fish sandwiches for the National School Lunch Program.jpg",
+  "tawooksandwich": "Shish Taouk - Zaytinya - March 2018 - Sarah Stierch 06.jpg",
+  "halloumisandwich": "Spicy & Smoky Halloumi Sandwich - T @ The Dials 2025-04-12.jpg",
+  "escalope": "Classic chicken schnitzel - Schnitzel & Co. 2026-05-16.jpg",
+  "pepperonipizza": "Pepperoni pizza slice on a red plate.jpg",
+  "onionrings": "OnionRings.JPG",
+  "corncup": "Corn tea cup teapot.jpg",
+  "dimsum": "台灣南投草屯水餃Nantou, Taiwan Caotun dumplings.jpg",
+  "pizzadough": "Pizza night- dough is ready (33502053445).jpg",
+  "greenchili": "Green chili peppers.jpg",
+  "breadcrumbs": "Breadcrumb.jpg",
+  "ketchup": "French fries in a ketchup bowl (49175621297).jpg",
+  "toum": "Toum (Lebanese Garlic Sauce).JPG",
+  "mustard": "Mustard.JPG",
+  "hotsauce": "Fermented hot sauce.jpg",
+  "bbqsauce": "Pork steaks cooking-1.jpg",
+  "tomatosauce": "Fresh Tomato Sauce (Unsplash).jpg",
+  "zaatarmix": "Closeup image of za'atar, a blend of origanum syriacum (hyssop, sumac, sesame seeds and salt.jpg"
  },
  "missing": {},
- "rejected": {}
+ "rejected": {
+  "hotdog": [
+   "Hot dog with mustard.png — already the photo of hotdogs"
+  ],
+  "chickensandwich": [
+   "Grilled Chicken Sandwich from McDonald's Dongzhimenwai Store (20191222163031).jpg — already the photo of tikkasandwich"
+  ],
+  "corncup": [
+   "Esquites (1).jpg — too small (501×371)"
+  ],
+  "toum": [
+   "Toum.jpg — too small (388×253)"
+  ]
+ }
 }
