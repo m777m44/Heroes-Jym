@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:online-web": "VITE_MOBILE=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ VITE_ASSET_BASE=https://cdn.jsdelivr.net/gh/m777m44/Heroes-Jym@00032486bcd6a8898077ea5c49323bc7b6c69b7a/frontend/public/ vite build && node scripts/slim-online.mjs",
+    "build:online-web": "VITE_MOBILE=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ VITE_ASSET_BASE=https://cdn.jsdelivr.net/gh/m777m44/Heroes-Jym@7bbcb518cdec8e52570530922d3fabeefd0ba1ce/frontend/public/ vite build && node scripts/slim-online.mjs",
     "build:mobile": "npm run build:online-web && cap sync",
     "preview": "vite preview",
     "test": "vitest run",
