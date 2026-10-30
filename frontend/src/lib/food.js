@@ -184,6 +184,20 @@ export function normalize(s) {
     .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
     .replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim()
 }
+/**
+ * 13.1 — the words people type in Iraq for the same thing (after normalize()): any one of a group
+ * finds the others too — جبس / چبس find شيبس, علچ / علك find علج, موطا finds ice cream, اندوني finds إندومي.
+ */
+export const SYNONYMS = [
+  ['جبس', 'چبس', 'شيبس'], ['علج', 'علچ', 'علك', 'علكه'], ['حلقوم', 'راحه'], ['موطا', 'ايس كريم', 'ايسكريم', 'دوندورما'],
+  ['اندومي', 'اندوني', 'نودلز'], ['جكليت', 'چكليت', 'حلوي', 'حلويات'], ['شاميه', 'فشار', 'بوب كورن'], ['طماطه', 'طماطم', 'بندوره'],
+  ['بطاطا', 'بطاطس'], ['شجر', 'كوسا', 'كوسه'], ['لهانه', 'ملفوف', 'كرنب'], ['معلب', 'معلبه', 'معلبات'], ['مغلف', 'مغلفه'],
+  ['كيك', 'كعكه'], ['بسكت', 'بسكويت'],
+]
+const SYN_OF = new Map(SYNONYMS.map(g => [...new Set(g.map(normalize))]).flatMap(g => g.map(w => [w, g])))
+/** Whether `hay` (normalised) has the word `w` (normalised) — or a word people use for the same thing. */
+export const hasWord = (hay, w) => hay.includes(w) || (SYN_OF.get(w) || []).some(x => hay.includes(x))
+
 /** Every food you can pick: your own first, then the database. */
 export const allFoods = S => [...((S && S.customFoods) || []).map(x => ({ ...x, custom: true, cat: 'mine' })), ...FOODS]
 
@@ -201,7 +215,7 @@ export function searchFoods(S, q = '', cat = null) {
     const local = normalize(x.custom ? x.n : t(x.name))
     const en = normalize(x.custom ? x.n : x.name)
     const hay = local + ' ' + en + ' ' + x.id
-    if (!words.every(w => hay.includes(w))) continue
+    if (!words.every(w => hasWord(hay, w))) continue
     const score = (local.startsWith(nq) || en.startsWith(nq) ? 0 : local.includes(' ' + nq) || en.includes(' ' + nq) ? 1 : 2) - (fav.has(x.id) ? 0.5 : 0)
     scored.push([score, x])
   }

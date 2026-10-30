@@ -32,7 +32,7 @@ test('food database: search, a shelf and a food card with salt and sugar', async
   await rows.last().scrollIntoViewIfNeeded()
   await expect.poll(() => rows.count()).toBeGreaterThan(40)
   // a shelf
-  await page.getByRole('tab', { name: /Date cakes/ }).click()
+  await page.getByRole('tab', { name: /^Cakes/ }).click()
   await expect(page.locator('.fdb-row').first()).toContainText('Date')
   // the search finds it by name
   await page.getByRole('searchbox', { name: 'Search foods' }).fill('snickers')
@@ -87,6 +87,43 @@ test('notification colour: follows the theme, classic green when off', async ({ 
   await expect.poll(color).toBe(themed)
 })
 
+test('shops & markets: the aisles, halqoum and canned mahshi', async ({ page }) => {
+  const errors = watchErrors(page)
+  await open(page, 'foods')
+  await page.getByRole('button', { name: /Shops & markets/ }).click()
+  const aisles = page.getByRole('tablist', { name: 'Aisles' })
+  await expect(aisles.getByRole('tab')).toHaveCount(15)                       // all + 14 aisles
+  await aisles.getByRole('tab', { name: /Halqoum & sweets/ }).click()
+  await expect(page.locator('.fdb-row', { hasText: 'Halqoum with pistachio' })).toBeVisible()
+  await aisles.getByRole('tab', { name: /Gum & candies/ }).click()
+  await expect(page.locator('.fdb-row', { hasText: 'Mastic gum' })).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Search foods' }).fill('mahshi')
+  await expect(page.locator('.fdb-row', { hasText: 'Stuffed eggplant (canned mahshi)' })).toBeVisible()
+  await page.locator('.fdb-row', { hasText: 'Stuffed eggplant (canned mahshi)' }).click()
+  await expect(page.locator('.fdb-card')).toContainText('Sodium')
+  expect(errors).toEqual([])
+})
+
+test('my schedule: the school & work week, a reminder at every step, the week at a glance', async ({ page }) => {
+  const errors = watchErrors(page)
+  await open(page, 'schedule')
+  await page.getByRole('button', { name: /School & work week/ }).click()
+  await page.getByRole('button', { name: 'Week at a glance' }).first().click()
+  const sheet = page.locator('.wg')
+  await expect(sheet.getByRole('button', { name: 'Sunday – Thursday' })).toHaveAttribute('aria-pressed', 'true')
+  const rows = sheet.locator('.wg-row')
+  await expect(rows).toHaveCount(18)
+  await expect(rows.first()).toContainText('Drink water')
+  await expect(rows.nth(3)).toContainText('Go to school')
+  await expect(rows.last()).toContainText('Lock up & sleep')                     // the midnight bedtime closes the day
+  await expect(sheet.locator('.wg-chip', { hasText: '18 reminders' })).toBeVisible()
+  await sheet.getByRole('button', { name: 'Friday & Saturday' }).click()
+  await expect(rows).toHaveCount(19)
+  await expect(sheet).toContainText('Study — session 1')
+  await expect(sheet).not.toContainText('Go to work')
+  expect(errors).toEqual([])
+})
+
 test.describe('in Arabic', () => {
   test.use({ locale: 'ar-IQ' })
   test('right to left, and the food database speaks Arabic', async ({ page }) => {
@@ -96,6 +133,11 @@ test.describe('in Arabic', () => {
     await expect(page.getByRole('heading', { name: 'قاعدة بيانات الأطعمة' })).toBeVisible()
     await page.getByRole('searchbox').fill('اندومي')
     await expect(page.locator('.fdb-row').first()).toContainText('إندومي')
+    // the words people type: علچ finds the gum (علج), جبس the chips (شيبس)
+    await page.getByRole('searchbox').fill('علچ')
+    await expect(page.locator('.fdb-row', { hasText: 'علج عربي' })).toBeVisible()
+    await page.getByRole('searchbox').fill('جبس')
+    await expect(page.locator('.fdb-row', { hasText: 'رفلز' })).toBeVisible()
     expect(errors).toEqual([])
   })
 })

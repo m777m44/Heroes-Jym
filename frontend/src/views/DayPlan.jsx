@@ -20,8 +20,9 @@ import { MEALS, foodGoalOf, dayTotals, searchFoods, servingText } from '../lib/f
 import {
   KINDS, KIND_KEYS, TEMPLATES, REMIND_OPTS, DAY_ALL, SCHOOL_DAYS, WEEKEND, NOTE_MAX, toHHMM, toMin, newPlan, normPlan, liveState, dayRec, isLive,
   planTotals, mealTargets, itemInfo, blockKcal, blockMl, startDay, stopDay, markBlock, upsertBlock, removeBlock, extendNow, planPrefs,
-  blocksOn, dayBlocks, typeDays, daysLabel, copyDay, hasItems, cleanDays, BLOCK_ICONS, partOf, oldSchoolPlan, noteText, SCHOOL_TV,
+  blocksOn, dayBlocks, typeDays, daysLabel, copyDay, hasItems, cleanDays, BLOCK_ICONS, partOf, oldSchoolPlan, noteText, SCHOOL_TV, dayOrder,
 } from '../lib/dayPlan.js'
+import { WeekKinds, weekGlanceSheet, shareSchedule } from './WeekGlance.jsx'
 import { FOODS, FOOD_CATS } from '../lib/foodDb.js'
 import { RECIPES, recipeNutrition } from '../lib/kitchen.js'
 import { drinkOf } from '../lib/drinks.js'
@@ -153,7 +154,7 @@ function BlockEdit({ block: b0, close, target }) {
   const St = useStore(s => s.S)
   const update = useStore(s => s.update)
   const isNew = !b0.id
-  const [b, setB] = useState(() => ({ k: 'study', s: 9 * 60, d: 30, items: [], ml: 250, meal: 'l', ...b0 }))
+  const [b, setB] = useState(() => ({ k: 'study', s: 9 * 60, d: 30, items: [], meal: 'l', ...b0 }))
   const set = patch => setB(x => ({ ...x, ...patch }))
   const items = (b.items || []).map((it, i) => ({ it, i, x: itemInfo(St, it) })).filter(z => z.x)
   const kcal = items.reduce((a, z) => a + z.x.kcal, 0)
@@ -221,6 +222,14 @@ function BlockEdit({ block: b0, close, target }) {
         <button className="iconbtn" aria-label={t('Less')} onClick={() => set({ ml: Math.max(100, (b.ml || 250) - 50) })}><Icon name="minus" /></button>
         <b>{n0(b.ml || 250)} {U('ml')}</b>
         <button className="iconbtn" aria-label={t('More')} onClick={() => set({ ml: Math.min(1000, (b.ml || 250) + 50) })}><Icon name="plus" /></button>
+      </div>
+    </div>}
+    {b.k === 'walk' && <div className="kit-sv">
+      <span>{t('Water on the way')}</span>
+      <div className="kit-svc">
+        <button className="iconbtn" aria-label={t('Less')} disabled={!b.ml} onClick={() => set({ ml: (b.ml || 0) <= 100 ? 0 : b.ml - 50 })}><Icon name="minus" /></button>
+        <b>{b.ml ? n0(b.ml) + ' ' + U('ml') : t('None')}</b>
+        <button className="iconbtn" aria-label={t('More')} onClick={() => set({ ml: Math.min(1000, b.ml ? b.ml + 50 : 250) })}><Icon name="plus" /></button>
       </div>
     </div>}
     {hasItems(b.k) && <>
@@ -371,11 +380,12 @@ function LiveCard({ St, live, iso, targets }) {
         {b.nt && <div className="small dp-live-note" dir="auto"><Icon name="pencil" />{noteText(b.nt, t)}</div>}
         {its.length > 0 && <div className="small dp-live-items">{its.map(itemLabel).join(' · ')} · {n0(its.reduce((a, x) => a + x.kcal, 0))} {U('kcal')}</div>}
         {b.k === 'water' && <div className="small">{t('Drink {0} ml of water.', n0(b.ml || 250))}</div>}
+        {b.k === 'walk' && b.ml > 0 && <div className="small">{t('Take {0} ml of water and drink as you walk.', n0(b.ml))}</div>}
         {b.k === 'meal' && !its.length && targets[b.id] > 0 && <div className="small">{t('About {0} kcal for this meal', n0(targets[b.id]))}</div>}
       </div>
     </div>
     <div className="dp-live-act">
-      <Button variant="primary" icon="check" onClick={done}>{its.length || b.k === 'water' ? t('Log & done') : t('Done')}</Button>
+      <Button variant="primary" icon="check" onClick={done}>{its.length || b.k === 'water' || (b.k === 'walk' && b.ml > 0) ? t('Log & done') : t('Done')}</Button>
       {go && <Button variant="tinted" icon={go[2]} onClick={() => nav(go[0])}>{t(go[1])}</Button>}
       <button className="iconbtn" aria-label={t('10 more minutes')} title={t('10 more minutes')} onClick={() => {
         // today only: this block and the rest of today move, the schedule stays (review on PR #13)
@@ -400,7 +410,7 @@ function WeekStrip({ plan, wd, today, onPick }) {
   const order = weekOrder(weekStartOf())
   return <div className="sc-week" role="tablist" aria-label={t('Days')}>
     {order.map(d => {
-      const list = blocksOn(plan, d)
+      const list = dayOrder(blocksOn(plan, d))
       const school = list.some(b => b.k === 'school')
       return <button key={d} role="tab" aria-selected={wd === d} className={'sc-wd' + (wd === d ? ' on' : '') + (d === today ? ' today' : '')} onClick={() => onPick(d)}>
         <span className="sc-wd-n">{t(DAYS[d])}</span>
@@ -423,7 +433,8 @@ export default function DayPlan() {
   const isToday = wd === today
   const live = plan && isToday && isLive(plan, iso) ? liveState(plan, dayRec(plan, iso), now) : null
   // today with today's own changes (+10), the other days as planned
-  const blocks = useMemo(() => (plan ? (isToday ? dayBlocks(plan, iso) : blocksOn(plan, wd)) : []), [plan, wd, isToday, iso])
+  // 13.1: in the order you live it — a midnight bedtime closes the day (dayOrder)
+  const blocks = useMemo(() => (plan ? dayOrder(isToday ? dayBlocks(plan, iso) : blocksOn(plan, wd)) : []), [plan, wd, isToday, iso])
   const targets = useMemo(() => (plan ? mealTargets(St, blocks, goal) : {}), [St, plan, blocks, goal])
   const tot = useMemo(() => (plan ? planTotals(St, blocks, goal) : null), [St, plan, blocks, goal])
   const eaten = dayTotals(St, iso).kcal
@@ -450,8 +461,11 @@ export default function DayPlan() {
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const addBlock = s => blockSheet({ s, w: typeDays(plan, wd) })
   const stopped = !!(dayRec(plan, iso) || {}).off
-  const upgrade = () => confirmSheet({ title: t('Use the new school week?'), message: t('Up at 7:00, school 7:30–12:40, then lunch, a nap, homework, games, review, sport, dinner and bed at 22:00 — Friday and Saturday too. Your current blocks are replaced; reminders stay as they are.'), confirmText: t('Update'),
-    onConfirm: () => { update(s => { s.planner = newPlan('school', normPlan(s.planner) || {}, { seed: new Date().getDate() }) }); sync(); toast(t('Your new school week is ready')) } })
+  const upgrade = () => confirmSheet({ title: t('Use your school & work week?'), message: t('Water at 7:00, breakfast, school 7:30–12:40, lunch and rest, work 1:40–6:15 with a break, dinner, a walk with water, study until 11:45 and sleep at 12:00 — Friday and Saturday with the afternoon for study. Your current blocks are replaced and a reminder rings at every step.'), confirmText: t('Update'),
+    onConfirm: () => {
+      update(s => { s.planner = newPlan('school', normPlan(s.planner) || {}, { seed: new Date().getDate() }); if (MOBILE) s.planner.remind = true })
+      sync(); toast(t('Your school & work week is ready'))
+    } })
   const keepOld = () => update(s => { s.planner = normPlan(s.planner); s.planner.tv = SCHOOL_TV })
   // the timeline in parts of the day, each with its calories
   const parts = []
@@ -467,16 +481,18 @@ export default function DayPlan() {
       <BackButton fallback="/tools" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('My schedule')}</h1>
         <div className="sub">{isToday ? now.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' }) : t(DAYN[wd])}</div></div>
+      <button className="iconbtn" aria-label={t('Week at a glance')} title={t('Week at a glance')} onClick={() => weekGlanceSheet(0)}><Icon name="list" /></button>
       <button className="iconbtn" aria-label={t('Add a block')} onClick={() => addBlock(isToday ? Math.min(1435, Math.ceil(nowMin / 15) * 15) : 12 * 60)}><Icon name="plus" /></button>
     </div>
 
     {oldSchoolPlan(plan) && <div className="card sc-upd">
       <span className="sc-upd-ic"><Icon name="sparkles" /></span>
-      <div className="grow"><b>{t('A new school week')}</b><div className="small">{t('Up at 7:00, school 7:30–12:40 and a full, organised afternoon, evening and weekend.')}</div></div>
+      <div className="grow"><b>{t('Your school & work week')}</b><div className="small">{t('Water 7:00 · school 7:30–12:40 · work 1:40–6:15 · walk 7–8 · study 8–11:45 · sleep 12:00 — a reminder at every step.')}</div></div>
       <div className="sc-upd-act"><Button size="sm" variant="primary" onClick={upgrade}>{t('Update')}</Button><Button size="sm" variant="plain" onClick={keepOld}>{t('Keep mine')}</Button></div>
     </div>}
 
     <WeekStrip plan={plan} wd={wd} today={today} onPick={setWd} />
+    <WeekKinds plan={plan} onOpen={weekGlanceSheet} />
 
     {isToday ? (live ? <LiveCard St={St} live={live} iso={iso} targets={targets} />
       : <div className="card dp-start">
@@ -484,6 +500,7 @@ export default function DayPlan() {
         <div className="grow">
           <b className="dp-live-t">{t(TEMPLATES.find(x => x.id === plan.tpl)?.name || 'My schedule')}</b>
           <div className="small">{t('{0} blocks today', n0(blocks.length))}{plan.remind && MOBILE && !stopped ? ' · ' + t('Reminders on') : ''}</div>
+          {plan.tpl === 'school' && WEEKEND.includes(wd) && <div className="small dp-we-hint">{t('Your weekend — tap any block to make it yours.')}</div>}
         </div>
         <Button variant="primary" icon="play" onClick={start}>{t('Start my day')}</Button>
       </div>)
@@ -492,6 +509,7 @@ export default function DayPlan() {
         <div className="grow">
           <b className="dp-live-t">{t(DAYN[wd])}</b>
           <div className="small">{t('{0} blocks', n0(blocks.length))}{blocks.some(b => b.k === 'school') ? ' · ' + t('School day') : ''}</div>
+          {plan.tpl === 'school' && WEEKEND.includes(wd) && <div className="small dp-we-hint">{t('Your weekend — tap any block to make it yours.')}</div>}
         </div>
         <Button variant="tinted" icon="copy" onClick={() => copyDaySheet(wd)}>{t('Copy')}</Button>
       </div>}
@@ -567,6 +585,8 @@ export default function DayPlan() {
       <Row icon="calendar" iconTint="var(--green)" title={t('Run it every day')} subtitle={t('The live view starts by itself each morning')}>
         <Switch checked={plan.auto} onChange={v => { update(s => { s.planner = normPlan(s.planner); s.planner.auto = v }); sync() }} />
       </Row>
+      <Row icon="list" iconTint="var(--blue)" title={t('Week at a glance')} subtitle={t('Every day of your week, its times and reminders')} accessory="chevron" onClick={() => weekGlanceSheet(0)} />
+      <Row icon="upload" iconTint="var(--green)" title={t('Share my schedule')} subtitle={t('As text — WhatsApp, notes or print')} accessory="chevron" onClick={() => shareSchedule()} />
       <Row icon="copy" iconTint="var(--teal)" title={t('Copy {0} to other days', t(DAYN[wd]))} accessory="chevron" onClick={() => copyDaySheet(wd)} />
       {live && <Row icon="stop" iconTint="var(--orange)" title={t('Stop today’s plan')} accessory="chevron" onClick={stop} />}
       <Row icon="layers" iconTint="var(--purple)" title={t('Choose another template')} accessory="chevron" onClick={reset} />
