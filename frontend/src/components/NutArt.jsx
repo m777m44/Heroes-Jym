@@ -11,6 +11,7 @@
 // 12.0 — jars of nut butter and spreads, beans, dried-fruit strips, baklawa, kleicha, halqoum and
 // the new mixes (mixed nuts, trail mix, student mix, sweet and spicy kerzat).
 import { useId } from 'react'
+import { Photo, usePhotos } from './FoodPhoto.jsx'
 
 function mix(hex, to, k) {
   const h = String(hex || '#888888').replace('#', '')
@@ -133,7 +134,7 @@ const MIX = {
     one: [['peanut', -8, 3, -16, 1, false], ['corn', 8, -4, 12, 1, false], ['cashew', 2, 11, 0, 0.8, false]] },
 }
 
-export default function NutArt({ nut, size = 48, live = false, shell = false, form = null, pile = false, className = '', label }) {
+function NutDrawn({ nut, size = 48, live = false, shell = false, form = null, pile = false, className = '', label }) {
   const raw = useId()
   const id = 'na' + raw.replace(/[^a-zA-Z0-9]/g, '')
   const n = nut || {}
@@ -173,4 +174,19 @@ export default function NutArt({ nut, size = 48, live = false, shell = false, fo
       {salted && <g className="na-salt">{[[-9, -6], [6, -9], [10, 2], [-4, 6], [2, -2], [-12, 3], [13, -5]].map(([x, y], i) => <rect key={i} x={x} y={y} width="1.6" height="1.6" rx=".3" transform={`rotate(${i * 23} ${x} ${y})`} style={{ animationDelay: (i * 0.3) + 's' }} />)}</g>}
     </g>
   </svg>
+}
+
+/**
+ * 14.0 — the real photo of the nut, seed or dried fruit (lib/photos) when it has one; the drawing otherwise, or with
+ * `drawn` (the pack, form and mix pickers, where the drawing's shape is the point).
+ */
+export default function NutArt(props) {
+  const ph = usePhotos()
+  const k = !props.drawn && ph && props.nut ? ph.photoKey('N', props.nut.id) : null
+  const art = <NutDrawn {...props} />
+  if (!k) return art
+  const size = props.size || 48
+  return <span className={'art-ph' + (props.className ? ' ' + props.className : '')} style={{ width: size, height: size }} role={props.label ? 'img' : undefined} aria-label={props.label || undefined}>
+    <Photo k={k} size="t" alt="" fallback={art} />
+  </span>
 }

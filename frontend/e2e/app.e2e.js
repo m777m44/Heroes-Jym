@@ -1,6 +1,8 @@
 // 13.0 — the app in a real browser (the demo build: example data, no server). What a person does:
 // open the screens, search the food database, build an Indomie, pick a date-cake size, switch
 // the notification colour, use the app in Arabic — and no errors in the console on the way.
+// 14.0 — the Kitchen: its doors and sections, a real photo on a card, the meal builder (a burger
+// without mayonnaise lands in the log by that name), a dish of my own, and the Kitchen in Arabic.
 import { test, expect } from '@playwright/test'
 
 // the demo loads exercise pictures from a CDN — a missing picture offline is not an app error
@@ -19,7 +21,7 @@ const kcalOf = async loc => Number((await loc.innerText()).replace(/[^\d]/g, '')
 
 test('the main screens open without errors in the console', async ({ page }) => {
   const errors = watchErrors(page)
-  for (const route of ['home', 'foods', 'food', 'tools', 'notifications', 'themes', 'plan', 'stats', 'settings']) await open(page, route)
+  for (const route of ['home', 'foods', 'food', 'kitchen', 'kitchen/s/street', 'kitchen/s/mine', 'kitchen/dish', 'tools', 'notifications', 'themes', 'plan', 'stats', 'settings']) await open(page, route)
   expect(errors).toEqual([])
 })
 
@@ -124,6 +126,54 @@ test('my schedule: the school & work week, a reminder at every step, the week at
   expect(errors).toEqual([])
 })
 
+test('the Kitchen: six doors, street food, a real photo and the meal builder', async ({ page }) => {
+  const errors = watchErrors(page)
+  await open(page, 'food')
+  await page.locator('.fk-hero').click()                                         // the Kitchen's door on the food log
+  await expect(page.getByRole('heading', { name: 'Kitchen' })).toBeVisible()
+  const doors = page.locator('.kf')
+  await expect(doors).toHaveCount(6)
+  await expect(doors.first()).toContainText('Street food')
+  await doors.first().click()
+  await expect(page.getByRole('heading', { name: 'Street food' })).toBeVisible()
+  // every card shows its real photo once it is on screen
+  await expect.poll(() => page.locator('.kc .ph.in img').count()).toBeGreaterThan(0)
+  await page.getByRole('searchbox').fill('beef burger')
+  await page.locator('.kc', { hasText: 'Beef burger' }).first().click()
+  const mb = page.locator('.mb')
+  await expect(mb.getByRole('heading', { name: 'Beef burger' })).toBeVisible()
+  await expect(mb.locator('.mb-row')).toHaveCount(9)                               // bun, patty, lettuce, tomato, onion, pickles, ketchup, mayo, salt
+  const kcal = mb.locator('.mb-tot-k b')
+  const before = await kcalOf(kcal)
+  await mb.getByRole('button', { name: 'Take out Mayonnaise' }).click()
+  await expect.poll(() => kcalOf(kcal)).toBeLessThan(before - 60)                  // 10 g of mayonnaise is about 68 kcal
+  await expect(mb.locator('.mb-out')).toContainText('Mayonnaise')
+  await mb.getByRole('group', { name: 'Beef burger patty' }).getByRole('button', { name: 'More' }).click()   // a second patty
+  await expect.poll(() => kcalOf(kcal)).toBeGreaterThan(before + 150)
+  await mb.getByRole('button', { name: /^Add to / }).click()
+  await open(page, 'food')
+  await expect(page.getByText('Beef burger (extra Beef burger patty · without Mayonnaise)').first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('the Kitchen: making Indomie, the drinks tab and a dish of my own', async ({ page }) => {
+  const errors = watchErrors(page)
+  await open(page, 'kitchen')
+  await page.locator('.kf', { hasText: 'Make your Indomie' }).click()
+  await page.getByRole('button', { name: /Build your Indomie/ }).click()
+  const b = page.locator('.fdb-indo-b')
+  await expect(b.locator('.fdb-pinfo')).toContainText('About this pack')
+  await expect(b.locator('.fdb-pinfo')).toContainText('The whole pack')
+  await page.locator('.sheet-x').last().click()
+  await expect(b).toHaveCount(0)
+  await open(page, 'kitchen')
+  await page.locator('.kf', { hasText: 'Drinks' }).click()
+  await expect(page.locator('.ks', { hasText: 'Hot drinks' })).toBeVisible()
+  await open(page, 'kitchen/dish')
+  await page.getByRole('textbox').first().fill('My test dish')
+  expect(errors).toEqual([])
+})
+
 test.describe('in Arabic', () => {
   test.use({ locale: 'ar-IQ' })
   test('right to left, and the food database speaks Arabic', async ({ page }) => {
@@ -138,6 +188,18 @@ test.describe('in Arabic', () => {
     await expect(page.locator('.fdb-row', { hasText: 'علج عربي' })).toBeVisible()
     await page.getByRole('searchbox').fill('جبس')
     await expect(page.locator('.fdb-row', { hasText: 'رفلز' })).toBeVisible()
+    expect(errors).toEqual([])
+  })
+  test('the Kitchen in Arabic: its doors, street food and the meal builder', async ({ page }) => {
+    const errors = watchErrors(page)
+    await open(page, 'kitchen')
+    await expect(page.getByRole('heading', { name: 'المطبخ' })).toBeVisible()
+    await expect(page.locator('.kf').first()).toContainText('أكلات الشوارع')
+    await page.locator('.kf').first().click()
+    await page.getByRole('searchbox').fill('شاورما')
+    await page.locator('.kc', { hasText: 'شاورما' }).first().click()
+    await expect(page.locator('.mb')).toContainText('مكوّناتك')
+    await expect(page.locator('.mb')).toContainText('ثومية')
     expect(errors).toEqual([])
   })
 })

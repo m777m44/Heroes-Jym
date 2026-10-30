@@ -53,6 +53,25 @@ export const PREPS = [
   { id: 'creamy', name: 'with cream', label: 'With cooking cream', icon: 'heart' },
 ]
 export const PREP_BY_ID = Object.fromEntries(PREPS.map(p => [p.id, p]))
+/** 14.0 — how long each way takes (minutes) and how to do it (one sentence, a t() key). */
+export const PREP_MIN = { raw: 0, boiled: 3, soup: 3, fried: 6, creamy: 5 }
+export const PREP_HOW = {
+  raw: 'Crush the block in its pack, open it and shake the seasoning over — eat it dry.',
+  boiled: 'Boil 400 ml of water, cook the noodles for 3 minutes, drain, then mix in the seasoning and oil.',
+  soup: 'Boil 400 ml of water, cook the noodles for 3 minutes and stir the seasoning into the water.',
+  fried: 'Boil the noodles for 3 minutes and drain, then fry them in a tablespoon of oil for 2–3 minutes with the seasoning.',
+  creamy: 'Boil the noodles for 3 minutes and drain, then stir in the cooking cream and the seasoning over low heat.',
+}
+/** 14.0 — what is in a pack, and the calories of each part as it comes. */
+export function packParts(pack) {
+  const k = x => (x ? Math.round(4 * x.p + 4 * x.c + 9 * x.f) : 0)
+  return [
+    { key: 'block', name: 'Noodle block', g: pack.block.g, kcal: k(pack.block) },
+    { key: 'powder', name: 'Seasoning powder', g: pack.powder.g, kcal: k(pack.powder) },
+    { key: 'oil', name: 'Seasoning oil', g: pack.oil.g, kcal: k(pack.oil) },
+    ...(pack.sauce ? [{ key: 'sauce', name: 'Sauces', g: pack.sauce.g, kcal: k(pack.sauce) }] : []),
+  ]
+}
 const FRY_OIL = part(13.5, 0, 0, 13.5)
 const CREAM = part(50, 1.2, 1.7, 12.5, 20, 1.5)
 
@@ -74,7 +93,7 @@ export const ADDON_KCAL = Object.fromEntries(ADDONS.map(a => [a.id, Math.round(4
 
 const r1 = v => Math.round(v * 10) / 10
 
-/** Normalises a builder config: { pack, prep, season: 0 | 0.5 | 1, sauce: bool, add: { id: n } }. */
+/** Normalises a builder config: { pack, prep, season: 0 | 0.5 | 1, sauce: bool, oil: bool (14.0 — the oil sachet; on unless switched off), add: { id: n } }. */
 export function normIndomie(cfg = {}) {
   const pack = PACK_BY_ID[cfg.pack] || PACKS[0]
   let prep = PREP_BY_ID[cfg.prep] ? cfg.prep : pack.soup || pack.cup ? 'soup' : 'boiled'
@@ -86,7 +105,8 @@ export function normIndomie(cfg = {}) {
     const n = Math.round(Number((cfg.add || {})[a.id]) || 0)
     if (n > 0) add[a.id] = Math.min(a.max, n)
   }
-  return { pack: pack.id, prep, season, sauce, add }
+  const oil = season > 0 && cfg.oil === false ? false : true
+  return { pack: pack.id, prep, season, sauce, ...(oil ? null : { oil: false }), add }
 }
 
 /** Calories, macros, sodium and sugars of a builder config — all from its parts. */
@@ -101,7 +121,7 @@ export function indomieNutrition(cfg) {
   const drained = c.prep === 'boiled' || c.prep === 'fried' || c.prep === 'creamy'
   put(pack.block, 1, drained ? 0.9 : 1, drained ? 0.6 : 1)
   put(pack.powder, c.season)
-  put(pack.oil, c.season)
+  put(pack.oil, c.oil === false ? 0 : c.season)
   if (c.sauce) put(pack.sauce)
   if (c.prep === 'fried') put(FRY_OIL)
   if (c.prep === 'creamy') put(CREAM)
@@ -123,6 +143,7 @@ export function indomieLabel(cfg, tr = fmt) {
   let s = tr(pack.name) + ' ' + tr('(' + prep + ')')
   if (c.season === 1) s += ' ' + tr('+ seasoning')
   else if (c.season === 0.5) s += ' ' + tr('+ half seasoning')
+  if (c.oil === false) s += ' ' + tr('(no oil sachet)')
   if (c.sauce) s += ' ' + tr('+ sauce')
   for (const a of ADDONS) {
     const n = c.add[a.id]
@@ -135,14 +156,14 @@ export const indomieName = cfg => indomieLabel(cfg)
 /** One string per mix — finds the ready-made variant a builder mix matches. */
 export function indomieKey(cfg) {
   const c = normIndomie(cfg)
-  return [c.pack, c.prep, c.season, c.sauce ? 1 : 0, ADDONS.map(a => c.add[a.id] || 0).join('')].join('|')
+  return [c.pack, c.prep, c.season, c.sauce ? 1 : 0, ADDONS.map(a => c.add[a.id] || 0).join('')].join('|') + (c.oil === false ? '|nooil' : '')
 }
 /** Every t() key the names are made of (the Arabic pack must have them all). */
 export function indomieParts() {
   const keys = new Set(PACKS.map(p => p.name))
   for (const p of PREPS) keys.add('(' + p.name + ')')
   keys.add('(with hot water)')
-  for (const k of ['+ seasoning', '+ half seasoning', '+ sauce']) keys.add(k)
+  for (const k of ['+ seasoning', '+ half seasoning', '+ sauce', '(no oil sachet)']) keys.add(k)
   for (const a of ADDONS) { keys.add('+ ' + a.name); keys.add('+ {0} × ' + a.name) }
   return [...keys]
 }

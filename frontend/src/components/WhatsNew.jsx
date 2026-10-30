@@ -1,4 +1,4 @@
-// What's new (10.0 – 13.1) — shown once after updating (S.seenWhatsNew), and from search / Settings.
+// What's new (10.0 – 14.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
@@ -6,17 +6,19 @@ import { MOBILE } from '../lib/mobile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 
-export const WHATS_NEW = '13.1'
+export const WHATS_NEW = '14.0'
 
-// 13.1
+// 14.0
 const ITEMS = [
-  { icon: 'school', c: '#c08552', title: 'Your school & work week', body: 'Water at 7:00, breakfast, school 7:30–12:40, lunch and rest, work 1:40–6:15 with a break, dinner, a walk with water, study until 11:45 and sleep at 12:00 — Friday and Saturday with the afternoon for study, the rest shaped your way.' },
-  { icon: 'bell', c: '#ff453a', title: 'A reminder at every step', body: 'Every block of your day rings on time with what to do, the food and the water you planned — the midnight bedtime too. A walk can carry its bottle of water.' },
-  { icon: 'list', c: '#0a84ff', title: 'Your week at a glance', body: 'Sunday–Thursday and Friday & Saturday: a bar of each day, every time and the menu of each day — share it as text on WhatsApp.' },
-  { icon: 'basket', c: '#30b0c7', title: 'Shops & markets', body: '111 more packaged foods from Iraqi shops — cakes and croissants, canned mahshi, Samyang and other noodles, halqoum, alij, Dubai chocolate, biscuits, chips, cheese triangles, frozen food, mouta and boxed juices — 316 in 14 aisles.' },
-  { icon: 'candy', c: '#ff375f', title: 'Halqoum, alij and canned mahshi', body: 'Halqoum with pistachio, walnut, coconut or cream; alij and candies; stuffed eggplant, peppers, zucchini and cabbage in cans — each with its calories, salt and sugar.' },
-  { icon: 'bottle', c: '#64d2ff', title: 'Water on the way', body: 'Give a walk the bottle you take with you — it counts in your day’s water, and the reminder says how much to drink.' },
-  { icon: 'magnifier', c: '#bf5af2', title: 'Search the way you speak', body: 'Type جبس, علچ, موطا or اندوني and the food database finds chips, gum, ice cream and Indomie.' },
+  { icon: 'fork', c: '#ff9f0a', title: 'The Kitchen', body: 'All the food, cooking and drinks in one place — Foods → Kitchen: Food, Drinks and Tools, six big doors (street food, make your Indomie, canned food & shops, drinks, sweets, Iraqi food), my own cooking, ready foods and fresh food.' },
+  { icon: 'image', c: '#ff375f', title: 'A real photo for every food', body: '780 real photographs from Wikimedia Commons — every food, dish, drink, soft drink, nut and ingredient — drifting slowly and smoothly, with who took each one.' },
+  { icon: 'sliders', c: '#ff6a3d', title: 'The meal builder', body: 'A burger, a shawarma, a falafel or kebab sandwich, a pizza or any recipe opens with what goes into it: change the grams, take out the mayonnaise, add cheese or a second patty — calories, protein, carbs, fat and salt follow live. Nothing counts until you add it.' },
+  { icon: 'bolt', c: '#bf5af2', title: 'Street food', body: '85+ street dishes — burgers, zinger, hot dog, shawarma arabi, tawook, liver and kubba laffat, falafel, pizza, manakish, dim sum, onion rings and more — 60 of them built from their ingredients.' },
+  { icon: 'noodles', c: '#ffd60a', title: 'Make your Indomie', body: 'What is in the pack and its calories, how long each way takes and how to make it — with a cooking timer, and the oil sachet in or out.' },
+  { icon: 'book', c: '#30d158', title: '100+ new dishes and 30 recipes', body: 'Iraqi, Arab, Turkish, Persian, Indian and gym meals with every detail: fibre, sodium, kilojoules, how filling, the walk that burns it and what it may contain.' },
+  { icon: 'pencil', c: '#ff9500', title: 'My own cooking', body: 'Your own dishes with your own photo, the ingredients by weight, the steps and the time — the calories work themselves out.' },
+  { icon: 'cube', c: '#0a84ff', title: 'Two apps side by side', body: 'MAHDI-JYM (blue OFF badge, everything inside) and MAHDI-JYM Online (green WEB badge, light) are now separate apps — install both, each with its own data.', mobile: true },
+  { icon: 'rocket', c: '#10b981', title: 'The online app updates itself', body: 'MAHDI-JYM Online downloads a new version inside the app and restarts into it — no new APK, your data stays. Settings → App & updates.', mobile: true },
 ]
 
 function WhatsNewSheet({ close }) {

@@ -6,7 +6,10 @@
 // 13.1 — "Shops & markets": everything sold packaged in Iraqi shops (cakes, canned mahshi, Indomie
 // and other noodles, halqoum, alij, chocolate, biscuits, chips, dairy cups, bread, frozen food, ice
 // cream, juices and jars), browsed by aisle.
-//   foodCardSheet(food)   the food: per serving and per 100 g, sizes, salt and sugar, log it
+//   foodCardSheet(food)   the food: per serving and per 100 g, sizes, salt and sugar, log it —
+//                         14.0: with its real photo (moving), kJ, fibre, how filling it is, protein
+//                         per 100 kcal, its share of your day, the walk or run that burns it, its
+//                         tags and allergens, its recipe, and compare it with another food
 //   indomieSheet(cfg)     the Indomie builder: pack, how it is made, the sachets, what goes in
 // Data: lib/foodDb.js + lib/foods/ (the Indomie maths: lib/foods/indomie.js).
 import { memo, useDeferredValue, useMemo, useState } from 'react'
@@ -15,13 +18,19 @@ import { useUI } from '../store/useUI.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { todayISO } from '../lib/format.js'
 import { FOODS, FOOD_CATS, IRAQI_COUNT, MARKET_COUNT, MARKET_AISLES } from '../lib/foodDb.js'
-import { MEALS, mealAt, normalize, makeEntry, addEntry, toggleFav, servingText, foodName, hasWord } from '../lib/food.js'
+import { MEALS, mealAt, normalize, makeEntry, addEntry, toggleFav, servingText, foodName, hasWord, foodGoalOf } from '../lib/food.js'
 import {
-  PACKS, PACK_BY_ID, PREPS, ADDONS, ADDON_KCAL, INDOMIE_FOODS, normIndomie, indomieNutrition, indomieLabel, indomieKey,
+  PACKS, PACK_BY_ID, PREPS, ADDONS, ADDON_KCAL, INDOMIE_FOODS, normIndomie, indomieNutrition, indomieLabel, indomieKey, PREP_MIN, PREP_HOW, packParts,
 } from '../lib/foods/indomie.js'
 import { burst, lastTap } from '../lib/motion.js'
 import { useIncremental, LazyMore } from '../components/LazyList.jsx'
 import { FoodBubble } from '../components/food/FoodSheets.jsx'
+import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
+import { photoKey } from '../lib/photos/index.js'
+import { kJ, densityOf, proteinPer100kcal, burnMinutes, allergensOf, tagsOf, isFit } from '../lib/foodDetails.js'
+import { RECIPE_BY_ID } from '../lib/kitchen.js'
+import { listOf } from '../lib/recipeText.js'
+import { bodyKg } from '../lib/water.js'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
 
@@ -87,7 +96,17 @@ function Tags({ f }) {
 }
 
 /** A row opens its card — an Indomie opens the builder. (One function for every row, so memo holds.) */
-const openFood = f => (f.indomie ? indomieSheet({ cfg: f.indomie }) : foodCardSheet(f))
+/**
+ * 14.0 — open a food the way it is made: Indomie in its builder, a dish built from parts (street
+ * food) in the meal builder — nothing is counted until you add it — and anything else on its card.
+ */
+export function openFoodSheet(f, opts = {}) {
+  if (!f) return null
+  if (f.indomie) return indomieSheet({ cfg: f.indomie, ...opts })
+  if (f.built) return import('../components/kitchen/MealBuilder.jsx').then(m => m.mealBuilderSheet({ fid: f.id, ...opts }))
+  return foodCardSheet(f, opts)
+}
+const openFood = f => openFoodSheet(f)
 
 const FoodRow = memo(function FoodRow({ f, fav, onOpen }) {
   return <button type="button" className="fdb-row" onClick={() => onOpen(f)}>
@@ -123,7 +142,7 @@ export default function FoodDatabase() {
   ], [])
   return <div className="narrow fdb-page">
     <div className="hdr">
-      <BackButton fallback="/food" />
+      <BackButton fallback="/kitchen" />
       <div style={{ flex: 1, marginInlineStart: 10 }}>
         <h1>{t('Food database')}</h1>
         <div className="sub">{t('{0} foods — calories for the way each one is made', n0(FOODS.length))}</div>
@@ -225,7 +244,7 @@ function SaltSugar({ na, sug, q = 1 }) {
   </div>
 }
 
-function FoodCard({ food, iso, meal: meal0, close }) {
+function FoodCard({ food, iso, meal: meal0, close, noBuild = false }) {
   const St = useStore(s => s.S)
   const sizes = food.sizes || null
   const [q, setQ] = useState(1)
@@ -239,17 +258,25 @@ function FoodCard({ food, iso, meal: meal0, close }) {
     toast(t('Added {0} · {1} kcal', foodName(S(), { f: food.id }), n0(food.kcal * q)))
     close()
   }
+  const ph = photoKey('F', food.id)
   return <div className="fdb-card">
+    <PhotoHero k={ph} alt={t(food.name)} />
     <div className="row" style={{ gap: 12, marginBottom: 12 }}>
-      <FoodBubble food={food} size={48} />
+      {!ph && <FoodBubble food={food} size={48} />}
       <div className="grow">
         <h3 style={{ margin: 0 }}>{t(food.name)}</h3>
         <div className="small muted">{c ? t(c.name) : ''} · {servingText(food, U)}</div>
-        <div className="fdb-tags"><Tags f={food} /></div>
+        <div className="fdb-tags"><Tags f={food} />{tagsOf({ ...food, iq: false, fit: isFit(food) }).filter(x => x.key !== 'salt').map(x => <span key={x.key} className={'fdb-tag t-' + x.key}><Icon name={x.icon} />{t(x.name)}</span>)}</div>
       </div>
       <button type="button" className={'iconbtn food-star' + (fav ? ' on' : '')} aria-pressed={fav} aria-label={fav ? t('Remove from favourites') : t('Add to favourites')}
         onClick={() => update(s => { toggleFav(s, food.id) })}><Icon name={fav ? 'starFill' : 'star'} /></button>
     </div>
+    {food.built && !noBuild && <button type="button" className="card kh-link mb-open" style={{ '--tint': 'var(--orange)' }}
+      onClick={() => { close(); import('../components/kitchen/MealBuilder.jsx').then(m => setTimeout(() => m.mealBuilderSheet({ fid: food.id, iso, meal }), 120)) }}>
+      <span className="kh-link-ic" aria-hidden="true"><Icon name="sliders" /></span>
+      <span className="grow"><b>{t('Build it your way')}</b><span className="small muted">{t('Choose the ingredients and how much of each — the calories follow')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>}
     {sizes ? <div className="chips fdb-sizes" role="radiogroup" aria-label={t('Size')}>
       {sizes.map(z => <button key={z.key} type="button" role="radio" aria-checked={q === z.q} className={'chip nocap' + (q === z.q ? ' on' : '')} onClick={() => setQ(z.q)}>
         {t(z.name)}<small>{z.g ? ' · ' + n0(z.g) + ' ' + U('g') : ' · ' + n0(food.g * z.q) + ' ' + U(food.ml ? 'ml' : 'g')}</small>
@@ -269,13 +296,41 @@ function FoodCard({ food, iso, meal: meal0, close }) {
         {p100.na != null && <span><b>{n0(p100.na)}<small> {U('mg')}</small></b>{t('Sodium')}</span>}
       </div>
     </div>}
+    <FoodDetails food={food} q={q} p100={p100} St={St} />
     <div className="lbl2" style={{ margin: '14px 0 6px' }}>{t('Meal')}</div>
     <Segmented options={MEALS.map(m => ({ value: m.key, label: t(m.name) }))} value={meal} onChange={setMeal} />
     <div style={{ height: 14 }} />
     <Button variant="primary" icon="plus" onClick={add}>{t('Add to {0}', mealName(meal))}</Button>
   </div>
 }
-export const foodCardSheet = (food, { iso, meal } = {}) => ui().openSheet(close => <FoodCard food={food} iso={iso} meal={meal} close={close} />)
+
+/** 14.0 — everything else about a food: energy in kJ, fibre, how filling, protein per 100 kcal, its share of the day, what burns it, allergens, its recipe, compare. */
+function FoodDetails({ food, q, p100, St }) {
+  const kcal = food.kcal * q
+  const goal = foodGoalOf(St, todayISO()).kcal
+  const dens = p100 ? densityOf(p100.kcal) : null
+  const burn = burnMinutes(kcal, bodyKg(St) || 70)
+  const al = allergensOf(food)
+  const recipe = RECIPE_BY_ID[food.id]
+  const DENS = { low: ['Very filling for its calories', 'var(--green)'], medium: ['Average for its calories', 'var(--yellow)'], high: ['Energy-dense — small portions go far', 'var(--orange)'] }
+  return <>
+    <div className="lbl2" style={{ margin: '14px 0 6px' }}>{t('Details')}</div>
+    <div className="fdb-det">
+      <div className="fdb-det-i"><Icon name="bolt" /><span>{t('Energy')}</span><b>{n0(kcal)} {U('kcal')} · {n0(kJ(kcal))} {U('kJ')}</b></div>
+      {food.fib != null && <div className="fdb-det-i" style={{ '--c': 'var(--green)' }}><Icon name="leafy" /><span>{t('Fibre')}</span><b>{n1(food.fib * q)} {U('g')}</b></div>}
+      <div className="fdb-det-i" style={{ '--c': 'var(--red)' }}><Icon name="dumbbell" /><span>{t('Protein per 100 kcal')}</span><b>{n1(proteinPer100kcal(food))} {U('g')}</b></div>
+      {dens && <div className="fdb-det-i" style={{ '--c': DENS[dens][1] }}><Icon name="scale" /><span>{t(DENS[dens][0])}</span><b>{n0(p100.kcal)} {U('kcal')} / 100 {U(food.ml ? 'ml' : 'g')}</b></div>}
+      {goal > 0 && <div className="fdb-det-i" style={{ '--c': 'var(--indigo)' }}><Icon name="target" /><span>{t('Of your daily goal')}</span><b>{n0(kcal / goal * 100)}%</b></div>}
+      <div className="fdb-det-i" style={{ '--c': 'var(--teal)' }}><Icon name="figureWalk" /><span>{t('To burn it off')}</span><b>{t('{0} min walking · {1} min running', n0(burn.walk), n0(burn.run))}</b></div>
+    </div>
+    {al.length > 0 && <div className="fdb-al"><Icon name="alert" /><span>{t('May contain: {0}', listOf(al.map(a => t(a.name))))}</span><small>{t('Check the label — recipes and brands differ.')}</small></div>}
+    <div className="fdb-acts">
+      {recipe && <Button variant="tinted" icon="book" onClick={() => import('./Kitchen.jsx').then(m => m.recipeSheet(recipe.id))}>{t('See the recipe')}</Button>}
+      <Button variant="tinted" icon="compare" onClick={() => Promise.all([import('../lib/kitchenHub.js'), import('../components/kitchen/CompareSheet.jsx')]).then(([h, c]) => c.compareSheet(h.itemOf('F:' + food.id)))}>{t('Compare')}</Button>
+    </div>
+  </>
+}
+export const foodCardSheet = (food, { iso, meal, noBuild } = {}) => ui().openSheet(close => <FoodCard food={food} iso={iso} meal={meal} noBuild={noBuild} close={close} />)
 
 // ---- the Indomie builder --------------------------------------------------------------------
 const PRESET_BY_KEY = Object.fromEntries(INDOMIE_FOODS.map(f => [indomieKey(f.indomie), f]))
@@ -286,6 +341,25 @@ function Stepper({ value, max, onChange, label }) {
     <b aria-live="polite">{n0(value)}</b>
     <button type="button" className="iconbtn sm" aria-label={t('More')} disabled={value >= max} onClick={() => onChange(value + 1)}><Icon name="plus" /></button>
   </span>
+}
+
+/** 14.0 — about the pack: what is inside and its calories, how long the chosen way takes and how to do it. */
+function PackInfo({ pack, prep }) {
+  const parts = packParts(pack)
+  const total = parts.reduce((a, x) => a + x.kcal, 0)
+  const min = PREP_MIN[pack.cup && prep === 'soup' ? 'soup' : prep] || 0
+  return <div className="card fdb-pinfo">
+    <div className="fdb-pinfo-h"><Icon name="info" /><b>{t('About this pack')}</b><span className="small muted">{t(pack.full)} · {n0(pack.g)} {U('g')}</span></div>
+    <div className="fdb-pinfo-parts">
+      {parts.map(x => <span key={x.key}><b>{n0(x.kcal)}</b><small>{t(x.name)}</small></span>)}
+      <span className="all"><b>{n0(total)}</b><small>{t('The whole pack')}</small></span>
+    </div>
+    <div className="fdb-pinfo-how">
+      <Icon name="timer" /><span className="grow">{min ? t('Ready in {0} minutes', n0(min)) : t('No cooking')} — {t(pack.cup && prep === 'soup' ? 'Pour boiling water up to the line, close the lid and wait 3 minutes.' : PREP_HOW[prep])}</span>
+      {min > 0 && <button type="button" className="chip nocap" onClick={() => import('../components/kitchen/CookTimer.jsx').then(c => c.startCookTimer(min * 60, t(pack.name)))}>
+        <Icon name="timer" />{t('Start a {0} timer', t('{0} min', n0(min)))}</button>}
+    </div>
+  </div>
 }
 
 function IndomieBuilder({ cfg: cfg0, iso, meal: meal0, close }) {
@@ -316,6 +390,7 @@ function IndomieBuilder({ cfg: cfg0, iso, meal: meal0, close }) {
       </span>
       {preset && <span className="fdb-tag">{t('Ready-made')}</span>}
     </div>
+    <PackInfo pack={pack} prep={cfg.prep} />
     <div className="lbl2">{t('Pack')}</div>
     <div className="chips scroll fdb-packs">
       {PACKS.map(p => <button key={p.id} type="button" className={'chip nocap' + (cfg.pack === p.id ? ' on' : '')} aria-pressed={cfg.pack === p.id} onClick={() => set({ pack: p.id })}>
@@ -330,6 +405,10 @@ function IndomieBuilder({ cfg: cfg0, iso, meal: meal0, close }) {
     </div>
     <div className="lbl2">{t('Seasoning sachets')}</div>
     <Segmented options={[{ value: 0, label: t('None') }, { value: 0.5, label: t('Half') }, { value: 1, label: t('All of it') }]} value={cfg.season} onChange={x => set({ season: x })} />
+    {cfg.season > 0 && <label className="fdb-sauce">
+      <span className="grow"><b>{t('The oil sachet')}</b><small>{t('{0} kcal — leave it out for a lighter bowl', n0(packParts(pack).find(x => x.key === 'oil').kcal * cfg.season))}</small></span>
+      <Switch checked={cfg.oil !== false} onChange={x => set({ oil: x })} />
+    </label>}
     {pack.sauce && <label className="fdb-sauce">
       <span className="grow"><b>{t('The sauces')}</b><small>{t('Sweet soy sauce, chili sauce and fried onion')}</small></span>
       <Switch checked={cfg.sauce} onChange={x => set({ sauce: x })} />

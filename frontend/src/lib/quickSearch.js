@@ -56,8 +56,11 @@ export const PLACES = [
   ['Recovery', '/recovery', 'heartPulse', 'var(--green)', 'muscles rest sore ready'],
   ['Heart-rate zones', '#zones', 'heart', 'var(--red)', 'pulse bpm cardio karvonen'],
   ['Water', '/water', 'drop', 'var(--blue)', 'drink hydration reminders'],
-  ['Food & calories', '/food', 'fork', 'var(--orange)', 'meals nutrition macros protein diet'],
-  ['Kitchen', '/kitchen', 'leafy', 'var(--green)', 'recipes healthy cooking'],
+  ['Foods', '/food', 'fork', 'var(--orange)', 'meals nutrition macros protein diet food log calories اكل أكل طعام أطعمة اطعمة سعرات وجبات'],
+  ['Kitchen', '/kitchen', 'leafy', 'var(--green)', 'recipes healthy cooking dishes my cooking photos drinks gym meals مطبخ المطبخ طبخ طبخات أكلات اكلات وصفات طبخي مشروبات'],
+  // 14.0: street food (the meal builder), making Indomie
+  ['Street food', '/kitchen/s/street', 'bolt', 'var(--purple)', 'burger shawarma falafel kebab tikka sandwich laffa pizza hot dog zinger fries fast food meal builder ingredients برغر شاورما فلافل كباب تكة لفة ساندويتش بيتزا زنجر وجبات سريعة مكونات'],
+  ['Make your Indomie', '/kitchen/s/noodles', 'noodles', 'var(--red)', 'indomie noodles instant ramen اندومي إندومي نودلز'],
   ['Food database', '/foods', 'noodles', 'var(--yellow)', 'foods indomie noodles date cake canned tuna snacks chips chocolate iraqi dishes calories salt sugar'],
   ['Walking & steps', '/walk', 'figureWalk', 'var(--acc)', 'pedometer steps walk'],
   ['Burn calories', '/calories', 'flame', 'var(--red)', 'burn plan cardio'],

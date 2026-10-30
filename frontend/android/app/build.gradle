@@ -7,13 +7,29 @@ android {
         applicationId "io.github.m777m44.mahdijym"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 34
-        versionName "13.1.0"
+        versionCode 35
+        versionName "14.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // 14.0 — two apps that live side by side on one phone, each with its own name, icon and data:
+    //   offline  io.github.m777m44.mahdijym         "MAHDI-JYM"         everything inside — the app id
+    //            every earlier MAHDI-JYM had, so it installs over them and the data stays (blue OFF badge)
+    //   online   io.github.m777m44.mahdijym.online  "MAHDI-JYM Online"  light: pictures from GitHub,
+    //            and it updates itself inside the app (lib/liveUpdate.js) — green WEB badge
+    // Names in src/online/res/values*, icons in src/{offline,online}/res/mipmap-* (scripts/flavor-icons.sh).
+    flavorDimensions 'version'
+    productFlavors {
+        offline {
+            dimension 'version'
+        }
+        online {
+            dimension 'version'
+            applicationIdSuffix '.online'
         }
     }
     // Release signing is driven entirely by environment variables, so nothing secret has to

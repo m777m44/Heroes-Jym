@@ -48,6 +48,32 @@ it('the Arabic UI has no stray English', async () => {
       if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(name)
     }
   }
+  // 14.0: every section of the Kitchen, my cooking, the photo credits, the dish editor, the hub's other tabs
+  {
+    const { Routes, Route } = await import('react-router-dom')
+    const KS = await import('./KitchenSection.jsx'), DE = await import('./DishEditor.jsx'), KI = await import('./Kitchen.jsx')
+    const KHB0 = await import('../lib/kitchenHub.js')
+    const S0 = useStore.getInitialState().S
+    S0.customFoods = [...(S0.customFoods || []), { id: 'cf14', n: 'دولمة أمي', kcal: 420, p: 14, c: 50, f: 18, unit: 'serving', g: 300, custom: true, cat: 'mine', items: [{ id: 'rice', g: 300 }, { id: 'minced', g: 200 }], servings: 4, steps: ['اطبخها ٦٠ دقيقة'], min: 90, note: 'من وصفة أمي' }]
+    S0.kitchenFav = ['S:pepsi', 'N:pistachio', 'R:koshari']
+    S0.kitchenSeen = ['D:greendetox', 'S:redbull']
+    const scanK = (el, path, where) => {
+      let html
+      try { html = renderToString(React.createElement(MemoryRouter, { initialEntries: [path] }, el)) } catch (e) { throw new Error(where + ': ' + e.message) }
+      for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(where)
+    }
+    for (const key of [...KHB0.SECTIONS.map(x => x.key), 'fav', 'recent', 'all', 'mine', 'credits']) {
+      scanK(React.createElement(Routes, null, React.createElement(Route, { path: '/kitchen/s/:key', element: React.createElement(KS.default) })), '/kitchen/s/' + key, 'KitchenSection:' + key)
+    }
+    scanK(React.createElement(DE.default), '/kitchen/dish', 'DishEditor')
+    scanK(React.createElement(DE.default), '/kitchen/dish?id=cf14', 'DishEditor:edit')
+    if (typeof globalThis.sessionStorage === 'undefined') globalThis.sessionStorage = { m: {}, getItem(k) { return k in this.m ? this.m[k] : null }, setItem(k, v) { this.m[k] = String(v) }, removeItem(k) { delete this.m[k] } }
+    for (const tab of ['drinks', 'tools']) {
+      sessionStorage.setItem('mj-kitchen-tab', tab)
+      scanK(React.createElement(KI.default), '/kitchen', 'Kitchen:' + tab)
+    }
+    sessionStorage.removeItem('mj-kitchen-tab')
+  }
   // 9.0: a day plan from each template, started today (live card, timeline, totals)
   {
     const DP = await import('./DayPlan.jsx')
@@ -131,6 +157,14 @@ it('the Arabic UI has no stray English', async () => {
   const FDB = await import('./FoodDatabase.jsx')
   const { MORE_FOODS } = await import('../lib/foods/index.js')
   const NP = await import('../components/NotifPanel.jsx')
+  // 14.0: the Kitchen
+  const CMP = await import('../components/kitchen/CompareSheet.jsx')
+  const CKT = await import('../components/kitchen/CookTimer.jsx')
+  const MYD = await import('../components/kitchen/MyDish.jsx')
+  const PHH = await import('../components/kitchen/PhotoHero.jsx')
+  const KHB = await import('../lib/kitchenHub.js')
+  const MB = await import('../components/kitchen/MealBuilder.jsx')
+  const STR = await import('../lib/foods/street.js')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -176,7 +210,23 @@ it('the Arabic UI has no stray English', async () => {
     notifPanel: () => NP.notifPanelSheet(() => {}),
     profileIcon: () => { useStore.getState().S.profile = { name: 'مهدي', icon: 'dumbbell', color: '#ce1126' }; PF.profileSheet() },
     profilePhoto: () => { useStore.getState().S.profile = { name: 'مهدي', photo: 'data:image/jpeg;base64,AAAA', color: '#007a3d' }; PF.profileSheet() },
+    // 14.0: compare two foods (and the picker), the cooking timer, one of my dishes, a photo's credit
+    kitchenCompare: () => CMP.compareSheet(KHB.itemOf('F:dolma'), KHB.itemOf('S:pepsi')),
+    kitchenCompareDrinks: () => CMP.compareSheet(KHB.itemOf('D:greendetox'), KHB.itemOf('N:pistachio')),
+    kitchenComparePick: () => CMP.compareSheet(),
+    cookTimer: () => CKT.cookTimerSheet(),
+    myDish: () => MYD.myDishSheet('cf14'),
+    photoCredit: () => PHH.creditSheet('dolma', ['Iraqi Dolma-Mosul 01.jpg', 'Abdulsalam Al Dabbagh', 'CC BY-SA 4.0']),
+    // 14.0: the meal builder — every dish built from parts, a recipe, the ingredient picker, a changed dish in the log
+    ...Object.fromEntries(Object.keys(STR.BUILDS).map(id => ['builder_' + id, () => MB.mealBuilderSheet({ fid: id, iso: isoToday, meal: 'l' })])),
+    builderRecipe: () => MB.mealBuilderSheet({ rid: 'dolma', meal: 'd' }),
+    builderRecipeOpt: () => MB.mealBuilderSheet({ rid: RECIPES.find(r => r.ing.some(i => i.opt)).id, opt: RECIPES.find(r => r.ing.some(i => i.opt)).ing.filter(i => i.opt).map(i => i.id) }),
+    foodEntryBuilt: () => FS.entrySheet(isoToday, { id: 'mb1', f: null, n: 'x', kcal: 480, p: 30, c: 40, fat: 20, q: 1, m: 'l',
+      mb: { n: 'Beef burger', x: [['-', 'Mayonnaise'], ['+', 'Processed cheese slice'], ['^', 'Onions'], ['v', 'Ketchup'], ['-', 'Salt']] } }),
+    foodAmountBuilt: () => FS.amountSheet({ food: FOOD_BY_ID.shawarmachicken, iso: isoToday, meal: 'd' }),
   }
+  // 14.0: one of my own dishes (My cooking) — its steps in Arabic, a time on one of them
+  useStore.getState().update(x => { x.customFoods = [...(x.customFoods || []).filter(f => f.id !== 'cf14'), { id: 'cf14', n: 'دولمة أمي', kcal: 420, p: 14, c: 50, f: 18, unit: 'serving', g: 300, custom: true, cat: 'mine', items: [{ id: 'rice', g: 300 }, { id: 'minced', g: 200 }, { id: 'vineleaves', g: 120 }], servings: 4, steps: ['اطبخها على نار هادئة ٦٠ دقيقة'], min: 90, note: 'من وصفة أمي', meal: 'l' }] })
   for (const [name, open] of Object.entries(calls)) {
     useUI.setState({ sheets: [] })
     try { open() } catch (e) { throw new Error('open ' + name + ': ' + e.message) }
@@ -212,7 +262,8 @@ it('the Arabic UI has no stray English', async () => {
     localStorage.removeItem('mj_cloud')
   }
   // 8.0: Google's own product names stay Latin in Arabic too (as on the account screens)
-  const ALLOWED = [/MAHDI-JYM/, /^English$/, /FitNotes/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
+  // 14.0: a photo's credit names its photographer, licence and file as Wikimedia Commons has them
+  const ALLOWED = [{ test: l => [...found[l]].every(w => w === 'sheet:photoCredit') },/MAHDI-JYM/, /^English$/, /FitNotes/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
   const stray = Object.entries(found).filter(([l]) => !ALLOWED.some(r => r.test(l))).map(([l, s]) => `${[...s].join(',')}\t${l}`).sort()
   expect(stray).toEqual([])
 }, 60000)   // 12.0: it renders every screen with ~400 drinks and nuts drawn — give slow CI machines time

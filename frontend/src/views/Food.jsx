@@ -1,6 +1,8 @@
 // 5.0 — /food: the food log. A day at a time (‹ ›), the calorie ring against the goal, protein /
 // carbs / fat, a few honest pointers, the four meals with what you ate, and the week.
 // ?d=YYYY-MM-DD opens a given day.
+// 14.0 — "Foods": the Kitchen (المطبخ) sits on top — every food, dish, recipe and drink of the app
+// with real photos (views/Kitchen.jsx) — and what you ate shows its real photo too.
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
@@ -20,12 +22,12 @@ import DrinkGlass from '../components/DrinkGlass.jsx'
 import { SODA_BY_ID, PACKS } from '../lib/sodas.js'
 import { NUT_BY_ID, FORMS } from '../lib/nuts.js'
 import { drinkOf } from '../lib/drinks.js'
-import { FOODS } from '../lib/foodDb.js'
+import { Photo } from '../components/FoodPhoto.jsx'
+import { KITCHEN_TOTAL, KITCHEN_FACES } from '../lib/kitchenFaces.js'
 import {
   FoodRing, FoodBubble, addFoodSheet, entrySheet, foodGoalSheet, customFoodSheet, GOAL_SOURCE, n0, qtyLabel,
 } from '../components/food/FoodSheets.jsx'
 
-const FOOD_COUNT = FOODS.length   // 13.0: the food database's size, on its link
 const shift = (iso, d) => isoOf(new Date(new Date(iso + 'T12:00:00').getTime() + d * 864e5))
 const MACROS = [
   { k: 'p', goal: 'protein', name: 'Protein', color: 'var(--red)' },
@@ -59,8 +61,19 @@ export default function Food() {
   return <div className="food">
     <div className="hdr">
       <BackButton fallback="/home" />
-      <div><h1>{t('Food log')}</h1><div className="sub">{t('What you eat, against your daily goal')}</div></div>
+      <div><h1>{t('Foods')}</h1><div className="sub">{t('Your food log — and the Kitchen with every food and drink')}</div></div>
     </div>
+
+    <button type="button" className="card fk-hero" onClick={() => nav('/kitchen')} aria-label={t('Kitchen')}>
+      <span className="fk-mosaic" aria-hidden="true">{KITCHEN_FACES.map(k => <Photo key={k} k={k} size="m" live alt="" />)}</span>
+      <span className="fk-shade" aria-hidden="true" />
+      <span className="fk-t">
+        <span className="fk-k"><Icon name="fork" />{t('Kitchen')}</span>
+        <b>{t('Everything to eat and drink')}</b>
+        <span className="fk-s">{t('Cooking, my own dishes, ready foods and drinks — {0} with real photos', KITCHEN_TOTAL.toLocaleString(dateLocale()))}</span>
+      </span>
+      <span className="fk-go" aria-hidden="true"><Icon name="chevronRight" /></span>
+    </button>
 
     <div className="food-day" role="group" aria-label={t('Day')}>
       <button className="iconbtn" aria-label={t('Previous day')} onClick={() => setIso(prev)}><Icon name="chevronLeft" /></button>
@@ -125,10 +138,11 @@ export default function Food() {
             const sd = e.sd && SODA_BY_ID[e.sd], nt = e.nut && NUT_BY_ID[e.nut], dr = !sd && !nt && e.dr ? drinkOf(S, e.dr) : null
             const sub = f ? servingText(f, U) : sd ? t(PACKS[e.pk] ? PACKS[e.pk].name : 'Soft drinks') : nt ? t(FORMS[e.fm] || 'Nuts') : dr ? t('Drinks') : e.r ? t('Home recipe') : t('Quick calories')
             return <div key={e.id} className="item" role="button" tabIndex={0} onClick={() => entrySheet(iso, e)} onKeyDown={ev => { if (ev.key === 'Enter') entrySheet(iso, e) }}>
-              {sd ? <span className="food-x-art"><SodaArt soda={sd} pk={e.pk} ml={e.ml} size={24} /></span>
-                : nt ? <span className="food-x-art"><NutArt nut={nt} form={e.fm} size={32} /></span>
-                  : dr ? <span className="food-x-art"><DrinkGlass drink={dr} size={28} /></span>
-                    : <FoodBubble food={f} size={32} />}
+              {sd ? <FoodBubble food={{ id: e.sd }} kind="S" size={32} fallback={<span className="food-x-art"><SodaArt soda={sd} pk={e.pk} ml={e.ml} size={24} /></span>} />
+                : nt ? <FoodBubble food={{ id: e.nut }} kind="N" size={32} fallback={<span className="food-x-art"><NutArt nut={nt} form={e.fm} size={32} /></span>} />
+                  : dr ? <FoodBubble food={dr.mine ? null : { id: e.dr }} kind="D" size={32} fallback={<span className="food-x-art"><DrinkGlass drink={dr} size={28} /></span>} />
+                    : e.r ? <FoodBubble food={{ id: e.r }} kind="R" size={32} />
+                      : <FoodBubble food={f} size={32} />}
               <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{sub}</div></div>
               <b className="food-kcal">{n0(entryKcal(e))}</b>
             </div>
@@ -137,16 +151,6 @@ export default function Food() {
       </div>
     })}
 
-    <button className="card food-kitchen-link fdb-link" onClick={() => nav('/foods')}>
-      <span className="startw-ico" style={{ background: 'var(--teal)' }}><Icon name="book" /></span>
-      <span className="grow"><b>{t('Food database')}</b><span className="small muted">{t('{0} foods — Indomie in every way, date cakes, canned food, shop snacks and Iraqi dishes', FOOD_COUNT.toLocaleString(dateLocale()))}</span></span>
-      <Icon name="chevronRight" className="chev" />
-    </button>
-    <button className="card food-kitchen-link" onClick={() => nav('/kitchen')}>
-      <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
-      <span className="grow"><b>{t('My kitchen')}</b><span className="small muted">{t('Recipes from what you have at home, a meal builder and a shopping list')}</span></span>
-      <Icon name="chevronRight" className="chev" />
-    </button>
 
     <div className="card food-week">
       <div className="row between" style={{ marginBottom: 10 }}>

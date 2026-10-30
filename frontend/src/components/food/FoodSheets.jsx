@@ -24,6 +24,7 @@ import { useIncremental, LazyMore } from '../LazyList.jsx'
 import SodaArt from '../SodaArt.jsx'
 import NutArt from '../NutArt.jsx'
 import Icon from '../Icon.jsx'
+import { Photo, usePhotos } from '../FoodPhoto.jsx'
 import { Button, Segmented } from '../ui.jsx'
 
 const ui = () => useUI.getState()
@@ -36,12 +37,20 @@ const catOf = key => FOOD_CATS.find(c => c.key === key)
 export const mealName = key => t((MEALS.find(m => m.key === key) || MEALS[3]).name)
 const qtyText = q => (q === 1 ? '' : '× ' + n1(q) + ' · ')
 
-/** The coloured bubble for a food (its category's icon), or a fork for your own / quick ones. */
-export function FoodBubble({ food, size = 36 }) {
+/**
+ * The coloured bubble for a food (its category's icon), or a fork for your own / quick ones.
+ * 14.0: a food with a real photo (lib/photos) shows the photo instead — the photo list loads on
+ * first use, so the bubble draws at once and the photo fades in.
+ */
+export function FoodBubble({ food, size = 36, kind = 'F', fallback = null }) {
   const c = food && catOf(food.cat)
-  return <span className="food-bub" style={{ '--tint': c ? c.color : 'var(--accent, var(--acc))', width: size, height: size }}>
+  const ph = usePhotos()
+  const k = ph && food && food.id && !food.custom ? ph.photoKey(kind, food.id) : null
+  const bubble = fallback || <span className="food-bub" style={{ '--tint': c ? c.color : 'var(--accent, var(--acc))', width: size, height: size }}>
     <Icon name={c ? c.icon : 'fork'} />
   </span>
+  if (!k) return bubble
+  return <span className="food-bub-ph" style={{ width: size, height: size }}><Photo k={k} size="t" alt="" fallback={bubble} /></span>
 }
 
 /** A ring of eaten / goal (SVG). Over the goal it turns orange, 10 % over red. */
@@ -122,8 +131,8 @@ function AddFood({ iso, meal: meal0, close }) {
       <Icon name="chevronRight" className="chev" />
     </button>}
     <div className="list food-list">
-      {list.slice(0, inc.n).map(f => <div key={f.id} className="item" role="button" tabIndex={0} onClick={() => amountSheet({ food: f, iso, meal })}
-        onKeyDown={e => { if (e.key === 'Enter') amountSheet({ food: f, iso, meal }) }}>
+      {list.slice(0, inc.n).map(f => <div key={f.id} className="item" role="button" tabIndex={0} onClick={() => pickFood(f, iso, meal)}
+        onKeyDown={e => { if (e.key === 'Enter') pickFood(f, iso, meal) }}>
         <FoodBubble food={f} />
         <div className="grow">
           <div className="tt">{foodName(St, f)}</div>
@@ -169,6 +178,11 @@ function AddFood({ iso, meal: meal0, close }) {
     <div style={{ height: 8 }} />
     <Button variant="primary" icon="check" onClick={close}>{t('Done')}</Button>
   </div>
+}
+/** 14.0 — a dish built from parts opens in the meal builder (nothing counted until you add it); anything else asks how much. */
+function pickFood(f, iso, meal) {
+  if (f && f.built) import('../kitchen/MealBuilder.jsx').then(m => m.mealBuilderSheet({ fid: f.id, iso, meal }))
+  else amountSheet({ food: f, iso, meal })
 }
 export const addFoodSheet = ({ iso, meal } = {}) => ui().openSheet(close => <AddFood iso={iso} meal={meal} close={close} />)
 
@@ -225,6 +239,9 @@ function Amount({ food, iso, meal: meal0, close, entry }) {
       {f.na != null && <span>{t('Sodium')} <b>{n0(f.na * q)} {U('mg')}</b></span>}
       {f.sug != null && <span>{t('Sugars')} <b>{n1(f.sug * q)} {U('g')}</b></span>}
     </div>}
+    {f && f.built && !entry && <button className="food-indo-edit" onClick={() => { close(); import('../kitchen/MealBuilder.jsx').then(m => setTimeout(() => m.mealBuilderSheet({ fid: f.id, iso, meal }), 120)) }}>
+      <Icon name="sliders" />{t('Choose the ingredients and how much of each — the calories follow')}
+    </button>}
     {f && f.indomie && !entry && <button className="food-indo-edit" onClick={() => { close(); import('../../views/FoodDatabase.jsx').then(m => setTimeout(() => m.indomieSheet({ cfg: f.indomie, iso, meal }), 120)) }}>
       <Icon name="noodles" />{t('Change how it is made or what goes in')}
     </button>}

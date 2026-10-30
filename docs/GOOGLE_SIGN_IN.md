@@ -162,6 +162,10 @@ package name + signing certificate.
    | Package name | `io.github.m777m44.mahdijym` |
    | SHA-1 certificate fingerprint | `8F:72:13:9B:43:D8:29:DA:2A:00:A3:2A:B6:A5:3C:90:20:C4:1D:76` |
 
+   14.0: the online app is its own app, `io.github.m777m44.mahdijym.online` — for “Sign in with
+   Google” there, create a **second Android client** with that package name and the same SHA-1.
+   (The no-setup Drive file — “Google Drive, no setup” — works in both apps without it.)
+
    The SHA-1 belongs to `frontend/android/keystore/mahdi-jym-public.p12`, which the GitHub
    Actions APK build signs with (`CN=MAHDI-JYM, O=MAHDI-JYM, C=IQ`; SHA-256
    `73:57:F6:D6:ED:71:B6:22:0F:28:E0:B0:8B:BA:C6:5E:E0:EB:05:9B:C1:A3:42:4B:F2:78:15:F7:05:EA:F2:AE`).
@@ -249,6 +253,10 @@ access token); no other dependencies. The web/self-hosted build keeps its own ac
 4. **Credentials → Create credentials → OAuth client ID → Android**:
    - Package name: `io.github.m777m44.mahdijym`
    - SHA-1: `8F:72:13:9B:43:D8:29:DA:2A:00:A3:2A:B6:A5:3C:90:20:C4:1D:76`
+
+   (14.0) نسخة الأونلاين تطبيق مستقل باسم الحزمة `io.github.m777m44.mahdijym.online` — لتسجيل الدخول
+   بحساب Google فيها أنشئ **عميل Android ثانياً** بهذا الاسم وبالبصمة نفسها. أما «Google Drive بلا إعداد»
+   فيعمل في التطبيقين دون ذلك.
 5. انتظر بضع دقائق، ثم من الهاتف: الإعدادات ← حساب Google ← **تسجيل الدخول باستخدام Google**.
 
 لا يحتاج التطبيق أي Client ID أو كلمة سر داخل الكود. Google يتعرّف عليه من اسم الحزمة وبصمة التوقيع.

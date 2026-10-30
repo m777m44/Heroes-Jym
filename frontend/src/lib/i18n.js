@@ -48,7 +48,7 @@ export const dateLocale = () => DATE_LOCALES[lang] || 'en-GB'
 
 // Unit labels. English abbreviations everywhere except Arabic, which has its own (كغ، كم…).
 // 'mn' is the minutes part of "1h 5m" (written 'm' outside Arabic, so it can't clash with metres).
-const UNIT_AR = { kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث', ml: 'مل', g: 'غ', GMT: 'غرينتش', L: 'لتر', mg: 'ملغ' }
+const UNIT_AR = { kJ: 'كيلوجول', kg: 'كغ', lb: 'رطل', km: 'كم', 'km/h': 'كم/س', kcal: 'سعرة', cm: 'سم', min: 'دقيقة', h: 'س', mn: 'د', s: 'ث', ml: 'مل', g: 'غ', GMT: 'غرينتش', L: 'لتر', mg: 'ملغ' }
 export const U = u => lang === 'ar' ? (UNIT_AR[u] || u) : (u === 'mn' ? 'm' : u)
 
 // Translate a source string; {0},{1}… are replaced with args (also on the English fallback).

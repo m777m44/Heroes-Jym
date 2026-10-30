@@ -21,6 +21,8 @@ import { burst, lastTap } from '../lib/motion.js'
 import NutArt from '../components/NutArt.jsx'
 import AnimatedNumber from '../components/AnimatedNumber.jsx'
 import Icon from '../components/Icon.jsx'
+import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
+import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
 
 const ui = () => useUI.getState()
@@ -61,7 +63,7 @@ function PortionPicker({ n, P }) {
   return <>
     {n.forms.length > 1 && <div className="nt-forms" role="radiogroup" aria-label={t('How it is prepared')}>
       {n.forms.map(f => <button key={f} role="radio" aria-checked={P.form === f} className={'nt-form' + (P.form === f ? ' on' : '')} onClick={() => P.setForm(f)}>
-        <NutArt nut={n} form={f} size={30} /><span>{t(FORMS[f])}</span></button>)}
+        <NutArt nut={n} form={f} size={30} drawn /><span>{t(FORMS[f])}</span></button>)}
     </div>}
     <Segmented options={units.map(x => ({ value: x, label: t(UNITS[x]) }))} value={P.u} onChange={P.setUnit} />
     <div className="kit-sv nt-amt">
@@ -76,7 +78,7 @@ function PortionPicker({ n, P }) {
     <div className="nt-quick scroll">
       {QUICK[P.u].map(v => <button key={v} className={'chip nocap' + (P.a === v ? ' on' : '')} onClick={() => P.setA(v)}>{amountText(v, P.u)}</button>)}
     </div>
-    {n.shell && (P.u === 'g' || P.u === 'handful') && <label className="dk-wtoggle nt-shell"><NutArt nut={n} shell size={26} />
+    {n.shell && (P.u === 'g' || P.u === 'handful') && <label className="dk-wtoggle nt-shell"><NutArt nut={n} shell size={26} drawn />
       <span className="grow">{n.cat === 'dried' ? t('Weighed with the stone') : t('Weighed in the shell')}<small className="muted">{P.shell ? t('Edible part: {0} g', n0(P.g)) : n.cat === 'dried' ? t('About {0}% of the weight is the fruit itself', n0(n.ef * 100)) : t('About {0}% of the weight is the nut itself', n0(n.ef * 100))}</small></span>
       <Switch checked={P.shell} onChange={P.setShell} /></label>}
   </>
@@ -107,10 +109,12 @@ function NutView({ id, iso: iso0, meal: meal0, close }) {
     close()
     toast(t('Added {0} · {1} kcal', nutName(n), n0(x.kcal)))
   }
+  const ph = photoKey('N', n.id)
   return <div className="nt-view" style={{ '--c': n.col }}>
-    <div className="nt-hero">
+    <PhotoHero k={ph} alt={nutName(n)} />
+    <div className={'nt-hero' + (ph ? ' with-ph' : '')}>
       <div className="nt-hero-bg" aria-hidden="true" />
-      <NutArt nut={n} form={P.form} shell={P.shell} pile size={124} live label={nutName(n)} />
+      {!ph && <NutArt nut={n} form={P.form} shell={P.shell} pile size={124} live label={nutName(n)} />}
       <div className="nt-hero-t">
         <h2>{nutName(n)}</h2>
         <div className="sd-tags">
@@ -212,7 +216,7 @@ export default function Nuts() {
   const R = 26, C = 2 * Math.PI * R
   return <div className="narrow nt-page">
     <div className="hdr">
-      <BackButton fallback="/tools" />
+      <BackButton fallback="/kitchen/s/nuts" />
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('Nuts & seeds')}</h1><div className="sub">{t('Nuts, seeds, dried fruits and dates — with their Iraqi names')}</div></div>
     </div>
 

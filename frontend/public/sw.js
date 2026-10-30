@@ -1,7 +1,8 @@
 /* MAHDI-JYM service worker — works fully offline.
    - App shell: every file of the build is precached at install (the list and VERSION are
      written into this file by vite.config.js → precacheSW), so all screens open offline.
-   - Hashed assets (assets/*) and exercise media (img/, gif/) are cache-first.
+   - Hashed assets (assets/*) and exercise media (img/, gif/) are cache-first — 14.0: and the
+     kitchen's food photos (food/), which load as they are shown instead of at install.
    - Exercise media can be saved in bulk from Settings → Offline (lib/offlineMedia.js); they
      live in their own cache that survives app updates.
    - Everything else: network first, cache as fallback. /api/ is never cached.
@@ -76,7 +77,8 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname.includes('/api/')) return    // never cache auth/data
 
-  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/') || url.pathname.includes('/wallpapers/') || url.pathname.includes('/sounds/')
+  // 14.0: the kitchen's photos (food/) too — a photo's file never changes
+  const isMedia = url.pathname.includes('/img/') || url.pathname.includes('/gif/') || url.pathname.includes('/wallpapers/') || url.pathname.includes('/sounds/') || url.pathname.includes('/food/')
   const isAsset = url.pathname.includes('/assets/')
   if (isMedia || isAsset) {
     // cache-first: media never change, hashed assets are immutable

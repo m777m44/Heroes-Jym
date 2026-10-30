@@ -78,3 +78,20 @@ and are **not** covered by MAHDI-JYM's AGPL license — they remain under that d
 The media files are not distributed in this repository; they are downloaded from the upstream
 source on first run. If you redistribute MAHDI-JYM with the media included, review the upstream
 license first.
+
+## Food photographs (14.0)
+
+The kitchen's 780 food and drink photos (`frontend/public/food/m/*.webp`, `frontend/public/food/t/*.webp`)
+are photographs from **[Wikimedia Commons](https://commons.wikimedia.org/)**, each used under the free
+licence its author chose: **Creative Commons Attribution (CC BY 1.0 – 4.0, some ported)**, **Attribution-ShareAlike
+(CC BY-SA 2.0 – 4.0, some ported)**, **CC0** or the **public domain**. Files under GFDL-only terms, drawings,
+logos and AI-generated images are excluded by `frontend/scripts/food-photos/fetch.mjs`.
+
+- **Attribution:** the file name, the author and the licence of every photo are in
+  [`frontend/src/lib/photos/credits.json`](frontend/src/lib/photos/credits.json) and are shown in the app —
+  the camera button on each photo, and Kitchen → Tools → *Photo credits*. Each file's page is
+  `https://commons.wikimedia.org/wiki/File:<file name>`, which links its licence.
+- **Changes:** the photos were cropped (to 4:3 and to a square) and resized for the app, and saved as WebP.
+- **ShareAlike:** the cropped and resized versions of CC BY-SA photos are shared under the same licence as
+  their originals. The photos are separate works aggregated with the app; they do not change the app's
+  AGPL v3.0 licence, and the app's licence does not change theirs.

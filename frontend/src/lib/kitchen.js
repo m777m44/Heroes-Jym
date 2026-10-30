@@ -101,8 +101,93 @@ const ING_ROWS = [
   ['baharat', 'pantry', 'Iraqi spice mix (bahar)', 300, 10, 60, 8, 'tsp', 2.5],
   ['driedlime', 'pantry', 'Dried lime (noomi Basra)', 250, 4, 60, 1, 'piece', 6],
   ['sesame', 'fruit', 'Sesame seeds', 573, 17.7, 23.4, 49.7, 'tbsp', 9],
+  // 14.0 — for the new recipes: gym meals, Arab, Indian and Western dishes (USDA, as bought)
+  ['broccoli', 'veg', 'Broccoli', 34, 2.8, 6.6, 0.4, 'cup', 91],
+  ['sweetpotato', 'veg', 'Sweet potato', 86, 1.6, 20, 0.1, 'piece', 130],
+  ['corn', 'veg', 'Sweet corn', 86, 3.3, 16.7, 1.4, 'cup', 150],
+  ['molokhia', 'veg', 'Molokhia leaves', 34, 4.7, 5.8, 0.3, 'cup', 100],
+  ['ginger', 'veg', 'Fresh ginger', 80, 1.8, 18, 0.8, 'tsp', 3],
+  ['avocado', 'fruit', 'Avocado', 160, 2, 8.5, 14.7, 'piece', 140],
+  ['berries', 'fruit', 'Berries', 45, 0.8, 11, 0.4, 'cup', 145],
+  ['chia', 'fruit', 'Chia seeds', 486, 16.5, 42, 30.7, 'tbsp', 12],
+  ['salmon', 'protein', 'Salmon', 208, 20.4, 0, 13.4, 'piece', 150],
+  ['whey', 'protein', 'Whey protein powder', 380, 78, 8, 5, 'g', 30],
+  ['greekyogurt', 'dairy', 'Greek yogurt', 59, 10.2, 3.6, 0.4, 'cup', 170],
+  ['mozzarella', 'dairy', 'Mozzarella', 300, 22, 2.2, 22.4, 'slice', 28],
+  ['cream', 'dairy', 'Cooking cream', 340, 2.8, 2.7, 36, 'tbsp', 15],
+  ['quinoa', 'grains', 'Quinoa', 368, 14.1, 64.2, 6.1, 'cup', 170],
+  ['tortilla', 'grains', 'Flour tortilla', 310, 8.2, 51, 7.7, 'piece', 60],
+  ['wholebread', 'grains', 'Whole-wheat bread', 247, 13, 41, 3.4, 'slice', 35],
+  ['granola', 'grains', 'Granola', 471, 10, 64, 20, 'handful', 30],
+  ['soysauce', 'pantry', 'Soy sauce', 53, 8.1, 4.9, 0.6, 'tbsp', 16],
+  ['mayo', 'pantry', 'Mayonnaise', 680, 1, 0.6, 75, 'tbsp', 14],
+  // 14.0 — the meal builder's street food: what goes into a burger, a shawarma, a falafel or a
+  // kebab sandwich, a pizza, a hot dog… (cooked as served — USDA and restaurant averages)
+  ['beefpatty', 'protein', 'Beef burger patty', 254, 25.8, 0, 16.6, 'piece', 100],
+  ['chickenpatty', 'protein', 'Crispy chicken fillet', 260, 17, 14, 15, 'piece', 110],
+  ['veggiepatty', 'legumes', 'Veggie burger patty', 180, 12, 15, 8, 'piece', 85],
+  ['shawarmameat', 'protein', 'Meat shawarma', 230, 24, 2, 14, 'g', 100],
+  ['shawarmachicken', 'protein', 'Chicken shawarma', 185, 25, 2, 8.5, 'g', 100],
+  ['grilledchicken', 'protein', 'Grilled chicken', 165, 31, 0, 3.6, 'g', 100],
+  ['chickentikka', 'protein', 'Chicken tikka', 165, 26, 2, 6, 'g', 100],
+  ['meattikka', 'protein', 'Lamb tikka', 230, 25, 1, 14, 'g', 100],
+  ['kebab', 'protein', 'Grilled kebab', 265, 18, 3, 20, 'piece', 90],
+  ['liver', 'protein', 'Liver (meelaq), cooked', 175, 26, 4, 6, 'g', 100],
+  ['friedchicken', 'protein', 'Fried chicken', 270, 22, 9, 16.5, 'piece', 120],
+  ['fishfillet', 'protein', 'Breaded fish fillet', 230, 14, 17, 12, 'piece', 100],
+  ['sausage', 'protein', 'Sausage (hot dog)', 260, 11, 3, 23, 'piece', 45],
+  ['pepperoni', 'protein', 'Pepperoni', 494, 23, 1.2, 44, 'slice', 2],
+  ['kubba', 'protein', 'Fried kubba (bulgur and meat)', 260, 11, 25, 13, 'piece', 60],
+  ['aroog', 'protein', 'Aroog (fried meat and vegetable patties)', 250, 12, 15, 16, 'piece', 50],
+  ['falafel', 'legumes', 'Falafel', 333, 13.3, 31.8, 17.8, 'piece', 17],
+  ['halloumi', 'dairy', 'Halloumi', 321, 21, 2, 25, 'slice', 30],
+  ['cheeseslice', 'dairy', 'Processed cheese slice', 320, 17, 7, 25, 'slice', 20],
+  ['pickles', 'veg', 'Pickles (torshi)', 13, 0.5, 2.3, 0.2, 'handful', 30],
+  ['fries', 'veg', 'French fries', 312, 3.4, 41, 15, 'handful', 40],
+  ['onionrings', 'veg', 'Onion rings', 330, 4.5, 36, 19, 'piece', 12],
+  ['chili', 'veg', 'Green chilli', 40, 2, 9, 0.2, 'piece', 15],
+  ['mushroom', 'veg', 'Mushrooms', 22, 3.1, 3.3, 0.3, 'cup', 70],
+  ['burgerbun', 'grains', 'Burger bun', 279, 9.5, 50, 4.3, 'piece', 60],
+  ['hotdogbun', 'grains', 'Hot dog bun', 280, 9.5, 50, 4.5, 'piece', 45],
+  ['saj', 'grains', 'Saj bread (thin)', 275, 9, 56, 1.5, 'piece', 70],
+  ['toastbread', 'grains', 'Toast bread', 265, 9, 49, 3.2, 'slice', 28],
+  ['pizzadough', 'grains', 'Pizza base', 266, 9, 50, 3.3, 'g', 100],
+  ['tacoshell', 'grains', 'Taco shell', 470, 7, 62, 22, 'piece', 13],
+  ['breadcrumbs', 'grains', 'Breadcrumbs', 395, 13, 72, 5.3, 'tbsp', 7],
+  ['sushirice', 'grains', 'Sushi rice (cooked)', 150, 2.6, 33, 0.3, 'cup', 150],
+  ['ramennoodles', 'grains', 'Ramen noodles (cooked)', 138, 4.5, 25, 2, 'cup', 180],
+  ['wrapper', 'grains', 'Dumpling wrappers', 290, 9, 58, 1.9, 'piece', 8],
+  ['ketchup', 'pantry', 'Ketchup', 101, 1, 27, 0.1, 'tbsp', 17],
+  ['mustard', 'pantry', 'Mustard', 60, 3.7, 5.8, 3.3, 'tsp', 5],
+  ['toum', 'pantry', 'Garlic sauce (toum)', 450, 2, 6, 47, 'tbsp', 15],
+  ['hotsauce', 'pantry', 'Hot sauce', 90, 1.5, 19, 0.9, 'tsp', 6],
+  ['bbqsauce', 'pantry', 'Barbecue sauce', 172, 0.8, 41, 0.6, 'tbsp', 17],
+  ['tahinisauce', 'pantry', 'Tahini sauce (tarator)', 300, 8.5, 10.5, 27, 'tbsp', 15],
+  ['pizzasauce', 'pantry', 'Pizza sauce', 54, 2, 9, 1.4, 'tbsp', 15],
+  ['amba', 'pantry', 'Amba (mango pickle sauce)', 175, 1.5, 30, 6, 'tbsp', 15],
+  ['zaatar', 'pantry', 'Za’atar mix', 360, 11, 40, 18, 'tbsp', 8],
+  ['salt', 'pantry', 'Salt', 0, 0, 0, 0, 'tsp', 6],
 ]
-export const INGREDIENTS = ING_ROWS.map(([id, cat, name, kcal, p, c, f, unit, g]) => ({ id, cat, name, kcal, p, c, f, unit, g }))
+// 14.0 — sodium (mg per 100 g as bought or served), so the meal builder can show the salt of
+// what you build. Plain ingredients from USDA; breads, sauces and street-food parts as sold.
+const NA = {
+  egg: 142, chicken: 82, chickenbreast: 74, meat: 72, minced: 75, fish: 60, tuna: 247, milk: 44, yogurt: 46, whitecheese: 1116,
+  cheddar: 621, geymar: 30, butter: 11, labneh: 400, tomato: 5, onion: 4, potato: 6, cucumber: 2, eggplant: 2, zucchini: 8, okra: 7,
+  pepper: 4, carrot: 69, garlic: 17, lettuce: 28, parsley: 56, greenbeans: 6, peas: 5, spinach: 79, lemon: 2, bread: 500, samoon: 500,
+  rice: 5, bulgur: 17, pasta: 6, vermicelli: 6, oats: 2, flour: 2, lentils: 6, chickpeas: 7, fava: 5, whitebeans: 6, oil: 0, oliveoil: 2,
+  tahini: 115, dibis: 10, honey: 4, sugar: 1, tomatopaste: 59, dates: 2, banana: 1, apple: 1, raisins: 11, walnuts: 2, almonds: 1,
+  olives: 1556, turnip: 67, chard: 213, dill: 61, cauliflower: 30, herbs: 40, celery: 80, mint: 31, vineleaves: 9, kidneybeans: 2, wheat: 2,
+  semolina: 1, wholewheatflour: 2, tamarind: 28, datepaste: 2, cumin: 168, turmeric: 38, cinnamon: 10, cardamom: 18, baharat: 30, driedlime: 10,
+  sesame: 11, broccoli: 33, sweetpotato: 55, corn: 15, molokhia: 43, ginger: 13, avocado: 7, berries: 1, chia: 16, salmon: 59, whey: 200,
+  greekyogurt: 36, mozzarella: 627, cream: 38, quinoa: 5, tortilla: 600, wholebread: 450, granola: 25, soysauce: 5500, mayo: 635,
+  beefpatty: 330, chickenpatty: 600, veggiepatty: 450, shawarmameat: 520, shawarmachicken: 480, grilledchicken: 300, chickentikka: 400,
+  meattikka: 300, kebab: 380, liver: 90, friedchicken: 600, fishfillet: 450, sausage: 1000, pepperoni: 1760, kubba: 400, aroog: 450,
+  falafel: 294, halloumi: 1100, cheeseslice: 1300, pickles: 1200, fries: 210, onionrings: 430, chili: 7, mushroom: 5, burgerbun: 490,
+  hotdogbun: 480, saj: 450, toastbread: 490, pizzadough: 500, tacoshell: 400, breadcrumbs: 730, sushirice: 300, ramennoodles: 100,
+  wrapper: 560, ketchup: 907, mustard: 1100, toum: 500, hotsauce: 1800, bbqsauce: 1000, tahinisauce: 300, pizzasauce: 450, amba: 1500,
+  zaatar: 1500, salt: 38758,
+}
+export const INGREDIENTS = ING_ROWS.map(([id, cat, name, kcal, p, c, f, unit, g]) => ({ id, cat, name, kcal, p, c, f, unit, g, na: NA[id] || 0 }))
 export const ING_BY_ID = Object.fromEntries(INGREDIENTS.map(x => [x.id, x]))
 
 /** What "the basics" fills the kitchen with. */
@@ -178,14 +263,43 @@ const ST = {
   mix: 'Mix and serve.',
   bulgur: 'Add the bulgur and water and cook covered for 15 minutes.',
   spinach: 'Add the spinach and cook until it wilts.',
+  // 14.0
+  balls: 'Mix the minced meat with the spices and shape it into small balls.',
+  brownBalls: 'Brown the meatballs in the oil, then take them out.',
+  dbSauce: 'Add the tomatoes, tomato paste and a cup of water, put the meatballs back and simmer for 20 minutes.',
+  bulgurBroth: 'Add two cups of the chicken broth to the bulgur and cook covered for 15 minutes.',
+  bulgurChicken: 'Serve the bulgur with the chicken on top.',
+  boxUp: 'Divide into boxes — they keep in the fridge for up to 3 days.',
+  grillVeg: 'Roast or grill the vegetables with the olive oil until soft.',
+  cookQuinoa: 'Rinse the quinoa and cook it in twice its volume of water for 15 minutes.',
+  dressing: 'Dress with the olive oil and lemon just before serving.',
+  panFry: 'Cook in a non-stick pan for 2–3 minutes a side.',
+  layerJar: 'Layer the yogurt and the fruit in a glass or jar.',
+  overnight: 'Cover and leave in the fridge overnight.',
+  wrapRoll: 'Fill the tortilla and roll it up tightly.',
+  stirFryHigh: 'Stir-fry over high heat for 5–6 minutes, stirring all the time.',
+  muffinTin: 'Pour into a muffin tin.',
+  friedRiceEgg: 'Scramble the egg in the oil, then add the cooked rice and the vegetables.',
+  fryOnionsCrispy: 'Fry the onion slowly until dark and crispy.',
+  koshariLayer: 'Layer the rice, lentils and pasta, then top with the tomato sauce, chickpeas and crispy onion.',
+  crispBread: 'Toast or fry the bread pieces until crisp.',
+  fattehLayer: 'Put the crisp bread in a bowl, add the warm chickpeas, pour over the yogurt sauce and top with the nuts.',
+  molokhiaGarlic: 'Fry the garlic until golden and stir it into the molokhia at the end.',
+  roastPeppers: 'Roast the peppers until the skin blackens, then peel them.',
+  butterSauce: 'Simmer the tomato with the butter, cream and spices, then add the chicken.',
+  dalTemper: 'Fry the cumin and garlic in the oil and pour it over the dal.',
+  toastAvocado: 'Toast the bread, mash the avocado on top and add the lemon and a pinch of salt.',
+  soakBread: 'Dip the bread in the egg and milk on both sides.',
+  bowlBuild: 'Arrange everything in a bowl.',
 }
 export const STEP_TEXTS = Object.values(ST)
 
 // [id, name, meals, minutes, ingredients [[id, grams per serving, optional]], steps]
 // 9.0: a step can also be a template from lib/recipeText.js ([key, ...args]); x = { iq, tip }
+// 14.0: x.fit marks a gym & healthy meal
 const R = (id, name, meals, min, ing, steps, x = {}) => ({
   id, name, meals, min, ing: ing.map(([i, g, opt]) => ({ id: i, g, opt: !!opt })),
-  steps: steps.map(k => (Array.isArray(k) ? k : ST[k])), iq: !!x.iq || IQ_OLD.has(id), tip: x.tip ? TIP[x.tip] : null,
+  steps: steps.map(k => (Array.isArray(k) ? k : ST[k])), iq: !!x.iq || IQ_OLD.has(id), tip: x.tip ? TIP[x.tip] : null, fit: !!x.fit,
 })
 // the 6.0 recipes that are Iraqi home cooking
 const IQ_OLD = new Set(['eggtomato', 'rashidibis', 'ijja', 'makhlama', 'baqilla', 'geymarhoney', 'ricebeans', 'riceokra', 'biryani', 'potatostew',
@@ -200,6 +314,8 @@ const TIP = {
   treat: 'An occasional treat — two pieces make one serving.',
   sugar: 'Skip the sugar on top or use a little date syrup instead.',
   veg: 'Load up on the vegetables and go easy on the rice.',
+  protein: 'High in protein and light on fat — a good meal after training.',
+  prep: 'Cook once, eat for three days: make a few boxes at the weekend.',
 }
 export const TIP_TEXTS = Object.values(TIP)
 export const RECIPES = [
@@ -304,6 +420,68 @@ export const RECIPES = [
     [['knead', ['wholewheatflour', 'butter', 'milk', 'cardamom']], ['kleicha'], ['top', ['sesame']], ['bakeAt', 180, 20]], { iq: true, tip: 'treat' }),
   R('fishtamarind', 'Fish in tamarind sauce', 'ld', 40, [['fish', 200], ['tamarind', 15], ['onion', 40], ['tomato', 80], ['garlic', 3], ['turmeric', 1], ['oil', 10], ['rice', 80, 1]],
     ['fish', ['saute', 8, ['onion', 'garlic', 'turmeric']], ['simmer', 15, ['tomato', 'tamarind']], ['serveWith', ['rice']]], { iq: true, tip: 'fish' }),
+  // ---- 14.0: more Iraqi and Arab cooking, the gym kitchen, Indian and Western favourites ----
+  R('dawoodbasha', 'Dawood Basha (meatballs in tomato sauce)', 'ld', 50, [['minced', 130], ['onion', 40], ['tomato', 150], ['tomatopaste', 15], ['garlic', 3], ['oil', 10], ['baharat', 2], ['rice', 70, 1]],
+    ['balls', 'brownBalls', ['saute', 5, ['onion', 'garlic']], 'dbSauce', ['serveWith', ['rice']]], { iq: true }),
+  R('burghuldijaj', 'Bulgur with chicken (burghul w dijaj)', 'ld', 45, [['chicken', 150], ['bulgur', 70], ['onion', 40], ['tomatopaste', 10], ['oil', 8], ['baharat', 2]],
+    [['boilFor', 30, ['chicken', 'onion', 'baharat']], ['saute', 3, ['bulgur', 'tomatopaste']], 'bulgurBroth', 'bulgurChicken'], { iq: true, tip: 'fibre' }),
+  R('molokhiachicken', 'Molokhia with chicken and rice', 'l', 60, [['chicken', 150], ['molokhia', 150], ['onion', 30], ['garlic', 5], ['oil', 8], ['rice', 70]],
+    [['boilFor', 40, ['chicken', 'onion']], ['simmer', 10, ['molokhia']], 'molokhiaGarlic', 'cookRice', ['serveWith', ['rice', 'chicken']]]),
+  R('koshari', 'Koshari', 'l', 50, [['lentils', 30], ['rice', 40], ['pasta', 30], ['chickpeas', 40], ['onion', 60], ['tomato', 60], ['tomatopaste', 15], ['garlic', 3], ['cumin', 1], ['oil', 15]],
+    [['boilFor', 20, ['lentils']], 'cookRice', 'pasta', 'fryOnionsCrispy', ['simmer', 10, ['tomato', 'tomatopaste', 'garlic', 'cumin']], 'koshariLayer'], { tip: 'fibre' }),
+  R('fatteh', 'Hummus fatteh', 'bld', 20, [['bread', 60], ['chickpeas', 120], ['yogurt', 120], ['tahini', 15], ['garlic', 3], ['lemon', 10], ['almonds', 10, 1]],
+    ['crispBread', ['mix', ['yogurt', 'tahini', 'garlic', 'lemon']], 'fattehLayer']),
+  R('muhammara', 'Muhammara (red pepper and walnut dip)', 'sd', 15, [['pepper', 60], ['walnuts', 15], ['bread', 8], ['oliveoil', 5], ['dibis', 3], ['cumin', 0.5], ['lemon', 5]],
+    ['roastPeppers', ['blend', ['pepper', 'walnuts', 'bread', 'oliveoil', 'dibis', 'cumin', 'lemon']], ['top', ['oliveoil']]]),
+  R('greeksalad', 'Greek salad', 'ld', 10, [['tomato', 120], ['cucumber', 100], ['pepper', 40], ['onion', 30], ['olives', 20], ['whitecheese', 40], ['oliveoil', 10]],
+    [['chop', ['tomato', 'cucumber', 'pepper', 'onion']], ['top', ['whitecheese', 'olives']], 'dressing'], { tip: 'light' }),
+  R('butterchicken', 'Butter chicken', 'ld', 40, [['chickenbreast', 150], ['yogurt', 50], ['tomato', 100], ['tomatopaste', 20], ['butter', 10], ['cream', 30], ['garlic', 3], ['ginger', 3], ['baharat', 2], ['rice', 70, 1]],
+    [['marinate', 30, ['chickenbreast', 'yogurt', 'baharat']], ['grillFor', 10], 'butterSauce', ['serveWith', ['rice']]]),
+  R('dal', 'Dal (lentil curry)', 'ld', 30, [['lentils', 60], ['onion', 40], ['tomato', 60], ['garlic', 3], ['turmeric', 1], ['cumin', 1], ['oil', 8], ['rice', 70, 1]],
+    ['rinse', ['simmer', 20, ['lentils', 'onion', 'tomato', 'turmeric']], 'dalTemper', ['serveWith', ['rice']]], { tip: 'fibre' }),
+  R('friedrice', 'Egg fried rice', 'ld', 25, [['rice', 70], ['egg', 50], ['peas', 40], ['carrot', 30], ['onion', 20], ['soysauce', 10], ['oil', 10]],
+    ['cookRice', 'friedRiceEgg', 'stirFryHigh', ['stirIn', ['soysauce']]]),
+  R('minestrone', 'Minestrone (vegetable and bean soup)', 'ld', 40, [['carrot', 40], ['celery', 30], ['onion', 30], ['zucchini', 50], ['tomato', 100], ['whitebeans', 60], ['pasta', 20], ['garlic', 3], ['oliveoil', 7]],
+    [['chop', ['carrot', 'celery', 'onion', 'zucchini']], ['saute', 5, ['onion', 'carrot', 'celery', 'garlic']], ['simmer', 20, ['tomato', 'zucchini', 'whitebeans']], ['stirIn', ['pasta']], ['serveHot']], { tip: 'light' }),
+  R('mashedpotato', 'Mashed potatoes', 'ld', 25, [['potato', 200], ['milk', 40], ['butter', 10]],
+    [['boilFor', 20, ['potato']], ['mash', ['potato', 'milk', 'butter']]]),
+  R('avocadotoast', 'Avocado toast', 'bs', 5, [['wholebread', 70], ['avocado', 70], ['lemon', 5], ['egg', 50, 1]],
+    ['toastAvocado', ['top', ['egg']]]),
+  R('frenchtoast', 'French toast (2 slices)', 'b', 15, [['wholebread', 70], ['egg', 50], ['milk', 60], ['butter', 7], ['cinnamon', 1], ['honey', 10, 1]],
+    [['whisk', ['egg', 'milk', 'cinnamon']], 'soakBread', 'panFry', ['top', ['honey']]], { tip: 'sugar' }),
+  // the gym kitchen
+  R('mealprep', 'Chicken, rice and broccoli (meal prep)', 'ld', 30, [['chickenbreast', 150], ['rice', 70], ['broccoli', 100], ['oil', 5], ['garlic', 3], ['lemon', 10, 1]],
+    [['marinate', 10, ['chickenbreast', 'garlic', 'lemon']], 'cookRice', ['grillFor', 12], ['boilFor', 4, ['broccoli']], 'boxUp'], { fit: true, tip: 'prep' }),
+  R('chickenveg', 'Grilled chicken with vegetables', 'ld', 25, [['chickenbreast', 180], ['pepper', 60], ['zucchini', 80], ['onion', 30], ['oliveoil', 7], ['lemon', 10], ['garlic', 3]],
+    [['marinate', 10, ['chickenbreast', 'lemon', 'garlic']], ['chop', ['pepper', 'zucchini', 'onion']], ['grillFor', 12], 'grillVeg'], { fit: true, tip: 'protein' }),
+  R('salmonquinoa', 'Salmon with quinoa and greens', 'ld', 25, [['salmon', 150], ['quinoa', 50], ['spinach', 40], ['lemon', 10], ['oliveoil', 5]],
+    ['cookQuinoa', 'fish', ['serveWith', ['quinoa', 'spinach', 'lemon']]], { fit: true, tip: 'fish' }),
+  R('quinoasalad', 'Quinoa salad', 'ld', 20, [['quinoa', 50], ['cucumber', 60], ['tomato', 60], ['parsley', 15], ['lemon', 15], ['oliveoil', 8], ['chickpeas', 50, 1]],
+    ['cookQuinoa', ['chop', ['cucumber', 'tomato', 'parsley']], ['mix', ['quinoa', 'cucumber', 'tomato', 'parsley', 'chickpeas']], 'dressing'], { fit: true, tip: 'fibre' }),
+  R('proteinpancakes', 'Protein pancakes (oats, eggs, banana)', 'b', 15, [['oats', 40], ['egg', 100], ['banana', 60], ['milk', 50], ['whey', 15, 1]],
+    [['blend', ['oats', 'egg', 'banana', 'milk', 'whey']], 'panFry'], { fit: true, tip: 'protein' }),
+  R('parfait', 'Greek yogurt parfait with berries', 'bs', 5, [['greekyogurt', 170], ['berries', 70], ['granola', 30], ['honey', 7, 1]],
+    ['layerJar', ['top', ['granola', 'honey']]], { fit: true, tip: 'protein' }),
+  R('overnightoats', 'Overnight oats', 'b', 5, [['oats', 50], ['milk', 150], ['yogurt', 50], ['chia', 10], ['banana', 60], ['honey', 7, 1]],
+    [['mix', ['oats', 'milk', 'yogurt', 'chia']], 'overnight', ['top', ['banana', 'honey']]], { fit: true, tip: 'fibre' }),
+  R('tunawrap', 'Tuna wrap', 'ld', 10, [['tortilla', 60], ['tuna', 100], ['greekyogurt', 30], ['lettuce', 30], ['tomato', 50], ['lemon', 5]],
+    [['mix', ['tuna', 'greekyogurt', 'lemon']], 'wrapRoll'], { fit: true, tip: 'protein' }),
+  R('stirfry', 'Chicken stir-fry with vegetables', 'ld', 20, [['chickenbreast', 150], ['pepper', 60], ['carrot', 40], ['broccoli', 60], ['soysauce', 15], ['garlic', 3], ['ginger', 3], ['oil', 10], ['rice', 60, 1]],
+    [['slice', ['chickenbreast', 'pepper', 'carrot']], 'stirFryHigh', ['stirIn', ['soysauce']], ['serveWith', ['rice']]], { fit: true, tip: 'protein' }),
+  R('lentilsalad', 'Lentil salad', 'ld', 30, [['lentils', 60], ['cucumber', 60], ['tomato', 60], ['onion', 20], ['parsley', 15], ['lemon', 15], ['oliveoil', 8]],
+    [['boilFor', 15, ['lentils']], ['chop', ['cucumber', 'tomato', 'onion', 'parsley']], ['mix', ['lentils', 'cucumber', 'tomato', 'onion', 'parsley']], 'dressing'], { fit: true, tip: 'fibre' }),
+  R('chickpeasalad', 'Chickpea salad', 'ld', 10, [['chickpeas', 150], ['cucumber', 60], ['tomato', 60], ['onion', 20], ['parsley', 15], ['lemon', 15], ['oliveoil', 8]],
+    [['chop', ['cucumber', 'tomato', 'onion', 'parsley']], ['mix', ['chickpeas', 'cucumber', 'tomato', 'onion', 'parsley']], 'dressing'], { fit: true, tip: 'fibre' }),
+  R('eggmuffins', 'Egg muffins with vegetables (3)', 'bs', 30, [['egg', 150], ['spinach', 30], ['pepper', 30], ['onion', 20], ['cheddar', 10, 1]],
+    [['chop', ['spinach', 'pepper', 'onion']], ['whisk', ['egg']], 'muffinTin', ['bakeAt', 180, 20]], { fit: true, tip: 'protein' }),
+  R('tunapasta', 'Tuna pasta salad', 'ld', 20, [['pasta', 70], ['tuna', 80], ['corn', 40], ['cucumber', 40], ['greekyogurt', 30], ['lemon', 10]],
+    ['pasta', ['mix', ['pasta', 'tuna', 'corn', 'cucumber', 'greekyogurt', 'lemon']], ['chill', 20]], { fit: true, tip: 'protein' }),
+  R('pokebowl', 'Salmon poke bowl', 'ld', 25, [['rice', 70], ['salmon', 100], ['avocado', 40], ['cucumber', 50], ['soysauce', 10], ['sesame', 3], ['carrot', 30, 1]],
+    ['cookRice', ['slice', ['salmon', 'avocado', 'cucumber', 'carrot']], 'bowlBuild', ['top', ['sesame', 'soysauce']]], { fit: true, tip: 'fish' }),
+  R('burritobowl', 'Chicken burrito bowl', 'ld', 30, [['rice', 60], ['chickenbreast', 120], ['kidneybeans', 80], ['corn', 40], ['tomato', 50], ['lettuce', 30], ['lemon', 5], ['cheddar', 15, 1]],
+    ['cookRice', ['grillFor', 12], ['slice', ['chickenbreast', 'tomato', 'lettuce']], 'bowlBuild'], { fit: true, tip: 'protein' }),
+  R('smoothiebowl', 'Smoothie bowl', 'bs', 5, [['banana', 120], ['berries', 100], ['yogurt', 100], ['granola', 20], ['chia', 5, 1]],
+    [['blend', ['banana', 'berries', 'yogurt']], ['top', ['granola', 'chia']]], { fit: true }),
 ]
 export const RECIPE_BY_ID = Object.fromEntries(RECIPES.map(r => [r.id, r]))
 
@@ -311,16 +489,16 @@ const num = v => (Number.isFinite(+v) ? +v : 0)
 const r0 = v => Math.round(v)
 const r1 = v => Math.round(v * 10) / 10
 
-/** Nutrition of ingredient amounts [{ id, g }]: { kcal, p, c, f, g }. Unknown ids are skipped. */
+/** Nutrition of ingredient amounts [{ id, g }]: { kcal, p, c, f, g, na (sodium mg) }. Unknown ids are skipped. */
 export function itemsTotals(items) {
-  const t = { kcal: 0, p: 0, c: 0, f: 0, g: 0 }
+  const t = { kcal: 0, p: 0, c: 0, f: 0, g: 0, na: 0 }
   for (const it of items || []) {
     const x = ING_BY_ID[it.id]
     const g = num(it.g)
     if (!x || g <= 0) continue
-    t.kcal += x.kcal * g / 100; t.p += x.p * g / 100; t.c += x.c * g / 100; t.f += x.f * g / 100; t.g += g
+    t.kcal += x.kcal * g / 100; t.p += x.p * g / 100; t.c += x.c * g / 100; t.f += x.f * g / 100; t.g += g; t.na += (x.na || 0) * g / 100
   }
-  return { kcal: r0(t.kcal), p: r1(t.p), c: r1(t.c), f: r1(t.f), g: r0(t.g) }
+  return { kcal: r0(t.kcal), p: r1(t.p), c: r1(t.c), f: r1(t.f), g: r0(t.g), na: r0(t.na) }
 }
 
 /** The ingredients a recipe uses: required ones, plus the optional ones you have (or `withOptional`). */
@@ -403,15 +581,27 @@ export function removeShopping(s, id) { s.shopping = (s.shopping || []).filter(x
 /**
  * Save a built meal as your own food (per serving), with its ingredients kept for editing.
  * Throws Error with .key when it has no name or no ingredients.
+ * 14.0 — "My cooking": a dish can also keep its steps (sentences), its minutes, a note and `ph`
+ * (it has a photo on this device, lib/dishPhotos.js); left out, an edited dish keeps its own.
  */
-export function saveBuiltMeal(s, { id, n, items, servings = 1, meal = null }) {
+export function saveBuiltMeal(s, { id, n, items, servings = 1, meal = null, steps, min, note, ph }) {
   const name = String(n || '').trim().slice(0, 60)
   if (!name) throw Object.assign(new Error('Give it a name'), { key: 'Give it a name' })
   const list = (items || []).filter(i => ING_BY_ID[i.id] && num(i.g) > 0).map(i => ({ id: i.id, g: r0(num(i.g)) }))
   if (!list.length) throw Object.assign(new Error('Add at least one ingredient.'), { key: 'Add at least one ingredient.' })
   const sv = Math.min(12, Math.max(1, r0(num(servings)) || 1))
   const tot = itemsTotals(list)
-  const food = { id: id || 'cf' + uid(), n: name, kcal: r0(tot.kcal / sv), p: r1(tot.p / sv), c: r1(tot.c / sv), f: r1(tot.f / sv), unit: 'serving', g: r0(tot.g / sv), custom: true, cat: 'mine', items: list, servings: sv, ...(meal ? { meal } : {}) }
+  const prev = id ? (s.customFoods || []).find(x => x.id === id) : null
+  const more = {}
+  const st = steps !== undefined ? steps : prev && prev.steps
+  const cleanSteps = Array.isArray(st) ? st.map(x => String(x || '').trim().slice(0, 300)).filter(Boolean).slice(0, 30) : []
+  if (cleanSteps.length) more.steps = cleanSteps
+  const mm = num(min !== undefined ? min : prev && prev.min)
+  if (mm > 0) more.min = Math.min(600, r0(mm))
+  const nt = String((note !== undefined ? note : prev && prev.note) || '').trim().slice(0, 500)
+  if (nt) more.note = nt
+  if (ph !== undefined ? ph : prev && prev.ph) more.ph = true
+  const food = { id: id || 'cf' + uid(), n: name, kcal: r0(tot.kcal / sv), p: r1(tot.p / sv), c: r1(tot.c / sv), f: r1(tot.f / sv), unit: 'serving', g: r0(tot.g / sv), custom: true, cat: 'mine', items: list, servings: sv, ...(meal ? { meal } : {}), ...more }
   s.customFoods = s.customFoods || []
   const i = s.customFoods.findIndex(x => x.id === food.id)
   if (i >= 0) s.customFoods[i] = food; else s.customFoods.push(food)

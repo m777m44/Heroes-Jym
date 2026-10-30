@@ -65,6 +65,8 @@ const BurnSelect = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ defaul
 const BurnReview = lazy(() => import('./views/BurnPlan.jsx').then(m => ({ default: m.BurnReview })))
 const Food = lazy(() => import('./views/Food.jsx'))
 const Kitchen = lazy(() => import('./views/Kitchen.jsx'))
+const KitchenSection = lazy(() => import('./views/KitchenSection.jsx'))   // 14.0
+const DishEditor = lazy(() => import('./views/DishEditor.jsx'))           // 14.0
 const Wallpapers = lazy(() => import('./views/Wallpapers.jsx'))
 const Reports = lazy(() => import('./views/Reports.jsx'))
 // 8.0
@@ -89,6 +91,9 @@ import AppLock from './components/AppLock.jsx'
 import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
 import { autoCheck } from './lib/updates.js'
+// 14.0: only the online Android app updates itself — the card loads in that build alone
+const LIVE = import.meta.env.VITE_MOBILE === '1' && import.meta.env.VITE_OFFLINE_MEDIA !== '1'
+const LiveBanner = LIVE ? lazy(() => import('./components/LiveUpdate.jsx').then(m => ({ default: m.LiveBanner }))) : null
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
 import { installBackButton } from './lib/backButton.js'
@@ -206,7 +211,16 @@ function Shell() {
   // direct downloads). At most one quiet request a day, only in the Android app.
   useEffect(() => {
     if (!ready || !authed || !MOBILE) return
-    const tm = setTimeout(() => {
+    // 14.0: the online app updates itself (lib/liveUpdate.js) — offered on a card above the tab bar;
+    // the APKs are only mentioned when the new version needs a new app
+    const tm = setTimeout(async () => {
+      if (LIVE) {
+        const lu = await import('./lib/liveUpdate.js')
+        const v = lu.takeUpdated()
+        if (v) useUI.getState().toast(t('Updated to MAHDI-JYM {0} — inside the app, your data stayed', v))
+        const d = await lu.liveCheck({ auto: true })
+        if (d === 'ready' || d === 'latest') return
+      }
       autoCheck().then(r => {
         if (!r) return
         try { if (localStorage.getItem('mj_update_told') === r.version) return; localStorage.setItem('mj_update_told', r.version) } catch { /* private mode */ }
@@ -283,6 +297,8 @@ function Shell() {
               <Route path="/food" element={<Food />} />
               <Route path="/foods" element={<FoodDatabase />} />
               <Route path="/kitchen" element={<Kitchen />} />
+              <Route path="/kitchen/s/:key" element={<KitchenSection />} />
+              <Route path="/kitchen/dish" element={<DishEditor />} />
               <Route path="/wallpapers" element={<Wallpapers />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/tools" element={<Tools />} />
@@ -313,6 +329,7 @@ function Shell() {
         </ErrorBoundary>
       </div>
       <TabBar />
+      {LIVE && authed && ready && <Suspense fallback={null}><LiveBanner /></Suspense>}
       <RestTimer />
       <Modals />
       <Toast />

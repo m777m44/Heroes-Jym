@@ -6,6 +6,9 @@
 #   /app/       12.0: the web app — the real MAHDI-JYM in the browser, your own data kept in
 #               this browser (VITE_WEBAPP=1), installable from the browser menu
 #   /demo/      the browser-only demo with an example history (VITE_DEMO=1)
+#   /live/      14.0: the online Android app's web bundle — live/online.json (version, native level,
+#               every file with its SHA-256) and live/<version>/ — which the app downloads to update
+#               itself without a new APK (frontend/src/lib/liveUpdate.js)
 #
 # Used by .github/workflows/pages.yml and for local previews:
 #   bash scripts/build-site.sh && python3 -m http.server -d _site 8080
@@ -27,6 +30,10 @@ for kind in app demo; do
     npx vite build --outDir "$TMP/$kind" --emptyOutDir --logLevel warn)
 done
 
+# 14.0 — the online app's bundle, exactly as the light APK has it (npm run build:online-web)
+VER=$(node -p "require('./frontend/package.json').version")
+(cd frontend && MJ_OUT_DIR="$TMP/live" npm run --silent build:online-web)
+
 rm -rf "$OUT" && mkdir -p "$OUT/img"
 cp -r website/. "$OUT/"
 rm -f "$OUT/README.md"
@@ -34,5 +41,8 @@ cp assets/screenshots/*.png assets/banner.png "$OUT/img/"
 cp frontend/public/icon-180.png frontend/public/icon-512.png "$OUT/"
 cp -r "$TMP/app" "$OUT/app"
 cp -r "$TMP/demo" "$OUT/demo"
+mkdir -p "$OUT/live"
+cp -r "$TMP/live" "$OUT/live/$VER"
+node frontend/scripts/live-manifest.mjs "$OUT/live/$VER" "$OUT/live/online.json" "$VER/"
 touch "$OUT/.nojekyll"
 echo "site ready in $OUT/ ($(du -sh "$OUT" | cut -f1))"
