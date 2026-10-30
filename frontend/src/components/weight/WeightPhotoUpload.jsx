@@ -51,7 +51,7 @@ export default function WeightPhotoUpload({ iso, flagged }) {
   return (
     <div className="wphoto">
       {url
-        ? <button className="wphoto-thumb" onClick={() => photoViewer(iso, url)} aria-label={t('Weigh-in photo')}><img src={url} alt="" /></button>
+        ? <button className="wphoto-thumb" onClick={() => photoViewer(iso, url)} aria-label={t('Weigh-in photo')}><img src={url} alt="" loading="lazy" decoding="async" /></button>
         : <div className="wphoto-thumb empty"><Icon name="camera" /></div>}
       <div className="wphoto-m">
         <div className="wphoto-t">{url ? <><Icon name="checkCircle" style={{ color: 'var(--acc)' }} /> {t('Verified with a photo')}</> : t('Photo of the scale')}</div>

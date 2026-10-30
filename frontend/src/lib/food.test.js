@@ -31,8 +31,11 @@ describe('food database', () => {
   })
 
   it('marks drinks in glasses and cans as millilitres', () => {
-    for (const f of FOODS) if (f.unit === 'glass' || f.unit === 'can') expect(f.ml, f.id).toBe(true)
+    // 13.0: a can is millilitres only on the drinks shelf — canned tuna or beans are grams
+    for (const f of FOODS) if (f.unit === 'glass' || (f.unit === 'can' && f.cat === 'drinks')) expect(f.ml, f.id).toBe(true)
     expect(FOOD_BY_ID.dolma.ml).toBe(false)
+    expect(FOOD_BY_ID.tunawater.ml).toBe(false)
+    expect(FOOD_BY_ID.foulcan.ml).toBe(false)
   })
 })
 

@@ -3900,3 +3900,164 @@ html[data-saver] :is(.sa.live,.na.live) *{animation:none!important}
 .sd-cmp-sum .ic { flex: none; color: var(--green); }
 .sd-cmpbtn { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px; padding: 12px 14px; border-radius: 16px; border: 1px dashed var(--sep); background: none; color: var(--label); font: inherit; text-align: start; }
 .sd-cmpbtn .ic:first-child { color: var(--acc); }
+
+/* ============================ 13.0 ======================================= */
+/* the food database (/foods) */
+.fdb-hero{display:flex;flex-direction:column;gap:10px;margin:4px 0 12px}
+.fdb-indo{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:16px;border:0;border-radius:22px;text-align:start;font:inherit;color:inherit;cursor:pointer;--c:var(--yellow)}
+.fdb-indo .grow{position:relative;display:flex;flex-direction:column;gap:3px;min-width:0}
+.fdb-indo b{font-size:18px;font-weight:700;letter-spacing:-.015em}
+.fdb-indo .small{color:var(--label-2);line-height:1.35}
+.fdb-indo-ic{position:relative;flex:none;width:54px;height:54px;border-radius:18px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#ffc400,#ff6a3d);box-shadow:0 12px 26px -12px #ff8a3d}
+.fdb-indo-ic .icn{width:30px;height:30px}
+.fdb-indo-n{align-self:flex-start;margin-top:3px;padding:3px 9px;border-radius:99px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--yellow) 22%,transparent);color:var(--label)}
+.fdb-shelves{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.fdb-shelf{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;border:0;border-radius:18px;font:inherit;text-align:start;color:var(--label);cursor:pointer;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--cc,var(--acc)) 20%,var(--surface)),var(--surface) 70%);transition:transform .18s cubic-bezier(.3,.7,.4,1.35)}
+.fdb-shelf:active{transform:scale(.96)}
+.fdb-shelf b{font-size:14px;line-height:1.25}
+.fdb-shelf small{font-size:12px;color:var(--label-2)}
+.fdb-shelf-ic{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;color:#fff;background:var(--cc,var(--acc));margin-bottom:4px}
+.fdb-shelf-ic .icn{width:18px;height:18px}
+.fdb-chip-n{margin-inline-start:6px;padding:0 6px;border-radius:99px;font-size:11px;font-weight:600;background:color-mix(in srgb,currentColor 14%,transparent)}
+.fdb-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;flex-wrap:wrap}
+.fdb-bar .seg{flex:1 1 220px;max-width:340px}
+.fdb-list{display:flex;flex-direction:column;gap:8px}
+.fdb-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:var(--r-card);background:var(--surface);color:var(--label);font:inherit;text-align:start;cursor:pointer;
+  content-visibility:auto;contain-intrinsic-size:auto 78px;transition:background var(--fast),transform .18s cubic-bezier(.3,.7,.4,1.35)}
+.fdb-row:active{background:var(--surface-2);transform:scale(.985)}
+.fdb-row-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fdb-row .tt{font-size:15.5px;font-weight:500;line-height:1.3;overflow-wrap:anywhere}
+.fdb-row .ss{font-size:12.5px;color:var(--label-2)}
+.fdb-fav{width:13px;height:13px;color:var(--yellow);margin-inline-start:5px;vertical-align:-1px}
+.fdb-macros{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:3px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.fdb-macros i{font-style:normal;display:inline-flex;align-items:center;gap:4px}
+.fdb-macros i::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}
+.fdb-tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:6px;font-size:11px;font-weight:600;background:var(--surface-2);color:var(--label-2)}
+.fdb-tag.iq{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.fdb-tag.salt{background:color-mix(in srgb,var(--orange) 18%,transparent);color:var(--orange)}
+.fdb-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.fdb-tags:empty{display:none}
+.fdb-kcal{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-size:19px;font-weight:700;color:var(--orange);font-variant-numeric:tabular-nums;line-height:1.1}
+.fdb-kcal small{font-size:11px;font-weight:500;color:var(--label-2)}
+.lazy-more{display:flex;justify-content:center;padding:14px 0 4px;min-height:40px}
+.lazy-more .btn{width:auto}
+/* the food card */
+.fdb-sizes{flex-wrap:wrap;justify-content:center;margin:2px 0 10px}
+.fdb-sizes .chip,.fdb-packs .chip{background:var(--surface-2)}
+.fdb-sizes .chip.on,.fdb-packs .chip.on{background:var(--acc);color:var(--on-acc)}
+.fdb-sizes small,.fdb-packs small{opacity:.75}
+.fdb-nut{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;margin:10px 0;padding:14px;border-radius:18px;background:var(--surface-2)}
+.fdb-nut-k{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:84px;padding:10px 6px;border-radius:16px;background:color-mix(in srgb,var(--orange) 16%,transparent)}
+.fdb-nut-k b{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums;line-height:1}
+.fdb-nut-k span{font-size:12px;color:var(--label-2);margin-top:3px}
+.fdb-nut-m{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fdb-nut-m>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px;font-size:13px}
+.fdb-nut-m>div>span{color:var(--label-2)}
+.fdb-nut-m>div>b{font-variant-numeric:tabular-nums}
+.fdb-nut-bar{grid-column:1/-1;display:block;height:5px;border-radius:99px;background:color-mix(in srgb,var(--c) 18%,transparent);overflow:hidden}
+.fdb-nut-bar em{display:block;height:100%;border-radius:99px;background:var(--c);transition:width .3s var(--ease)}
+.fdb-nut-m small{grid-column:1/-1;font-size:11px;color:var(--label-3)}
+.fdb-ss{display:flex;flex-direction:column;gap:6px;margin:4px 0 8px}
+.fdb-ss-i{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:var(--surface-2)}
+.fdb-ss-i>.icn{flex:none;width:18px;height:18px;color:var(--label-2)}
+.fdb-ss-i .grow{display:flex;flex-direction:column;min-width:0}
+.fdb-ss-i small{font-size:11.5px;color:var(--label-2)}
+.fdb-ss-i>b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.fdb-ss-i.warn{background:color-mix(in srgb,var(--orange) 14%,var(--surface-2))}
+.fdb-ss-i.warn>.icn,.fdb-ss-i.warn>b{color:var(--orange)}
+.fdb-100{margin-top:6px;padding:12px;border-radius:16px;border:1px solid var(--sep)}
+.fdb-100-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(58px,1fr));gap:6px;margin-top:8px;text-align:center}
+.fdb-100-g span{display:flex;flex-direction:column;font-size:11px;color:var(--label-2)}
+.fdb-100-g b{font-size:15px;color:var(--label);font-variant-numeric:tabular-nums}
+/* the Indomie builder */
+.fdb-indo-b .lbl2{margin:14px 0 7px}
+.fdb-preps{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:7px}
+.fdb-prep{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 6px;border-radius:16px;border:1.5px solid transparent;background:var(--surface-2);color:var(--label);font:inherit;font-size:13px;line-height:1.25;text-align:center;cursor:pointer;transition:background var(--fast),border-color var(--fast),transform .18s cubic-bezier(.3,.7,.4,1.35)}
+.fdb-prep .icn{width:20px;height:20px;color:var(--label-2)}
+.fdb-prep:active{transform:scale(.96)}
+.fdb-prep.on{border-color:var(--acc);background:var(--acc-soft);font-weight:600}
+.fdb-prep.on .icn{color:var(--acc)}
+.fdb-sauce{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--surface-2);cursor:pointer}
+.fdb-sauce .grow{display:flex;flex-direction:column}
+.fdb-sauce small{font-size:12px;color:var(--label-2)}
+.fdb-adds{display:flex;flex-direction:column;gap:6px}
+.fdb-add{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--surface-2);border:1.5px solid transparent;transition:border-color var(--fast),background var(--fast)}
+.fdb-add.on{border-color:color-mix(in srgb,var(--acc) 55%,transparent);background:var(--acc-soft)}
+.fdb-add .grow{display:flex;flex-direction:column;min-width:0}
+.fdb-add b{font-size:14px;font-weight:500}
+.fdb-add small{font-size:11.5px;color:var(--label-2)}
+.fdb-add-ic{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--surface);color:var(--acc)}
+.fdb-add-ic .icn{width:17px;height:17px}
+.fdb-step{display:inline-flex;align-items:center;gap:6px}
+.fdb-step b{min-width:18px;text-align:center;font-variant-numeric:tabular-nums}
+.fdb-step .iconbtn:disabled{opacity:.35}
+.fdb-total{margin:14px 0 0;padding:14px;border:1.5px solid color-mix(in srgb,var(--acc) 40%,transparent);background:linear-gradient(160deg,var(--acc-soft),var(--surface) 70%)}
+.fdb-total-n{font-weight:700;font-size:15px;line-height:1.4;margin-bottom:4px}
+.fdb-total .fdb-nut{background:var(--surface);margin-bottom:8px}
+/* in the add-food sheet and the amount sheet */
+.food-na{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;margin-top:8px;color:var(--label-2)}
+.food-na b{color:var(--label);font-variant-numeric:tabular-nums}
+.food-na.warn b{color:var(--orange)}
+.food-indo-edit{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px dashed color-mix(in srgb,var(--acc) 50%,transparent);background:none;color:var(--acc);font:inherit;font-size:14px;cursor:pointer}
+.food-indo-edit .icn{width:18px;height:18px}
+
+/* buttons: one set of variants — primary (filled), secondary (neutral), tinted (soft accent),
+   ghost (text only), danger — and a busy state */
+.btn.secondary{background:var(--surface-2);color:var(--label);box-shadow:inset 0 0 0 1px var(--sep)}
+.btn.secondary:active{background:var(--surface-3)}
+.btn.lg{min-height:56px;font-size:18px;border-radius:var(--r-lg)}
+.btn.danger.solid{background:var(--red);color:#fff}
+.btn[aria-busy="true"]{pointer-events:none}
+.btn[aria-busy="true"] > :not(.btn-spin){opacity:.55}
+.btn-spin{width:18px;height:18px;flex:none;border-radius:50%;border:2.2px solid currentColor;border-inline-end-color:transparent;animation:btnspin .7s linear infinite}
+@keyframes btnspin{to{transform:rotate(360deg)}}
+
+/* switching themes: 0.3 s — the browser cross-fades the page (View Transitions), or, where it
+   can't, the colours ease over for the moment of the switch only (html.theme-anim) */
+::view-transition-old(root),::view-transition-new(root){animation-duration:.3s;animation-timing-function:ease}
+html.theme-anim body,html.theme-anim #app,html.theme-anim .card,html.theme-anim .item,html.theme-anim .btn,html.theme-anim .chip,html.theme-anim #tabbar,
+html.theme-anim .sheet,html.theme-anim .iconbtn,html.theme-anim .fdb-row,html.theme-anim .sect,html.theme-anim h1,html.theme-anim .sub{
+  transition:background-color .3s ease,color .3s ease,border-color .3s ease,box-shadow .3s ease !important}
+@media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
+
+/* the notification colour (Notifications screen) */
+.nf-color{--nc:var(--acc)}
+.nf-color-t{display:flex;align-items:center;gap:12px}
+.nf-color-t .grow{display:flex;flex-direction:column;min-width:0}
+.nf-color-dot{flex:none;width:30px;height:30px;border-radius:50%;background:var(--nc);box-shadow:0 0 0 4px color-mix(in srgb,var(--nc) 25%,transparent),0 6px 16px -6px var(--nc);transition:background .3s ease,box-shadow .3s ease}
+.nf-shade{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding:10px;border-radius:20px;background:linear-gradient(170deg,color-mix(in srgb,var(--nc) 16%,var(--surface-2)),var(--surface-2))}
+.nf-note{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:16px;background:var(--surface);box-shadow:0 4px 14px -10px #000}
+.nf-note .grow{display:flex;flex-direction:column;gap:1px;min-width:0}
+.nf-note-ic{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--nc);color:#fff;transition:background .3s ease}
+.nf-note-ic .icn{width:15px;height:15px}
+.nf-note-app{font-size:11px;font-weight:600;color:var(--nc);transition:color .3s ease}
+.nf-note b{font-size:14px;line-height:1.3}
+.nf-note-b{font-size:13px;color:var(--label-2)}
+.nf-note-acts{display:flex;gap:16px;margin-top:6px}
+.nf-note-acts i{font-style:normal;font-size:13px;font-weight:600;color:var(--nc)}
+.nf-note.sm{opacity:.82}
+.nf-note.sm b{font-size:13px}
+/* the bell on Home and its panel */
+.hb-bell{position:relative}
+.hb-badge{position:absolute;top:-3px;inset-inline-end:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;display:grid;place-items:center;font-size:10.5px;font-weight:700;line-height:1;background:var(--red);color:#fff;box-shadow:0 0 0 2px var(--bg)}
+.np-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;--nc:var(--acc)}
+.np-head .grow{display:flex;flex-direction:column;min-width:0}
+.np-bell{flex:none;width:44px;height:44px;border-radius:15px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,var(--nc),color-mix(in srgb,var(--nc) 55%,#000));box-shadow:0 10px 22px -12px var(--nc)}
+.np-bell .icn{width:24px;height:24px}
+.np-list{margin-bottom:12px}
+.np-btns{display:flex;flex-direction:column;gap:6px}
+
+/* 13.0 — fixes after a look in the browser: the middle column takes the free space */
+.fdb-row-t,.fdb-indo .grow,.fdb-ss-i .grow,.fdb-sauce .grow,.fdb-add .grow,.nf-color-t .grow,.np-head .grow,.fdb-card .grow{flex:1;min-width:0}
+.fdb-fav{display:inline-block}
+.fdb-100-g b small{font-size:10px;font-weight:500;color:var(--label-2)}
+.fdb-live{position:sticky;top:28px;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -18px 4px;padding:8px 18px;background:var(--bg-el);
+  box-shadow:0 8px 12px -12px #000;border-bottom:1px solid var(--sep)}
+.fdb-live-ic{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#ffc400,#ff6a3d)}
+.fdb-live-ic .icn{width:17px;height:17px}
+.fdb-live-k{font-size:22px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.fdb-live-k small{font-size:12px;font-weight:500;color:var(--label-2)}
+.fdb-live-m{display:flex;gap:8px;flex:1;min-width:0;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.fdb-live-m i{font-style:normal;display:inline-flex;align-items:center;gap:4px}
+.fdb-live-m i::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--c)}

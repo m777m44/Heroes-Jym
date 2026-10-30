@@ -158,8 +158,7 @@ public class WorkoutReminder extends BroadcastReceiver {
         ch.setSound(null, null);                    // on screen with a light vibration, no ringing
         ch.enableVibration(true);
         ch.setVibrationPattern(VIBRATION);
-        ch.enableLights(true);
-        ch.setLightColor(0xFF30D158);
+        Theme.light(c, ch);                         // 13.0: the theme's colour (was always green)
         ch.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(ch);
     }

@@ -1,4 +1,4 @@
-// What's new (10.0, 11.0, 12.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
+// What's new (10.0 – 13.0) — shown once after updating (S.seenWhatsNew), and from search / Settings.
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
@@ -6,18 +6,17 @@ import { MOBILE } from '../lib/mobile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 
-export const WHATS_NEW = '12.0'
+export const WHATS_NEW = '13.0'
 
+// 13.0
 const ITEMS = [
-  { icon: 'cube', c: '#5e5ce6', title: 'Two versions, the same app', body: 'The full version keeps everything inside the app and works with no internet. The light version is tiny and loads pictures from the app’s repository when you need them — same features, same updates.' },
-  { icon: 'wifi', c: '#0a84ff', title: 'Open it in the browser too', body: 'MAHDI-JYM now runs as a web app on GitHub Pages — on any phone or computer, nothing to install. Your data stays on your device.' },
-  { icon: 'refresh', c: '#30d158', title: 'Updates in the app', body: 'Settings shows your version, checks for a new one and opens the right download for your version.' },
-  { icon: 'keyboard', c: '#ff9f0a', title: 'Any emoji as your picture', body: 'Type an emoji or two letters with your keyboard, pick one of the new pictures (a lion, a falcon, a lifter…), a wallpaper photo, or a photo from your phone.' },
-  { icon: 'can', c: '#e0245e', title: '144 soft drinks', body: 'Iced teas, sports drinks and many more colas, fruit sodas, malt and energy drinks — and compare any two side by side.' },
-  { icon: 'cup', c: '#a0461e', title: '147 drinks and juices', body: 'Sage and thyme tea, cinnamon and clove tea, saffron milk, raqqi, mishmish and guava juice, pistachio milk, dibis w rashi milk — and many more shakes, smoothies and infused waters.' },
-  { icon: 'nut', c: '#c68a54', title: '111 nuts, seeds and sweets', body: 'Nut butters and tahini, bagilla and lablabi, more dates (sukkari, ajwa, sayer, halawi), dried fruit, mann al-sama, baklawa and kleicha.' },
-  { icon: 'coffee', c: '#8b5e3c', title: 'Caffeine for teens', body: 'Under 18, the soft-drink screen counts caffeine against about 100 mg a day instead of the adult 400 mg.' },
-  { icon: 'globe', c: '#8e8e93', title: 'Arabic and English', body: 'The app now comes in Arabic and English only — smaller and faster.' },
+  { icon: 'noodles', c: '#ffb300', title: 'Indomie, made your way', body: 'Over 40 ways to make Indomie — dry, boiled, fried, as a soup or with cream — and a builder: pick the pack, the seasoning and what goes in (egg, cheese, tuna, chicken…) and the calories follow.' },
+  { icon: 'cake', c: '#a2845e', title: '15 date cakes in three sizes', body: 'Plain, chocolate, Lotus, tahini, oats, vegan, gluten-free and more — small (50 g), medium (100 g) or large (150 g).' },
+  { icon: 'can', c: '#30b0c7', title: 'Canned food and shop snacks', body: 'Tuna, corned beef, luncheon, foul, chickpeas, olives and more cans and jars — and chips, chocolate bars, biscuits, ice cream and café drinks from the shop, with their salt and sugar.' },
+  { icon: 'book', c: '#5e5ce6', title: 'The food database', body: 'Every food of the app in one place: search, shelves, sorting by calories or protein, and each food per serving and per 100 g.' },
+  { icon: 'palm', c: '#30d158', title: '15 more Iraqi dishes', body: 'Fesenjoon, aroog, tray kubba, chicken quzi, dolma with ribs, laffat bagilla and geymar, carrot and semolina halwa, shakarlama, qatayef and more.' },
+  { icon: 'bellBadge', c: '#ff9f0a', title: 'Notifications in your theme', body: 'Every theme colours the reminders by itself — the icon, the buttons and the phone light — and the bell on Home shows what is still to come today.' },
+  { icon: 'sparkles', c: '#bf5af2', title: 'Smoother and faster', body: 'Themes change with a soft fade, screens load when you open them, and long lists draw as you scroll.' },
 ]
 
 function WhatsNewSheet({ close }) {

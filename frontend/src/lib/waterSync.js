@@ -16,6 +16,7 @@ import {
   mergeNative, nextReminder, reminderSlots, suggestMove, bodyKg, waterPanelOn, movesForKind,
 } from './water.js'
 import { planFor } from './dailyPlan.js'
+import { notifColor } from './themes.js'
 
 export { bodyKg }
 
@@ -179,7 +180,8 @@ export function startWaterSync(store) {
       const { LocalNotifications } = await import('@capacitor/local-notifications')
       const st = S()
       const p = waterRemindPrefs(st)
-      const sig = JSON.stringify([waterConfig(st).strings.title, p, waterGoalMlOf(st), mlOn(st, today()) >= waterGoalMlOf(st), getLang(), today()])
+      const color = notifColor(st)   // 13.0: the theme's colour — a new theme re-colours them
+      const sig = JSON.stringify([waterConfig(st).strings.title, p, waterGoalMlOf(st), mlOn(st, today()) >= waterGoalMlOf(st), getLang(), today(), color])
       if (sig === iosSig) return
       iosSig = sig
       await LocalNotifications.cancel({ notifications: Array.from({ length: IOS_MAX }, (_, i) => ({ id: IOS_ID_BASE + i })) }).catch(() => {})
@@ -193,7 +195,7 @@ export function startWaterSync(store) {
         const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k, 12)
         reminderSlots(p, day).forEach((at, i) => {
           if (at <= now || (k === 0 && done) || out.length >= IOS_MAX) return
-          out.push({ id: IOS_ID_BASE + out.length, ...staticReminder(st, at, i), schedule: { at, allowWhileIdle: true }, extra: { route: '/water' } })
+          out.push({ id: IOS_ID_BASE + out.length, ...staticReminder(st, at, i), iconColor: color, schedule: { at, allowWhileIdle: true }, extra: { route: '/water' } })
         })
       }
       if (out.length) await LocalNotifications.schedule({ notifications: out })
@@ -273,7 +275,7 @@ export async function testWaterReminder(S) {
       let perm = await LocalNotifications.checkPermissions()
       if (perm.display !== 'granted') perm = await LocalNotifications.requestPermissions()
       if (perm.display !== 'granted') return 'denied'
-      await LocalNotifications.schedule({ notifications: [{ id: IOS_ID_BASE + IOS_MAX, ...staticReminder(S, new Date(), Date.now()), schedule: { at: new Date(Date.now() + 1500) }, extra: { route: '/water' } }] })
+      await LocalNotifications.schedule({ notifications: [{ id: IOS_ID_BASE + IOS_MAX, ...staticReminder(S, new Date(), Date.now()), iconColor: notifColor(S), schedule: { at: new Date(Date.now() + 1500) }, extra: { route: '/water' } }] })
       return 'local'
     } catch { return 'none' }
   }

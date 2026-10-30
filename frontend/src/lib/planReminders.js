@@ -9,10 +9,10 @@
 // weekly on its weekday, so they keep coming while the app stays closed (review on PR #13); a
 // block moved for one day (+10) rings once at each time that week instead.
 // Also: the notification channels are put into named groups (organizeChannels).
-import { MOBILE } from './mobile.js'
+import { MOBILE, themedChannel } from './mobile.js'
 import { t, dateLocale } from './i18n.js'
 import { normPlan, planNotifications, planAlarms, PLAN_ID_BASE } from './dayPlan.js'
-import { themeAccent } from './themes.js'
+import { notifColor } from './themes.js'
 
 const FALLBACK_MAX = 60
 const clock = m => new Date(2000, 0, 1, Math.floor((((m % 1440) + 1440) % 1440) / 60), ((m % 60) + 60) % 60).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
@@ -30,7 +30,7 @@ export async function syncPlanReminders(S, force = false) {
   let sig = ''
   try {
     const plan = normPlan(S.planner)
-    const color = themeAccent()
+    const color = notifColor(S)   // 13.0: from the data — right even mid theme switch
     const call = await native()
     // Android: one self-rescheduling alarm per block (planAlarms); elsewhere the weekly fallback
     const alarms = call && plan && plan.remind ? planAlarms(S, plan, new Date(), t, clock) : []
@@ -64,7 +64,7 @@ export async function syncPlanReminders(S, force = false) {
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted' && force) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') { lastSig = ''; return }
-    await LocalNotifications.createChannel({ id: 'mj_plan', name: t('My schedule'), description: t('Each block of your schedule, with everything you planned'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.createChannel({ id: 'mj_plan', name: t('My schedule'), description: t('Each block of your schedule, with everything you planned'), importance: 4, visibility: 1, vibration: true, ...themedChannel(color) }).catch(() => {})
     await LocalNotifications.schedule({
       notifications: list.map((n, i) => ({
         id: PLAN_ID_BASE + i, channelId: 'mj_plan', title: n.title, body: n.body, largeBody: n.lines.join('\n'), summaryText: t('My schedule'),

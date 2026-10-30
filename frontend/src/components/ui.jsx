@@ -78,11 +78,13 @@ export function SearchField({ value, onChange, onClear, ...rest }) {
 
 /* ============================ switch ============================ */
 
-export function Switch({ checked, onChange, disabled }) {
+export function Switch({ checked, onChange, disabled, label }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={!!checked}
+      aria-label={label}
       disabled={disabled}
       className={'sw' + (checked ? ' on' : '')}
       onClick={() => onChange(!checked)}
@@ -287,12 +289,21 @@ function require_ui() {
 
 /* ============================ buttons ============================ */
 
-export function Button({ variant = 'plain', size, icon, trailingIcon, children, className = '', ...rest }) {
+/**
+ * The one button. 13.0 — one set of variants for the whole app:
+ *   primary    the main action of a screen or sheet (filled with the accent)
+ *   secondary  a second choice next to it (neutral, outlined)
+ *   tinted     a soft accent button (secondary actions that should still stand out)
+ *   ghost      text only (plain is the old name, kept)
+ *   danger     delete / remove (add className="solid" for a filled red one)
+ * size: 'sm' | 'xs' | 'lg'. `loading` shows a spinner, keeps the width and blocks taps.
+ */
+export function Button({ variant = 'plain', size, icon, trailingIcon, loading = false, children, className = '', type = 'button', disabled, ...rest }) {
   return (
-    <button className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>
-      {icon && <Icon name={icon} />}
+    <button type={type} className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} disabled={disabled} aria-busy={loading || undefined} {...rest}>
+      {loading ? <span className="btn-spin" aria-hidden="true" /> : icon && <Icon name={icon} />}
       {children && <span>{children}</span>}
-      {trailingIcon && <Icon name={trailingIcon} />}
+      {trailingIcon && !loading && <Icon name={trailingIcon} />}
     </button>
   )
 }

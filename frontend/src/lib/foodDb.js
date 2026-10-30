@@ -4,8 +4,14 @@
 // you change the amount, or add your own food).
 //
 // A row: [id, category, name, kcal, protein g, carbs g, fat g, serving unit, grams (ml for drinks)]
+//
+// 13.0: the new shelves live in lib/foods/ (instant noodles, date cakes, canned & processed,
+// shop snacks, more Iraqi dishes) — objects with the same fields plus sodium (na, mg), sugars
+// (sug), values per 100 g (per100), piece sizes (sizes) and, for Indomie, the builder config.
+// Every Iraqi food carries `iraqi: true`.
+import { NEW_CATS, MORE_FOODS, MOVED, IRAQI_IDS } from './foods/index.js'
 
-export const FOOD_CATS = [
+const BASE_CATS = [
   { key: 'dishes', name: 'Home dishes', icon: 'flame', color: 'var(--orange)' },
   { key: 'grains', name: 'Bread & grains', icon: 'sparkles', color: 'var(--yellow)' },
   { key: 'meat', name: 'Meat, chicken & fish', icon: 'dumbbell', color: 'var(--red)' },
@@ -17,8 +23,11 @@ export const FOOD_CATS = [
   { key: 'sweets', name: 'Sweets & snacks', icon: 'star', color: 'var(--indigo)' },
   { key: 'drinks', name: 'Drinks', icon: 'cup', color: 'var(--blue)' },
 ]
+// 13.0: the new shelves come after fast food
+export const FOOD_CATS = [...BASE_CATS.slice(0, 8), ...NEW_CATS, ...BASE_CATS.slice(8)]
 
-const ML_UNITS = new Set(['glass', 'can'])
+// 13.0: a can is millilitres only for a drink (a can of tuna is grams)
+const mlOf = (unit, cat) => unit === 'glass' || (cat === 'drinks' && unit !== 'scoop')
 
 const ROWS = [
   // home dishes
@@ -368,5 +377,13 @@ const ROWS = [
   ['nescafe3in1', 'drinks', 'Instant coffee 3-in-1 (sachet)', 80, 1, 13, 2.8, 'cup', 200],
 ]
 
-export const FOODS = ROWS.map(([id, cat, name, kcal, p, c, f, unit, g]) => ({ id, cat, name, kcal, p, c, f, unit, g, ml: ML_UNITS.has(unit) || cat === 'drinks' && unit !== 'scoop' }))
+export const FOODS = [
+  ...ROWS.map(([id, cat0, name, kcal, p, c, f, unit, g]) => {
+    const cat = MOVED[id] || cat0
+    return { id, cat, name, kcal, p, c, f, unit, g, ml: mlOf(unit, cat), ...(IRAQI_IDS.has(id) ? { iraqi: true } : null) }
+  }),
+  ...MORE_FOODS.map(x => ({ ...x, ml: x.ml === true || mlOf(x.unit, x.cat) })),
+]
 export const FOOD_BY_ID = Object.fromEntries(FOODS.map(x => [x.id, x]))
+/** How many Iraqi foods there are (the food database's "Iraqi" shelf). */
+export const IRAQI_COUNT = FOODS.filter(x => x.iraqi).length

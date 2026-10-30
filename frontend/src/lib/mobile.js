@@ -11,10 +11,14 @@
 // web bundles; the Capacitor plugins are only ever imported behind it.
 
 export const MOBILE = import.meta.env.VITE_MOBILE === '1'
-// 9.0: reminders carry the theme's accent as their icon colour (Android)
-async function accentColor() {
-  try { return (await import('./themes.js')).themeAccent() } catch { return undefined }
+// 9.0: reminders carry the theme's accent as their icon colour (Android). 13.0: worked out from
+// the data (themes.js notifColor — also the classic green when themed notifications are off),
+// and part of every reminder signature below, so a new theme re-colours the waiting reminders.
+async function accentColor(S) {
+  try { return (await import('./themes.js')).notifColor(S) } catch { return undefined }
 }
+/** Channel settings that follow the theme (Android applies them when a channel is first made). */
+export const themedChannel = color => (color ? { lights: true, lightColor: color } : {})
 
 const FILE = 'mahdi-jym-state.json'
 // Name of the mirror before the MAHDI-JYM rebrand — read once as a fallback so an existing
@@ -65,7 +69,8 @@ export async function syncReminder(S, interactive = false) {
     const { burnReminders, burnReminderText, burnSignature, BURN_ID_BASE, BURN_DAYS, SNOOZE_MIN } = await import('./burnPlan.js')
     const { bodyKg } = await import('./water.js')
     const kg = bodyKg(S)
-    const sig = planSignature(S) + burnSignature(S, kg)
+    const color = await accentColor(S)
+    const sig = planSignature(S) + burnSignature(S, kg) + '|' + color
     if (!interactive && sig === lastSig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     const ids = [...LEGACY_IDS, ...Array.from({ length: PLAN_DAYS * 2 }, (_, i) => ID_BASE + i), ...Array.from({ length: BURN_DAYS * 10 }, (_, i) => BURN_ID_BASE + i)]
@@ -92,7 +97,6 @@ export async function syncReminder(S, interactive = false) {
       return { id: item.id, at: item.at.getTime(), title: tx.title, body: tx.body, big: tx.big || tx.body,
         route: routeOf(item), start: item.kind === 'plan' || item.kind === 'plannudge' ? '/home?start=plan' : routeOf(item) }
     }).concat(burnItems))) { lastSig = sig; return true }
-    const color = await accentColor()
     const notifications = plan.map(item => {
       const { title, body } = reminderText(item, S)
       return { id: item.id, title, body, iconColor: color, schedule: { at: item.at, allowWhileIdle: true }, extra: { route: routeOf(item) } }
@@ -111,7 +115,8 @@ export async function syncMedReminders(S, interactive = false) {
   try {
     const { medReminders, medReminderIds } = await import('./health.js')
     const items = medReminders(S)
-    const sig = JSON.stringify([items, S.lang])
+    const color = await accentColor(S)
+    const sig = JSON.stringify([items, S.lang, color])
     if (!interactive && sig === lastMedSig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: medReminderIds().map(id => ({ id })) }).catch(() => {})
@@ -120,8 +125,7 @@ export async function syncMedReminders(S, interactive = false) {
     if (perm.display !== 'granted' && interactive) perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') return false
     const { t } = await import('./i18n.js')
-    await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
-    const color = await accentColor()
+    await LocalNotifications.createChannel({ id: 'mj_meds', name: t('Medicine reminders'), description: t('Your medicines and vitamins'), importance: 4, visibility: 1, vibration: true, ...themedChannel(color) }).catch(() => {})
     await LocalNotifications.schedule({
       notifications: items.map(m => ({
         id: m.id, channelId: 'mj_meds', iconColor: color,
@@ -160,7 +164,8 @@ export async function syncDayReminders(S, interactive = false) {
         if (at.getTime() > now.getTime() + 30000) items.push({ ...x, id: dayReminderId(day.off, i), at })
       })
     }
-    const sig = JSON.stringify([days.map(d => d.iso), items.map(x => [x.id, +x.at, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang])
+    const color = await accentColor(S)
+    const sig = JSON.stringify([days.map(d => d.iso), items.map(x => [x.id, +x.at, x.item.kcal, x.item.ideas && x.item.ideas[0] && x.item.ideas[0].id, x.item.plan && x.item.plan.title]), S.lang, color])
     if (!interactive && sig === lastDaySig) return true
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     await LocalNotifications.cancel({ notifications: dayReminderIds().map(id => ({ id })) }).catch(() => {})
@@ -171,8 +176,7 @@ export async function syncDayReminders(S, interactive = false) {
     const { t } = await import('./i18n.js')
     const { MEALS } = await import('./food.js')
     const meal = k => t((MEALS.find(m => m.key === k) || MEALS[3]).name)
-    const color = await accentColor()
-    await LocalNotifications.createChannel({ id: 'mj_day', name: t('Your day'), description: t('Meals, workout and walk at their times'), importance: 4, visibility: 1, vibration: true }).catch(() => {})
+    await LocalNotifications.createChannel({ id: 'mj_day', name: t('Your day'), description: t('Meals, workout and walk at their times'), importance: 4, visibility: 1, vibration: true, ...themedChannel(color) }).catch(() => {})
     await LocalNotifications.schedule({
       notifications: items.map(({ id, at, item: x }) => {
         let title, body, route

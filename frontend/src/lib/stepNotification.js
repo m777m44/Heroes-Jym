@@ -33,6 +33,13 @@ async function native() {
   }
   return { LN: LocalNotifications }
 }
+// 13.0: in the theme's colour (themes.js notifColor), like every other reminder
+async function tint() {
+  try {
+    const [{ notifColor }, { useStore }] = await Promise.all([import('./themes.js'), import('../store/useStore.js')])
+    return notifColor(useStore.getState().S)
+  } catch { return undefined }
+}
 async function swReg() {
   if (!('serviceWorker' in navigator) || !('Notification' in window) || Notification.permission !== 'granted') return null
   try { return await navigator.serviceWorker.getRegistration() } catch { return null }
@@ -66,7 +73,7 @@ export async function showOngoing(data) {
   try {
     if (MOBILE) {
       const { LN } = await native()
-      await LN.schedule({ notifications: [{ id: ONGOING_ID, title, body, ongoing: true, autoCancel: false, channelId: CHANNEL, extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
+      await LN.schedule({ notifications: [{ id: ONGOING_ID, title, body, ongoing: true, autoCancel: false, channelId: CHANNEL, iconColor: await tint(), extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
       return
     }
     const reg = await swReg()
@@ -89,7 +96,7 @@ export async function notifyMilestone(steps, kind) {
   try {
     if (MOBILE) {
       const { LN } = await native()
-      await LN.schedule({ notifications: [{ id: MILESTONE_ID, title, body, channelId: CHANNEL_ALERTS, extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
+      await LN.schedule({ notifications: [{ id: MILESTONE_ID, title, body, channelId: CHANNEL_ALERTS, iconColor: await tint(), extra: { route: '/walk' }, schedule: { allowWhileIdle: true } }] })
       return
     }
     const reg = await swReg()

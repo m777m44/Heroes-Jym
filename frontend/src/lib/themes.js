@@ -499,6 +499,21 @@ function cssHex(expr, doc) {
 export function themeAccent(doc = typeof document !== 'undefined' ? document : null) {
   return (doc && doc.body && cssHex('var(--acc)', doc)) || '#30d158'
 }
+/** The classic green of notifications (and the colour when themed notifications are off). */
+export const CLASSIC_NOTIF = '#30d158'
+const systemDarkNow = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null)
+/**
+ * 13.0 — the colour every notification wears (icon tint, accent, the channel's LED), worked out
+ * from your data alone: the theme (its light or dark twin when following the phone) or the
+ * accent you picked. No waiting for the page to repaint, so a reminder scheduled in the same
+ * moment as a theme switch already has the new colour. S.notifTheme === false → classic green.
+ */
+export function notifColor(S, systemDark = systemDarkNow()) {
+  if (S && S.notifTheme === false) return CLASSIC_NOTIF
+  if (S && S.accent && S.accent !== 'theme' && ACCENTS[S.accent]) return ACCENTS[S.accent]
+  const th = resolveTheme(S, systemDark)
+  return (th && normHex(themeTokens(th).accent['--acc'])) || CLASSIC_NOTIF
+}
 /** { acc, acc2, bg, surface, surface2, ink, ink2, light } of the theme on screen, or null. */
 export function themePalette(doc = typeof document !== 'undefined' ? document : null) {
   if (!doc || !doc.body) return null

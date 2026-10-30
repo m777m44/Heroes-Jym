@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
@@ -6,10 +6,11 @@ import { bindUI } from './components/ui.jsx'
 import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
 import { resolveTheme, applyTheme } from './lib/themes.js'
 import { applyWallpaper } from './lib/wallpapers.js'
+import { animateThemeSwitch } from './lib/themeSwitch.js'
 import { applyLook } from './lib/look.js'
 import { installTouchFeedback } from './lib/motion.js'
 import { setNav, nav } from './lib/nav.js'
-import { onNotificationTap, syncDayReminders } from './lib/mobile.js'
+import { onNotificationTap, syncDayReminders, syncReminder, syncMedReminders } from './lib/mobile.js'
 import { useWakeLock } from './lib/wakelock.js'
 import Icon from './components/Icon.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -20,17 +21,33 @@ import ScrollIndicator from './components/ScrollIndicator.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import Login from './views/Login.jsx'
 import Home from './views/Home.jsx'
-import Plan from './views/Plan.jsx'
-import RoutineEdit from './views/RoutineEdit.jsx'
-import Workout from './views/Workout.jsx'
-import Stats from './views/Stats.jsx'
-import History from './views/History.jsx'
-import Library from './views/Library.jsx'
-import Settings from './views/Settings.jsx'
-import Walking from './views/Walking.jsx'
-import BodyWeight from './views/BodyWeight.jsx'
-import Water from './views/Water.jsx'
-import Themes from './views/Themes.jsx'
+// 13.0: every screen but Home loads on first use (the first-start bundle ~22 % lighter); the tab screens
+// are fetched in the background once the app is idle (preloadTabs), so switching stays instant.
+const TAB_SCREENS = {
+  Plan: () => import('./views/Plan.jsx'),
+  Workout: () => import('./views/Workout.jsx'),
+  Stats: () => import('./views/Stats.jsx'),
+  Settings: () => import('./views/Settings.jsx'),
+  Library: () => import('./views/Library.jsx'),
+}
+const Plan = lazy(TAB_SCREENS.Plan)
+const RoutineEdit = lazy(() => import('./views/RoutineEdit.jsx'))
+const Workout = lazy(TAB_SCREENS.Workout)
+const Stats = lazy(TAB_SCREENS.Stats)
+const History = lazy(() => import('./views/History.jsx'))
+const Library = lazy(TAB_SCREENS.Library)
+const Settings = lazy(TAB_SCREENS.Settings)
+const Walking = lazy(() => import('./views/Walking.jsx'))
+const BodyWeight = lazy(() => import('./views/BodyWeight.jsx'))
+const Water = lazy(() => import('./views/Water.jsx'))
+const Themes = lazy(() => import('./views/Themes.jsx'))
+const FoodDatabase = lazy(() => import('./views/FoodDatabase.jsx'))   // 13.0
+let tabsPreloaded = false
+function preloadTabs() {
+  if (tabsPreloaded) return
+  tabsPreloaded = true
+  for (const load of Object.values(TAB_SCREENS)) load().catch(() => { tabsPreloaded = false })
+}
 // 4.0: screens you open now and then load on first use (a smaller first start)
 const Admin = lazy(() => import('./views/Admin.jsx'))
 const Coach = lazy(() => import('./views/Coach.jsx'))
@@ -106,10 +123,16 @@ function Shell() {
   useEffect(() => installTouchFeedback(() => useStore.getState().S), [])   // 7.0: ripple + tap haptics
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   const systemDark = useSystemDark()
+  const themed = useRef(false)
   useEffect(() => {
     const th = resolveTheme(S, systemDark)
-    applyTheme(th, S.accent)
-    applyWallpaper(S.wall, th.mode)     // 6.0: after the theme — it makes the surfaces see-through
+    const apply = () => {
+      applyTheme(th, S.accent)
+      applyWallpaper(S.wall, th.mode)     // 6.0: after the theme — it makes the surfaces see-through
+    }
+    // 13.0: the first paint is instant; every later switch eases over in 0.3 s (lib/themeSwitch.js)
+    if (themed.current) animateThemeSwitch(apply); else apply()
+    themed.current = true
   }, [S.theme, S.themeSystem, S.accent, systemDark, S.wall]) // eslint-disable-line react-hooks/exhaustive-deps
   // 9.0: the theme reaches Android — status / navigation bars and the notification shade
   useEffect(() => { const tm = setTimeout(() => syncNativeTheme(useStore.getState().S), 150); return () => clearTimeout(tm) }, [S.theme, S.themeSystem, S.accent, systemDark, S.wall, S.notifTheme]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -131,6 +154,19 @@ function Shell() {
   useWakeLock(!!S.active && S.keepAwake !== false)
 
   const authed = user || isGuest
+  // 13.0: reminders already waiting take a new theme's colour — their icon colour is fixed when
+  // they are scheduled, and the accent is part of every reminder signature (lib/mobile.js), so a
+  // resync re-makes only what changed. Also when the phone flips light/dark (no state change).
+  const recolorSkip = useRef(true)
+  useEffect(() => {
+    if (recolorSkip.current) { recolorSkip.current = false; return undefined }
+    if (!MOBILE || !ready || !authed) return undefined
+    const tm = setTimeout(() => {
+      const st = useStore.getState().S
+      syncReminder(st); syncMedReminders(st); syncDayReminders(st); syncPlanReminders(st)
+    }, 1200)
+    return () => clearTimeout(tm)
+  }, [S.theme, S.themeSystem, S.accent, systemDark, S.notifTheme]) // eslint-disable-line react-hooks/exhaustive-deps
   // the step counter comes back on by itself if it was on when the app was last closed
   useEffect(() => { if (ready && authed) usePedometer.getState().resume() }, [ready, authed])
   // water: reminders (native on Android) and the two-way sync with the notification buttons
@@ -153,6 +189,14 @@ function Shell() {
     const iv = MOBILE ? setInterval(() => { if (document.visibilityState === 'visible') pull() }, 60000) : null
     document.addEventListener('visibilitychange', onVis)
     return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis) }
+  }, [ready, authed])
+  // 13.0: once the first screen is up and the app is idle, fetch the tab screens in the background
+  useEffect(() => {
+    if (!ready || !authed) return undefined
+    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200))
+    const cancel = window.cancelIdleCallback || clearTimeout
+    const h = idle(preloadTabs, { timeout: 4000 })
+    return () => cancel(h)
   }, [ready, authed])
   // 9.0: day-plan reminders follow the plan (and are re-made for a new day when the app opens)
   useEffect(() => { if (ready && authed) syncPlanReminders(useStore.getState().S) }, [ready, authed, S.planner, S.lang]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -237,6 +281,7 @@ function Shell() {
               <Route path="/start/:mode/:cat" element={<WorkoutCategory />} />
               <Route path="/calories" element={<Calories />} />
               <Route path="/food" element={<Food />} />
+              <Route path="/foods" element={<FoodDatabase />} />
               <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/wallpapers" element={<Wallpapers />} />
               <Route path="/reports" element={<Reports />} />
