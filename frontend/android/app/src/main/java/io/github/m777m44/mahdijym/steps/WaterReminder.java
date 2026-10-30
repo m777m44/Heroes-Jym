@@ -254,6 +254,7 @@ public class WaterReminder extends BroadcastReceiver {
         NotificationChannel ch = new NotificationChannel(CH, w.str("channel", "Water reminders"), NotificationManager.IMPORTANCE_HIGH);
         ch.setDescription(w.str("channelDesc", "A reminder to drink, with a short exercise."));
         ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        Theme.light(c, ch);                         // 13.0: the light in the theme's colour
         nm.createNotificationChannel(ch);
         NotificationChannel q = new NotificationChannel(CH_QUIET, w.str("channelQuiet", "Water reminders (silent)"), NotificationManager.IMPORTANCE_HIGH);
         q.setSound(null, null);
@@ -265,6 +266,7 @@ public class WaterReminder extends BroadcastReceiver {
         v.enableVibration(true);
         v.setVibrationPattern(VIBRATION);
         v.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        Theme.light(c, v);
         nm.createNotificationChannel(v);
         NotificationChannel qv = new NotificationChannel(CH_QUIET_VIB, w.str("channelQuietVib", "Water reminders (vibrate only)"), NotificationManager.IMPORTANCE_HIGH);
         qv.setSound(null, null);

@@ -26,6 +26,7 @@ export default function Tools() {
   const blocksToday = plan ? plan.blocks.filter(b => !Array.isArray(b.w) || !b.w.length || b.w.includes(new Date(now).getDay())).length : 0
   const featured = [
     { to: '/dayplan', icon: 'calendar', title: 'My schedule', sub: plan ? t('{0} blocks today', blocksToday) : t('School, meals, drinks, work'), c1: '#5e5ce6', c2: '#ff375f' },
+    { to: '/foods', icon: 'noodles', title: 'Food database', sub: t('Indomie, date cake, canned food, snacks'), c1: '#ffb300', c2: '#ff5e3a' },   // 13.0
     { to: '/drinks', icon: 'cup', title: 'Drinks & juices', sub: t('Healthy recipes with calories'), c1: '#30d158', c2: '#ffb627' },
     { to: '/sodas', icon: 'can', title: 'Soft drinks', sub: t('Cans, bottles and glasses'), c1: '#e41e2b', c2: '#0b4ea2' },
     { to: '/nuts', icon: 'nut', title: 'Nuts & seeds', sub: t('Pistachios, kerzat and more'), c1: '#c68a54', c2: '#93c572' },
@@ -38,6 +39,7 @@ export default function Tools() {
   const groups = [
     { title: 'Food & drinks', rows: [
       { icon: 'fork', tint: 'var(--orange)', title: 'Food & calories', sub: 'Meals, calories, macros', to: '/food' },
+      { icon: 'book', tint: 'var(--teal)', title: 'Food database', sub: 'Every food with its calories, salt and sugar', to: '/foods' },
       { icon: 'leafy', tint: 'var(--green)', title: 'Kitchen', sub: 'Healthy recipes', to: '/kitchen' },
       { icon: 'drop', tint: 'var(--blue)', title: 'Water', sub: 'Daily goal and reminders', to: '/water' },
     ] },

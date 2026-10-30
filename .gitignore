@@ -10,6 +10,9 @@ data/
 
 # Build output / deps
 frontend/dist/
+frontend/dist-e2e/
+frontend/test-results/
+frontend/playwright-report/
 node_modules/
 *.log
 .DS_Store

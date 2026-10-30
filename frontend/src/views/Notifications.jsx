@@ -6,20 +6,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, dateLocale } from '../lib/i18n.js'
-import { todayISO } from '../lib/format.js'
-import { waterRemindPrefs, reminderSlots, bodyKg } from '../lib/water.js'
-import { reminderPrefs, planReminders } from '../lib/dailyReminder.js'
-import { normPlan, planNotifications, blocksOn, KINDS } from '../lib/dayPlan.js'
-import { dayPrefs, dayReminderItems } from '../lib/daySchedule.js'
-import { idealBodyOf } from '../lib/idealBody.js'
+import { waterRemindPrefs, bodyKg } from '../lib/water.js'
+import { reminderPrefs } from '../lib/dailyReminder.js'
+import { normPlan, planNotifications, blocksOn } from '../lib/dayPlan.js'
+import { dayPrefs } from '../lib/daySchedule.js'
 import { medReminders } from '../lib/health.js'
-import { burnReminders, burnReminderText } from '../lib/burnPlan.js'
-import { normFasting } from '../lib/fasting.js'
-import { MEALS } from '../lib/food.js'
+import { burnReminders } from '../lib/burnPlan.js'
 import { MOBILE } from '../lib/mobile.js'
 import { nav } from '../lib/nav.js'
+import { upcoming, fastAlarm, fastTitle } from '../lib/upcoming.js'
+import { notifColor, resolveTheme, themeOf } from '../lib/themes.js'
 import Icon from '../components/Icon.jsx'
-import { BackButton, Section, Row } from '../components/ui.jsx'
+import { BackButton, Section, Row, Switch } from '../components/ui.jsx'
 
 const ui = () => useUI.getState()
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
@@ -29,58 +27,53 @@ const safe = (f, d) => { try { return f() } catch { return d } }
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 const whenText = (d, now) => (sameDay(d, now) ? hm(d) : d.toLocaleDateString(dateLocale(), { weekday: 'short' }) + ' ' + hm(d))
 
-/** The running fast and its "done" notification (Fasting.jsx), when that is still to come (review on PR #13). */
-function fastAlarm(S, now) {
-  const f = normFasting(S.fasting)
-  const end = f.active ? new Date(f.active.start + f.active.goalH * 3600000) : null
-  return { f, end, at: end && f.remind && end > now ? end : null, ramadan: !!f.active && f.active.plan === 'ramadan' }
-}
-const fastTitle = x => (x.ramadan ? t('Time for iftar') : t('Fast complete!'))
-
 async function openSystem() {
   try { const { call } = await import('../lib/stepService.js'); await call('openNotificationSettings', {}) } catch { /* web */ }
 }
 async function testNotification() {
   try {
+    const color = notifColor(useStore.getState().S)   // 13.0: in the theme's colour
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     let perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted') perm = await LocalNotifications.requestPermissions()
     if (perm.display !== 'granted') { ui().toast(t('Notifications are off for MAHDI-JYM in the phone settings.')); return }
-    await LocalNotifications.schedule({ notifications: [{ id: 7698, title: 'MAHDI-JYM', body: t('Notifications work — you will be reminded on time.'), schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true }, extra: { route: '/notifications' } }] })
+    await LocalNotifications.schedule({ notifications: [{ id: 7698, title: 'MAHDI-JYM', body: t('Notifications work — you will be reminded on time.'), iconColor: color, schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true }, extra: { route: '/notifications' } }] })
     ui().toast(t('A test notification comes in 3 seconds'))
   } catch { ui().toast(t('Notifications are off for MAHDI-JYM in the phone settings.')) }
 }
 
-/** Everything still to ring today, from every feature, in time order. */
-function upcoming(S, now) {
-  const out = []
-  const iso = todayISO()
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-  const plan = normPlan(S.planner)
-  for (const n of safe(() => planNotifications(S, plan, now, t, clockMin, { days: 1, max: 40 }), [])) out.push({ at: n.at, icon: (KINDS[n.kind] || KINDS.other).icon, color: n.color, title: n.title, sub: t('My schedule'), to: '/dayplan' })
-  const w = safe(() => waterRemindPrefs(S), { on: false })
-  if (w.on) for (const at of safe(() => reminderSlots(w, now), [])) if (at > now) out.push({ at, icon: 'drop', color: '#64d2ff', title: t('Time for water'), sub: t('Water reminders'), to: '/water' })
-  for (const r of safe(() => planReminders(S, now, 1), [])) if (r.at > now && r.at < end) out.push({ at: r.at, icon: r.kind === 'walk' ? 'figureWalk' : 'dumbbell', color: '#ff375f', title: r.kind === 'walk' ? t('Walking reminder') : r.routine || t('Workout reminder'), sub: t('Workout reminders'), to: '/settings' })
-  const fast = safe(() => fastAlarm(S, now), null)
-  if (fast && fast.at && fast.at < end) out.push({ at: fast.at, icon: 'moon', color: '#bf5af2', title: fastTitle(fast), sub: t('Fasting tracker'), to: '/fasting' })
-  for (const m of safe(() => medReminders(S), [])) {
-    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), m.hour, m.minute)
-    if (at > now) out.push({ at, icon: 'pill', color: '#ff9f0a', title: m.name, sub: t('Medicine reminders'), to: '/health' })
-  }
-  // the burn plan's exercises (review on PR #13)
-  for (const b of safe(() => burnReminders(S, bodyKg(S), now), [])) {
-    if (b.at <= now || b.at >= end) continue
-    out.push({ at: b.at, icon: 'flame', color: '#ff375f', title: safe(() => burnReminderText(b).title.replace(/^🔥\s*/, ''), t('Burn plan')), sub: t('Burn plan'), to: '/burn/review' })
-  }
-  const r = safe(() => idealBodyOf(S), null)
-  for (const x of safe(() => dayReminderItems(S, r, iso), [])) {
-    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), x.hour, x.minute)
-    if (at <= now) continue
-    const it = x.item || {}
-    const title = it.kind === 'meal' ? t((MEALS.find(m => m.key === it.meal) || MEALS[3]).name) : it.kind === 'workout' ? t('Workout') : t('Walk')
-    out.push({ at, icon: it.kind === 'meal' ? 'fork' : it.kind === 'workout' ? 'dumbbell' : 'figureWalk', color: '#30d158', title, sub: t('Your day'), to: '/ideal' })
-  }
-  return out.sort((a, b) => a.at - b.at)
+/**
+ * 13.0 — how a reminder looks in the notification shade with the current theme: the icon, the
+ * app name and the accent wear the theme's colour (themes.js notifColor), and so does the
+ * phone's light where it has one. Switch it off for the classic green.
+ */
+export function NotifPreview({ S, onToggle }) {
+  const color = notifColor(S)
+  const on = S.notifTheme !== false
+  const th = resolveTheme(S, typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : null) || themeOf('classic-dark')
+  return <div className="card nf-color" style={{ '--nc': color }}>
+    <div className="nf-color-t">
+      <span className="nf-color-dot" aria-hidden="true" />
+      <span className="grow"><b>{t('Notification colour')}</b><span className="small muted">{on ? t('Follows the theme: {0}', t(th.family.name)) : t('The classic green')}</span></span>
+      <Switch checked={on} onChange={onToggle} label={t('Notifications in the theme colours')} />
+    </div>
+    <div className="nf-shade" aria-hidden="true">
+      <div className="nf-note">
+        <span className="nf-note-ic"><Icon name="dumbbell" /></span>
+        <span className="grow">
+          <span className="nf-note-app">MAHDI-JYM · {t('now')}</span>
+          <b dir="auto">{t('Time for your workout 💪')}</b>
+          <span className="nf-note-b">{t('Push day · 45 min')}</span>
+          <span className="nf-note-acts"><i>{t('Start')}</i><i>{t('In 30 min')}</i></span>
+        </span>
+      </div>
+      <div className="nf-note sm">
+        <span className="nf-note-ic"><Icon name="drop" /></span>
+        <span className="grow"><span className="nf-note-app">MAHDI-JYM · {t('in 1 h')}</span><b dir="auto">{t('Time for water')}</b></span>
+      </div>
+    </div>
+    <p className="small muted" style={{ margin: '10px 2px 0' }}>{t('Every theme colours the reminders by itself: the icon, the buttons and the phone light. Reminders already waiting take the new colour too.')}</p>
+  </div>
 }
 
 export default function Notifications() {
@@ -127,6 +120,8 @@ export default function Notifications() {
         <span className="small">{list.length ? t('{0} more today · next at {1}', n0(list.length), hm(list[0].at)) : t('Nothing more today')}</span>
       </div>
     </div>
+
+    <NotifPreview S={S} onToggle={v => useStore.getState().update(s => { s.notifTheme = v })} />
 
     <Section title={t('Reminders')}>
       {rows.map(r => <Row key={r.to + r.title} icon={r.icon} iconTint={r.tint} title={r.title} subtitle={r.sub} accessory="chevron" onClick={() => nav(r.to)}

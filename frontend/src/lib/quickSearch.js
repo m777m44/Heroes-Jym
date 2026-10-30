@@ -58,6 +58,7 @@ export const PLACES = [
   ['Water', '/water', 'drop', 'var(--blue)', 'drink hydration reminders'],
   ['Food & calories', '/food', 'fork', 'var(--orange)', 'meals nutrition macros protein diet'],
   ['Kitchen', '/kitchen', 'leafy', 'var(--green)', 'recipes healthy cooking'],
+  ['Food database', '/foods', 'noodles', 'var(--yellow)', 'foods indomie noodles date cake canned tuna snacks chips chocolate iraqi dishes calories salt sugar'],
   ['Walking & steps', '/walk', 'figureWalk', 'var(--acc)', 'pedometer steps walk'],
   ['Burn calories', '/calories', 'flame', 'var(--red)', 'burn plan cardio'],
   ['Body weight', '/weight', 'scale', 'var(--teal)', 'weigh bmi photos'],
@@ -73,7 +74,7 @@ export const PLACES = [
 ]
 
 /**
- * Search everything → [{ kind: 'place'|'routine'|'exercise'|'soda'|'nut'|'drink', title, sub, icon, tint, to?, id?, score }],
+ * Search everything → [{ kind: 'place'|'routine'|'exercise'|'soda'|'nut'|'drink'|'food', title, sub, icon, tint, to?, id?, score }],
  * best first, at most `limit`. `tr` translates an i18n key; `exName(ex)`/`exSearch(ex)` come from
  * lib/i18n.js so exercise names match in the app's language too.
  */

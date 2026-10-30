@@ -392,8 +392,7 @@ public class PlanReminder extends BroadcastReceiver {
         ch.setDescription(s == null ? "" : s.optString("channelDesc", ""));
         ch.enableVibration(true);
         ch.setVibrationPattern(VIBRATION);
-        ch.enableLights(true);
-        ch.setLightColor(0xFF5E5CE6);
+        Theme.light(c, ch);                         // 13.0: the theme's colour (was always indigo)
         ch.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(ch);
         Channels.adopt(c, CH);

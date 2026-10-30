@@ -86,6 +86,16 @@ final class Theme {
     /** The accent for the small icon and app name (Android tints it itself). */
     int accent() { return on ? acc : GREEN; }
 
+    /**
+     * 13.0 — a reminder channel's light (the LED on phones that have one) in the theme's colour.
+     * Android takes a channel's light when the channel is first made; callers check API 26+.
+     */
+    static void light(Context c, android.app.NotificationChannel ch) {
+        if (Build.VERSION.SDK_INT < 26 || ch == null) return;
+        ch.enableLights(true);
+        ch.setLightColor(get(c).accent());
+    }
+
     /** The accent made readable on a dark card: dark accents (a light theme's) are lifted. */
     int onDark() {
         int a = accent();

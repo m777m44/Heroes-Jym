@@ -15,19 +15,31 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-11.0.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-13.0.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![No tracking](https://img.shields.io/badge/telemetry-none-f472b6?style=flat-square)
-![Languages](https://img.shields.io/badge/languages-13-fbbf24?style=flat-square)
+![Languages](https://img.shields.io/badge/languages-Arabic%20%C2%B7%20English-fbbf24?style=flat-square)
 
 **MAHDI-JYM** · short name **MH-JYM**
 
 </div>
 
 <br>
+
+> ### 🍜 New in 13.0 — a food database that knows how you cook it
+>
+> **521 foods**, each with calories for the way it is made: **Indomie in 41 ways** (dry, boiled,
+> fried, as a soup, with cream — plus egg, cheese, mayo, tuna, chicken…) and a **builder** that
+> works the calories out from the pack, the seasoning and what goes in; **15 date cakes** in
+> 50 / 100 / 150 g; **45 canned & processed foods**; **74 shop snacks**; **15 more Iraqi dishes**.
+> A new **Food database** screen (search in Arabic or English, shelves, sort by calories or
+> protein, salt and sugar per serving and per 100 g). **Every theme now colours the
+> notifications** — icon, buttons, the phone's light — and a bell on Home shows what's still to
+> come today. Themes switch with a 0.3 s fade (instant with reduced motion); screens load on
+> first use. Both Android versions have all of it. See the [changelog](CHANGELOG.md#v1300--2026-10-30).
 
 > ### 🚶 New in 2.0 — walking and verified body weight
 >
@@ -299,6 +311,11 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 
 متتبّع للتمارين والخطوات ووزن الجسم تستضيفه بنفسك: بياناتك على خادمك أنت، تسجيل دخول
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
+
+**الجديد في الإصدار 13.0:** قاعدة بيانات أطعمة فيها 521 صنفاً بسعرات حسب طريقة التحضير — الإندومي بـ41 طريقة
+(ناشفة، مسلوقة، مقلية، شوربة، بالكريمة) مع مُنشئ يحسب السعرات من الكيس والبهارات والإضافات، و15 نوعاً من كيك التمر
+بثلاثة أحجام، و45 من المعلّبات، و74 من سناكات الدكان، و15 أكلة عراقية جديدة. كل ثيم يلوّن الإشعارات تلقائياً،
+وجرس في الرئيسية يعرض ما تبقّى لليوم، وتبدّل ناعم للثيمات خلال 0.3 ثانية.
 
 **الجديد في الإصدار 2.0:**
 

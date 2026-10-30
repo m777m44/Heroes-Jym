@@ -3,6 +3,106 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v13.0.0 — 2026-10-30
+
+**A food database that knows how you cook it: 521 foods (190 new), each with calories for the
+way it is made — Indomie in 41 ways plus a builder, 15 date cakes in three sizes, 45 canned &
+processed foods, 74 shop snacks and 15 more Iraqi dishes — in a new Food database screen with
+salt and sugar. Every theme now colours the notifications by itself, a bell on Home opens what is
+still to come today, themes switch with a soft 0.3 s fade, and screens load when you open them.
+Both Android versions have all of it.**
+*قاعدة بيانات أطعمة تعرف كيف تطبخ: 521 صنفاً (190 جديداً)، لكل منها سعراتها حسب طريقة التحضير —
+الإندومي بـ41 طريقة مع مُنشئ، و15 نوعاً من كيك التمر بثلاثة أحجام، و45 من المعلّبات والمصنّعات،
+و74 من سناكات الدكان، و15 أكلة عراقية جديدة — في شاشة جديدة لقاعدة بيانات الأطعمة مع الملح والسكر.
+كل ثيم يلوّن الإشعارات تلقائياً، وجرس في الرئيسية يعرض ما تبقّى لليوم، والثيمات تتبدل بتلاشٍ ناعم
+خلال 0.3 ثانية، والشاشات تُحمَّل عند فتحها. النسختان على أندرويد فيهما كل ذلك.*
+
+### 🍜 Indomie, worked out from its parts
+- **41 ready-made ways** on a new *Instant noodles* shelf: uncooked (dry, with the seasoning,
+  sauce, mayonnaise or cheese), boiled & drained (no / half / all the seasoning; + egg, 2 eggs,
+  cheese, tuna, chicken, vegetables, mayo, ketchup, hot sauce, sausage), fried in oil (+ fried
+  egg, cheese, chicken & vegetables…), with cooking cream, and the chicken, curry, vegetable,
+  hot & spicy, Jumbo and cup packs.
+- **The Indomie builder** (`lib/foods/indomie.js`): pick the pack, how it is made, the seasoning
+  sachets (none / half / all), the sauces and up to three of each add-on — the calories, protein,
+  carbs, fat, sodium and sugars follow live. Values are summed from the parts (noodle block,
+  powder, seasoning oil, sauces, frying oil, cream, add-ons) so **kcal = 4p + 4c + 9f** always
+  holds; draining keeps ~90 % of the block's fat and ~60 % of its salt, frying adds the oil it
+  soaks up. Add-ons: egg +70, cheese +79, mayo +92, ketchup +19, hot sauce +14, tuna (80 g) +121,
+  chicken (100 g) +165, vegetables +31 kcal.
+- A mix that matches a ready-made way is logged as that food; any other mix keeps its recipe in
+  the log entry (`ind`), so its name is rebuilt in Arabic or English whenever it is shown.
+
+### 🍰 Date cakes, canned food, shop snacks, Iraqi dishes
+- **15 date cakes** (plain, chocolate, cream, nuts, coconut, honey, cheese, vegan, gluten-free,
+  oats, Lotus, tahini, toffee, cardamom & saffron, banana), per 100 g, in **small 50 g / medium
+  100 g / large 150 g**.
+- **45 canned & processed foods**: tuna (water, oil, drained, chili), corned beef, canned beef and
+  chicken, luncheon and mortadella, sardines, mackerel, salmon, foul, chickpeas, hummus, beans,
+  lentils, corn, peas, vegetables, mushrooms, tomatoes, okra, molokhia, olives, pickles, stuffed
+  vine leaves, makdous, fruit in syrup, condensed and evaporated milk, qishta, soups… Foul and
+  baked beans come as half or whole cans.
+- **74 shop snacks**: chips (Lay's, Doritos, Pringles, Cheetos, Takis…), crackers, chocolate bars
+  (Snickers, KitKat, Twix, Mars, Bounty, Galaxy, Kinder, Ferrero…), sweets and gum, biscuits
+  (Oreo, Lotus, digestives), cakes and pastries (donuts, muffins, brownie, cheesecake), ice cream
+  (Magnum, Cornetto…), café drinks (latte, Spanish latte, mocha, frappuccino, karak) and bars.
+- **15 more Iraqi dishes** — fesenjoon, aroog, masgouf plate, chicken & potato tray, chicken quzi,
+  tray kubba, dolma with ribs, laffat aroog / bagilla / geymar, meat boorak, carrot and semolina
+  halwa, shakarlama, qatayef — and an *Iraqi* tag on 136 foods.
+- New rows carry **sodium and sugars** and their **per 100 g** values; packets, bags, bars,
+  sticks and boxes are new serving units. A can is millilitres only on the drinks shelf.
+
+### 📖 The food database (`/foods`)
+- Search in Arabic or English, shelves (All, Iraqi and every category with its count), sorting by
+  the usual order, fewest calories or most protein. Each row shows protein / carbs / fat, how it
+  is made and a *Salty* tag at 800 mg of sodium or more.
+- A food's card: sizes (or ×0.5 – ×3), calories with the share of each macro, sodium against the
+  2,000 mg daily limit, sugars against the 25 g aim, the values per 100 g, a favourite star, the
+  meal, and *Add*. Indomie opens the builder.
+- Reached from Food, Tools (a new tile), the Add food sheet (and *Build your Indomie* when you
+  search for it), the Home shortcuts and the 🔍 quick search — which now finds every food.
+- Lists draw 40 rows at a time and the next ones as you scroll (`components/LazyList.jsx`, with
+  `content-visibility` on rows) — also in the Add food sheet.
+
+### 🎨 Notifications in your theme
+- `notifColor(S)` (themes.js) works the colour out from your data — the theme (its light or dark
+  twin when following the phone) or the accent you picked; the classic green when
+  "Notifications in the theme's colours" is off. Every reminder uses it: workout, burn plan,
+  medicines, "Your day", schedule, water (iOS), the step counter, milestones and the test
+  notification.
+- The colour is part of every reminder signature, so reminders already waiting are re-made with
+  a new theme — also when the phone flips light/dark.
+- Android channels get the theme's **light colour** (workout, schedule, water and the JS-made
+  channels; Android applies it when a channel is first created).
+- A **Notification colour** card on the Notifications screen previews a reminder in the shade,
+  with the switch; the **bell on Home** shows how many reminders are still to ring today and opens
+  the **notification panel** (`lib/upcoming.js`, shared with the Notifications screen).
+
+### ✨ Smoother and faster
+- **Theme switch in 0.3 s:** a View Transition cross-fade where the browser has it, else a short
+  colour transition on the main surfaces for the moment of the switch only; instant with reduced
+  motion (`lib/themeSwitch.js`).
+- **Buttons:** one documented set — primary, the new **secondary**, tinted, ghost, danger — with a
+  **`loading`** state (spinner, `aria-busy`); buttons and switches are `type="button"`.
+- **Code splitting:** every screen but Home loads on first use; the tab screens are fetched in the
+  background once the app is idle. The first-start bundle drops from 804 kB to 632 kB (254 → 205
+  kB gzipped). Exercise pictures and weigh-in photos load lazily. Search uses
+  `useDeferredValue`; rows are memoised.
+
+### 🧪 Tests & CI
+- `src/lib/v13.test.js` (20 tests: shelves and counts, kcal vs macros, Indomie maths and
+  ordering, add-ons, salt, normalising, sizes, Arabic for every new name / unit / size / part,
+  `notifColor` for all 1,442 themes, the theme-switch animation); the Arabic UI guard renders
+  the food database, every new food's card, the builder for each ready-made way, the amount
+  sheet with sizes and the notification panel. 732 Vitest tests in all.
+- **Playwright** end-to-end tests (`frontend/e2e/`, `npm run e2e`) on the demo build in Chromium:
+  the main screens with no console errors, the food database (lazy list, shelf, search, card),
+  date-cake sizes, the Indomie builder into the log, the notification colour, Arabic RTL. A new
+  `e2e` job in the Tests workflow.
+- **GitHub Pages:** `page_build` re-runs the deploy right after GitHub's own branch build, so
+  the website, the web app and the demo always win while the Pages source is still a branch.
+- 320 new Arabic strings (`scripts/i18n/13.0a.json`, `13.0b.json`); 4,908 keys, in sync.
+
 ## v12.0.0 — 2026-10-24
 
 **Two Android versions with the same features — full (offline, everything inside) and light

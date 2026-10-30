@@ -36,7 +36,7 @@ it('the Arabic UI has no stray English', async () => {
   Object.assign(useStore.getInitialState().S, st)
   await setLang('ar')
   const text = h => h.replace(/<span class="exn-en"[^>]*>[^<]*<\/span>/g, '').replace(/<title>.*?<\/title>/g, '').replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery', '/drinks': 'Drinks', '/drinks?c=iraqi': 'Drinks', '/drinks?c=mine': 'Drinks', '/drinks?c=fav': 'Drinks', '/dayplan': 'DayPlan', '/sodas': 'Sodas', '/nuts': 'Nuts', '/notifications': 'Notifications', '/schedule': 'DayPlan' }
+  const views = { '/home': 'Home', '/plan': 'Plan', ['/plan/r/' + st.routines[0].id]: 'RoutineEdit', '/workout': 'Workout', '/stats': 'Stats', '/history': 'History', '/library': 'Library', '/settings': 'Settings', '/walk': 'Walking', '/foods': 'FoodDatabase', '/weight': 'BodyWeight', '/water': 'Water', '/ideal': 'IdealBody', '/health': 'Health', '/themes': 'Themes', '/coach': 'Coach', '/coach/intake': 'CoachIntake', '/start': 'StartWorkout', '/backups': 'Backups', '/calories': 'Calories', '/food': 'Food', '/kitchen': 'Kitchen', '/kitchen?tab=pantry': 'Kitchen', '/kitchen?tab=build': 'Kitchen', '/kitchen?m=b&x': 'Kitchen', '/wallpapers': 'Wallpapers', '/reports': 'Reports', '/tools': 'Tools', '/timer': 'Timer', '/breathe': 'Breathe', '/fasting': 'Fasting', '/recovery': 'Recovery', '/drinks': 'Drinks', '/drinks?c=iraqi': 'Drinks', '/drinks?c=mine': 'Drinks', '/drinks?c=fav': 'Drinks', '/dayplan': 'DayPlan', '/sodas': 'Sodas', '/nuts': 'Nuts', '/notifications': 'Notifications', '/schedule': 'DayPlan' }
   const found = {}
   for (const [path, name] of Object.entries(views)) {
     let html
@@ -97,6 +97,13 @@ it('the Arabic UI has no stray English', async () => {
     S0.burnPlan = prev
     delete S0.calGoal
   }
+  // 13.0: an Indomie made in the builder (its name is rebuilt in Arabic) and a date cake in today's log
+  {
+    const d0 = new Date().toISOString().slice(0, 10)
+    st.food = { ...(st.food || {}), [d0]: [...((st.food || {})[d0] || []),
+      { id: 'ind1', f: null, n: 'Indomie (fried) + seasoning + sauce + 2 × cheese', kcal: 700, p: 20, c: 60, fat: 40, q: 1, m: 'd', t: Date.now(), ind: { pack: 'goreng', prep: 'fried', season: 1, sauce: true, add: { cheese: 2 } } },
+      { id: 'dc1', f: 'datecake-lotus', kcal: 210, p: 3, c: 30, fat: 9, q: 2, m: 's', t: Date.now() }] }
+  }
   // sheets
   const { useUI } = await import('../store/useUI.js')
   const sh = await import('../sheets.jsx')
@@ -121,6 +128,9 @@ it('the Arabic UI has no stray English', async () => {
   const SDL = await import('../lib/sodas.js')
   const NTL = await import('../lib/nuts.js')
   const WAV = await import('./Water.jsx')
+  const FDB = await import('./FoodDatabase.jsx')
+  const { MORE_FOODS } = await import('../lib/foods/index.js')
+  const NP = await import('../components/NotifPanel.jsx')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -154,6 +164,16 @@ it('the Arabic UI has no stray English', async () => {
     // 11.0: foods in a block (eggs and bread), a template note, a block icon; the food picker; any amount of water
     blockFood: () => DPV.blockSheet({ id: 'bfd', k: 'meal', s: 440, d: 5, meal: 'b', ic: 'shirt', nt: 'Clothes, school bag and a water bottle', items: [{ t: 'f', id: 'egg', q: 2 }, { t: 'f', id: 'khubz', q: 1 }] }),
     foodPick: () => DPV.foodPickSheet(() => {}), waterCustom: () => WAV.customWaterSheet(),
+    // 13.0: every new food's card (sizes, salt and sugar, per 100 g), the Indomie builder (each ready-made
+    // way, and a mix with everything in it), the amount sheet with sizes and the Indomie link, the bell's panel
+    ...Object.fromEntries(MORE_FOODS.filter(f => !f.indomie).map(f => ['fdb_' + f.id, () => FDB.foodCardSheet(f)])),
+    ...Object.fromEntries(MORE_FOODS.filter(f => f.indomie).map(f => ['indomie_' + f.id, () => FDB.indomieSheet({ cfg: f.indomie })])),
+    indomieAll: () => FDB.indomieSheet({ cfg: { pack: 'jumbo', prep: 'creamy', season: 0.5, sauce: true, add: { egg: 2, friedegg: 1, cheese: 3, mayo: 1, ketchup: 2, hot: 1, tuna: 1, chicken: 2, veg: 1, sausage: 2 } } }),
+    indomieCup: () => FDB.indomieSheet({ cfg: { pack: 'cup', prep: 'soup', season: 1 } }),
+    foodAmountCake: () => FS.amountSheet({ food: FOOD_BY_ID['datecake-choc'], iso: isoToday, meal: 's' }),
+    foodAmountIndomie: () => FS.amountSheet({ food: FOOD_BY_ID['indo-fry-egg'], iso: isoToday, meal: 'd' }),
+    foodAmountCan: () => FS.amountSheet({ food: FOOD_BY_ID.foulcan, iso: isoToday, meal: 'b' }),
+    notifPanel: () => NP.notifPanelSheet(() => {}),
     profileIcon: () => { useStore.getState().S.profile = { name: 'مهدي', icon: 'dumbbell', color: '#ce1126' }; PF.profileSheet() },
     profilePhoto: () => { useStore.getState().S.profile = { name: 'مهدي', photo: 'data:image/jpeg;base64,AAAA', color: '#007a3d' }; PF.profileSheet() },
   }

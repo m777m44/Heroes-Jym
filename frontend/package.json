@@ -1,7 +1,7 @@
 {
   "name": "mahdi-jym",
   "private": true,
-  "version": "12.0.0",
+  "version": "13.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "VITE_DEMO=1 vite build --outDir dist-e2e && playwright test",
     "build:mobile:offline": "VITE_MOBILE=1 VITE_OFFLINE_MEDIA=1 vite build && node scripts/bundle-media.mjs && cap sync",
     "build:webapp": "VITE_WEBAPP=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ vite build",
     "build:demo": "VITE_DEMO=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ vite build"
@@ -33,6 +34,7 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.8",
     "@capacitor/ios": "^7.6.8",
+    "@playwright/test": "^1.64.1",
     "@vitejs/plugin-react": "^6.0.3",
     "vite": "^8.1.5",
     "vitest": "^4.1.10"

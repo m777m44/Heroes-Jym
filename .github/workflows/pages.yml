@@ -14,6 +14,12 @@
 #   Settings → Pages → Build and deployment → Source: "GitHub Actions".
 # After that every push to main that touches the app or the site deploys it; "Run workflow"
 # on the Actions tab deploys by hand.
+#
+# 13.0: while the source is still "Deploy from a branch", GitHub also runs its own Jekyll build
+# of main on every push ("pages build and deployment") — and whichever deploy finishes last is
+# what the site shows. `page_build` (fired by that build) runs this workflow once more right
+# after it, so the website, the app and the demo always win. Our own deploy pushes nothing, so
+# it never fires page_build itself; with the "GitHub Actions" source the event simply never comes.
 name: Deploy website, web app & demo to GitHub Pages
 
 on:
@@ -25,6 +31,7 @@ on:
       - 'assets/**'
       - 'scripts/build-site.sh'
       - '.github/workflows/pages.yml'
+  page_build:
   workflow_dispatch:
 
 permissions:

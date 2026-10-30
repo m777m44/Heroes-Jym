@@ -36,6 +36,22 @@ import { zonesSheet } from '../components/HrZonesSheet.jsx'
 import { normFasting, fastStatus, hmText } from '../lib/fasting.js'
 import { cloudMeta } from '../lib/cloud.js'
 
+// 13.0: the bell — how many reminders are still to ring today (counted in the background, once a
+// minute while the screen is on); a tap opens the notification panel (components/NotifPanel.jsx).
+function NotifBell({ nav }) {
+  const [n, setN] = useState(0)
+  const count = () => import('../lib/upcoming.js').then(m => setN(m.upcoming(useStore.getState().S).length)).catch(() => {})
+  useEffect(() => {
+    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 900))
+    idle(count)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useVisibleInterval(count, 60000)
+  const open = () => import('../components/NotifPanel.jsx').then(m => m.notifPanelSheet(nav))
+  return <button className="iconbtn hb-bell" onClick={open} aria-label={n ? t('Notifications: {0} more today', n) : t('Notifications')}>
+    <Icon name="bell" />{n > 0 && <b className="hb-badge" aria-hidden="true">{n > 9 ? '9+' : n.toLocaleString(dateLocale())}</b>}
+  </button>
+}
+
 // 8.0: one row of shortcuts to the tools — a running fast shows its time live.
 function QuickTools({ nav }) {
   const S = useStore(s => s.S)
@@ -43,6 +59,7 @@ function QuickTools({ nav }) {
   const items = [
     ['/dayplan', 'calendar', t('My schedule'), '#5e5ce6'],
     ['/drinks', 'cup', t('Drinks'), '#30d158'],
+    ['/foods', 'noodles', t('Food database'), '#ff9f0a'],
     ['/sodas', 'can', t('Soft drinks'), '#e41e2b'],
     ['/nuts', 'nut', t('Nuts & seeds'), '#c68a54'],
     ['/timer', 'timer', t('Timer'), '#ff375f'],
@@ -228,6 +245,7 @@ export default function Home() {
         <h1 dir="auto">{name || 'MAHDI-JYM'}</h1>
       </div>
       <button className="iconbtn" onClick={() => quickSearchSheet(nav, searchExtra)} aria-label={t('Search')}><Icon name="magnifier" /></button>
+      <NotifBell nav={nav} />
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 

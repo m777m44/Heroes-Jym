@@ -20,6 +20,7 @@ import { estimateFood, scaleFood, kcalFromMacros, ingredientsIn, plateShare } fr
 import { itemsTotals, saveBuiltMeal, searchIngredients, ING_BY_ID } from '../../lib/kitchen.js'
 import { searchSodas, sodaNutrition } from '../../lib/sodas.js'
 import { searchNuts, nutNutrition, HANDFUL_G } from '../../lib/nuts.js'
+import { useIncremental, LazyMore } from '../LazyList.jsx'
 import SodaArt from '../SodaArt.jsx'
 import NutArt from '../NutArt.jsx'
 import Icon from '../Icon.jsx'
@@ -74,6 +75,11 @@ function AddFood({ iso, meal: meal0, close }) {
   const openSoda = id => { close(); import('../../views/Sodas.jsx').then(m => setTimeout(() => m.sodaSheet(id, { iso, meal }), 120)) }
   const openNut = id => { close(); import('../../views/Nuts.jsx').then(m => setTimeout(() => m.nutSheet(id, { iso, meal }), 120)) }
   const totals = dayTotals(St, iso)
+  // 13.0: 500+ foods — the list draws in pages as it scrolls
+  const inc = useIncremental(list.length, 40, q + '|' + tab)
+  const nq = q.trim().toLowerCase()
+  const showIndomie = tab === 'noodles' || /indom|اندوم|إندوم|نودلز/.test(nq)
+  const openIndomie = () => { close(); import('../../views/FoodDatabase.jsx').then(m => setTimeout(() => m.indomieSheet({ iso, meal }), 120)) }
   const tabs = [
     ...(recent.length ? [{ key: 'recent', name: 'Recent', icon: 'history' }] : []),
     { key: null, name: 'All', icon: 'list' },
@@ -110,8 +116,13 @@ function AddFood({ iso, meal: meal0, close }) {
         <b className="food-kcal">{n0(nutNutrition(x, HANDFUL_G).kcal)} <small>{U('kcal')}</small></b>
       </button>)}
     </div>}
+    {showIndomie && <button className="card food-kitchen-link food-indo-link" onClick={openIndomie}>
+      <span className="startw-ico" style={{ background: 'var(--yellow)' }}><Icon name="noodles" /></span>
+      <span className="grow"><b>{t('Build your Indomie')}</b><span className="small muted">{t('Pick how it is made and what goes in — the calories follow')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>}
     <div className="list food-list">
-      {list.map(f => <div key={f.id} className="item" role="button" tabIndex={0} onClick={() => amountSheet({ food: f, iso, meal })}
+      {list.slice(0, inc.n).map(f => <div key={f.id} className="item" role="button" tabIndex={0} onClick={() => amountSheet({ food: f, iso, meal })}
         onKeyDown={e => { if (e.key === 'Enter') amountSheet({ food: f, iso, meal }) }}>
         <FoodBubble food={f} />
         <div className="grow">
@@ -130,10 +141,16 @@ function AddFood({ iso, meal: meal0, close }) {
         {q.trim() && <><div style={{ height: 10 }} /><Button variant="primary" icon="sparkles" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Add “{0}” — the app works out the calories', q.trim())}</Button></>}
       </div>}
     </div>
+    <LazyMore inc={inc} left={n0(Math.min(40, list.length - inc.n))} />
     <div className="food-add-more">
       <Button variant="tinted" icon="bolt" onClick={() => quickSheet({ iso, meal })}>{t('Quick calories')}</Button>
       <Button variant="tinted" icon="sparkles" onClick={() => customFoodSheet(null, { iso, meal, name: q.trim() })}>{t('Your own food')}</Button>
     </div>
+    <button className="card food-kitchen-link" onClick={() => { close(); nav('/foods') }}>
+      <span className="startw-ico" style={{ background: 'var(--teal)' }}><Icon name="book" /></span>
+      <span className="grow"><b>{t('Food database')}</b><span className="small muted">{t('Every food with its calories, salt and sugar')}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
     <button className="card food-kitchen-link" onClick={() => { close(); nav('/kitchen?m=' + meal) }}>
       <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
       <span className="grow"><b>{t('What can I cook?')}</b><span className="small muted">{t('Recipes from what you have at home')}</span></span>
@@ -191,15 +208,26 @@ function Amount({ food, iso, meal: meal0, close, entry }) {
       <div className="food-qty-v"><b>{n1(q)}</b><span>{q === 1 ? t('serving') : t('servings')}</span></div>
       <button className="food-qty-b" aria-label={t('More')} disabled={q >= MAX_QTY} onClick={() => step(QTY_STEP)}><Icon name="plus" /></button>
     </div>
-    <div className="chips food-qpick">
+    {f && f.sizes ? <div className="chips food-qpick" role="radiogroup" aria-label={t('Size')}>
+      {f.sizes.map(z => <button key={z.key} role="radio" aria-checked={q === z.q} className={'chip nocap' + (q === z.q ? ' on' : '')} onClick={() => setQ(z.q)}>
+        {t(z.name) + ' · ' + n0(z.g || f.g * z.q) + ' ' + U(f.ml ? 'ml' : 'g')}
+      </button>)}
+    </div> : <div className="chips food-qpick">
       {[0.5, 1, 1.5, 2, 3].map(v => <button key={v} className={'chip nocap' + (q === v ? ' on' : '')} onClick={() => setQ(v)}>{'× ' + n1(v)}</button>)}
-    </div>
+    </div>}
     <div className="food-macros-mini">
       <div className="fm-k"><b>{n0(k)}</b><span>{U('kcal')}</span></div>
       <div style={{ '--tint': 'var(--red)' }}><b>{n1(base.p * q)}</b><span>{t('Protein')}</span></div>
       <div style={{ '--tint': 'var(--yellow)' }}><b>{n1(base.c * q)}</b><span>{t('Carbs')}</span></div>
       <div style={{ '--tint': 'var(--blue)' }}><b>{n1(base.fat * q)}</b><span>{t('Fat')}</span></div>
     </div>
+    {f && (f.na != null || f.sug != null) && <div className={'small food-na' + (f.na * q >= 800 ? ' warn' : '')}>
+      {f.na != null && <span>{t('Sodium')} <b>{n0(f.na * q)} {U('mg')}</b></span>}
+      {f.sug != null && <span>{t('Sugars')} <b>{n1(f.sug * q)} {U('g')}</b></span>}
+    </div>}
+    {f && f.indomie && !entry && <button className="food-indo-edit" onClick={() => { close(); import('../../views/FoodDatabase.jsx').then(m => setTimeout(() => m.indomieSheet({ cfg: f.indomie, iso, meal }), 120)) }}>
+      <Icon name="noodles" />{t('Change how it is made or what goes in')}
+    </button>}
     <div className="lbl2" style={{ margin: '12px 0 6px' }}>{t('Meal')}</div>
     <Segmented options={MEALS.map(m => ({ value: m.key, label: t(m.name) }))} value={meal} onChange={setMeal} />
     <div style={{ height: 14 }} />

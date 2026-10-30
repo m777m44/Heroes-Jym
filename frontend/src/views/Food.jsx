@@ -20,10 +20,12 @@ import DrinkGlass from '../components/DrinkGlass.jsx'
 import { SODA_BY_ID, PACKS } from '../lib/sodas.js'
 import { NUT_BY_ID, FORMS } from '../lib/nuts.js'
 import { drinkOf } from '../lib/drinks.js'
+import { FOODS } from '../lib/foodDb.js'
 import {
   FoodRing, FoodBubble, addFoodSheet, entrySheet, foodGoalSheet, customFoodSheet, GOAL_SOURCE, n0, qtyLabel,
 } from '../components/food/FoodSheets.jsx'
 
+const FOOD_COUNT = FOODS.length   // 13.0: the food database's size, on its link
 const shift = (iso, d) => isoOf(new Date(new Date(iso + 'T12:00:00').getTime() + d * 864e5))
 const MACROS = [
   { k: 'p', goal: 'protein', name: 'Protein', color: 'var(--red)' },
@@ -135,6 +137,11 @@ export default function Food() {
       </div>
     })}
 
+    <button className="card food-kitchen-link fdb-link" onClick={() => nav('/foods')}>
+      <span className="startw-ico" style={{ background: 'var(--teal)' }}><Icon name="book" /></span>
+      <span className="grow"><b>{t('Food database')}</b><span className="small muted">{t('{0} foods — Indomie in every way, date cakes, canned food, shop snacks and Iraqi dishes', FOOD_COUNT.toLocaleString(dateLocale()))}</span></span>
+      <Icon name="chevronRight" className="chev" />
+    </button>
     <button className="card food-kitchen-link" onClick={() => nav('/kitchen')}>
       <span className="startw-ico" style={{ background: 'var(--orange)' }}><Icon name="fork" /></span>
       <span className="grow"><b>{t('My kitchen')}</b><span className="small muted">{t('Recipes from what you have at home, a meal builder and a shopping list')}</span></span>

@@ -2,7 +2,8 @@
 //
 // State (all optional, kept in the normal app state, so backups and Drive carry it):
 //   S.food[iso]     = [{ id, f (food id, or null for quick / custom), n (name when not in the
-//                       database), kcal, p, c, fat (per serving), q (servings), m ('b'|'l'|'d'|'s'), t (ms) }]
+//                       database), kcal, p, c, fat (per serving), q (servings), m ('b'|'l'|'d'|'s'), t (ms),
+//                       ind (13.0: an Indomie mix from the builder — its name is rebuilt in the current language) }]
 //   S.customFoods   = [{ id: 'cf…', n, kcal, p, c, f, unit, g }]
 //   S.foodFav       = [food ids]
 //   S.foodGoal      = kcal a day set by hand (0 / missing = automatic)
@@ -19,6 +20,7 @@ import { RECIPE_BY_ID } from './kitchen.js'
 import { DRINK_BY_ID } from './drinks.js'
 import { SODA_BY_ID } from './sodas.js'
 import { NUT_BY_ID } from './nuts.js'
+import { indomieLabel } from './foods/indomie.js'
 
 export const MEALS = [
   { key: 'b', name: 'Breakfast', icon: 'sun', color: 'var(--orange)' },
@@ -60,6 +62,7 @@ export function foodName(S, x) {
   // 10.0: a soft drink (with its size) and nuts & seeds (with the grams)
   if (x.sd && SODA_BY_ID[x.sd]) return t(SODA_BY_ID[x.sd].name) + (x.ml ? ' · ' + (x.ml >= 1000 ? (x.ml / 1000).toLocaleString(dateLocale()) + ' ' + U('L') : (+x.ml).toLocaleString(dateLocale()) + ' ' + U('ml')) : '')
   if (x.nut && NUT_BY_ID[x.nut]) return t(NUT_BY_ID[x.nut].name) + (x.g ? ' · ' + Math.round(x.g).toLocaleString(dateLocale()) + ' ' + U('g') : '')
+  if (x.ind) return indomieLabel(x.ind, t)   // 13.0: an Indomie mix from the builder, in the current language
   if (x.name) return t(x.name)
   return x.n || t('Quick calories')
 }
@@ -300,7 +303,9 @@ export function foodNative(S, iso) {
 /** "1 plate · 300 g" — a food's usual serving. */
 export function servingText(f, U) {
   if (!f || f.custom || !f.unit) return t('1 serving')
-  const SERV = { piece: '1 piece', plate: '1 plate', bowl: '1 bowl', cup: '1 cup', glass: '1 glass', slice: '1 slice', tbsp: '1 tablespoon', tsp: '1 teaspoon', handful: '1 handful', can: '1 can', serving: '1 serving', skewer: '1 skewer', scoop: '1 scoop' }
+  const SERV = { piece: '1 piece', plate: '1 plate', bowl: '1 bowl', cup: '1 cup', glass: '1 glass', slice: '1 slice', tbsp: '1 tablespoon', tsp: '1 teaspoon', handful: '1 handful', can: '1 can', serving: '1 serving', skewer: '1 skewer', scoop: '1 scoop',
+    // 13.0: packets, bars and sticks from the shop
+    pack: '1 pack', bag: '1 bag', bar: '1 bar', stick: '1 stick', box: '1 box' }
   const g = f.g > 0 ? ' · ' + f.g + ' ' + U(f.ml ? 'ml' : 'g') : ''
   return t(SERV[f.unit] || '1 serving') + g
 }

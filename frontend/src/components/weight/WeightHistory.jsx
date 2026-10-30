@@ -12,7 +12,7 @@ import { Button } from '../ui.jsx'
 function Thumb({ iso }) {
   const url = usePhotoUrl(iso)
   if (!url) return <span className="wh-ph none"><Icon name="checkCircle" /></span>
-  return <button className="wh-ph" onClick={() => photoViewer(iso, url)} aria-label={t('Weigh-in photo')}><img src={url} alt="" /></button>
+  return <button className="wh-ph" onClick={() => photoViewer(iso, url)} aria-label={t('Weigh-in photo')}><img src={url} alt="" loading="lazy" decoding="async" /></button>
 }
 
 const PAGE = 20
