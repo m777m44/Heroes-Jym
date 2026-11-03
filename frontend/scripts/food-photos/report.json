@@ -1,45 +1,19 @@
 {
  "picked": {
-  "kurut": "Tarhana çorbası - Ankara.jpg",
-  "kawurga": "Raw Freek.jpg",
-  "kidiri": "Panzanella 1 (1).jpg",
-  "dishlik": "Hedik.JPG",
-  "kishka": "Crops Kansas AST 20010624.jpg",
-  "zbeebiya": "Tagine de boeuf sucrée salée aux figues séchées.png",
-  "kubbaqaysi": "Tagine de boeuf sucrée salée aux figues séchées.png",
-  "tashreebhbeet": "Red Iraqi Tashrib.jpg",
-  "sooda": "Klaicha.jpg",
-  "timmananbar": "HK 中環 Central L-Place 大戶屋日本餐廳 Ootoya Japanese style Restaurant food dinner 白飯 white rice bowl with seasoning n steamed egg May 2019 SSG 02.jpg",
-  "azbari": "Viola cornuta Sorbet Red Wing 3zz.jpg",
-  "shrimpfried": "Nabeyaki Udon with shrimp tempura - Massachusetts.jpg",
-  "fishstuffed": "One hundred and one sandwiches (1902) (14742261146).jpg",
-  "qubbut": "Gnocchi with beef and tomato sauce.JPG",
-  "mufattah": "Mandi Lamb Shank, Lepak @ Sultan, 62 Bussorah St, Singapore (01).jpg",
-  "daqqous": "Mestizo, Euston, London.jpg",
-  "gattangrilled": "Whole grilled fish, Kolkata - West Bengal - DSC 0038.jpg",
-  "bunnigrilled": "Grilling masgouf - Flickr - Al Jazeera English.jpg",
-  "sulukebabi": "Syrian Fatteh sold in Mardin, Turkey.jpg",
-  "imambayildi": "Biber kızartması.jpg",
-  "carpfried": "Deep-fried Carp - Kolkata 2011-03-07 1959.JPG",
-  "tabag": "Akki roti.jpg",
-  "kibdaburghul": "Arnavut ciğeri.jpg",
-  "malakplate": "Ciğer şiş.jpg",
-  "lisanat": "Söğüş dil ve salata.jpg",
-  "aspirash": "Orange energy drink.jpg",
-  "fishsandwich": "Balık-ekmek in Ankara.jpg",
-  "winner": "Long drink cans in fridge.jpg",
-  "redstrong": "HK STT 石塘咀 Shek Tong Tsui 皇后大道西 476 Queen's Road West 永興樓 Wing Hing House food shop Wellcome Supermarket goods energy drink bottles July 2026 N13P 01.jpg"
+  "kubbaqaysi": "Kubba cut in half.jpg",
+  "shrimpfried": "Fried shrimp.jpg",
+  "azbari": "Raspberry sorbet.jpg",
+  "kalawi": "Devilled kidneys.jpg",
+  "fishstuffed": "Baliq Levengi, Azerbaijani Stuffed Fish with Turmeric Rice.jpg",
+  "gattangrilled": "Masgouf, an Iraqi tradition - Flickr - Al Jazeera English.jpg",
+  "imambayildi": "Fried Zucchini dish.jpg"
  },
  "missing": {
-  "kalawi": "nothing found"
+  "kishka": "every candidate was rejected"
  },
  "rejected": {
-  "mufattah": [
-   "Mandi pit from inside.jpg — already the photo of mandi",
-   "Machboos (cropped).JPG — already the photo of kabsa"
-  ],
-  "sulukebabi": [
-   "فتّة باللوز و السّمن.jpg — already the photo of fatteh"
+  "kishka": [
+   "Karaisaköy keşkek.jpg — black and white"
   ]
  }
 }
