@@ -49,6 +49,32 @@ describe('2.11 — dismissing a sheet', () => {
   })
 })
 
+describe('15.0 — pinned food and drink lists', () => {
+  it('Back leaves a pinned sheet open and wiggles its ✕; with the setting off it closes as before', async () => {
+    vi.useFakeTimers()
+    const { useStore } = await import('../store/useStore.js')
+    const ui = useUI.getState()
+    ui.closeAll()
+    const n0 = useUI.getState().nudge
+    const h = ui.openSheet(() => null, { pinned: true })
+    expect(onBack()).toBe('handled')
+    expect(useUI.getState().sheets.find(x => x.id === h.id).closing).toBeFalsy()
+    expect(useUI.getState().nudge).toBe(n0 + 1)
+    useStore.getState().S.pinSheets = false
+    expect(onBack()).toBe('handled')
+    expect(useUI.getState().sheets.find(x => x.id === h.id).closing).toBe(true)
+    vi.advanceTimersByTime(SHEET_OUT_MS + 5)
+    expect(useUI.getState().sheets).toHaveLength(0)
+    delete useStore.getState().S.pinSheets
+    // its own ✕ (close) always works
+    const h2 = ui.openSheet(() => null, { pinned: true })
+    h2.close()
+    vi.advanceTimersByTime(SHEET_OUT_MS + 5)
+    expect(useUI.getState().sheets).toHaveLength(0)
+    vi.useRealTimers()
+  })
+})
+
 describe('2.11 — the ‹ back button', () => {
   it('goes back in the app’s history when there is some, else to the fallback screen', () => {
     const calls = []

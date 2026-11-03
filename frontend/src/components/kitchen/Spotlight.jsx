@@ -137,7 +137,7 @@ function Ring({ split, kcal }) {
   </div>
 }
 
-function Spot({ uid0, close, opts }) {
+export function SpotView({ uid0, close, opts }) {
   const St = useStore(s => s.S)
   const update = useStore(s => s.update)
   const [uid, setUid] = useState(uid0)
@@ -262,5 +262,5 @@ function Spot({ uid0, close, opts }) {
 export function spotlight(uidOrItem, opts = null) {
   const uid = typeof uidOrItem === 'string' ? uidOrItem : uidOrItem && uidOrItem.uid
   if (!uid || !itemOf(uid)) return null
-  return ui().openSheet(close => <Spot uid0={uid} close={close} opts={opts} />, { kind: 'full', pinned: true })
+  return ui().openSheet(close => <SpotView uid0={uid} close={close} opts={opts} />, { kind: 'full', pinned: true })
 }

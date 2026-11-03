@@ -70,6 +70,7 @@ export function dayShares(x, goalKcal = 2000) {
 }
 
 const FRIED = /\b(fried|fries|crispy|breaded|zinger|nuggets|chips)\b/i
+const LEAN_COOK = /\b(grilled|baked|boiled|steamed|roasted)\b/i
 const FISHY = /\b(fish|masgouf|shabbout|salmon|tuna|sardines?|shrimp|prawns?|sbour|shad|zubaidi|pomfret|biyah|mullet|carp|tilapia|gattan|bunni|barbel|masmouta|mukashat|saloona|mutabbaq)\b/i
 
 /**
@@ -114,6 +115,7 @@ export function lighterChoice(x, items) {
   const w = new Set(wordsOf(x.name))
   if (!w.size) return null
   const drink = x.kind === 'S' || x.kind === 'D' || !!x.drink
+  const fried = FRIED.test(x.name)
   let best = null, bestScore = 0
   for (const y of items) {
     if (y.uid === x.uid || !(y.kcal > 0) || y.kcal > x.kcal * 0.8 || y.mine) continue
@@ -124,7 +126,9 @@ export function lighterChoice(x, items) {
     let shared = 0
     for (const word of wordsOf(y.name)) if (w.has(word)) shared++
     if (!shared) continue
-    const score = shared * 10 + (1 - y.kcal / x.kcal) * 4 + (y.ph ? 1 : 0)
+    // fried → grilled, baked or boiled is the classic swap: it wins over a plain ingredient
+    const method = fried && LEAN_COOK.test(y.name) ? 5 : 0
+    const score = shared * 10 + method + (1 - y.kcal / x.kcal) * 4 + (y.ph ? 1 : 0)
     if (score > bestScore) { best = y; bestScore = score }
   }
   return best ? { item: best, save: r0(x.kcal - best.kcal) } : null

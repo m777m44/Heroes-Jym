@@ -73,6 +73,15 @@ it('the Arabic UI has no stray English', async () => {
       scanK(React.createElement(KI.default), '/kitchen', 'Kitchen:' + tab)
     }
     sessionStorage.removeItem('mj-kitchen-tab')
+    // 15.0: Iraq city by city, the Iraqi kitchen of one city, and the photo viewer for every kind of item
+    const KSroute = React.createElement(Routes, null, React.createElement(Route, { path: '/kitchen/s/:key', element: React.createElement(KS.default) }))
+    scanK(KSroute, '/kitchen/s/cities', 'KitchenSection:cities')
+    scanK(KSroute, '/kitchen/s/iraqi?rg=mosul', 'KitchenSection:iraqi:mosul')
+    scanK(KSroute, '/kitchen/s/fish', 'KitchenSection:fish')
+    const SP = await import('../components/kitchen/Spotlight.jsx')
+    for (const uid of ['F:zingil', 'F:masmouta', 'F:gusssamoon', 'F:moota', 'F:kibdaburghul', 'S:aspirash', 'S:k9', 'R:masgouf', 'D:iraqitea', 'N:pistachio']) {
+      scanK(React.createElement(SP.SpotView, { uid0: uid, close: () => {} }), '/kitchen', 'Spotlight:' + uid)
+    }
   }
   // 9.0: a day plan from each template, started today (live card, timeline, totals)
   {
