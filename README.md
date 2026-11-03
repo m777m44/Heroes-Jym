@@ -15,7 +15,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-14.0.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-15.0.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
@@ -28,6 +28,20 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 </div>
 
 <br>
+
+> ### 🎨 New in 15.0 — a new look, Iraq city by city, and every photo opens big
+>
+> **A new look**: the MAHDI Midnight theme (deep midnight blue, an emerald accent), ten new
+> **15.0 Elegant** themes, softer cards, glowing buttons and a floating glass tab bar. **Tap the photo
+> of any food or drink** and it opens over the whole screen — zoom in with two fingers — with
+> everything about it: where in Iraq it comes from, the calories and the protein / carbs / fat split,
+> the full nutrition table per serving and per 100 g, your day, good to know, what is in it and a
+> lighter choice. **Iraq city by city**: 97 new dishes from Baghdad, Mosul, **Tal Afar**, Najaf &
+> Karbala, Basra, Kurdistan, Kirkuk, Anbar and the south, **Iraq’s fish** (bunni, gattan, zubaidi,
+> sbour, Fao shrimp…), **moota and azbari**, liver with bulgur, the full pacha, guss and falafel in
+> stone-oven samoon, and **Iraq’s energy drinks** (ASPI RASH, K9, 4U, Tiger, Red Strong, Winner, Lion,
+> Hell) with today’s caffeine, sugar and salt. The **food lists close only with their ✕**. See the
+> [changelog](CHANGELOG.md#v1500--2026-11-03).
 
 > ### 🍳 New in 14.0 — the Kitchen, a real photo for every food, and a meal builder
 >
@@ -337,6 +351,13 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 
 متتبّع للتمارين والخطوات ووزن الجسم تستضيفه بنفسك: بياناتك على خادمك أنت، تسجيل دخول
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
+
+**الجديد في الإصدار 15.0:** **شكل جديد** — ثيم «منتصف الليل» وعشرة ثيمات «أنيق 15»، بطاقات أنعم وأزرار مضيئة وشريط سفلي
+زجاجي عائم. **اضغط على صورة أي أكلة أو مشروب** وتنفتح كبيرة مع كل تفاصيلها: منين أصلها بالعراق، السعرات وتوزيع البروتين
+والكربوهيدرات والدهون، جدول القيم الغذائية للحصة ولكل 100 غ، حصتها من يومك، معلومات تفيدك، شنو بيها وخيار أخف. **العراق مدينة
+مدينة**: 97 أكلة جديدة من بغداد والموصل و**تلعفر** والنجف وكربلاء والبصرة وكردستان وكركوك والأنبار والجنوب، **وسمك العراق**،
+**والموطة والازبري**، وكبد مع برغل، والباچة الكاملة، وگص وفلافل بالصمون الحجري، **ومشروبات الطاقة بالعراق** (اسبي رش، كي ناين،
+فور يو، تايگر، ريد سترونگ، وينر، لايون، هيل) مع كافيين وسكر وملح يومك. **وقوائم الأكل تنسد بزر ✕ فقط.**
 
 **الجديد في الإصدار 14.0:** **المطبخ** (الأطعمة ← المطبخ): الطعام والشراب والأدوات، مع ستة أبواب كبيرة — أكلات الشوارع،
 صناعة الأندومي، معلبات ومحلات، مشروبات، حلويات، مأكولات عراقية — وطبخي الخاص بصورتك والأطعمة الجاهزة والطازجة.

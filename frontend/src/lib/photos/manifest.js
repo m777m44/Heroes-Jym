@@ -835,7 +835,7 @@ export const PHOTO_ROWS = [
   ['otluchorek', 'f:Iraqi Meat Bread.jpg|s:otlu ekmek', 'F:otluchorek'],
   ['burdapilaf', 'f:البردة بلاو.jpg|s:perde pilavı', 'F:burdapilaf'],
   ['qoulat', 's:lamb shank chickpeas|s:lamb shank stew', 'F:qoulat'],
-  ['kishka', 'f:Karaisaköy keşkek.jpg|s:keşkek tabak', 'F:kishka'],
+  ['kishka', 'f:Al fanar harees (7797136886).jpg|f:Harressa or Harees.jpeg|f:Armenian Harisa.JPG', 'F:kishka'],
   ['hasso', 's:toasted flour soup|s:flour soup bowl', 'F:hasso'],
   ['shondariya', 's:kubbeh adom|s:beet kubbeh soup|s:beetroot stew', 'F:shondariya'],
   ['qaysi', 's:apricot compote|s:dried apricots stewed', 'F:qaysi'],
