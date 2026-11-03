@@ -291,13 +291,13 @@ export const FAMILIES = [
   { id: 'mahdi15', name: 'MAHDI Midnight', cat: 'luxe', h: 222, s: 42, acc: '#34e0a1', accL: '#0b8a5c' },
   { id: 'lapisgold', name: 'Lapis & gold', cat: 'luxe', h: 226, s: 62, acc: '#f5c451', accL: '#8f6200' },
   { id: 'emeraldvelvet', name: 'Emerald velvet', cat: 'luxe', h: 162, s: 48, acc: '#5be3b0', accL: '#0b7a52' },
-  { id: 'rosegold', name: 'Rose gold', cat: 'luxe', h: 352, s: 34, acc: '#f4a48c', accL: '#b04a33' },
-  { id: 'obsidian', name: 'Obsidian & copper', cat: 'luxe', h: 24, s: 16, acc: '#ee9a5c', accL: '#a34f17' },
-  { id: 'champagne', name: 'Champagne', cat: 'luxe', h: 40, s: 36, acc: '#e8c47c', accL: '#86600f' },
+  { id: 'rosequartz', name: 'Rose quartz', cat: 'luxe', h: 352, s: 34, acc: '#f4a48c', accL: '#b04a33' },
+  { id: 'copperobsidian', name: 'Obsidian & copper', cat: 'luxe', h: 24, s: 16, acc: '#ee9a5c', accL: '#a34f17' },
+  { id: 'goldmist', name: 'Golden mist', cat: 'luxe', h: 40, s: 36, acc: '#e8c47c', accL: '#86600f' },
   { id: 'nightsky', name: 'Night sky', cat: 'luxe', h: 244, s: 48, acc: '#9db0ff', accL: '#3a4bd0' },
   { id: 'tigris15', name: 'Tigris at night', cat: 'luxe', h: 198, s: 58, acc: '#55cdf2', accL: '#06789f' },
   { id: 'palmdates', name: 'Palms & dates', cat: 'luxe', h: 34, s: 30, acc: '#dcae55', accL: '#85580a' },
-  { id: 'pearl', name: 'Pearl', cat: 'luxe', h: 214, s: 14, acc: '#86a8ff', accL: '#2c58cf' },
+  { id: 'moonpearl', name: 'Moonlight pearl', cat: 'luxe', h: 214, s: 14, acc: '#86a8ff', accL: '#2c58cf' },
 ]
 
 /** Lightness of bg / elevated / surface / surface-2 / surface-3, and how much of the hue's saturation. */
