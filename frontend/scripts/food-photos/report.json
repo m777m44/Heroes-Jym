@@ -1,19 +1,7 @@
 {
  "picked": {
-  "kubbaqaysi": "Kubba cut in half.jpg",
-  "shrimpfried": "Fried shrimp.jpg",
-  "azbari": "Raspberry sorbet.jpg",
-  "kalawi": "Devilled kidneys.jpg",
-  "fishstuffed": "Baliq Levengi, Azerbaijani Stuffed Fish with Turmeric Rice.jpg",
-  "gattangrilled": "Masgouf, an Iraqi tradition - Flickr - Al Jazeera English.jpg",
-  "imambayildi": "Fried Zucchini dish.jpg"
+  "kishka": "Al fanar harees (7797136886).jpg"
  },
- "missing": {
-  "kishka": "every candidate was rejected"
- },
- "rejected": {
-  "kishka": [
-   "Karaisaköy keşkek.jpg — black and white"
-  ]
- }
+ "missing": {},
+ "rejected": {}
 }
