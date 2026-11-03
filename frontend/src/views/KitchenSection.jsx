@@ -5,8 +5,11 @@
 // drinks and the nuts guides, the drinks library, what can I cook).
 // Also: fav (favourites), recent, all, mine ("My cooking": your dishes, foods and drinks) and
 // credits (who took each photo).
+// 15.0: cities — Iraq city by city (lib/regions.js), each place a big photo card; the Iraqi kitchen
+// filters by place (?rg=mosul); "Fits my day" keeps what fits the calories left today; a tap on a
+// photo opens the photo viewer.
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { nav } from '../lib/nav.js'
@@ -23,6 +26,10 @@ import { ItemCard, ItemRow, itemName } from '../components/kitchen/ItemCard.jsx'
 import { openItem } from '../components/kitchen/openItem.js'
 import { CookTimersBar } from '../components/kitchen/CookTimer.jsx'
 import { useIncremental, LazyMore } from '../components/LazyList.jsx'
+import { REGIONS, REGION_BY_KEY } from '../lib/regions.js'
+import { todayISO } from '../lib/format.js'
+import { foodGoalOf, dayTotals } from '../lib/food.js'
+import { fishThisWeek } from '../lib/dayIntake.js'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Segmented, SearchField } from '../components/ui.jsx'
 
@@ -65,32 +72,61 @@ function Header({ title, sub, back = '/kitchen' }) {
   </div>
 }
 
+/** 15.0 — fish twice a week: how many servings in the last 7 days. */
+function FishWeek({ St }) {
+  const n = fishThisWeek(St, todayISO())
+  const done = n >= 2
+  return <div className={'card kx-fish' + (done ? ' done' : '')}>
+    <span className="kx-fish-ic" aria-hidden="true"><Icon name="fish" /></span>
+    <span className="grow"><b>{done ? t('Fish twice this week — well done') : t('Fish this week: {0} of 2', n0(n))}</b>
+      <span className="small muted">{t('Doctors advise fish twice a week — for the heart, the brain and the eyes. Grilled is best.')}</span></span>
+    <span className="kx-fish-dots" aria-hidden="true"><i className={n >= 1 ? 'on' : ''} /><i className={n >= 2 ? 'on' : ''} /></span>
+  </div>
+}
+
+/** 15.0 — what is left of today's calories (0 when there is no goal). */
+function kcalLeft(St) {
+  const iso = todayISO()
+  const goal = foodGoalOf(St, iso).kcal
+  return goal > 0 ? Math.max(0, Math.round(goal - dayTotals(St, iso).kcal)) : 0
+}
+
 function Section({ k }) {
   const St = useStore(s => s.S)
   const sec = SECTION_BY_KEY[k] || SPECIAL[k]
+  const loc = useLocation()
   const [q, setQ] = useState('')
   const [aisle, setAisle] = useState(null)
+  const [rg, setRg] = useState(() => { const v = new URLSearchParams(loc.search || '').get('rg'); return REGION_BY_KEY[v] ? v : null })
+  const [fits, setFits] = useState(false)
+  const left = kcalLeft(St)
   const [filters, setFilters] = useState([])
   const [sort, setSort] = useState('usual')
   const favKey = k === 'fav' ? JSON.stringify([St.foodFav, St.drinkFavs, St.kitchenFav]) : ''
   const recentKey = k === 'recent' ? JSON.stringify(St.kitchenSeen || []) + Object.keys(St.food || {}).length : ''
-  const base = useMemo(() => (!sec ? [] : k === 'fav' ? favItems(St) : k === 'recent' ? recentItems(St, 60) : k === 'all' ? kitchenItems() : sectionItems(k, aisle)),
+  const base0 = useMemo(() => (!sec ? [] : k === 'fav' ? favItems(St) : k === 'recent' ? recentItems(St, 60) : k === 'all' ? kitchenItems() : sectionItems(k, aisle)),
     [k, aisle, favKey, recentKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const regions = useMemo(() => (k === 'iraqi' ? REGIONS.map(r => ({ ...r, n: base0.filter(x => x.rg === r.key).length })).filter(r => r.n > 0) : []), [k, base0])
+  const base = useMemo(() => (rg ? base0.filter(x => x.rg === rg) : base0), [base0, rg])
   const dq = useDeferredValue(q)
-  const list = useMemo(() => findItems(base, { q: dq, filters, sort, tr: t }), [base, dq, filters, sort])
+  const list = useMemo(() => {
+    const l = findItems(base, { q: dq, filters, sort, tr: t })
+    return fits && left > 0 ? l.filter(x => x.kcal > 0 && x.kcal <= left) : l
+  }, [base, dq, filters, sort, fits, left])
   const chips = useMemo(() => usefulFilters(base), [base])
-  const inc = useIncremental(list.length, 24, [k, dq, filters.join(), sort, aisle].join('|'))
+  const inc = useIncremental(list.length, 24, [k, dq, filters.join(), sort, aisle, rg, fits].join('|'))
   if (!sec) return <div className="narrow kx"><Header title={t('Kitchen')} /><div className="empty">{t('Nothing found')}</div></div>
   const flip = key => setFilters(f => (f.includes(key) ? f.filter(x => x !== key) : [...f, key]))
   const aisles = k === 'ready' ? MARKET_AISLES : []
   return <div className="narrow kx">
-    <Header title={t(sec.name)} sub={t('{0} items', n0(base.length))} />
+    <Header title={rg ? t(REGION_BY_KEY[rg].name) : t(sec.name)} sub={rg ? t('{0} dishes and drinks from {1}', n0(base.length), t(REGION_BY_KEY[rg].name)) : t('{0} items', n0(base.length))} />
     {sec.ph && <div className="kx-banner" style={{ '--cc': sec.color }} aria-hidden="true">
       <Photo k={sec.ph} size="m" live alt="" fallback={<span className="ks-none" />} />
       <span className="ks-shade" />
       <span className="kx-banner-ic"><Icon name={sec.icon} /></span>
     </div>}
     <Extra k={k} />
+    {k === 'fish' && <FishWeek St={St} />}
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} type="search" enterKeyHint="search"
       placeholder={t('Search in {0}', t(sec.name))} aria-label={t('Search in {0}', t(sec.name))} />
     {aisles.length > 0 && <div className="dk-chips scroll" role="tablist" aria-label={t('Aisles')}>
@@ -98,7 +134,16 @@ function Section({ k }) {
       {aisles.map(a => <button key={a.key} role="tab" aria-selected={aisle === a.key} className={'chip nocap dk-chip' + (aisle === a.key ? ' on' : '')}
         style={{ '--cc': a.color }} onClick={() => setAisle(a.key)}><Icon name={a.icon} />{t(a.name)}<span className="fdb-chip-n">{n0(a.n)}</span></button>)}
     </div>}
-    {chips.length > 0 && <div className="dk-chips scroll" aria-label={t('Filters')}>
+    {regions.length > 0 && <div className="dk-chips scroll kx-rg" role="tablist" aria-label={t('Iraq city by city')}>
+      <button role="tab" aria-selected={!rg} className={'chip nocap dk-chip' + (!rg ? ' on' : '')} style={{ '--cc': 'var(--green)' }} onClick={() => setRg(null)}>
+        <Icon name="palm" />{t('All of Iraq')}</button>
+      {regions.map(r => <button key={r.key} role="tab" aria-selected={rg === r.key} className={'chip nocap dk-chip' + (rg === r.key ? ' on' : '')}
+        style={{ '--cc': r.color }} onClick={() => setRg(v => (v === r.key ? null : r.key))}><Icon name="location" />{t(r.name)}<span className="fdb-chip-n">{n0(r.n)}</span></button>)}
+    </div>}
+    {rg && <p className="small muted kx-rg-about">{t(REGION_BY_KEY[rg].about)}</p>}
+    {(chips.length > 0 || left > 0) && <div className="dk-chips scroll" aria-label={t('Filters')}>
+      {left > 0 && <button className={'chip nocap dk-chip' + (fits ? ' on' : '')} style={{ '--cc': 'var(--orange)' }} aria-pressed={fits} onClick={() => setFits(v => !v)}>
+        <Icon name="target" />{t('Fits my day · {0} kcal left', n0(left))}</button>}
       {chips.map(c => <button key={c.key} className={'chip nocap dk-chip' + (filters.includes(c.key) ? ' on' : '')} style={{ '--cc': 'var(--acc)' }}
         aria-pressed={filters.includes(c.key)} onClick={() => flip(c.key)}><Icon name={c.icon} />{t(c.name)}</button>)}
     </div>}
@@ -111,6 +156,27 @@ function Section({ k }) {
     {!list.length && <div className="empty small"><div className="ico"><Icon name={k === 'fav' ? 'star' : 'magnifier'} /></div>
       {k === 'fav' && !q ? t('Tap the star on any food or drink to keep it here.') : k === 'recent' && !q ? t('What you eat and open shows up here.') : t('Nothing found for “{0}”.', q.trim())}</div>}
     <CookTimersBar />
+  </div>
+}
+
+// ---- 15.0: Iraq city by city -----------------------------------------------------------------------
+function Cities() {
+  const counts = useMemo(() => {
+    const c = {}
+    for (const x of kitchenItems()) if (x.rg) c[x.rg] = (c[x.rg] || 0) + 1
+    return c
+  }, [])
+  const total = Object.values(counts).reduce((a, b) => a + b, 0)
+  return <div className="narrow kx kcity">
+    <Header title={t('Iraq city by city')} sub={t('{0} dishes and drinks from {1} places', n0(total), n0(REGIONS.length))} />
+    <p className="small muted kcity-p">{t('Every corner of Iraq cooks its own way. Pick a place to see what it is famous for — with photos, calories and everything about each dish.')}</p>
+    <div className="kcity-grid">{REGIONS.map((r, i) => <button key={r.key} type="button" className="kcity-c" style={{ '--cc': r.color, '--i': i }}
+      onClick={() => nav('/kitchen/s/iraqi?rg=' + r.key)}>
+      <Photo k={r.ph} size="m" live alt="" fallback={<span className="ks-none" aria-hidden="true" />} />
+      <span className="kcity-shade" aria-hidden="true" />
+      <span className="kcity-n"><Icon name="location" />{t('{0} items', n0(counts[r.key] || 0))}</span>
+      <span className="kcity-t"><b>{t(r.name)}</b><small>{t(r.about)}</small></span>
+    </button>)}</div>
   </div>
 }
 
@@ -178,5 +244,6 @@ export default function KitchenSection() {
   const { key = 'all' } = useParams()
   if (key === 'mine') return <MyCooking />
   if (key === 'credits') return <Credits />
+  if (key === 'cities') return <Cities />
   return <Section key={key} k={key} />
 }

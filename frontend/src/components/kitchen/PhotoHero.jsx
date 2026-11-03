@@ -53,12 +53,19 @@ export function PhotoCredit({ k, className = '' }) {
   </button>
 }
 
-/** The sheet's big photo: it drifts slowly, fades in, and names its photographer. */
-export function PhotoHero({ k, alt = '', children, className = '' }) {
+/**
+ * The sheet's big photo: it drifts slowly, fades in, and names its photographer. 15.0: with `uid`
+ * (the item, 'F:dolma') a tap opens it in the photo viewer — big, with everything about it.
+ */
+export function PhotoHero({ k, alt = '', children, className = '', uid = null, opts = null }) {
   if (!k) return null
-  return <div className={'ph-hero ' + className}>
+  const open = uid ? () => import('./Spotlight.jsx').then(m => m.spotlight(uid, { ...opts, fromSheet: true })) : null
+  return <div className={'ph-hero ' + className + (open ? ' tap' : '')}>
     <Photo k={k} size="m" live alt={alt} fallback={<span className="ph-hero-none" aria-hidden="true"><Icon name="fork" /></span>} />
     <span className="ph-hero-shade" aria-hidden="true" />
+    {open && <button type="button" className="ph-hero-tap" onClick={open} aria-label={t('Photo and details: {0}', alt)}>
+      <span className="ph-hero-zoom" aria-hidden="true"><Icon name="expand" />{t('Photo & details')}</span>
+    </button>}
     {children}
     <PhotoCredit k={k} />
   </div>

@@ -32,6 +32,8 @@ import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
 import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch, TextField } from '../components/ui.jsx'
 import { confirmSheet } from '../sheets.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -128,7 +130,7 @@ function DrinkView({ id, close }) {
   })
   const ph = d.mine ? null : photoKey('D', d.id)
   return <div className="dk-view" style={drinkVars(d.col)}>
-    <PhotoHero k={ph} alt={nameOf} />
+    <PhotoHero k={ph} alt={nameOf} uid={d.mine ? null : 'D:' + d.id} />
     <div className={'dk-hero' + (ph ? ' with-ph' : '')}>
       <div className="dk-hero-bg" aria-hidden="true" />
       {!ph && <DrinkGlass drink={d} size={110} live label={nameOf} />}
@@ -217,7 +219,7 @@ function DrinkView({ id, close }) {
     </div>
   </div>
 }
-export const drinkSheet = id => ui().openSheet(close => <DrinkView id={id} close={close} />)
+export const drinkSheet = id => ui().openSheet(close => <DrinkView id={id} close={close} />, PIN)
 
 // ---- the builder -----------------------------------------------------------------------------------
 function IngPicker({ onPick, close }) {
@@ -240,7 +242,7 @@ function IngPicker({ onPick, close }) {
     </div>
   </div>
 }
-const ingPickerSheet = onPick => ui().openSheet(close => <IngPicker onPick={onPick} close={close} />)
+const ingPickerSheet = onPick => ui().openSheet(close => <IngPicker onPick={onPick} close={close} />, PIN)
 
 const defaultAmount = x => {
   const u = x.def
@@ -324,7 +326,7 @@ function Builder({ existing, from, close }) {
     </div>
   </div>
 }
-export const drinkBuilderSheet = (existing = null, { from = null } = {}) => ui().openSheet(close => <Builder existing={existing} from={from} close={close} />)
+export const drinkBuilderSheet = (existing = null, { from = null } = {}) => ui().openSheet(close => <Builder existing={existing} from={from} close={close} />, PIN)
 
 // ---- choose a drink (day plan) -------------------------------------------------------------------------
 function Pick({ onPick, close, cat: cat0 }) {
@@ -349,7 +351,7 @@ function Pick({ onPick, close, cat: cat0 }) {
     </div>
   </div>
 }
-export const pickDrinkSheet = (onPick, cat = null) => ui().openSheet(close => <Pick onPick={onPick} close={close} cat={cat} />)
+export const pickDrinkSheet = (onPick, cat = null) => ui().openSheet(close => <Pick onPick={onPick} close={close} cat={cat} />, PIN)
 
 // ---- the screen --------------------------------------------------------------------------------------
 export default function Drinks() {

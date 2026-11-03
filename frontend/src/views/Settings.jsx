@@ -179,6 +179,9 @@ export default function Settings() {
       <Row icon="image" iconTint="var(--pink)" title={t('Moving photos')} subtitle={t('The food photos drift slowly. Off: they stand still (saves battery).')}>
         <Switch checked={S.photoMotion !== false} onChange={v => update(s => { s.photoMotion = !!v })} label={t('Moving photos')} />
       </Row>
+      <Row icon="xmark" iconTint="var(--indigo)" title={t('Close food lists only with ✕')} subtitle={t('Food and drink lists stay open while you scroll — no swipe or tap outside closes them, only the ✕ at the top right.')}>
+        <Switch checked={S.pinSheets !== false} onChange={v => update(s => { s.pinSheets = !!v })} label={t('Close food lists only with ✕')} />
+      </Row>
       <Row icon="timer" iconTint="var(--red)" title={t('Interval timer')} subtitle={t('Tabata, HIIT, EMOM and your own')} accessory="chevron" onClick={() => nav('/timer')} />
       <Row icon="wind" iconTint="var(--teal)" title={t('Breathe')} subtitle={t('Box, 4-7-8, coherent')} accessory="chevron" onClick={() => nav('/breathe')} />
       <Row icon="moon" iconTint="var(--purple)" title={t('Fasting tracker')} subtitle={t('Intermittent fasting and Ramadan')} accessory="chevron" onClick={() => nav('/fasting')} />

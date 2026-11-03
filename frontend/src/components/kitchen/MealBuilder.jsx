@@ -26,6 +26,8 @@ import { PhotoHero } from './PhotoHero.jsx'
 import { IngThumb, ingPickSheet } from './IngPick.jsx'
 import Icon from '../Icon.jsx'
 import { Button, Segmented } from '../ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
@@ -119,7 +121,7 @@ function MealBuilder({ base, iso, meal: meal0, close }) {
   }
 
   return <div className="mb">
-    {ph ? <PhotoHero k={ph} alt={t(base.name)}>
+    {ph ? <PhotoHero k={ph} alt={t(base.name)} uid={base.fid ? 'F:' + base.fid : base.rid ? 'R:' + base.rid : null}>
       <span className="mb-hero-t"><Icon name="sliders" />{t('Meal builder')}</span>
     </PhotoHero> : <div className="mb-head-ic" aria-hidden="true"><Icon name="sliders" /></div>}
     <h3 className="mb-title" dir="auto">{t(base.name)}</h3>
@@ -167,5 +169,5 @@ function MealBuilder({ base, iso, meal: meal0, close }) {
 export function mealBuilderSheet({ fid = null, rid = null, opt = null, iso = null, meal = null } = {}) {
   const base = baseOf({ fid, rid, opt })
   if (!base) return null
-  return ui().openSheet(close => <MealBuilder base={base} iso={iso} meal={meal} close={close} />)
+  return ui().openSheet(close => <MealBuilder base={base} iso={iso} meal={meal} close={close} />, PIN)
 }

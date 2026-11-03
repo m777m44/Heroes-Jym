@@ -18,6 +18,8 @@ import { confirmSheet } from '../../sheets.jsx'
 import { Photo } from '../FoodPhoto.jsx'
 import Icon from '../Icon.jsx'
 import { Button, Segmented } from '../ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const n1 = v => (Math.round((+v || 0) * 10) / 10).toLocaleString(dateLocale())
@@ -106,4 +108,4 @@ function MyDishView({ id, close }) {
     </div>
   </div>
 }
-export const myDishSheet = id => useUI.getState().openSheet(close => <MyDishView id={id} close={close} />)
+export const myDishSheet = id => useUI.getState().openSheet(close => <MyDishView id={id} close={close} />, PIN)

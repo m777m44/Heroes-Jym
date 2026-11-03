@@ -2,6 +2,8 @@
 //   ItemCard  a card of the section grids — the photo drifts slowly while it is on screen
 //   ItemRow   a row (search results, lists) with a small photo — 14.0: it drifts too, gently
 //   ItemChip  a small square for the "recently" and "favourites" strips (drifting as well)
+// 15.0: the photo is a button of its own — it opens the photo viewer (Spotlight.jsx: the photo big
+// with everything about the item); the name opens the item as before (the card, the builder…).
 import { memo } from 'react'
 import { t, U, dateLocale } from '../../lib/i18n.js'
 import { FOOD_CATS } from '../../lib/foodDb.js'
@@ -29,9 +31,15 @@ function Macros({ x }) {
 
 const Fallback = ({ x, cls }) => <span className={cls} aria-hidden="true"><Icon name={KIND_ICON[x.kind] || 'fork'} /></span>
 
+/** 15.0 — open the photo viewer for an item (loaded on first use). */
+export const openSpot = (x, opts = null) => import('./Spotlight.jsx').then(m => m.spotlight(x, opts))
+const spotOK = x => !!(x && x.ph && !x.mine && !x.img && x.uid)
+
 export const ItemCard = memo(function ItemCard({ x, fav = false, onOpen, live = true }) {
-  return <button type="button" className="kc" onClick={() => onOpen(x)}>
-    <span className="kc-ph">
+  const spot = spotOK(x)
+  return <div className={'kc' + (spot ? ' spot-on' : '')}>
+    <button type="button" className="kc-ph kc-btn" onClick={() => (spot ? openSpot(x) : onOpen(x))}
+      aria-label={spot ? t('Photo and details: {0}', itemName(x)) : itemName(x)}>
       {x.img ? <img className="kc-own" src={x.img} alt="" loading="lazy" decoding="async" />
         : <Photo k={x.ph} size="m" live={live} alt="" fallback={<Fallback x={x} cls="kc-none" />} />}
       <span className="kc-kcal"><b>{n0(x.kcal)}</b>{U('kcal')}</span>
@@ -39,31 +47,41 @@ export const ItemCard = memo(function ItemCard({ x, fav = false, onOpen, live = 
       {x.min != null && <span className="kc-tag"><Icon name="timer" />{t('{0} min', n0(x.min))}</span>}
       {x.iq && <span className="kc-iq" aria-label={t('Iraqi')}><Icon name="palm" /></span>}
       {x.bt && <span className="kc-bt" aria-label={t('Build it your way')}><Icon name="sliders" /></span>}
-    </span>
-    <span className="kc-t">
+      {spot && <span className={'kc-zoom' + (fav ? ' f' : '')} aria-hidden="true"><Icon name="expand" /></span>}
+    </button>
+    <button type="button" className="kc-t kc-btn" onClick={() => onOpen(x)}>
       <b dir="auto">{itemName(x)}</b>
       <Macros x={x} />
-    </span>
-  </button>
+    </button>
+  </div>
 })
 
 export const ItemRow = memo(function ItemRow({ x, fav = false, onOpen, sub = null }) {
-  return <button type="button" className="kr" onClick={() => onOpen(x)}>
-    {x.img ? <img className="kr-ph kr-own" src={x.img} alt="" loading="lazy" decoding="async" />
-      : <Photo k={x.ph} size="t" live alt="" className="kr-ph" fallback={<Fallback x={x} cls="kr-ph kr-none" />} />}
-    <span className="grow kr-t">
-      <b className="tt" dir="auto">{itemName(x)}{fav && <Icon name="starFill" className="kr-star" />}</b>
-      <span className="ss">{sub != null ? sub : kindText(x)}</span>
-    </span>
-    <b className="kr-kcal">{n0(x.kcal)}<small>{U('kcal')}</small></b>
-  </button>
+  const spot = spotOK(x)
+  const pic = x.img ? <img className="kr-ph kr-own" src={x.img} alt="" loading="lazy" decoding="async" />
+    : <Photo k={x.ph} size="t" live alt="" className="kr-ph" fallback={<Fallback x={x} cls="kr-ph kr-none" />} />
+  return <div className="kr kr-2">
+    {spot ? <button type="button" className="kr-phb" onClick={() => openSpot(x)} aria-label={t('Photo and details: {0}', itemName(x))}>{pic}</button> : pic}
+    <button type="button" className="kr-main" onClick={() => onOpen(x)}>
+      <span className="grow kr-t">
+        <b className="tt" dir="auto">{itemName(x)}{fav && <Icon name="starFill" className="kr-star" />}</b>
+        <span className="ss">{sub != null ? sub : kindText(x)}</span>
+      </span>
+      <b className="kr-kcal">{n0(x.kcal)}<small>{U('kcal')}</small></b>
+    </button>
+  </div>
 })
 
 export const ItemChip = memo(function ItemChip({ x, onOpen }) {
-  return <button type="button" className="kch" onClick={() => onOpen(x)}>
-    {x.img ? <img className="kch-ph kr-own" src={x.img} alt="" loading="lazy" decoding="async" />
-      : <Photo k={x.ph} size="t" live alt="" className="kch-ph" fallback={<Fallback x={x} cls="kch-ph kr-none" />} />}
-    <span className="kch-t" dir="auto">{itemName(x)}</span>
-    <span className="kch-k">{n0(x.kcal)} {U('kcal')}</span>
-  </button>
+  const spot = spotOK(x)
+  return <div className="kch">
+    <button type="button" className="kch-b" onClick={() => (spot ? openSpot(x) : onOpen(x))} aria-label={spot ? t('Photo and details: {0}', itemName(x)) : itemName(x)}>
+      {x.img ? <img className="kch-ph kr-own" src={x.img} alt="" loading="lazy" decoding="async" />
+        : <Photo k={x.ph} size="t" live alt="" className="kch-ph" fallback={<Fallback x={x} cls="kch-ph kr-none" />} />}
+    </button>
+    <button type="button" className="kch-b kch-tb" onClick={() => onOpen(x)}>
+      <span className="kch-t" dir="auto">{itemName(x)}</span>
+      <span className="kch-k">{n0(x.kcal)} {U('kcal')}</span>
+    </button>
+  </div>
 })

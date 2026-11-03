@@ -22,7 +22,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t, U, dateLocale } from '../lib/i18n.js'
 import { todayISO } from '../lib/format.js'
-import { MEALS, mealAt, dayTotals, foodGoalOf, addEntry, makeEntry } from '../lib/food.js'
+import { MEALS, mealAt, dayTotals, foodGoalOf, addEntry, makeEntry, dayEntries } from '../lib/food.js'
 import {
   ING_CATS, INGREDIENTS, ING_BY_ID, RECIPE_BY_ID, suggestRecipes, recipeMatch, recipeNutrition, recipeEntry, togglePantry, addBasics,
   clearPantry, addToShopping, toggleShopping, clearShoppingDone, removeShopping, itemsTotals, saveBuiltMeal, searchIngredients,
@@ -39,11 +39,15 @@ import {
 import { photoKey, PHOTO_COUNT } from '../lib/photos/index.js'
 import { Photo } from '../components/FoodPhoto.jsx'
 import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
-import { ItemRow, ItemChip, itemName } from '../components/kitchen/ItemCard.jsx'
+import { ItemRow, ItemChip, itemName, openSpot } from '../components/kitchen/ItemCard.jsx'
+import { dayIntake } from '../lib/dayIntake.js'
+import { DAY } from '../lib/spotlight.js'
 import { openItem } from '../components/kitchen/openItem.js'
 import { useIncremental, LazyMore } from '../components/LazyList.jsx'
 import { myDishes, useDishPhoto } from '../lib/dishPhotos.js'
 import { ingPickSheet } from '../components/kitchen/IngPick.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const toast = m => useUI.getState().toast(m)
 const mealOf = k => MEALS.find(m => m.key === k) || MEALS[3]
@@ -84,7 +88,7 @@ function RecipeView({ id, meal: meal0, close }) {
   }
   const ph = photoKey('R', r.id)
   return <div className="kit-recipe">
-    <PhotoHero k={ph} alt={t(r.name)} />
+    <PhotoHero k={ph} alt={t(r.name)} uid={'R:' + r.id} />
     <div className="row" style={{ gap: 12, marginBottom: 6 }}>
       {!ph && <span className="kit-bub" style={{ '--tint': mealOf(r.meals[0]).color }}><Icon name={mealOf(r.meals[0]).icon} /></span>}
       <div className="grow" style={{ flex: 1, minWidth: 0 }}>
@@ -143,7 +147,7 @@ function RecipeView({ id, meal: meal0, close }) {
     <Button variant="primary" icon="check" onClick={log}>{t('Add to {0}', mealName(meal))}</Button>
   </div>
 }
-export const recipeSheet = (id, meal) => useUI.getState().openSheet(close => <RecipeView id={id} meal={meal} close={close} />)
+export const recipeSheet = (id, meal) => useUI.getState().openSheet(close => <RecipeView id={id} meal={meal} close={close} />, PIN)
 
 // ---- an ingredient picker (14.0: components/kitchen/IngPick.jsx, with photos) -----------------------
 export { ingPickSheet }
@@ -429,6 +433,45 @@ function MineCard({ St }) {
   </div>
 }
 
+/** 15.0 — "Surprise me": a dish with a photo that fits what is left of today, opened in the photo viewer. */
+function Surprise({ St }) {
+  const pick = () => {
+    const iso = todayISO()
+    const goal = foodGoalOf(St, iso).kcal
+    const left = goal > 0 ? goal - dayTotals(St, iso).kcal : 0
+    const all = kitchenItems().filter(x => x.ph && !x.drink && (x.kind === 'R' || (x.kind === 'F' && ['dishes', 'fast', 'meat', 'grains', 'legumes'].includes(x.cat))) && x.kcal >= 150)
+    const fit = left >= 150 ? all.filter(x => x.kcal <= left) : all
+    const list = fit.length ? fit : all
+    const x = list[Math.floor(Math.random() * list.length)]
+    if (x) openSpot(x)
+  }
+  return <button type="button" className="card kh-surprise" onClick={pick}>
+    <span className="kh-surprise-ic" aria-hidden="true"><Icon name="dice" /></span>
+    <span className="grow"><b>{t('Surprise me')}</b><span className="small muted">{t('A dish for now that fits the calories you have left today')}</span></span>
+    <Icon name="chevronRight" className="chev" />
+  </button>
+}
+
+/** 15.0 — today's caffeine, sugar and salt from everything you logged, against their daily marks. */
+function TodayIntake({ St }) {
+  const iso = todayISO()
+  const d = useMemo(() => dayIntake(dayEntries(St, iso)), [St, iso])
+  const rows = [
+    { key: 'caf', icon: 'bolt', name: 'Caffeine', v: d.caf, max: DAY.caf, u: 'mg', c: 'var(--orange)' },
+    { key: 'sug', icon: 'candy', name: 'Sugars', v: d.sug, max: DAY.sug, u: 'g', c: 'var(--pink)' },
+    { key: 'na', icon: 'salt', name: 'Sodium', v: d.na, max: DAY.na, u: 'mg', c: 'var(--blue)' },
+  ]
+  return <div className="card kh-intake">
+    <div className="kh-intake-h"><Icon name="gauge" /><b>{t('Today: caffeine, sugar and salt')}</b></div>
+    {rows.map(r => { const pct = Math.round(r.v / r.max * 100); return <div key={r.key} className={'kh-intake-r' + (pct >= 100 ? ' over' : pct >= 75 ? ' warn' : '')} style={{ '--c': r.c }}>
+      <span className="kh-intake-i"><Icon name={r.icon} /></span>
+      <span className="grow"><span className="kh-intake-l">{t(r.name)}</span><span className="kh-intake-bar"><em style={{ width: Math.min(100, pct) + '%' }} /></span></span>
+      <b>{n0(r.v)}<small> / {n0(r.max)} {U(r.u)}</small></b>
+    </div> })}
+    <p className="small muted">{t('From everything you logged today — coffee, tea, soft drinks, energy drinks and food.')}</p>
+  </div>
+}
+
 /** 14.0 — the six big doors: street food, make your Indomie, canned food & shops, drinks, sweets, Iraqi food. */
 function Featured({ onTab }) {
   const counts = useMemo(() => Object.fromEntries(FEATURED.map(f => [f.key, featuredCount(f)])), [])
@@ -448,6 +491,7 @@ function FoodTab({ St, onTab }) {
   const recent = useMemo(() => recentItems(St, 14).filter(x => x.kind !== 'D' && x.kind !== 'S' && !x.drink), [St])
   return <>
     <Featured onTab={onTab} />
+    <Surprise St={St} />
     <MineCard St={St} />
     <Strip title={t('Recently')} icon="history" items={recent} more="/kitchen/s/recent" />
     <Strip title={t('Favourites')} icon="starFill" items={fav} more="/kitchen/s/fav" />
@@ -471,6 +515,7 @@ function DrinksTab({ St }) {
   const recent = useMemo(() => recentItems(St, 14).filter(x => x.kind === 'D' || x.kind === 'S' || x.drink), [St])
   const mine = (St.myDrinks || []).length
   return <>
+    <TodayIntake St={St} />
     <Strip title={t('Recently')} icon="history" items={recent} more="/kitchen/s/recent" />
     <Strip title={t('Favourites')} icon="starFill" items={fav} more="/kitchen/s/fav" />
     <div className="kh-part">
@@ -504,6 +549,13 @@ function ToolsTab({ St }) {
         <span className="kh-link-ic" style={{ '--tint': 'var(--pink)' }} aria-hidden="true"><Icon name="image" /></span>
         <span className="grow"><b>{t('Moving photos')}</b><span className="small muted">{t('The food photos drift slowly. Off: they stand still (saves battery).')}</span></span>
         <Switch checked={St.photoMotion !== false} onChange={v => update(s => { s.photoMotion = !!v })} label={t('Moving photos')} />
+      </div>
+    </div>
+    <div className="card kh-set">
+      <div className="row" style={{ gap: 12 }}>
+        <span className="kh-link-ic" style={{ '--tint': 'var(--indigo)' }} aria-hidden="true"><Icon name="xmark" /></span>
+        <span className="grow"><b>{t('Close food lists only with ✕')}</b><span className="small muted">{t('Food and drink lists stay open while you scroll — no swipe or tap outside closes them, only the ✕ at the top right.')}</span></span>
+        <Switch checked={St.pinSheets !== false} onChange={v => update(s => { s.pinSheets = !!v })} label={t('Close food lists only with ✕')} />
       </div>
     </div>
     <LinkCard icon="camera" tint="var(--blue)" title={t('Photo credits')} sub={t('{0} real photos from Wikimedia Commons — who took each one', nk(PHOTO_COUNT))} to="/kitchen/s/credits" />

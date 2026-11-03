@@ -138,11 +138,11 @@ export default function Food() {
             const sd = e.sd && SODA_BY_ID[e.sd], nt = e.nut && NUT_BY_ID[e.nut], dr = !sd && !nt && e.dr ? drinkOf(S, e.dr) : null
             const sub = f ? servingText(f, U) : sd ? t(PACKS[e.pk] ? PACKS[e.pk].name : 'Soft drinks') : nt ? t(FORMS[e.fm] || 'Nuts') : dr ? t('Drinks') : e.r ? t('Home recipe') : t('Quick calories')
             return <div key={e.id} className="item" role="button" tabIndex={0} onClick={() => entrySheet(iso, e)} onKeyDown={ev => { if (ev.key === 'Enter') entrySheet(iso, e) }}>
-              {sd ? <FoodBubble food={{ id: e.sd }} kind="S" size={32} fallback={<span className="food-x-art"><SodaArt soda={sd} pk={e.pk} ml={e.ml} size={24} /></span>} />
-                : nt ? <FoodBubble food={{ id: e.nut }} kind="N" size={32} fallback={<span className="food-x-art"><NutArt nut={nt} form={e.fm} size={32} /></span>} />
-                  : dr ? <FoodBubble food={dr.mine ? null : { id: e.dr }} kind="D" size={32} fallback={<span className="food-x-art"><DrinkGlass drink={dr} size={28} /></span>} />
-                    : e.r ? <FoodBubble food={{ id: e.r }} kind="R" size={32} />
-                      : <FoodBubble food={f} size={32} />}
+              {sd ? <FoodBubble food={{ id: e.sd }} kind="S" size={32} spot fallback={<span className="food-x-art"><SodaArt soda={sd} pk={e.pk} ml={e.ml} size={24} /></span>} />
+                : nt ? <FoodBubble food={{ id: e.nut }} kind="N" size={32} spot fallback={<span className="food-x-art"><NutArt nut={nt} form={e.fm} size={32} /></span>} />
+                  : dr ? <FoodBubble food={dr.mine ? null : { id: e.dr }} kind="D" size={32} spot fallback={<span className="food-x-art"><DrinkGlass drink={dr} size={28} /></span>} />
+                    : e.r ? <FoodBubble food={{ id: e.r }} kind="R" size={32} spot />
+                      : <FoodBubble food={f} size={32} spot={!!(f && !f.custom)} />}
               <div className="grow"><div className="tt">{foodName(S, e)}</div><div className="ss">{qtyLabel(e.q)}{sub}</div></div>
               <b className="food-kcal">{n0(entryKcal(e))}</b>
             </div>

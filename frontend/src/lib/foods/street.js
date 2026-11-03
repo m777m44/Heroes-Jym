@@ -35,6 +35,12 @@ export const BUILDS = {
   falafelamba: 'bread 60, falafel 51, amba 20, tomato 25, parsley 5, pickles 15',
   falafelplate: 'falafel 102, tahinisauce 25, tomato 50, cucumber 50, lettuce 20, bread 50, pickles 20, parsley 5',
   // ---- Iraqi laffat (wraps) -------------------------------------------------------------------
+  // 15.0: guss and falafel in stone-oven samoon, the big Iraqi falafel wrap, fried fish in samoon
+  gusssamoon: 'samoon 120, shawarmameat 130, tomato 30, onion 20, parsley 5, amba 20, pickles 20, toum 10, salt 0.5',
+  gussplate: 'shawarmameat 180, fries 100, amba 25, tomato 40, onion 25, pickles 25, samoon 50, toum 15, salt 1',
+  falafelsamoon: 'samoon 120, falafel 85, amba 25, tomato 30, parsley 5, pickles 15, salt 0.5',
+  falafelbig: 'samoon 100, falafel 85, eggplant 60, fries 40, egg 50, amba 25, tomato 30, parsley 5, pickles 15, oil 6, salt 0.5',
+  fishsandwich: 'samoon 100, fishfillet 120, tomato 25, onion 15, parsley 5, amba 15, pickles 10, lemon 5',
   kubbasandwich: 'samoon 80, kubba 90, tomato 25, onion 15, pickles 15, amba 10, parsley 5',
   eggsandwich: 'bread 70, egg 100, potato 80, amba 15, tomato 25, parsley 5, onion 10, salt 0.5',
   cheesesandwich: 'bread 60, whitecheese 50, tomato 25, cucumber 25',

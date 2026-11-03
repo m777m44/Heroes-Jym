@@ -28,6 +28,8 @@ import Icon from '../components/Icon.jsx'
 import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
 import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -86,7 +88,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
   }
   const ph = photoKey('S', s.id)
   return <div className="sd-view" style={{ '--b': s.br, '--b2': s.br2, '--c': s.col }}>
-    <PhotoHero k={ph} alt={sodaName(s)} />
+    <PhotoHero k={ph} alt={sodaName(s)} uid={'S:' + s.id} />
     <div className={'sd-hero' + (ph ? ' with-ph' : '')}>
       <div className="sd-hero-bg" aria-hidden="true" />
       <div className="sd-hero-art"><SodaArt soda={s} pk={pk} ml={ml} size={ph ? 64 : 112} live label={sodaName(s)} drawn={!!ph} /></div>
@@ -179,7 +181,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
   </div>
 }
 /** The drink's sheet. opts: { pk, ml } to start on a pack, { iso, meal } to log to another day / meal. */
-export const sodaSheet = (id, opts = {}) => ui().openSheet(close => <SodaView id={id} pk={opts.pk} ml={opts.ml} iso={opts.iso} meal={opts.meal} close={close} />)
+export const sodaSheet = (id, opts = {}) => ui().openSheet(close => <SodaView id={id} pk={opts.pk} ml={opts.ml} iso={opts.iso} meal={opts.meal} close={close} />, PIN)
 
 // ---- choose a soft drink (day plan) -----------------------------------------------------------------------
 function Pick({ onPick, close }) {
@@ -232,7 +234,7 @@ function Pick({ onPick, close }) {
     </div>
   </div>
 }
-export const pickSodaSheet = onPick => ui().openSheet(close => <Pick onPick={onPick} close={close} />)
+export const pickSodaSheet = onPick => ui().openSheet(close => <Pick onPick={onPick} close={close} />, PIN)
 
 // ---- 12.0: compare two soft drinks ---------------------------------------------------------------------------
 const CMP_SIZES = [250, 330, 500, 1000]
@@ -295,7 +297,7 @@ function Compare({ a: a0, b: b0 }) {
   </div>
 }
 /** Two soft drinks side by side (b defaults to the sugar-free twin of a). */
-export const compareSheet = (a, b) => ui().openSheet(() => <Compare a={a} b={b} />)
+export const compareSheet = (a, b) => ui().openSheet(() => <Compare a={a} b={b} />, PIN)
 
 // ---- the screen ----------------------------------------------------------------------------------------------
 function SodaCard({ s, i }) {

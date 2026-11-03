@@ -26,6 +26,8 @@ import NutArt from '../NutArt.jsx'
 import Icon from '../Icon.jsx'
 import { Photo, usePhotos } from '../FoodPhoto.jsx'
 import { Button, Segmented } from '../ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -42,7 +44,7 @@ const qtyText = q => (q === 1 ? '' : '× ' + n1(q) + ' · ')
  * 14.0: a food with a real photo (lib/photos) shows the photo instead — the photo list loads on
  * first use, so the bubble draws at once and the photo fades in.
  */
-export function FoodBubble({ food, size = 36, kind = 'F', fallback = null }) {
+export function FoodBubble({ food, size = 36, kind = 'F', fallback = null, spot = false }) {
   const c = food && catOf(food.cat)
   const ph = usePhotos()
   const k = ph && food && food.id && !food.custom ? ph.photoKey(kind, food.id) : null
@@ -50,7 +52,11 @@ export function FoodBubble({ food, size = 36, kind = 'F', fallback = null }) {
     <Icon name={c ? c.icon : 'fork'} />
   </span>
   if (!k) return bubble
-  return <span className="food-bub-ph" style={{ width: size, height: size }}><Photo k={k} size="t" alt="" fallback={bubble} /></span>
+  if (!spot) return <span className="food-bub-ph" style={{ width: size, height: size }}><Photo k={k} size="t" alt="" fallback={bubble} /></span>
+  // 15.0: tapping the photo opens it big, with everything about the food (the photo viewer)
+  const open = e => { e.stopPropagation(); e.preventDefault(); import('../kitchen/Spotlight.jsx').then(m => m.spotlight(kind + ':' + food.id)) }
+  return <span className="food-bub-ph spot-tap" style={{ width: size, height: size }} role="button" tabIndex={0} aria-label={t('Photo and details')}
+    onClick={open} onKeyDown={e => { if (e.key === 'Enter') open(e) }}><Photo k={k} size="t" alt="" fallback={bubble} /></span>
 }
 
 /** A ring of eaten / goal (SVG). Over the goal it turns orange, 10 % over red. */
@@ -133,7 +139,7 @@ function AddFood({ iso, meal: meal0, close }) {
     <div className="list food-list">
       {list.slice(0, inc.n).map(f => <div key={f.id} className="item" role="button" tabIndex={0} onClick={() => pickFood(f, iso, meal)}
         onKeyDown={e => { if (e.key === 'Enter') pickFood(f, iso, meal) }}>
-        <FoodBubble food={f} />
+        <FoodBubble food={f} spot />
         <div className="grow">
           <div className="tt">{foodName(St, f)}</div>
           <div className="ss">{servingText(f, U)}</div>
@@ -184,7 +190,7 @@ function pickFood(f, iso, meal) {
   if (f && f.built) import('../kitchen/MealBuilder.jsx').then(m => m.mealBuilderSheet({ fid: f.id, iso, meal }))
   else amountSheet({ food: f, iso, meal })
 }
-export const addFoodSheet = ({ iso, meal } = {}) => ui().openSheet(close => <AddFood iso={iso} meal={meal} close={close} />)
+export const addFoodSheet = ({ iso, meal } = {}) => ui().openSheet(close => <AddFood iso={iso} meal={meal} close={close} />, PIN)
 
 // ---- amount -------------------------------------------------------------------------------
 function Amount({ food, iso, meal: meal0, close, entry }) {
@@ -252,8 +258,8 @@ function Amount({ food, iso, meal: meal0, close, entry }) {
     {entry && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={del}>{t('Remove')}</Button></>}
   </div>
 }
-export const amountSheet = ({ food, iso, meal }) => ui().openSheet(close => <Amount food={food} iso={iso} meal={meal} close={close} />)
-export const entrySheet = (iso, entry) => ui().openSheet(close => <Amount food={null} entry={entry} iso={iso} close={close} />)
+export const amountSheet = ({ food, iso, meal }) => ui().openSheet(close => <Amount food={food} iso={iso} meal={meal} close={close} />, PIN)
+export const entrySheet = (iso, entry) => ui().openSheet(close => <Amount food={null} entry={entry} iso={iso} close={close} />, PIN)
 
 // ---- quick calories -------------------------------------------------------------------------
 function Quick({ iso, meal: meal0, close }) {
@@ -279,7 +285,7 @@ function Quick({ iso, meal: meal0, close }) {
     <Button variant="primary" icon="plus" onClick={save}>{t('Add to {0}', mealName(meal))}</Button>
   </>
 }
-export const quickSheet = ({ iso, meal }) => ui().openSheet(close => <Quick iso={iso} meal={meal} close={close} />)
+export const quickSheet = ({ iso, meal }) => ui().openSheet(close => <Quick iso={iso} meal={meal} close={close} />, PIN)
 
 // ---- your own food ----------------------------------------------------------------------------
 // 7.2: you name it and say how much — the app works out the calories. Three ways:
@@ -413,7 +419,7 @@ export function CustomFood({ existing, iso, meal, name: prefill, close }) {
     {existing && <><div style={{ height: 8 }} /><Button variant="danger" icon="trash" onClick={del}>{t('Delete food')}</Button></>}
   </div>
 }
-export const customFoodSheet = (existing, opts = {}) => ui().openSheet(close => <CustomFood existing={existing} {...opts} close={close} />)
+export const customFoodSheet = (existing, opts = {}) => ui().openSheet(close => <CustomFood existing={existing} {...opts} close={close} />, PIN)
 
 // ---- the daily goal ---------------------------------------------------------------------------
 export const GOAL_SOURCE = {

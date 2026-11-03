@@ -44,6 +44,8 @@ import SodaArt from '../components/SodaArt.jsx'
 import NutArt from '../components/NutArt.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, Switch, Button, BackButton, Segmented, SearchField, TextField } from '../components/ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -94,7 +96,7 @@ function RecipePick({ meal, target, onPick, close }) {
     </div>
   </div>
 }
-const recipePickSheet = (meal, target, onPick) => ui().openSheet(close => <RecipePick meal={meal} target={target} onPick={onPick} close={close} />)
+const recipePickSheet = (meal, target, onPick) => ui().openSheet(close => <RecipePick meal={meal} target={target} onPick={onPick} close={close} />, PIN)
 
 // 11.0 — a food from the database (eggs, bread, rice, stews, fruit…), per serving
 function FoodPick({ onPick, close }) {
@@ -116,7 +118,7 @@ function FoodPick({ onPick, close }) {
     </div>
   </div>
 }
-export const foodPickSheet = onPick => ui().openSheet(close => <FoodPick onPick={onPick} close={close} />)
+export const foodPickSheet = onPick => ui().openSheet(close => <FoodPick onPick={onPick} close={close} />, PIN)
 
 function ItemArt({ St, it, size = 26 }) {
   if (it.t === 'd') return <DrinkGlass drink={drinkOf(St, it.id)} size={size} />

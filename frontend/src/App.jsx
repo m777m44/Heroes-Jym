@@ -4,7 +4,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { setLang, useLang, isRTL, t, langOf } from './lib/i18n.js'
-import { resolveTheme, applyTheme } from './lib/themes.js'
+import { resolveTheme, applyTheme, DEFAULT_THEME } from './lib/themes.js'
 import { applyWallpaper } from './lib/wallpapers.js'
 import { animateThemeSwitch } from './lib/themeSwitch.js'
 import { applyLook } from './lib/look.js'
@@ -128,6 +128,12 @@ function Shell() {
   useEffect(() => installTouchFeedback(() => useStore.getState().S), [])   // 7.0: ripple + tap haptics
   useEffect(() => { onNotificationTap(to => nav(to)) }, [])
   const systemDark = useSystemDark()
+  // 15.0: the new look — a profile still on the old default (Classic Dark) moves to MAHDI Midnight
+  // once; Classic stays in Themes for anyone who wants it back
+  useEffect(() => {
+    if (!ready || S.look15) return
+    useStore.getState().update(s => { if (!s.theme || s.theme === 'classic-dark' || s.theme === 'dark') s.theme = DEFAULT_THEME; s.look15 = true })
+  }, [ready, S.look15]) // eslint-disable-line react-hooks/exhaustive-deps
   const themed = useRef(false)
   useEffect(() => {
     const th = resolveTheme(S, systemDark)
