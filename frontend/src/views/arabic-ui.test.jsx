@@ -87,6 +87,29 @@ it('the Arabic UI has no stray English', async () => {
       scanK(React.createElement(SP.SpotView, { uid0: uid, close: () => {} }), '/kitchen', 'Spotlight:' + uid)
     }
   }
+  // 17.0: the in-app update — the dock at the bottom in every moment of it, and Settings' update centre
+  {
+    const UD = await import('../components/UpdateDock.jsx')
+    const AU = await import('../lib/appUpdate.js')
+    const base = { dock: true, version: '17.0.1', size: 6.4 * 1048576, full: 9 * 1048576, notes: { en: 'Update inside the app.', ar: 'تحديث من داخل التطبيق.' }, done: 0.42, total: 1, bytes: 2.7 * 1048576, bytesTotal: 6.4 * 1048576, speed: 1.6 * 1048576, eta: 3 }
+    const moments = [['available', 'live', {}], ['available', 'live', { same: true }], ['available', 'apk', {}], ['available', 'link', {}], ['available', 'demo', {}], ['available', 'apk', { stopped: true }],
+      ['downloading', 'live', {}], ['downloading', 'apk', { eta: 75 }], ['downloading', 'apk', { eta: 900 }], ['downloading', 'apk', { speed: 300 * 1024, eta: 1 }], ['verifying', 'live', {}], ['installing', 'live', {}], ['installing', 'apk', {}],
+      ['permission', 'apk', {}], ['ready', 'apk', {}], ['done', 'demo', {}], ['error', 'live', { error: 'network' }], ['error', 'apk', { error: 'checksum' }], ['error', 'apk', { error: 'space' }], ['error', 'apk', { error: 'install' }]]
+    const scanU = (el, where) => {
+      const html = renderToString(React.createElement(MemoryRouter, null, el))
+      for (const line of text(html).split('\n').map(x => x.trim()).filter(Boolean)) if (/[A-Za-z]{2,}/.test(line)) (found[line] = found[line] || new Set()).add(where)
+    }
+    for (const [phase, kind, extra] of moments) {
+      AU.useUpdate.setState({ ...base, phase, kind, same: false, stopped: false, error: '', ...extra })
+      scanU(React.createElement(UD.default), 'UpdateDock:' + phase + ':' + kind)
+      scanU(React.createElement(UD.UpdateCenter), 'UpdateCenter:' + phase + ':' + kind)
+    }
+    AU.addHistory({ v: '17.0.0', how: 'apk' }); AU.addHistory({ v: '17.0.0', how: 'live', same: true }); AU.addHistory({ v: '16.0.0', how: 'install' })
+    AU.useUpdate.setState({ phase: 'latest', kind: null, dock: false, checkedAt: Date.now() - 5 * 60000 })
+    scanU(React.createElement(UD.UpdateCenter), 'UpdateCenter:latest')
+    scanU(React.createElement(UD.UpdateDemoRow), 'UpdateDemoRow')
+    AU.useUpdate.setState({ phase: 'idle', kind: null, dock: false })
+  }
   // 9.0: a day plan from each template, started today (live card, timeline, totals)
   {
     const DP = await import('./DayPlan.jsx')

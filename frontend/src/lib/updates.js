@@ -12,6 +12,8 @@ import { OFFLINE_MEDIA } from './exercises.js'
 import { DEMO, WEBAPP, REPO } from './demo.js'
 
 export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0'
+/** 17.0 — this version's short what's new, from CHANGELOG.md at build time ({ en, ar }). */
+export const OWN_NOTES = typeof __MJ_NOTES__ !== 'undefined' && __MJ_NOTES__ && (__MJ_NOTES__.en || __MJ_NOTES__.ar) ? __MJ_NOTES__ : null
 export const RELEASES = REPO + '/releases'
 export const LATEST = RELEASES + '/latest'
 export const APK_OFFLINE = 'MAHDI-JYM.apk'
@@ -34,13 +36,25 @@ const API = 'https://api.github.com/repos/m777m44/Heroes-Jym/releases/latest'
 const KEY = 'mj_update'
 const DAY = 20 * 3600e3
 
-/** A GitHub "latest release" response → what the app shows. */
+/** 17.0 — the short what's new a release carries as two HTML comments (scripts/release-notes.mjs). */
+export function releaseNotesOf(body) {
+  const b = String(body || '')
+  const one = k => { const m = b.match(new RegExp('<!--\\s*mj-notes-' + k + ':\\s*([\\s\\S]*?)\\s*-->')); return m ? m[1].replace(/\s+/g, ' ').trim().slice(0, 400) : '' }
+  const en = one('en'), ar = one('ar')
+  return en || ar ? { en, ar } : null
+}
+/** A GitHub "latest release" response → what the app shows. 17.0: each APK's SHA-256 (GitHub's digest) and the notes. */
 export function parseRelease(d, current = APP_VERSION, now = Date.now()) {
   const version = String((d && d.tag_name) || '').trim().replace(/^v/i, '')
-  const asset = n => { const a = ((d && d.assets) || []).find(x => x && x.name === n); return a ? { url: a.browser_download_url, size: a.size || 0 } : null }
+  const asset = n => {
+    const a = ((d && d.assets) || []).find(x => x && x.name === n)
+    if (!a) return null
+    const sha = String(a.digest || '').toLowerCase().replace(/^sha256:/, '')
+    return { url: a.browser_download_url, size: a.size || 0, ...(/^[0-9a-f]{64}$/.test(sha) ? { sha256: sha } : null) }
+  }
   return {
     version, url: (d && d.html_url) || LATEST, at: (d && d.published_at) || null,
-    offline: asset(APK_OFFLINE), online: asset(APK_ONLINE),
+    offline: asset(APK_OFFLINE), online: asset(APK_ONLINE), notes: releaseNotesOf(d && d.body),
     newer: !!version && cmpVersion(version, current) > 0, checked: now,
   }
 }
@@ -61,9 +75,9 @@ export function lastCheck() {
  * At most once a day, quietly: the newer release, or null (up to date, offline, already asked
  * today). An answer from earlier today is reused.
  */
-export async function autoCheck({ fetchImpl, now = Date.now(), current = APP_VERSION } = {}) {
+export async function autoCheck({ fetchImpl, now = Date.now(), current = APP_VERSION, maxAge = DAY } = {}) {
   const last = lastCheck()
-  if (last && now - (last.checked || 0) < DAY) return last.version && cmpVersion(last.version, current) > 0 ? last : null
+  if (last && now - (last.checked || 0) < maxAge) return last.version && cmpVersion(last.version, current) > 0 ? last : null
   try { const r = await checkLatest({ fetchImpl, now, current }); return r.newer ? r : null } catch { return null }
 }
 

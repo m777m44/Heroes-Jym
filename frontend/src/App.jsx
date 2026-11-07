@@ -90,10 +90,8 @@ import { applyA11y } from './lib/a11y.js'
 import AppLock from './components/AppLock.jsx'
 import { MOBILE } from './lib/mobile.js'
 import { DEMO } from './lib/demo.js'
-import { autoCheck } from './lib/updates.js'
-// 14.0: only the online Android app updates itself — the card loads in that build alone
-const LIVE = import.meta.env.VITE_MOBILE === '1' && import.meta.env.VITE_OFFLINE_MEDIA !== '1'
-const LiveBanner = LIVE ? lazy(() => import('./components/LiveUpdate.jsx').then(m => ({ default: m.LiveBanner }))) : null
+// 17.0: the in-app update — both Android apps (the web app shows it as a demo): the dock at the bottom
+const UpdateDock = lazy(() => import('./components/UpdateDock.jsx'))
 import { usePedometer } from './store/usePedometer.js'
 import { startWaterSync } from './lib/waterSync.js'
 import { installBackButton } from './lib/backButton.js'
@@ -213,27 +211,26 @@ function Shell() {
   useEffect(() => { if (ready && authed) syncPlanReminders(useStore.getState().S) }, [ready, authed, S.planner, S.lang]) // eslint-disable-line react-hooks/exhaustive-deps
   // 2.6: the Google account copy (when signed in) — kept in step while the app runs
   useEffect(() => { if (ready && authed) return startCloudSync(useStore) }, [ready, authed])
-  // 12.0: a newer release on GitHub → said once per version (Settings → App & updates has the
-  // direct downloads). At most one quiet request a day, only in the Android app.
+  // 17.0: the in-app update (lib/appUpdate.js) — both Android apps look for a new build or release when
+  // they start and when they come back, and offer it on the dock at the bottom of the screen: Update /
+  // Cancel, then the download with its real progress, the check and the install. What arrived is said once.
   useEffect(() => {
-    if (!ready || !authed || !MOBILE) return
-    // 14.0: the online app updates itself (lib/liveUpdate.js) — offered on a card above the tab bar;
-    // the APKs are only mentioned when the new version needs a new app
-    const tm = setTimeout(async () => {
-      if (LIVE) {
-        const lu = await import('./lib/liveUpdate.js')
-        const v = lu.takeUpdated()
-        if (v) useUI.getState().toast(t('Updated to MAHDI-JYM {0} — inside the app, your data stayed', v))
-        const d = await lu.liveCheck({ auto: true })
-        if (d === 'ready' || d === 'latest') return
+    if (!ready || !authed) return
+    let stop = () => {}, live = true
+    import('./lib/appUpdate.js').then(u => {
+      if (!live) return
+      if (!MOBILE) {
+        // the web app and demo: ?update=demo shows the dock with a pretend update
+        if (/[?&]update=demo\b/.test(location.search + location.hash)) u.updateDemo()
+        return
       }
-      autoCheck().then(r => {
-        if (!r) return
-        try { if (localStorage.getItem('mj_update_told') === r.version) return; localStorage.setItem('mj_update_told', r.version) } catch { /* private mode */ }
-        useUI.getState().toast(t('MAHDI-JYM {0} is out — Settings → App & updates', r.version))
+      stop = u.updateBoot({
+        toast: (v, how) => useUI.getState().toast(how === 'same' ? t('MAHDI-JYM {0} got its newest improvements — inside the app, your data stayed', v)
+          : how === 'apk' ? t('Updated to MAHDI-JYM {0} — installed from inside the app, your data stayed', v)
+            : t('Updated to MAHDI-JYM {0} — inside the app, your data stayed', v)),
       })
-    }, 12000)
-    return () => clearTimeout(tm)
+    }).catch(() => {})
+    return () => { live = false; stop() }
   }, [ready, authed])
   // 4.0: a version of your data once a day, kept on this phone (Settings → Backups & restore)
   useEffect(() => {
@@ -335,7 +332,7 @@ function Shell() {
         </ErrorBoundary>
       </div>
       <TabBar />
-      {LIVE && authed && ready && <Suspense fallback={null}><LiveBanner /></Suspense>}
+      {authed && ready && <Suspense fallback={null}><UpdateDock /></Suspense>}
       <RestTimer />
       <Modals />
       <Toast />

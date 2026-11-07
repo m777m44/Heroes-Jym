@@ -257,31 +257,35 @@ jobs:
           OFF_MB: ${{ steps.out.outputs.offline_mb }}
           ON_MB: ${{ steps.out.outputs.online_mb }}
         run: |
+          # 17.0: the version's short what's new (CHANGELOG.md) as two hidden comments — the apps read them
+          # and show them on the update card before downloading (lib/updates.js → releaseNotesOf)
+          NOTES=$(node frontend/scripts/release-notes.mjs "${TAG#v}" --md)
           cat > "$RUNNER_TEMP/notes.md" <<EOF
           **MAHDI-JYM ${TAG}** — جسمك، خطتك، إرادتك.
+          ${NOTES}
 
           ### Two apps — side by side on one phone, the same features
           | | File | Size | On the home screen | |
           |---|---|---|---|---|
-          | 📦 **Offline** | **MAHDI-JYM.apk** | ${OFF_MB} MB | MAHDI-JYM · blue OFF badge | everything inside — works with no internet |
-          | ⚡ **Online (light)** | **MAHDI-JYM-online.apk** | ${ON_MB} MB | MAHDI-JYM Online · green WEB badge | pictures load from GitHub · **updates itself inside the app** |
+          | 📦 **Offline** | **MAHDI-JYM.apk** | ${OFF_MB} MB | MAHDI-JYM · blue OFF badge | everything inside — works with no internet · **new versions download and install inside the app** |
+          | ⚡ **Online (light)** | **MAHDI-JYM-online.apk** | ${ON_MB} MB | MAHDI-JYM Online · green WEB badge | pictures load from GitHub · **updates itself inside the app, with every change on the site** |
 
           Each is its own app with its own data — install one or both. The offline app installs over every earlier MAHDI-JYM and keeps your data. To move data into the online app: Settings → Data → Export backup, then Import backup in the other app. 🌐 Or use it in the browser: https://m777m44.github.io/Heroes-Jym/app/
 
           ### Install on Android (6.0+)
           1. Download one (or both) of the APKs below on your phone.
           2. Open it and allow *Install unknown apps* for your browser / file manager when asked.
-          3. Tap **Install**. The online app then updates itself (Settings → App & updates); the offline app updates by installing the new APK over it — your data stays.
+          3. Tap **Install**. From 17.0 on both apps update **from inside the app**: an *Update* / *Cancel* card at the bottom of the screen, then a progress bar with the percentage, speed and time left — the online app restarts into the new version in a second, the offline app downloads the new APK and Android installs it over the old one. Your data stays.
 
           ### تطبيقان — جنباً إلى جنب على الهاتف نفسه وبالميزات نفسها
           - 📦 **أوفلاين** — ملف **MAHDI-JYM.apk** (${OFF_MB} م.ب): اسمه MAHDI-JYM مع شارة OFF زرقاء، كل شيء داخل التطبيق ويعمل بلا إنترنت.
-          - ⚡ **أونلاين (خفيف)** — ملف **MAHDI-JYM-online.apk** (${ON_MB} م.ب): اسمه MAHDI-JYM Online مع شارة WEB خضراء، الصور تُحمَّل من GitHub، **ويحدّث نفسه من داخل التطبيق** بلا إعادة تثبيت.
+          - ⚡ **أونلاين (خفيف)** — ملف **MAHDI-JYM-online.apk** (${ON_MB} م.ب): اسمه MAHDI-JYM Online مع شارة WEB خضراء، الصور تُحمَّل من GitHub، **ويحدّث نفسه من داخل التطبيق** مع كل تغيير بالموقع وبلا إعادة تثبيت.
           - لكل تطبيق بياناته الخاصة — ثبّت واحداً أو الاثنين. نسخة الأوفلاين تُثبَّت فوق أي MAHDI-JYM سابق وتبقى بياناتك. لنقل بياناتك إلى نسخة الأونلاين: الإعدادات ← البيانات ← تصدير نسخة احتياطية، ثم استيرادها في التطبيق الآخر. 🌐 أو استخدمه في المتصفح: https://m777m44.github.io/Heroes-Jym/app/
 
           ### التثبيت على أندرويد (6.0 أو أحدث)
           1. حمّل أحد الملفين (أو كليهما) من الأسفل على هاتفك.
           2. افتحه واسمح بـ «تثبيت التطبيقات غير المعروفة» للمتصفح أو مدير الملفات عند الطلب.
-          3. اضغط **تثبيت**. بعدها تحدّث نسخة الأونلاين نفسها (الإعدادات ← التطبيق والتحديثات)، ونسخة الأوفلاين تُحدَّث بتثبيت الملف الجديد فوقها — وتبقى بياناتك.
+          3. اضغط **تثبيت**. من الإصدار 17.0 يتحدّث التطبيقان **من داخل التطبيق**: بطاقة «تحديث» و«إلغاء» أسفل الشاشة، ثم شريط بالنسبة المئوية والسرعة والوقت المتبقي — نسخة الأونلاين تنتقل للإصدار الجديد خلال ثانية، ونسخة الأوفلاين تنزّل الملف الجديد داخل التطبيق ويثبّته أندرويد فوقها. وتبقى بياناتك.
 
           See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md) for what's new.
           EOF

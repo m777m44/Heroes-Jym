@@ -7,8 +7,9 @@
 #               this browser (VITE_WEBAPP=1), installable from the browser menu
 #   /demo/      the browser-only demo with an example history (VITE_DEMO=1)
 #   /live/      14.0: the online Android app's web bundle — live/online.json (version, native level,
-#               every file with its SHA-256) and live/<version>/ — which the app downloads to update
-#               itself without a new APK (frontend/src/lib/liveUpdate.js)
+#               every file with its SHA-256) and live/<version>-<build>/ — which the app downloads to
+#               update itself without a new APK (frontend/src/lib/liveUpdate.js). 17.0: every push to
+#               main is a new build, so whatever changes on the site reaches the app, inside the app
 #
 # Used by .github/workflows/pages.yml and for local previews:
 #   bash scripts/build-site.sh && python3 -m http.server -d _site 8080
@@ -42,7 +43,9 @@ cp frontend/public/icon-180.png frontend/public/icon-512.png "$OUT/"
 cp -r "$TMP/app" "$OUT/app"
 cp -r "$TMP/demo" "$OUT/demo"
 mkdir -p "$OUT/live"
-cp -r "$TMP/live" "$OUT/live/$VER"
-node frontend/scripts/live-manifest.mjs "$OUT/live/$VER" "$OUT/live/online.json" "$VER/"
+# 17.0: each build in its own folder (live/<version>-<build id>/), so no cache ever mixes two builds
+BUILD=$(node -p "require('$TMP/live/mj-files.json').build")
+cp -r "$TMP/live" "$OUT/live/$VER-$BUILD"
+node frontend/scripts/live-manifest.mjs "$OUT/live/$VER-$BUILD" "$OUT/live/online.json" "$VER-$BUILD/"
 touch "$OUT/.nojekyll"
 echo "site ready in $OUT/ ($(du -sh "$OUT" | cut -f1))"

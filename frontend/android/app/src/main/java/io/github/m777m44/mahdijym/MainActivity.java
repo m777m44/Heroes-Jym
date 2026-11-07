@@ -13,6 +13,7 @@ import io.github.m777m44.mahdijym.account.DriveFilePlugin;
 import io.github.m777m44.mahdijym.account.GoogleAccountPlugin;
 import io.github.m777m44.mahdijym.lock.AppLockPlugin;
 import io.github.m777m44.mahdijym.steps.StepServicePlugin;
+import io.github.m777m44.mahdijym.update.AppUpdatePlugin;
 
 public class MainActivity extends BridgeActivity {
     /** Two presses of Back within this time leave the app. */
@@ -26,6 +27,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(GoogleAccountPlugin.class);
         registerPlugin(DriveFilePlugin.class);       // 8.0: Google Drive with no setup
         registerPlugin(AppLockPlugin.class);
+        registerPlugin(AppUpdatePlugin.class);     // 17.0: the new APK downloads and installs inside the app
         super.onCreate(savedInstanceState);
 
         // 2.7.0 — Back no longer closes the app at once. The web app decides first (close a

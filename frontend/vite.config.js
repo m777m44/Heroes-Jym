@@ -3,8 +3,12 @@ import react from '@vitejs/plugin-react'
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { createHash } from 'node:crypto'
+import { releaseNotes } from './scripts/release-notes.mjs'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+// 17.0: this version's short what's new (CHANGELOG.md), for the update screens
+const changelog = new URL('../CHANGELOG.md', import.meta.url)
+const notes = releaseNotes(existsSync(changelog) ? readFileSync(changelog, 'utf8') : '', pkg.version)
 
 const backend = process.env.API_TARGET || 'http://127.0.0.1:3000'
 const media = process.env.MEDIA_TARGET || 'http://127.0.0.1:8888'
@@ -70,7 +74,7 @@ export default defineConfig({
   plugins: [react(), precacheSW(), cdnPreconnect()],
   // 14.0: __NATIVE_LEVEL__ — what the Android shell offers (plugins, the app's own native code); a web
   // bundle the online app downloads (lib/liveUpdate.js) needs an APK with at least this level
-  define: { __APP_VERSION__: JSON.stringify(pkg.version), __NATIVE_LEVEL__: JSON.stringify(pkg.mjNative || 1) },
+  define: { __APP_VERSION__: JSON.stringify(pkg.version), __NATIVE_LEVEL__: JSON.stringify(pkg.mjNative || 1), __MJ_NOTES__: JSON.stringify({ en: notes.en, ar: notes.ar }) },
   base: './',
   server: {
     proxy: {

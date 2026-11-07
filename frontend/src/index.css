@@ -4917,3 +4917,83 @@ html[data-motion=reduce] .kf{animation:none}
 .exmedia video{background:#fff}
 @media (prefers-reduced-motion:reduce){.sd-brand,.sd-bhead,.cf-card{animation:none}.sd-brand-stars .icn{animation:none}}
 .wn-sub{margin:10px 4px 0;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--label) 10%,transparent);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--label-3);text-transform:uppercase}
+/* 17.0 — the in-app update (components/UpdateDock.jsx): docked at the bottom, over the tab bar's edge.
+   A glass card; the percentage in big tabular figures that glide with the real bytes; an accent bar with
+   a slow sheen while bytes arrive; the three steps. Reduce motion: no sheen, no glide, no slide-in. */
+.ud{position:fixed;inset-inline:10px;bottom:calc(var(--sab, 0px) + 8px);z-index:58;max-width:540px;margin:0 auto;pointer-events:none}
+/* small while it downloads: it moves up over the tab bar, which stays usable */
+.ud.ud-is-mini{bottom:calc(var(--sab, 0px) + 96px)}
+.ud-card,.ud-mini{pointer-events:auto}
+.ud-card{position:relative;overflow:hidden;padding:14px 14px 12px;border-radius:24px;
+  background:color-mix(in srgb,var(--bg-el) 90%,transparent);border:.5px solid var(--sep-op);
+  -webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 26px 60px -26px rgba(0,0,0,.85),0 8px 22px -14px rgba(0,0,0,.5);
+  animation:ud-in .42s var(--ease) both}
+:root[data-theme="light"] .ud-card{background:rgba(255,255,255,.92);box-shadow:0 26px 60px -30px rgba(0,0,0,.35),0 6px 18px -12px rgba(0,0,0,.18)}
+.ud-card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.55}
+@keyframes ud-in{from{opacity:0;transform:translateY(22px) scale(.985)}to{opacity:1;transform:none}}
+.ud-head{display:flex;align-items:center;gap:12px}
+.ud-badge{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--on-acc);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--acc) 82%,#fff),var(--acc));box-shadow:0 12px 24px -12px var(--acc)}
+.ud-badge .icn{width:23px;height:23px;--icon-stroke:2}
+.ud-badge.sm{width:30px;height:30px;border-radius:10px}
+.ud-badge.sm .icn{width:17px;height:17px}
+.ud-badge.downloading .icn{animation:ud-drop 1.25s ease-in-out infinite}
+@keyframes ud-drop{0%,100%{transform:translateY(-2px)}50%{transform:translateY(2px)}}
+.ud-badge.error{background:linear-gradient(145deg,#ffb35a,var(--orange));box-shadow:0 12px 24px -12px var(--orange);color:#000}
+.ud-badge.permission{background:linear-gradient(145deg,#8f8dff,var(--indigo));box-shadow:0 12px 24px -12px var(--indigo);color:#fff}
+.ud-badge.ready,.ud-badge.done{background:linear-gradient(145deg,#6be38a,var(--green));box-shadow:0 12px 24px -12px var(--green);color:#000}
+.ud-titles{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ud-titles b{font-size:16px;font-weight:600;letter-spacing:-.012em;line-height:1.25}
+.ud-titles small{font-size:12.5px;color:var(--label-2);line-height:1.35}
+.ud-shrink{flex:none;align-self:flex-start;margin:-4px -4px 0 0}
+.ud-notes{display:flex;gap:8px;align-items:flex-start;margin:10px 0 0;padding:9px 11px;border-radius:14px;font-size:13px;line-height:1.45;
+  color:var(--label);background:var(--acc-soft)}
+.ud-notes .icn{flex:none;width:15px;height:15px;margin-top:2px;color:var(--acc)}
+.ud-prog{margin-top:12px}
+.ud-pct-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ud-pct{display:inline-flex;align-items:baseline;gap:1px;font-variant-numeric:tabular-nums;line-height:1}
+.ud-pct b{font-size:34px;font-weight:700;letter-spacing:-.03em;min-width:2.1ch;text-align:end}
+.ud-pct small{font-size:16px;font-weight:600;color:var(--label-2)}
+.ud-meta{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px 10px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums;text-align:end}
+.ud-meta span+span::before{content:"·";margin-inline-end:10px;color:var(--label-3)}
+.ud-bar{position:relative;height:10px;border-radius:99px;overflow:hidden;background:var(--surface-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+.ud-bar i{position:absolute;inset:0;border-radius:inherit;transform-origin:left center;will-change:transform;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 70%,#fff),var(--acc) 55%,color-mix(in srgb,var(--acc) 85%,#000))}
+[dir="rtl"] .ud-bar i{transform-origin:right center;background:linear-gradient(270deg,color-mix(in srgb,var(--acc) 70%,#fff),var(--acc) 55%,color-mix(in srgb,var(--acc) 85%,#000))}
+.ud-bar.live::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.38) 50%,transparent 70%);
+  background-size:220% 100%;animation:ud-sheen 1.6s linear infinite;mix-blend-mode:soft-light}
+@keyframes ud-sheen{from{background-position:120% 0}to{background-position:-120% 0}}
+.ud-steps{display:flex;gap:6px;margin:12px 0 0;padding:0;list-style:none}
+.ud-steps li{flex:1;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--label-3);min-width:0}
+.ud-steps li+li::before{content:"";flex:0 0 10px;height:1.5px;border-radius:2px;background:var(--label-4);margin-inline-end:2px}
+.ud-step-dot{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);transition:background var(--med),color var(--med)}
+.ud-step-dot .icn{width:12px;height:12px;--icon-stroke:2.2}
+.ud-step-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ud-steps li.now{color:var(--label)}
+.ud-steps li.now .ud-step-dot{background:var(--acc);color:var(--on-acc);box-shadow:0 0 0 4px var(--acc-soft)}
+.ud-steps li.done{color:var(--label-2)}
+.ud-steps li.done .ud-step-dot{background:color-mix(in srgb,var(--green) 22%,transparent);color:var(--green)}
+.ud-btns{display:flex;gap:8px;margin-top:12px}
+.ud-btns .btn{flex:1;padding:12px 14px;font-size:16px;border-radius:14px;width:auto}
+.ud-btns .ud-go{flex:1.6;box-shadow:0 10px 22px -12px var(--acc)}
+.ud-btns .ud-cancel{background:var(--surface-2);color:var(--label)}
+.ud-btns .ud-cancel .icn{color:var(--label-2)}
+.ud-btns .ud-cancel.wide{flex:1}
+.ud-mini{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px 8px 8px;border-radius:18px;text-align:start;color:inherit;
+  background:color-mix(in srgb,var(--bg-el) 90%,transparent);border:.5px solid var(--sep-op);
+  -webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px);box-shadow:0 18px 40px -22px rgba(0,0,0,.8);
+  animation:ud-in .3s var(--ease) both}
+:root[data-theme="light"] .ud-mini{background:rgba(255,255,255,.94)}
+.ud-mini-t{flex:0 1 auto;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ud-mini .ud-bar{flex:1 1 60px;height:6px}
+.ud-mini-pct{flex:none;font-size:13.5px;font-variant-numeric:tabular-nums;min-width:3.4ch;text-align:end}
+.ud-hist{list-style:none;margin:0;padding:2px 16px 10px}
+.ud-hist li{display:grid;grid-template-columns:1fr auto;gap:0 10px;padding:8px 0;border-top:.5px solid var(--sep)}
+.ud-hist li:first-child{border-top:0}
+.ud-hist b{font-size:14px;font-weight:600}
+.ud-hist span{grid-column:1;font-size:12.5px;color:var(--label-2)}
+.ud-hist time{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:12px;color:var(--label-3);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){.ud-card,.ud-mini{animation:none}.ud-bar.live::after,.ud-badge.downloading .icn{animation:none}}
+html[data-motion="reduce"] .ud-card,html[data-motion="reduce"] .ud-mini{animation:none}
+html[data-motion="reduce"] .ud-bar.live::after,html[data-motion="reduce"] .ud-badge.downloading .icn{animation:none}

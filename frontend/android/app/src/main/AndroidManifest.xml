@@ -155,6 +155,12 @@
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
+    <!-- 17.0 — the in-app update (update/AppUpdatePlugin.java): a new MAHDI-JYM release downloads inside
+         the app and Android's own installer opens over it. Android asks once to allow "Install unknown
+         apps" for MAHDI-JYM; every install still shows the system's confirmation, and only an APK with
+         the same signature can replace the app. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- 8.0 — "Google Drive, no setup" (DriveFilePlugin): lets the app see whether the Google
          Drive app is installed (Android 11+ hides other apps unless they are named here), so it
          can suggest installing it instead of showing a picker without Drive in it. -->
