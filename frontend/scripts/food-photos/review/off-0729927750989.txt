@@ -1,0 +1,9 @@
+host: world.openfoodfacts.org
+name: 
+brands: 
+quantity: 
+categories: Aglio Bianco Polesano
+labels: 
+ingredients: حليب موز تفاح ليمون 🍋 شوكولاته بالحليب والتمر والفواكه الاستوائية م د  الخنزير الجبن البيض ونضيف السكر بعد
+per 100: kcal ? · sugars ? · caffeine ? · sodium ?
+images: 1 2 3

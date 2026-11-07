@@ -1,0 +1,9 @@
+host: world.openfoodfacts.org
+name: أبو جنه
+brands: 
+quantity: 330 ml
+categories: Beverages, ar:ZD44BQIK
+labels: 
+ingredients: 
+per 100: kcal ? · sugars ? · caffeine ? · sodium ?
+images: 1 4
