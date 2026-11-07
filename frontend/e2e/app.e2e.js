@@ -247,7 +247,7 @@ test('16.0: Abu Janna’s drinks, Made in Iraq, and caffeine in your body before
   await expect.poll(() => page.locator('.sd-grid .sd-card').count()).toBeGreaterThan(15)
   await iraq.click()
   await expect(iraq).toHaveAttribute('aria-pressed', 'false')
-  await page.getByRole('searchbox').fill('ابو جنه')
+  await page.getByPlaceholder('Search soft drinks').fill('ابو جنه')
   await expect(page.locator('.sd-grid .sd-card')).toHaveCount(8)
   expect(errors).toEqual([])
 })
