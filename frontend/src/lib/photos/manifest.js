@@ -917,17 +917,16 @@ export const PHOTO_ROWS = [
   ['falafelbig', 'f:فلافل تلعفر.jpg|f:Iraqi felalfel - Flickr - Al Jazeera English.jpg', 'F:falafelbig'],
   ['fishsandwich', 's:balık ekmek sandwich|s:fried fish sandwich bread|s:fish sandwich', 'F:fishsandwich'],
   ['aspirash', 's:energy drink glass|s:energy drink poured glass', 'S:aspirash S:aspirashgum'],
-  ['k9', 's:energy drink can black|s:energy drink', 'S:k9 S:k9perf'],
+  ['k9', 's:energy drink can black|s:energy drink', 'S:k9 S:k9perf S:wildlion'],
   ['fouru', 'f:Bebida energizante.jpg|s:energy drink can', 'S:fouru'],
   ['tiger', 's:Tiger energy drink|s:energy drink orange can', 'S:tiger'],
   ['redstrong', 's:energy drinks supermarket|s:energy drink shelf', 'S:redstrong'],
   ['winner', 's:canned drinks fridge|s:energy drinks cooler|s:drinks refrigerator', 'S:winner'],
   ['lionenergy', 's:energy drink gold can|s:energy drink tin', 'S:lion'],
   ['hell', 's:Hell energy drink|w:Hell Energy Drink', 'S:hell'],
-  // 16.0 — Abu Janna's drinks and Dijla's Wild Lion. His soft drink has its own photos on Open Food Facts
-  // (o: — the lemon & mint can 0729927750910, the mint one 0729927750958); the energy drinks, a glass of one.
-  ['abujannalm', 'o:0729927750910/15@contain', 'S:abujannalm'],
+  // 16.0 — Abu Janna's drinks. His soft drink has its own photos on Open Food Facts (o: — the lemon & mint
+  // can 0729927750910, the mint one 0729927750958); Three Stars, a glass of energy drink. (Wild Lion: K9's glass.)
+  ['abujannalm', 'o:0729927750910/7@contain', 'S:abujannalm'],
   ['abujannamint', 'o:0729927750958/2@contain', 'S:abujannamint'],
   ['threestars', 'f:EnergyDrinkBubbles.jpg|s:energy drink glass bubbles', 'S:threestars'],
-  ['wildlion', 'f:Coffein im Energy-Drink.jpg|s:energy drink can', 'S:wildlion'],
 ]

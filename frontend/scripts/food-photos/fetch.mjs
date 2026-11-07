@@ -12,6 +12,9 @@
 //   node scripts/food-photos/fetch.mjs --only a,b   just these keys
 //   candidates.txt (keys, one per line)             also writes review/<key>.jpg: the best six
 //                                                   search results side by side, to choose from
+//   off-review.txt (barcodes, one per line)         16.0: review/off-<barcode>.jpg — every photo
+//                                                   of that product on Open Food Facts (or Open
+//                                                   Products Facts), numbered, to choose an o: source
 //
 // 16.0 — o:<barcode>/<image number>: a product's own photo on Open Food Facts (the free food
 // database; product photos are CC BY-SA 3.0) — for drinks Commons has no photo of, e.g. Abu Janna's
@@ -342,6 +345,44 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
   return { credits, state, report }
 }
 
+/** 16.0 — review sheets of products on Open Food Facts: every photo numbered, and what the database says. */
+export async function offReview(codes, { sharp, log = console.log } = {}) {
+  mkdirSync(REVIEW, { recursive: true })
+  for (const code of codes) {
+    let product = null, host = null
+    for (const h of ['world.openfoodfacts.org', 'world.openproductsfacts.org']) {
+      try {
+        const j = await http(`https://${h}/api/v2/product/${code}.json?fields=product_name,brands,quantity,categories,labels,ingredients_text,images,nutriments`)
+        if (j && j.status === 1 && j.product) { product = j.product; host = h; break }
+      } catch (e) { log('off-review ' + code + ' @' + h + ': ' + e.message) }
+    }
+    if (!product) { log('off-review: ' + code + ' not found'); continue }
+    const ids = Object.keys(product.images || {}).filter(k => /^\d+$/.test(k)).sort((a, b) => a - b).slice(0, 24)
+    const imgHost = host.includes('openproductsfacts') ? 'images.openproductsfacts.org' : 'images.openfoodfacts.org'
+    const tiles = []
+    for (const id of ids) {
+      try {
+        const b = await http(`https://${imgHost}/images/products/${offPath(code)}/${id}.400.jpg`, { binary: true })
+        const label = Buffer.from(`<svg width="200" height="26"><rect width="200" height="26" fill="#000" opacity=".7"/><text x="8" y="19" font-size="18" font-family="sans-serif" fill="#fff">#${id} ${String((product.images[id] || {}).uploader || '').replace(/[<&>]/g, '').slice(0, 14)}</text></svg>`)
+        tiles.push(await sharp(b, { failOn: 'none' }).rotate().resize(200, 260, { fit: 'cover' }).composite([{ input: label, top: 0, left: 0 }]).jpeg({ quality: 72 }).toBuffer())
+      } catch (e) { log('off-review image ' + code + '/' + id + ': ' + e.message) }
+    }
+    if (tiles.length) {
+      const cols = Math.min(6, tiles.length), rows = Math.ceil(tiles.length / cols)
+      await sharp({ create: { width: cols * 204, height: rows * 264, channels: 3, background: '#222' } })
+        .composite(tiles.map((t, i) => ({ input: t, left: (i % cols) * 204, top: Math.floor(i / cols) * 264 }))).jpeg({ quality: 74 }).toFile(join(REVIEW, 'off-' + code + '.jpg'))
+    }
+    const n = product.nutriments || {}
+    writeFileSync(join(REVIEW, 'off-' + code + '.txt'), [
+      'host: ' + host, 'name: ' + (product.product_name || ''), 'brands: ' + (product.brands || ''), 'quantity: ' + (product.quantity || ''),
+      'categories: ' + (product.categories || ''), 'labels: ' + (product.labels || ''), 'ingredients: ' + (product.ingredients_text || ''),
+      'per 100: kcal ' + (n['energy-kcal_100g'] ?? '?') + ' · sugars ' + (n.sugars_100g ?? '?') + ' · caffeine ' + (n.caffeine_100g ?? '?') + ' · sodium ' + (n.sodium_100g ?? '?'),
+      'images: ' + ids.join(' '),
+    ].join('\n') + '\n')
+    log('off-review: ' + code + ' — ' + tiles.length + ' photos')
+  }
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const sharp = createRequire(process.env.SHARP_FROM ? join(resolve(process.env.SHARP_FROM), 'x.js') : import.meta.url)('sharp')
   const { PHOTO_ROWS } = await import(pathToFileURL(join(front, 'src', 'lib', 'photos', 'manifest.js')).href)
@@ -356,6 +397,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const candidates = existsSync(cfile) ? readFileSync(cfile, 'utf8').split(/\s+/).map(s => s.trim()).filter(s => s && !s.startsWith('#')) : []
   const only = opt('--only') ? opt('--only').split(',') : null
   const { report } = await run({ rows: PHOTO_ROWS, credits, state, force: flag('--force'), only, candidates, sharp })
+  const ofile = join(here, 'off-review.txt')
+  if (existsSync(ofile)) await offReview(readFileSync(ofile, 'utf8').split(/\s+/).map(x => x.trim()).filter(x => /^\d{8,14}$/.test(x)), { sharp })
   const sorted = Object.fromEntries(Object.keys(credits).sort().map(k => [k, credits[k]]))
   const lines = o => '{\n' + Object.entries(o).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n'
   writeFileSync(CREDITS, lines(sorted))
