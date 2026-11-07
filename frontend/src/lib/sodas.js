@@ -182,6 +182,17 @@ const ROWS = [
   ['abujannacherry', 'fruit', 'Abu Janna Cherry & Vanilla', 48, 12, 0, 8, '#c8383a', '#c62828', '#fff1c1', ''],
   ['abujannaberry', 'fruit', 'Abu Janna Wild Berry', 48, 12, 0, 8, '#d23f86', '#e0218a', '#7b2cbf', ''],
   ['wildlion', 'energy', 'Wild Lion Energy', 46, 11, 32, 40, '#f5c542', '#3e2723', '#ff8f00', 'e'],
+  // 17.0 — strong drinks: Sting's red Berry Blast, Prime (the energy can — 200 mg of caffeine in 355 ml — and the
+  // caffeine-free Hydration), Red Bull's Blue Edition, Celsius (200 mg, no sugar) and three more 0.0 % malts —
+  // Holsten, Bavaria and Laziza. Usual values of their kind; the can's label wins.
+  ['stingberry', 'energy', 'Sting Berry Blast', 50, 12.5, 29, 30, '#e3245b', '#d7263d', '#ff8fb1', 'e'],
+  ['primeenergy', 'energy', 'Prime Energy', 3, 0, 56, 14, '#bfe9ff', '#1d2b53', '#ff3b8d', 'ze', ['can', 355]],
+  ['redbullblue', 'energy', 'Red Bull Blue Edition', 46, 11, 32, 40, '#9cc3ff', '#1e3a8a', '#2f6fdf', 'e'],
+  ['celsius', 'energy', 'Celsius', 3, 0, 56, 0, '#ffe08a', '#e53935', '#ffffff', 'ze', ['can', 355]],
+  ['primehydration', 'sport', 'Prime Hydration', 4, 0.4, 0, 2, '#a7ecff', '#2b2d42', '#ffd166', 'zx', ['bottle', 500]],
+  ['holsten', 'malt', 'Holsten Malt (0.0 %)', 26, 5.5, 0, 6, '#d9a441', '#1b5e20', '#f2e3b3', ''],
+  ['bavaria', 'malt', 'Bavaria 0.0 % Malt', 24, 5, 0, 6, '#e3b04b', '#0d47a1', '#ffffff', ''],
+  ['laziza', 'malt', 'Laziza Malt', 28, 6, 0, 8, '#cf9b3f', '#c62828', '#ffe082', ''],
   ['mintlemon', 'home', 'Mint & lemon soda', 18, 4.5, 0, 8, '#d4f5a3', '#30d158', '#ffe14d', 'mli'],
   ['mojito', 'home', 'Virgin mojito', 35, 8.5, 0, 8, '#c8f08f', '#2fbf71', '#d6ff7a', 'mli'],
   ['mojitoblue', 'home', 'Blue mojito', 45, 11, 0, 8, '#36c5f0', '#1f8fe0', '#bff1ff', 'mli'],
@@ -253,6 +264,9 @@ export const SODA_SWAP = {
   freshlime: 'mintlemon', tamarindsoda: 'noomisoda', pinklemonade: 'mintlemon', passionmojito: 'mintlemon', kiwimojito: 'mintlemon', pinemojito: 'mintlemon',
   liptonpeach: 'liptonzero', liptonlemon: 'liptonzero', liptonmango: 'liptonzero', liptongreen: 'liptonzero', fuzetea: 'liptonzero', fuzetealemon: 'liptonzero',
   arizona: 'icedteahome', gatorade: 'gatoradezero', gatoradeorange: 'gatoradezero', gatoradeblue: 'gatoradezero', powerade: 'poweradezero',
+  // 17.0
+  stingberry: 'redbullsf', redbullblue: 'redbullsf', primeenergy: 'primehydration', celsius: 'electrolyte', primehydration: 'electrolyte',
+  holsten: 'sparkling', bavaria: 'sparkling', laziza: 'sparkling',
 }
 // 12.0: the sugar-free twins that came later
 Object.assign(SODA_SWAP, { kinza: 'kinzadiet', mdew: 'mdewdiet', fanta: 'fantazero', powerhorse: 'powerhorsezero', tonic: 'tonicdiet', gingerale: 'gingeralediet' })
@@ -379,6 +393,9 @@ const ALIAS = {
   fouru: 'for you foryou فور يو فوريو', threestars: '3 stars 3stars three star ثري ستارز ثري ستار 3 ستارز 3 ستار',
   abujannalm: 'ابو جنه ليمون نعناع', abujannagazoz: 'ابو جنه كازوز گازوز نعناع علكه mint gum', abujannaapple: 'ابو جنه تفاح اخضر',
   abujannapassion: 'ابو جنه باشن فروت ماراكويا', abujannacherry: 'ابو جنه كرز فانيلا', abujannaberry: 'ابو جنه توت بري', wildlion: 'وايلد لايون', k9: 'k 9', k9perf: 'k 9',
+  // 17.0
+  stingberry: 'ستنك ستينغ ستنج احمر بيري', primeenergy: 'برايم طاقه', primehydration: 'برايم هايدريشن', redbullblue: 'ريد بول ردبول ازرق',
+  celsius: 'سيلسيوس', holsten: 'هولستن', bavaria: 'بافاريا', laziza: 'لذيذه لزيزه',
 }
 /**
  * The soft drinks that match: a search (name in both languages, its kind, its other spellings and —

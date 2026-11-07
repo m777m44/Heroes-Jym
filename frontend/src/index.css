@@ -4997,3 +4997,23 @@ html[data-motion=reduce] .kf{animation:none}
 @media (prefers-reduced-motion: reduce){.ud-card,.ud-mini{animation:none}.ud-bar.live::after,.ud-badge.downloading .icn{animation:none}}
 html[data-motion="reduce"] .ud-card,html[data-motion="reduce"] .ud-mini{animation:none}
 html[data-motion="reduce"] .ud-bar.live::after,html[data-motion="reduce"] .ud-badge.downloading .icn{animation:none}
+/* 17.0 — the Rooba corner's home rooba maker (components/kitchen/RoobaMaker.jsx) */
+.rm{display:flex;flex-direction:column;gap:10px;margin:0 0 12px;
+  background:linear-gradient(125deg,color-mix(in srgb,#e9dcc0 22%,var(--surface)),var(--surface) 72%)}
+.rm-head{display:flex;align-items:center;gap:12px}
+.rm-head .grow{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rm-head b{font-size:16px;font-weight:600}
+.rm-ic{position:relative;flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:#5b4421;
+  background:radial-gradient(circle at 35% 30%,#fffaf0,#efe2c6)}
+.rm-ic .icn{width:22px;height:22px;position:relative;z-index:1}
+.rm-ic svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+[dir="rtl"] .rm-ic svg{transform:rotate(-90deg) scaleY(-1)}
+.rm-track{fill:none;stroke:rgba(0,0,0,.12);stroke-width:3}
+.rm-fill{fill:none;stroke:#c9a96e;stroke-width:3.4;stroke-linecap:round;stroke-dasharray:119.4;transition:stroke-dashoffset .6s var(--ease)}
+.rm-chilling .rm-fill{stroke:var(--teal)}
+.rm-set .rm-ic,.rm-ready .rm-ic{background:radial-gradient(circle at 35% 30%,#eafff0,#bdf0cb);color:#13693a}
+.rm-hours{display:flex;flex-wrap:wrap;gap:6px}
+.rm-hours .chip.on{background:#c9a96e;color:#1c1408}
+.rm-tip{margin:0}
+.rm-btns{display:flex;gap:8px}
+.rm-btns .btn{flex:1;width:auto}

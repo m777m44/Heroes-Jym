@@ -74,6 +74,13 @@ export const TPL = {
   patties: ['Shape into flat patties.', ''],
   foldTriangles: ['Fill the dough strips and fold them into triangles.', ''],
   kleicha: ['Roll the dough thin, spread the date paste, roll it up and slice.', ''],
+  // ---- 17.0: rooba at home
+  milkHeat: ['Heat the milk until it almost boils (85–90 °C), stirring now and then.', ''],
+  milkCool: ['Let it cool until you can keep a finger in it for ten seconds (about 43–45 °C).', ''],
+  starter: ['Stir in the starter gently — a spoon of rooba for every cup of milk: {0}.', 'l'],
+  incubate: ['Cover, wrap in a towel and leave it somewhere warm without moving it for {0}.', 'h'],
+  fridgeSet: ['Chill in the fridge for {0} — it sets firm and the taste rounds out.', 'h'],
+  keepStarter: ['Keep two spoons aside: they start the next batch.', ''],
 }
 /** Every template sentence (for the locale tests). */
 export const TPL_TEXTS = Object.values(TPL).map(x => x[0])

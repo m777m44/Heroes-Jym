@@ -143,6 +143,9 @@ const ROWS = [
   ['guava', 'fruit', 'Guava', 68, 2.6, 14.3, 1, 8.9, 0.6, 'piece', 'piece:55', 0.81, ''],
   ['apricotfresh', 'fruit', 'Fresh apricots', 48, 1.4, 11.1, 0.4, 9.2, 0.6, 'piece', 'piece:35', 0.86, ''],
   ['cashews', 'nuts', 'Cashews', 553, 18, 30, 44, 5.9, 0.55, 'g', 'handful:30', 0, 'n'],
+  // 17.0
+  ['basilseeds', 'nuts', 'Basil seeds (bizr rihan)', 460, 15, 54, 19, 1.5, 0.65, 'tsp', 'tsp:4,tbsp:12', 0, ''],
+  ['zahourat', 'tea', 'Zahourat (dried flower blend)', 230, 5, 45, 2, 0, 0.3, 'tbsp', 'tbsp:3,tsp:1', 0, ''],
 ]
 const VOL = { tsp: 5, tbsp: 15, cup: 240 }
 export const DING = ROWS.map(([id, cat, name, kcal, p, c, f, s, d, def, units, w, fl]) => ({
@@ -338,6 +341,9 @@ const STORY = {
   jawafa: 'Pink, thick and fragrant — a juice-shop favourite.',
   fustuqmilk: 'Pistachios blended into cold milk, as in the sweet shops of Baghdad.',
   dibisrashimilk: 'Iraq’s favourite pair — date syrup and tahini — in a glass of milk.',
+  // 17.0
+  bizrrihan: 'The seeds swell into little pearls in the water — a summer and Ramadan drink of Iraqi homes and juice stands.',
+  zahourat: 'A spoon of dried flowers from the attar’s shop — rose, chamomile, hibiscus and lemon balm — for colds and calm evenings.',
 }
 export const STORY_TEXTS = Object.values(STORY)
 
@@ -813,6 +819,19 @@ export const DRINKS = [
   D('rosecooler', 'Rose & lemon cooler', ['hydrate', 'calm'], { col: '#ffc9d6', min: 3, w: 'hot' },
     [['water', 250, 'ml'], ['rosewater', 1, 'tsp'], ['lemonjuice', 15, 'ml'], ['honey', 1, 'tsp'], ['ice', 75, 'g', 'o']],
     [['mix', ['water', 'rosewater', 'lemonjuice', 'honey']], ['serveCold']]),
+  // 17.0: rooba drinks, and Iraqi summer and winter classics
+  D('lassi', 'Sweet lassi', ['digest', 'protein'], { col: '#f7f2e4', min: 3, w: 'hot' },
+    [['yogurt', 200, 'g'], ['milk', 60, 'ml'], ['sugar', 2, 'tsp'], ['cardamom', 1, 'pod', 'o'], ['ice', 75, 'g', 'o']],
+    [['blend', ['yogurt', 'milk', 'sugar', 'cardamom']], ['blendIce'], ['serveCold']]),
+  D('roobadates', 'Rooba & date smoothie', ['energy', 'protein'], { col: '#d9b98b', min: 5, w: 'am' },
+    [['yogurt', 150, 'g'], ['dates', 3, 'piece'], ['milk', 100, 'ml'], ['cinnamon', 1, 'pinch', 'o'], ['ice', 75, 'g', 'o']],
+    [['pit', ['dates']], ['blend', ['yogurt', 'dates', 'milk', 'cinnamon']], ['blendIce'], ['serveCold']]),
+  D('bizrrihan', 'Basil seed drink (sharbat bizr rihan)', ['iraqi', 'hydrate', 'digest'], { col: '#f3e3ea', min: 20, w: 'hot' },
+    [['basilseeds', 1, 'tsp'], ['water', 250, 'ml'], ['sugar', 2, 'tsp'], ['rosewater', 1, 'tsp'], ['lemonjuice', 10, 'ml', 'o'], ['ice', 75, 'g', 'o']],
+    [['mix', ['basilseeds', 'water']], ['rest', 15], ['stirIn', ['sugar', 'rosewater', 'lemonjuice']], ['serveCold']]),
+  D('zahourat', 'Zahourat (dried flower tea)', ['iraqi', 'calm', 'immune'], { t: 'h', g: 'mug', col: '#c4655a', min: 8, w: 'pm' },
+    [['water', 250, 'ml'], ['zahourat', 1, 'tbsp', S], ['honey', 1, 'tsp', 'o']],
+    [['boil'], ['steep', 5, ['zahourat']], ['strain'], ['sweeten', ['honey']]]),
 ]
 export const DRINK_BY_ID = Object.fromEntries(DRINKS.map(d => [d.id, d]))
 export const DRINK_NAMES = DRINKS.map(d => d.name)

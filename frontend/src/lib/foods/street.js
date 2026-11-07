@@ -10,6 +10,7 @@
 //   buildOf(id)   a fresh copy of a food's ingredients, or null
 //   builtValues   the values a built food gets: { kcal, p, c, f, na, g }
 import { ING_BY_ID, itemsTotals } from '../kitchen.js'
+import { BUILDS_17 } from './builds17.js'
 
 export const BUILDS = {
   // ---- burgers --------------------------------------------------------------------------------
@@ -85,6 +86,8 @@ export const BUILDS = {
   chickpeas: 'chickpeas 160, lemon 10, cumin 1, salt 1',
   arnoos: 'corn 130, butter 3, salt 0.5',
   corncup: 'corn 150, butter 10, salt 0.5',
+  // 17.0: the Rooba corner's dishes (builds17.js)
+  ...BUILDS_17,
 }
 
 const r1 = v => Math.round(v * 10) / 10

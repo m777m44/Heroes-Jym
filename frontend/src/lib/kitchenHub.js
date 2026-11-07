@@ -26,15 +26,17 @@ import { isFit } from './foodDetails.js'
 import { FISH_IDS, FISH_RECIPES, ICE_IDS } from './foods/iraq15.js'
 import { RG_OF } from './regions.js'
 import { CAF_F } from './caffeine.js'
+import { ROOBA_UIDS, ROOBA_MILK } from './foods/rooba17.js'
+import { HOT_17, MILK_17, STRONG_IDS } from './foods/strong17.js'
 
 export { isFit, CAF_F }
 
 // ---- which foods are drinks, and what kind ------------------------------------------------------
 const HOT_F = new Set(['teasugar', 'tea', 'arabiccoffee', 'coffeemilk', 'cappuccino', 'hotchocolate', 'noomibasra', 'sahlab', 'karkade', 'greentea',
-  'nescafe3in1', 'latte', 'mocha', 'caramelmacchiato', 'karak', 'espresso', 'americano', 'flatwhite'])
+  'nescafe3in1', 'latte', 'mocha', 'caramelmacchiato', 'karak', 'espresso', 'americano', 'flatwhite', ...HOT_17])
 const MILK_F = new Set(['milk', 'lowfatmilk', 'laban', 'shinena', 'bananashake', 'datemilk', 'proteinshake', 'chocmilk', 'strawberrymilk', 'bananamilk',
   'milkshakechoc', 'milkshakevanilla', 'milkshakestraw', 'falooda', 'frappuccino', 'icedlatte', 'spanishlatte', 'frappe', 'bubbletea', 'avocadojuice',
-  'smokedlaban'])
+  'smokedlaban', ...MILK_17, ...ROOBA_MILK])
 const SOFT_F = new Set(['soda', 'dietsoda'])
 const ENERGY_F = new Set(['energydrink'])
 /** A food that is drunk (the drinks shelf, and the milks, coffees and shakes on other shelves). */
@@ -110,6 +112,9 @@ export const SECTIONS = [
   // 15.0: Iraq's fish and seafood — masgouf, shabbout, bunni, gattan, zubaidi, sbour, shrimp — and its fish dishes
   { key: 'fish', group: 'food', part: 'cook', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'masgouf',
     test: x => (x.kind === 'F' && FISH_IDS.has(x.id)) || (x.kind === 'R' && FISH_RECIPES.has(x.id)) },
+  // 17.0: the Rooba corner — every rooba (yogurt), what is cooked in it and drunk of it (lib/foods/rooba17.js)
+  { key: 'rooba', group: 'food', part: 'cook', name: 'Rooba & yogurt', icon: 'milk', color: '#d9c7a1', ph: 'roobaghanam',
+    test: x => ROOBA_UIDS.has(x.uid) && x.kind !== 'D' && x.kind !== 'S' && !x.drink },
   { key: 'fit', group: 'food', part: 'cook', name: 'Gym & healthy meals', icon: 'dumbbell', color: 'var(--green)', ph: 'chickenveg', test: x => (x.kind === 'R' || (x.kind === 'F' && !x.drink)) && x.fit },
   // 14.0: street food — burgers, shawarma, falafel, kebab and tikka sandwiches, Iraqi laffat, pizza and
   // manakish, grills and street snacks; most of it opens in the meal builder (lib/foods/street.js)
@@ -136,6 +141,12 @@ export const SECTIONS = [
   { key: 'milkdrinks', group: 'drinks', part: 'drinks', name: 'Milk drinks & shakes', icon: 'milk', color: 'var(--teal)', ph: 'bananashake', test: x => (x.kind === 'D' && !x.hot && x.milky) || (x.kind === 'F' && MILK_F.has(x.id)) },
   { key: 'soft', group: 'drinks', part: 'drinks', name: 'Soft drinks & iced tea', icon: 'bubbles', color: 'var(--red)', ph: 'pepsi', test: x => (x.kind === 'S' && !['energy', 'sport'].includes(x.cat)) || (x.kind === 'F' && SOFT_F.has(x.id)) },
   { key: 'energy', group: 'drinks', part: 'drinks', name: 'Energy & sports drinks', icon: 'bolt', color: 'var(--yellow)', ph: 'monster', test: x => (x.kind === 'S' && ['energy', 'sport'].includes(x.cat)) || (x.kind === 'F' && ENERGY_F.has(x.id)) },
+  // 17.0: strong drinks — every energy drink, strong coffee and the gym's drinks (lib/foods/strong17.js)
+  { key: 'strong', group: 'drinks', part: 'drinks', name: 'Strong drinks', icon: 'bolt', color: '#ff375f', ph: 'redeye',
+    test: x => (x.kind === 'S' && x.cat === 'energy') || (x.kind === 'F' && STRONG_IDS.has(x.id)) },
+  // 17.0: the Rooba corner's drinks — laban, shineena, mastaw, dew, lassi, kefir, doogh
+  { key: 'roobadrinks', group: 'drinks', part: 'drinks', name: 'Laban & yogurt drinks', icon: 'milk', color: '#c9b48a', ph: 'kefirglass',
+    test: x => ROOBA_UIDS.has(x.uid) && (x.kind === 'D' || x.kind === 'S' || !!x.drink) },
   { key: 'iraqidrinks', group: 'drinks', part: 'drinks', name: 'Iraqi drinks', icon: 'palm', color: 'var(--green)', ph: 'arabiccoffee', test: x => x.kind === 'D' && x.iq },
 ]
 export const SECTION_BY_KEY = Object.fromEntries(SECTIONS.map(s => [s.key, s]))
@@ -155,6 +166,9 @@ export const FEATURED = [
   { key: 'fish', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'fish', to: '/kitchen/s/fish', secs: ['fish'] },
   // 16.0: Abu Janna's drinks (and the fish of his Mosul restaurant) — the soft drinks page, his brand
   { key: 'abujanna', name: 'Abu Janna drinks', icon: 'starFill', color: '#f5b301', ph: 'abujannapassion', to: '/sodas?brand=abujanna', secs: [], brand: 'abujanna' },
+  // 17.0: the Rooba corner (with the home rooba maker) and strong drinks
+  { key: 'rooba', name: 'Rooba corner', icon: 'milk', color: '#c9a96e', ph: 'roobajamoos', to: '/kitchen/s/rooba', secs: ['rooba', 'roobadrinks'] },
+  { key: 'strong', name: 'Strong drinks', icon: 'bolt', color: '#ff375f', ph: 'redeye', to: '/kitchen/s/strong', secs: ['strong'] },
 ]
 /** How many different items are behind a featured door. */
 export function featuredCount(f) {

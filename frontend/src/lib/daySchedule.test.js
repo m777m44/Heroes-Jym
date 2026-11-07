@@ -64,7 +64,7 @@ describe('daySchedule', () => {
     expect(dayReminderId(1, 14)).toBe(7529)
     expect(dayReminderId(2, 0)).toBe(8100)
     expect(dayReminderId(6, 14)).toBe(8174)
-    const taken = [[1000, 1099], [1100, 1199], [3000, 3099], [7001, 7399], [7400, 7459], [7600, 7699], [7700, 7799], [8000, 8059]]
+    const taken = [[1000, 1099], [1100, 1199], [3000, 3099], [7001, 7399], [7400, 7459], [7600, 7699], [7700, 7799], [8000, 8059], [8600, 8609]]   // 17.0: 8601–8602 the rooba maker
     expect(ids.some(id => taken.some(([a, b]) => id >= a && id <= b))).toBe(false)
   })
 })

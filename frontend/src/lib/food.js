@@ -333,7 +333,9 @@ export function servingText(f, U) {
   if (!f || f.custom || !f.unit) return t('1 serving')
   const SERV = { piece: '1 piece', plate: '1 plate', bowl: '1 bowl', cup: '1 cup', glass: '1 glass', slice: '1 slice', tbsp: '1 tablespoon', tsp: '1 teaspoon', handful: '1 handful', can: '1 can', serving: '1 serving', skewer: '1 skewer', scoop: '1 scoop',
     // 13.0: packets, bars and sticks from the shop
-    pack: '1 pack', bag: '1 bag', bar: '1 bar', stick: '1 stick', box: '1 box' }
+    pack: '1 pack', bag: '1 bag', bar: '1 bar', stick: '1 stick', box: '1 box',
+    // 17.0: drinks in their own vessels
+    bottle: '1 bottle', mug: '1 mug', shaker: '1 shaker' }
   const g = f.g > 0 ? ' · ' + f.g + ' ' + U(f.ml ? 'ml' : 'g') : ''
   return t(SERV[f.unit] || '1 serving') + g
 }

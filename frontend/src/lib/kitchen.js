@@ -316,6 +316,8 @@ const TIP = {
   veg: 'Load up on the vegetables and go easy on the rice.',
   protein: 'High in protein and light on fat — a good meal after training.',
   prep: 'Cook once, eat for three days: make a few boxes at the weekend.',
+  // 17.0
+  rooba: 'Buffalo or full-fat milk gives a thick rooba with cream on top. Longer in the warmth = more sour.',
 }
 export const TIP_TEXTS = Object.values(TIP)
 export const RECIPES = [
@@ -363,6 +365,9 @@ export const RECIPES = [
   R('honeyyogurt', 'Yogurt with honey and walnuts', 'sb', 2, [['yogurt', 200], ['honey', 15], ['walnuts', 15, 1]], ['mix']),
   R('bananashake', 'Banana milkshake', 'sb', 5, [['milk', 250], ['banana', 120], ['dates', 16, 1]], ['shake']),
   R('datesyogurt', 'Dates with yogurt', 's', 2, [['dates', 40], ['yogurt', 150]], ['mix']),
+  // 17.0: rooba made at home (the Rooba corner has its timer — components/kitchen/RoobaMaker.jsx)
+  R('roobahome', 'Homemade rooba (yogurt)', 'bs', 20, [['milk', 250], ['yogurt', 15]],
+    [['milkHeat'], ['milkCool'], ['starter', ['yogurt']], ['incubate', 7], ['fridgeSet', 4], ['keepStarter']], { iq: true, tip: 'rooba' }),
   // 9.0 — more Iraqi home cooking, each with steps and calories per serving
   R('masgouf', 'Masgouf (grilled carp)', 'ld', 60, [['fish', 250], ['onion', 50], ['tomato', 100], ['lemon', 15], ['turmeric', 1], ['tamarind', 10, 1], ['oliveoil', 5], ['bread', 60, 1]],
     [['masgouf'], ['grillFor', 30], ['serveWith', ['onion', 'tomato', 'lemon', 'bread']]], { iq: true, tip: 'fish' }),

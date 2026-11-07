@@ -32,6 +32,7 @@ import { foodGoalOf, dayTotals } from '../lib/food.js'
 import { fishThisWeek } from '../lib/dayIntake.js'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Segmented, SearchField } from '../components/ui.jsx'
+import RoobaMaker from '../components/kitchen/RoobaMaker.jsx'
 
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const SPECIAL = {
@@ -52,6 +53,11 @@ const EXTRA = {
   milkdrinks: { icon: 'blender', tint: 'var(--green)', title: 'Healthy drinks library', sub: 'DRINKS', to: '/drinks' },
   iraqidrinks: { icon: 'palm', tint: 'var(--green)', title: 'Healthy drinks library', sub: 'DRINKS', to: '/drinks?c=iraqi' },
   ready: { icon: 'magnifier', tint: 'var(--teal)', title: 'Food database', sub: 'Every food on one list — search and sort', to: '/foods' },
+  // 17.0: the Rooba corner and its drinks link to each other; strong drinks open the caffeine picture
+  rooba: { icon: 'milk', tint: '#c9a96e', title: 'Laban & yogurt drinks', sub: 'Shineena, mastaw, smoked laban, lassi, kefir and doogh', to: '/kitchen/s/roobadrinks' },
+  roobadrinks: { icon: 'milk', tint: '#c9a96e', title: 'Rooba corner', sub: 'Every rooba, the dishes cooked in it — and making it at home', to: '/kitchen/s/rooba' },
+  strong: { icon: 'bolt', tint: '#ff375f', title: 'Caffeine in your body', sub: 'How much is in you now, and when it drops low enough for sleep',
+    on: () => import('../components/CaffeineNow.jsx').then(m => m.caffeineSheet()) },
 }
 
 function Extra({ k }) {
@@ -127,6 +133,7 @@ function Section({ k }) {
     </div>}
     <Extra k={k} />
     {k === 'fish' && <FishWeek St={St} />}
+    {k === 'rooba' && <RoobaMaker />}
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} type="search" enterKeyHint="search"
       placeholder={t('Search in {0}', t(sec.name))} aria-label={t('Search in {0}', t(sec.name))} />
     {aisles.length > 0 && <div className="dk-chips scroll" role="tablist" aria-label={t('Aisles')}>

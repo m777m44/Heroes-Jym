@@ -1,5 +1,5 @@
-// 14.0 (16.0: 1,373 items) — what the Kitchen's door shows (the Foods screen, Home): three of its real photos and how
+// 14.0 (17.0: 1,425 items) — what the Kitchen's door shows (the Foods screen, Home): three of its real photos and how
 // many foods, dishes and drinks it holds — kept small, so those screens don't load the Kitchen.
 // Kept in step with lib/kitchenHub.js by the tests (kitchen14.test.js).
 export const KITCHEN_FACES = ['dolma', 'kebab', 'iraqitea']
-export const KITCHEN_TOTAL = 1373
+export const KITCHEN_TOTAL = 1425
