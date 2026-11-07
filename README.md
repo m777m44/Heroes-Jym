@@ -15,7 +15,7 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 <br>
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-a3e635?style=flat-square)](LICENSE)
-![Version](https://img.shields.io/badge/version-15.0.0-a3e635?style=flat-square)
+![Version](https://img.shields.io/badge/version-16.0.0-a3e635?style=flat-square)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-%F0%9F%8F%A0-60a5fa?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-a78bfa?style=flat-square)
 ![React](https://img.shields.io/badge/React-19-38bdf8?style=flat-square&logo=react&logoColor=white)
@@ -28,6 +28,21 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 </div>
 
 <br>
+
+> ### ⭐ New in 16.0 — Abu Janna’s drinks, Made in Iraq, caffeine in your body, and an app less than half the size
+>
+> **Abu Janna’s drinks** get their own page (Soft drinks, or Kitchen → *Abu Janna drinks*): the **4U**
+> and **Three Stars** energy drinks and his **soft drink in six flavours** (lemon & mint, gazoz, green
+> apple, passion fruit, cherry & vanilla, wild berry) — each with a real photo of its can from Open Food
+> Facts — and the masgouf, fried fish and mutabbaq of his Mosul restaurant.
+> **Made in Iraq**: Iraq’s drink makers — Abu Janna, Dijla (RC Cola, Wild Lion), Karwanchi (K9), ASPI
+> RASH, Pepsi bottled in Erbil and Baghdad — and a filter for them. **Caffeine in your body**: how much
+> is in you right now, hour by hour, when it drops under 50 mg, what is left at your bedtime, today
+> against the limit for your age (about 100 mg under 18), the last 7 days and your days in a row
+> without an energy drink — and every energy drink or cola shows what it would do before you log it.
+> **A much smaller app**: the offline APK is about **70 MB instead of 181 MB** — the exercise
+> animations are small MP4 videos (smoother, lighter on the battery). Search finds ابو جنه, أبو جنة,
+> فور يو or ٣ ستارز however you write it. See the [changelog](CHANGELOG.md#v1600--2026-11-07).
 
 > ### 🎨 New in 15.0 — a new look, Iraq city by city, and every photo opens big
 >
@@ -351,6 +366,14 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 
 متتبّع للتمارين والخطوات ووزن الجسم تستضيفه بنفسك: بياناتك على خادمك أنت، تسجيل دخول
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
+
+**الجديد في الإصدار 16.0:** **مشروبات أبو جنة** بصفحة خاصة (المشروبات الغازية، أو المطبخ ← مشروبات أبو جنة):
+**فور يو** و**ثري ستارز** ومشروبه **الغازي بست نكهات** (ليمون ونعناع، كازوز، تفاح أخضر، باشن فروت، كرز وفانيلا، توت بري) — كل وحدة بصورة حقيقية لعلبتها — ووياها
+المسكوف والسمك المقلي والمطبّك من مطعمه بالموصل. **صناعة عراقية**: أبو جنة، دجلة (آر سي كولا ووايلد لايون)،
+كاروانچي (كي ناين)، اسبي رش، وبيبسي اللي تتعبّأ بأربيل وبغداد — مع فلتر خاص. **الكافيين بجسمك**: شكد بجسمك هسه
+وساعة بساعة، إيمتى ينزل تحت 50 ملغ، شكد يبقى وقت نومك، كافيين اليوم مقارنة بحد عمرك (حوالي 100 ملغ دون 18 سنة)،
+آخر 7 أيام وأيامك بلا مشروب طاقة — وكل مشروب طاقة أو كولا يبيّن تأثيره قبل لا تسجّله. **تطبيق أصغر بكثير**:
+نسخة الأوفلاين صارت حوالي **70 ميغا بدل 181** — حركات التمارين فيديوهات صغيرة، أنعم وأخف على البطارية.
 
 **الجديد في الإصدار 15.0:** **شكل جديد** — ثيم «منتصف الليل» وعشرة ثيمات «أنيق 15»، بطاقات أنعم وأزرار مضيئة وشريط سفلي
 زجاجي عائم. **اضغط على صورة أي أكلة أو مشروب** وتنفتح كبيرة مع كل تفاصيلها: منين أصلها بالعراق، السعرات وتوزيع البروتين

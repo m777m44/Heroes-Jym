@@ -3,6 +3,67 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v16.0.0 — 2026-11-07
+
+**Abu Janna’s drinks and Iraq’s own drink makers; caffeine in your body, hour by hour, with your
+bedtime; and an offline app less than half the size — about 70 MB instead of 181 MB.**
+*مشروبات أبو جنة وشركات المشروبات العراقية؛ الكافيين بجسمك ساعة بساعة مع وقت نومك؛ وتطبيق أوفلاين صار أقل
+من نص حجمه — حوالي 70 ميغا بدل 181.*
+
+(v15.0.0 was merged but never published as an APK: this release carries everything below and 15.0.)
+
+### ⭐ Abu Janna (أبو جنة)
+- **His own page** — Soft drinks → *Made in Iraq* → Abu Janna, or Kitchen → *Abu Janna drinks*
+  (`/sodas?brand=abujanna`): the **4U** energy drink, **Three Stars** (ثري ستارز, the energy drink
+  that came after it) and his **soft drink in six flavours** — **lemon & mint**, **gazoz** (mint &
+  gum), **green apple**, **passion fruit**, **cherry & vanilla** and **wild berry** (330 ml cans, made
+  for him in Mosul by Sahl Nineveh) — and the masgouf, fried fish and mutabbaq of his Mosul restaurant.
+- Every flavour shows **a real photo of its own can** from **Open Food Facts** (barcodes 0729927750910,
+  …0958, …0934, …0972, …0989 — and …0941, wild berry, from its sister **Open Products Facts**, credited
+  to it — CC BY-SA 3.0), with the labels’ numbers where they are
+  readable: lemon & mint 11.5 g sugar per 100 ml, gazoz 45.6 kcal / 11.5 g, passion fruit 51.5 kcal /
+  13 g, 8 mg sodium, no caffeine. The energy drinks keep the usual values of their kind (the label wins).
+- Every drink of his carries a ★ tag that opens his page.
+
+### 🇮🇶 Made in Iraq
+- `lib/brands.js`: Abu Janna (Mosul), **Dijla** (Baghdad, since 1998 — RC Cola and the new **Wild
+  Lion** energy drink), **Karwanchi** (Erbil — K9), **ASPI RASH** (Kurdistan) and **Pepsi in Iraq**
+  (Al Hayat in Erbil and the Baghdad Soft Drinks Company — Pepsi, 7Up, Mirinda, Mountain Dew, Shani,
+  Teem). A row of maker cards on the soft drinks page, a page for each, a *Made in Iraq* filter and
+  a flag on every Iraqi drink.
+- Search knows how people write them: ابو جنه / أبو جنة / Abu Janna, فور يو / فوريو / 4U, ثري ستارز /
+  3 stars / ٣ ستارز (Arabic-Indic digits too) — on the soft drinks page and in the app’s search.
+
+### ⚡ Caffeine in your body
+- `lib/caffeineLive.js`: every coffee, tea, cola and energy drink logged goes in when you had it
+  (absorbed in about 45 minutes) and leaves with a 5-hour half-life — the level **now**, a curve of
+  the day, **when it drops under 50 mg**, **what is left at your bedtime** (My schedule’s, else
+  23:00), today against the **limit for your age** (about 100 mg under 18, 400 mg for adults; over
+  200 mg in one go is flagged), the **last 7 days** with the energy drinks of each day, and the
+  **days in a row without an energy drink**.
+- A card on Home (only while there is caffeine in you or some was logged today), on the soft drinks
+  page and on the Kitchen’s Drinks tab; the full sheet from it or from search (*Caffeine in your
+  body*), with when your last caffeine should be (8 h before bed) and plain facts.
+- **Before you open a can**: every caffeinated soft drink shows today’s caffeine with it and what
+  would still be in you at bedtime — red over your limit, orange when it would cost sleep.
+
+### 🚀 A much smaller, faster app
+- The offline APK carries the **1,324 exercise animations as H.264 MP4 videos** instead of GIFs
+  (`scripts/convert-media.mjs`, run in CI and cached): same 180 × 180 frames and timing, ≈ 126 MB of
+  GIFs → ≈ 12 MB, so the APK is **about 70 MB instead of 181 MB** — and the phone’s video decoder
+  plays them smoother and with less battery than GIFs. A video that ever fails falls back to the GIF
+  from the CDN. CI fails the offline APK above 110 MB.
+- The media’s owner is now named on every animation (**© Gym visual**), as the dataset’s licence asks.
+- Builds that take pictures from a CDN open the connection while the app starts (preconnect); the
+  online app downloads its updates six files at a time (was four).
+- What’s new shows 15.0’s news too to anyone coming straight from 14.0.
+
+### Checks
+- New `v16.test.js` (brands, search, the caffeine model, Open Food Facts sources, the MP4 names);
+  the Arabic-UI scan renders every maker’s page and the caffeine sheet; Kitchen doors: 9.
+- Version **16.0.0** (versionCode 37); README, website, NOTICE (Gym visual, Open Food Facts),
+  docs/MOBILE.md.
+
 ## v15.0.0 — 2026-11-03
 
 **A new look; Iraq city by city — Tal Afar, Mosul, Najaf & Karbala, Baghdad, Basra, Kurdistan,

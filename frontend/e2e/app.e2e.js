@@ -132,7 +132,7 @@ test('the Kitchen: six doors, street food, a real photo and the meal builder', a
   await page.locator('.fk-hero').click()                                         // the Kitchen's door on the food log
   await expect(page.getByRole('heading', { name: 'Kitchen' })).toBeVisible()
   const doors = page.locator('.kf')
-  await expect(doors).toHaveCount(8)                                              // 15.0: + Iraq city by city, fish
+  await expect(doors).toHaveCount(9)                                              // 15.0: + Iraq city by city, fish; 16.0: + Abu Janna
   await expect(doors.first()).toContainText('Street food')
   await doors.first().click()
   await expect(page.getByRole('heading', { name: 'Street food' })).toBeVisible()
@@ -167,7 +167,8 @@ test('the Kitchen: making Indomie, the drinks tab and a dish of my own', async (
   await page.locator('.sheet-x').last().click()
   await expect(b).toHaveCount(0)
   await open(page, 'kitchen')
-  await page.locator('.kf', { hasText: 'Drinks' }).click()
+  // 16.0: the Kitchen also has an "Abu Janna drinks" door
+  await page.locator('.kf', { hasText: 'Drinks' }).filter({ hasNotText: 'Abu Janna' }).click()
   await expect(page.locator('.ks', { hasText: 'Hot drinks' })).toBeVisible()
   await open(page, 'kitchen/dish')
   await page.getByRole('textbox').first().fill('My test dish')
@@ -207,6 +208,47 @@ test('15.0: a photo opens big with every detail; the food lists close only with 
   await page.locator('.kcity-c', { hasText: 'Tal Afar' }).click()
   await expect(page.getByRole('heading', { name: 'Tal Afar' })).toBeVisible()
   await expect(page.locator('.kc', { hasText: 'Zingil' }).first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('16.0: Abu Janna’s drinks, Made in Iraq, and caffeine in your body before and after a can', async ({ page }) => {
+  const errors = watchErrors(page)
+  // the Kitchen's door opens his page: 4U, Three Stars, his soft drink in six flavours and his restaurant's fish
+  await open(page, 'kitchen')
+  await page.locator('.kf', { hasText: 'Abu Janna drinks' }).click()
+  await expect(page.locator('.sd-bhead h2')).toHaveText('Abu Janna')
+  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(8)
+  await expect(page.locator('.sd-bfood').first()).toBeVisible()
+  // Three Stars: what one can would do to today's caffeine and to bedtime, then log it
+  await page.locator('.sd-card', { hasText: 'Three Stars' }).click()
+  const view = page.locator('.sd-view')
+  await expect(view.locator('.sd-after')).toContainText('mg of caffeine today')
+  await expect(view.locator('.sd-brandtag')).toContainText('Abu Janna')
+  await view.getByRole('button', { name: /^Add / }).click()
+  // the card on the page now has caffeine in it, and its sheet the whole day
+  const card = page.locator('.cf-card')
+  await expect(card).toBeVisible()
+  await expect(card.locator('.cf-today')).toContainText('mg')
+  await card.click()
+  const sheet = page.locator('.cf-sheet')
+  await expect(sheet.locator('.cf-curve')).toBeVisible()
+  // today's doses: the demo's breakfast tea and the can just logged
+  await expect(sheet.locator('.cf-dose-r', { hasText: 'Three Stars' })).toHaveCount(1)
+  await expect(sheet.locator('.cf-week .cf-wd')).toHaveCount(7)
+  await expect(sheet.locator('.cf-streak')).toContainText('An energy drink today')
+  await page.locator('.sheet-x').last().click()
+  // the makers' row, the Made in Iraq filter, and a search written the way people write it
+  await open(page, 'sodas')
+  await expect(page.locator('.sd-brand').first()).toContainText('Abu Janna')
+  // (every Iraqi drink's card carries a "Made in Iraq" badge too — so the filter chip by its row)
+  const iraq = page.locator('.dk-filters .chip', { hasText: 'Made in Iraq' })
+  await iraq.click()
+  await expect(iraq).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(() => page.locator('.sd-grid .sd-card').count()).toBeGreaterThan(15)
+  await iraq.click()
+  await expect(iraq).toHaveAttribute('aria-pressed', 'false')
+  await page.getByPlaceholder('Search soft drinks').fill('ابو جنه')
+  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(8)
   expect(errors).toEqual([])
 })
 

@@ -125,7 +125,8 @@ export async function downloadLive(m, { onProgress = () => {}, signal = null, fe
     onProgress(done, total)
   }
   const worker = async () => { while (i < m.files.length) { if (signal && signal.aborted) throw new Error('cancelled'); await one(m.files[i++]) } }
-  await Promise.all([worker(), worker(), worker(), worker()])
+  // 16.0: six at a time (was four) — the files are small, so more in parallel finishes sooner
+  await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()])
   await Filesystem.writeFile({ path: dir + '/.mj-live.json', data: JSON.stringify({ version: m.version, files: m.files.length, at: Date.now() }), directory: Directory.Data, encoding: 'utf8' })
   const { uri } = await Filesystem.getUri({ path: dir, directory: Directory.Data })
   return decodeURIComponent(uri.replace(/^file:\/\//, ''))

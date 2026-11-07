@@ -28,6 +28,7 @@ import {
   clearPantry, addToShopping, toggleShopping, clearShoppingDone, removeShopping, itemsTotals, saveBuiltMeal, searchIngredients,
 } from '../lib/kitchen.js'
 import Icon from '../components/Icon.jsx'
+import { CaffeineCard } from '../components/CaffeineNow.jsx'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
 import { n0, mealName } from '../components/food/FoodSheets.jsx'
 import { stepText, stepMinutes } from '../lib/recipeText.js'
@@ -481,7 +482,7 @@ function Featured({ onTab }) {
       <Photo k={f.ph} size="m" live alt="" fallback={<span className="ks-none" aria-hidden="true" />} />
       <span className="kf-shade" aria-hidden="true" />
       <span className="kf-ic" aria-hidden="true"><Icon name={f.icon} /></span>
-      <span className="kf-t"><b>{t(f.name)}</b><small>{f.key === 'indomie' ? t('{0} ways', nk(counts[f.key])) : t('{0}+ items', nk(Math.floor(counts[f.key] / 5) * 5))}</small></span>
+      <span className="kf-t"><b>{t(f.name)}</b><small>{f.key === 'indomie' ? t('{0} ways', nk(counts[f.key])) : f.brand ? t('{0} drinks', nk(counts[f.key])) : t('{0}+ items', nk(Math.floor(counts[f.key] / 5) * 5))}</small></span>
     </button>)}
   </div>
 }
@@ -516,6 +517,7 @@ function DrinksTab({ St }) {
   const mine = (St.myDrinks || []).length
   return <>
     <TodayIntake St={St} />
+    <CaffeineCard always />
     <Strip title={t('Recently')} icon="history" items={recent} more="/kitchen/s/recent" />
     <Strip title={t('Favourites')} icon="starFill" items={fav} more="/kitchen/s/fav" />
     <div className="kh-part">

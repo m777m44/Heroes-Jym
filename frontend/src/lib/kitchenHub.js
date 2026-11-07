@@ -16,7 +16,8 @@
 import { FOODS, MARKET_AISLES } from './foodDb.js'
 import { STREET_IDS, STREET_TOP } from './foods/street.js'
 import { DRINKS, drinkNutrition, DING_BY_ID, drinkCaffeine } from './drinks.js'
-import { SODAS, sodaNutrition } from './sodas.js'
+import { SODAS, SODA_BY_ID, sodaNutrition } from './sodas.js'
+import { BRAND_BY_KEY } from './brands.js'
 import { NUTS, nutNutrition, usualGrams } from './nuts.js'
 import { RECIPES, recipeNutrition } from './kitchen.js'
 import { photoKey } from './photos/index.js'
@@ -152,10 +153,13 @@ export const FEATURED = [
   // 15.0: Iraq city by city, and the fish
   { key: 'cities', name: 'Iraq city by city', icon: 'location', color: 'var(--indigo)', ph: 'kubbamosul', to: '/kitchen/s/cities', secs: ['iraqi'], rg: true },
   { key: 'fish', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'fish', to: '/kitchen/s/fish', secs: ['fish'] },
+  // 16.0: Abu Janna's drinks (and the fish of his Mosul restaurant) — the soft drinks page, his brand
+  { key: 'abujanna', name: 'Abu Janna drinks', icon: 'starFill', color: '#f5b301', ph: 'abujannapassion', to: '/sodas?brand=abujanna', secs: [], brand: 'abujanna' },
 ]
 /** How many different items are behind a featured door. */
 export function featuredCount(f) {
   if (f.key === 'indomie') return kitchenItems().filter(x => x.kind === 'F' && x.id.startsWith('indo-')).length
+  if (f.brand) return (BRAND_BY_KEY[f.brand] ? BRAND_BY_KEY[f.brand].sodas : []).filter(id => SODA_BY_ID[id]).length
   if (f.rg) return kitchenItems().filter(x => x.rg).length
   const tests = f.secs.map(k => SECTION_BY_KEY[k].test)
   let n = 0

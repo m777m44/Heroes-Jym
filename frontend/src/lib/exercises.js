@@ -30,16 +30,27 @@ export const allExercises = st => [...(st.customEx || []), ...EXDB]
 // A build can point them somewhere else — the demo build pulls them off a CDN instead of
 // shipping ~140 MB of images into the deployment.
 const IMG_BASE = import.meta.env.VITE_IMG_BASE || 'img/'
-const GIF_BASE = import.meta.env.VITE_GIF_BASE || 'gif/'
+const CDN = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/'
+// 16.0 — VITE_EXV_BASE: the animations are small MP4 videos there (the offline APK: mp4/, made
+// by scripts/convert-media.mjs — a tenth of the GIFs' size, played by the phone's video decoder).
+// The GIFs are then not in the app; should a video ever fail, the GIF comes from the CDN instead.
+export const EXV_BASE = import.meta.env.VITE_EXV_BASE || ''
+const GIF_BASE = import.meta.env.VITE_GIF_BASE || (EXV_BASE ? CDN + 'videos/' : 'gif/')
 export const imgSrc = ex => IMG_BASE + ex.img
 export const gifSrc = ex => GIF_BASE + ex.gif
+/** "0001-abc.gif" → "0001-abc.mp4" (scripts/convert-media.mjs names them the same way). */
+export const videoName = gif => String(gif || '').replace(/\.gif$/i, '') + '.mp4'
+/** The animation as a video, or null when this build has none (then the GIF is shown). */
+export const videoSrc = ex => (EXV_BASE && ex && ex.gif ? EXV_BASE + videoName(ex.gif) : null)
 
 // The offline Android app ships every image and animation inside the APK (2.3): the library
 // works with no internet at all. Should a file ever fail to load there, fall back once to the
 // same pinned dataset on the CDN (only works online). Web builds never do this — a
 // self-hosted instance serves its own media and makes no third-party requests.
 export const OFFLINE_MEDIA = import.meta.env.VITE_OFFLINE_MEDIA === '1'
-const CDN = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/'
+/** 16.0 — the media's owner: the dataset shares it with permission, as long as this is shown. */
+export const MEDIA_CREDIT = '© Gym visual'
+export const MEDIA_CREDIT_URL = 'https://gymvisual.com/'
 export function onMediaError(e, ex, kind) {
   if (!OFFLINE_MEDIA || !ex) return
   const el = e.currentTarget

@@ -47,7 +47,7 @@ export const PLACES = [
   ['Tools', '/tools', 'widget', 'var(--purple)', 'utilities'],
   ['My schedule', '/dayplan', 'calendar', 'var(--indigo)', 'day plan schedule school study work rest timetable routine reminders خطة يوم دراسة جدول جدولي مدرسة دوام'],
   ['Drinks & juices', '/drinks', 'cup', 'var(--green)', 'juice smoothie tea shake detox laban عصير مشروبات شاي'],
-  ['Soft drinks', '/sodas', 'can', 'var(--red)', 'soda fizzy cola coke pepsi 7up sprite fanta mirinda mountain dew energy red bull monster power horse barbican malt sparkling tonic mojito غازي غازية كولا بيبسي سفن اب سبرايت ميرندا بربيكان ريد بول موهيتو'],
+  ['Soft drinks', '/sodas', 'can', 'var(--red)', 'soda fizzy cola coke pepsi 7up sprite fanta mirinda mountain dew energy red bull monster power horse barbican malt sparkling tonic mojito 4u three stars abu janna غازي غازية كولا بيبسي سفن اب سبرايت ميرندا بربيكان ريد بول موهيتو فور يو ثري ستارز ابو جنه'],
   ['Nuts & seeds', '/nuts', 'nut', 'var(--orange)', 'nuts pistachio peanut almond walnut cashew hazelnut seeds sunflower pumpkin watermelon kerzat chickpeas مكسرات كرزات فستق لوز جوز كاجو بندق حب شمسي رقي قرع'],
   ['Notifications', '/notifications', 'bellBadge', 'var(--orange)', 'reminders alerts notify alarm اشعارات إشعارات تنبيه تذكير'],
   ['Interval timer', '/timer', 'timer', 'var(--red)', 'tabata hiit emom stopwatch rounds boxing'],
@@ -61,6 +61,10 @@ export const PLACES = [
   // 14.0: street food (the meal builder), making Indomie
   ['Street food', '/kitchen/s/street', 'bolt', 'var(--purple)', 'burger shawarma falafel kebab tikka sandwich laffa pizza hot dog zinger fries fast food meal builder ingredients برغر شاورما فلافل كباب تكة لفة ساندويتش بيتزا زنجر وجبات سريعة مكونات'],
   ['Make your Indomie', '/kitchen/s/noodles', 'noodles', 'var(--red)', 'indomie noodles instant ramen اندومي إندومي نودلز'],
+  // 16.0: Abu Janna's drinks (and Iraq's other drink makers), caffeine in your body
+  ['Abu Janna drinks', '/sodas?brand=abujanna', 'starFill', '#f5b301', 'abu janna abo jana abu jana 4u for you three stars 3 stars energy drink mosul masgouf ابو جنه ابو جنة أبو جنة ابوجنه فور يو فوريو ثري ستارز ثري ستار 3 ستارز مشروب طاقة مسكوف الموصل'],
+  ['Made in Iraq', '/sodas', 'flag', 'var(--green)', 'iraqi drinks iraq made local dijla rc cola wild lion karwanchi k9 aspi rash pepsi erbil baghdad صناعة عراقية عراقي دجلة كاروانجي اسبي رش'],
+  ['Caffeine in your body', '#caffeine', 'bolt', 'var(--orange)', 'caffeine coffee tea energy drink sleep bedtime kafein كافيين كافين قهوة شاي مشروب طاقة نوم'],
   ['Food database', '/foods', 'noodles', 'var(--yellow)', 'foods indomie noodles date cake canned tuna snacks chips chocolate iraqi dishes calories salt sugar'],
   ['Walking & steps', '/walk', 'figureWalk', 'var(--acc)', 'pedometer steps walk'],
   ['Burn calories', '/calories', 'flame', 'var(--red)', 'burn plan cardio'],

@@ -28,7 +28,7 @@ function precacheSW() {
         for (const n of readdirSync(d)) {
           const p = join(d, n)
           const rel = relative(outDir, p).split(sep).join('/')
-          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif' && rel !== 'wallpapers' && rel !== 'sounds' && rel !== 'food') walk(p) }   // 14.0: the kitchen's photos load when shown
+          if (statSync(p).isDirectory()) { if (rel !== 'img' && rel !== 'gif' && rel !== 'mp4' && rel !== 'wallpapers' && rel !== 'sounds' && rel !== 'food') walk(p) }   // 14.0: the kitchen's photos load when shown
           else if (rel !== 'sw.js' && !rel.endsWith('.map')) files.push(rel)
         }
       }
@@ -48,8 +48,26 @@ function precacheSW() {
   }
 }
 
+// 16.0 — a build that takes its pictures from a CDN (the online app, the web app, the demo) opens the
+// connection to it while the app starts, so the first photos and exercise pictures show sooner.
+// Plain preconnect (no crossorigin): <img> requests are not CORS, and must reuse this connection.
+function cdnPreconnect() {
+  const origins = [...new Set([process.env.VITE_ASSET_BASE, process.env.VITE_IMG_BASE, process.env.VITE_GIF_BASE]
+    .filter(u => /^https:\/\//.test(u || '')).map(u => new URL(u).origin))]
+  return {
+    name: 'mj-cdn-preconnect',
+    apply: 'build',
+    transformIndexHtml() {
+      return origins.flatMap(href => [
+        { tag: 'link', attrs: { rel: 'preconnect', href }, injectTo: 'head-prepend' },
+        { tag: 'link', attrs: { rel: 'dns-prefetch', href }, injectTo: 'head-prepend' },
+      ])
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), precacheSW()],
+  plugins: [react(), precacheSW(), cdnPreconnect()],
   // 14.0: __NATIVE_LEVEL__ — what the Android shell offers (plugins, the app's own native code); a web
   // bundle the online app downloads (lib/liveUpdate.js) needs an APK with at least this level
   define: { __APP_VERSION__: JSON.stringify(pkg.version), __NATIVE_LEVEL__: JSON.stringify(pkg.mjNative || 1) },

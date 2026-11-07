@@ -2,8 +2,10 @@
 # GitHub Release.
 #
 #   offline  MAHDI-JYM.apk         everything inside: all 1,324 exercise images + animations,
-#                                  wallpapers, profile pictures and food photos (~145 MB) — works with
-#                                  no internet. App id io.github.m777m44.mahdijym, "MAHDI-JYM", OFF badge
+#                                  wallpapers, profile pictures and food photos — works with no
+#                                  internet. 16.0: the animations as small MP4 videos (about 70 MB in
+#                                  all, from 181 MB with GIFs). App id io.github.m777m44.mahdijym,
+#                                  "MAHDI-JYM", OFF badge
 #   online   MAHDI-JYM-online.apk  12.0: the same app, light — exercise media, wallpapers, profile
 #                                  pictures and food photos come from GitHub (jsDelivr, pinned commits)
 #                                  when they are shown. 14.0: its own app — io.github.m777m44.mahdijym.online,
@@ -90,7 +92,40 @@ jobs:
             exit 1
           fi
 
-      # Offline mobile build: VITE_MOBILE web bundle + every exercise media file copied into
+      # 16.0 — the animations go into the offline APK as small H.264 MP4 videos instead of GIFs
+      # (scripts/convert-media.mjs): ≈ 126 MB of GIFs → ≈ 12 MB, same 180 × 180 frames and timing.
+      # ffmpeg: the runner's own when it has libx264, else the imageio-ffmpeg wheel (a static
+      # build), else apt. The videos are cached with the converter's hash.
+      - name: Cache exercise videos
+        id: mp4
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/media/mp4
+          key: exercise-mp4-7455efae41b330c265e7cd4b78dfa848e7ce5ebd-${{ hashFiles('frontend/scripts/convert-media.mjs') }}
+
+      - name: Convert the animations to MP4
+        if: steps.mp4.outputs.cache-hit != 'true'
+        run: |
+          if command -v ffmpeg >/dev/null && ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264; then
+            FF=ffmpeg
+          elif python3 -m venv "$RUNNER_TEMP/ffenv" && "$RUNNER_TEMP/ffenv/bin/pip" install -q imageio-ffmpeg==0.8.1; then
+            FF=$("$RUNNER_TEMP/ffenv/bin/python" -c 'import imageio_ffmpeg as f; print(f.get_ffmpeg_exe())')
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && FF=ffmpeg
+          fi
+          echo "ffmpeg: $FF — $("$FF" -version | head -1)"
+          FFMPEG="$FF" MEDIA_DIR="$RUNNER_TEMP/media" node frontend/scripts/convert-media.mjs
+
+      - name: Check exercise videos
+        run: |
+          MP4=$(find "$RUNNER_TEMP/media/mp4" -name '*.mp4' | wc -l)
+          echo "videos: $MP4  ($(du -sh "$RUNNER_TEMP/media/mp4" | cut -f1))"
+          if [ "$MP4" -lt 1324 ]; then
+            echo "::error title=Exercise videos incomplete::expected 1324 MP4 files, got $MP4"
+            exit 1
+          fi
+
+      # Offline mobile build: VITE_MOBILE web bundle + every exercise image and video copied into
       # dist/ (scripts/bundle-media.mjs fails on any missing file) + `cap sync`, which copies
       # dist/ and the native plugins into android/.
       - run: npm run build:mobile:offline
@@ -193,6 +228,8 @@ jobs:
           cp "$RUNNER_TEMP/online.apk" "out/MAHDI-JYM-online-v$VERSION.apk"
           (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
           OFF_MB=$(du -m out/MAHDI-JYM.apk | cut -f1)
+          # 16.0: with the animations as MP4 the offline APK is about 70 MB (it was 181 MB with GIFs)
+          if [ "$OFF_MB" -gt 110 ]; then echo "::error title=Offline APK too big::${OFF_MB} MB — are the animations GIFs again? (scripts/convert-media.mjs)"; exit 1; fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "offline_mb=$OFF_MB" >> "$GITHUB_OUTPUT"
           echo "online_mb=$ON_MB" >> "$GITHUB_OUTPUT"

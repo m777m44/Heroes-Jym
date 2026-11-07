@@ -12,6 +12,13 @@
 //   node scripts/food-photos/fetch.mjs --only a,b   just these keys
 //   candidates.txt (keys, one per line)             also writes review/<key>.jpg: the best six
 //                                                   search results side by side, to choose from
+//   off-review.txt (barcodes, one per line)         16.0: review/off-<barcode>.jpg — every photo
+//                                                   of that product on Open Food Facts (or Open
+//                                                   Products Facts), numbered, to choose an o: source
+//
+// 16.0 — o:<barcode>/<image number>: a product's own photo on Open Food Facts (the free food
+// database; product photos are CC BY-SA 3.0) — for drinks Commons has no photo of, e.g. Abu Janna's
+// soft drink. @contain keeps the whole picture (a tall can) on a soft blurred copy of itself.
 //
 // Needs internet and sharp (SHARP_FROM=a folder whose node_modules has it, or an installed one) —
 // the "Food photos" workflow runs it and commits what changed. Rejected on the way: drawings,
@@ -51,7 +58,9 @@ const bigEnough = (ii, named = false) => Math.min(ii.width || 0, ii.height || 0)
 
 /** "w:ar:Title@top" → { kind: 'w', lang: 'ar', value: 'Title' }, focus 'top'. */
 export function parseSources(spec) {
-  let focus = null
+  let focus = null, contain = false
+  const c = /@contain$/.exec(spec)
+  if (c) { contain = true; spec = spec.slice(0, c.index) }
   const m = /@(top|bottom|left|right|centre|center)$/.exec(spec)
   if (m) { focus = m[1] === 'center' ? 'centre' : m[1]; spec = spec.slice(0, m.index) }
   const list = spec.split('|').map(s => s.trim()).filter(Boolean).map(s => {
@@ -62,10 +71,24 @@ export function parseSources(spec) {
     }
     if (k === 'f') return { kind: 'f', value: rest.replace(/^File:/i, '') }
     if (k === 's') return { kind: 's', value: rest }
+    if (k === 'o') {
+      const om = /^(\d{8,14})\/(\d{1,4})$/.exec(rest)
+      if (!om) throw new Error('Bad Open Food Facts source (o:<barcode>/<image number>): ' + s)
+      return { kind: 'o', code: om[1], img: om[2], value: OFF_FILE + om[1] + '/' + om[2] }
+    }
     throw new Error('Unknown source: ' + s)
   })
-  return { list, focus }
+  return { list, focus, contain }
 }
+
+// ---- Open Food Facts (16.0) ------------------------------------------------------------------
+export const OFF_FILE = 'off:'
+export const OFF_LICENCE = 'CC BY-SA 3.0'
+export const OFF_HOSTS = ['openfoodfacts.org', 'openproductsfacts.org']
+/** "0729927750910" → "072/992/775/0910" — how Open Food Facts files a product's images. */
+export const offPath = code => (code.length > 8 ? code.replace(/^(\d{3})(\d{3})(\d{3})(\d+)$/, '$1/$2/$3/$4') : code)
+/** The credit line's author: the uploader's name — unless it is only digits (a phone number) or an app's account. */
+export const offAuthor = (uploader, site = 'Open Food Facts') => (uploader && !/^[\d\s+-]+$/.test(uploader) && !/-app$/i.test(uploader) ? uploader + ' · ' + site : site + ' contributors')
 
 /** Plain text of an extmetadata HTML value. */
 export function plain(html, max = 90) {
@@ -185,6 +208,25 @@ async function infos(names) {
   return out
 }
 
+/**
+ * The two WebP copies of a photo. Cropped to fill (the focus, or the most interesting part); with
+ * @contain the big one keeps the whole picture, centred on a blurred, darker copy of itself.
+ */
+export async function savePhoto(sharp, buf, key, { focus = null, contain = false } = {}, out = OUT) {
+  const position = focus || sharp.strategy.attention
+  for (const [dir, [w, h, q]] of Object.entries(SIZE)) {
+    const file = join(out, dir, key + '.webp')
+    if (contain && dir === 'm') {
+      const bg = await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover' }).blur(28).modulate({ brightness: 0.62, saturation: 0.9 }).toBuffer()
+      const fg = await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'inside' }).toBuffer()
+      await sharp(bg).composite([{ input: fg, gravity: 'centre' }]).webp({ quality: q, effort: 6, smartSubsample: true }).toFile(file)
+    } else {
+      await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover', position })
+        .webp({ quality: q, effort: 6, smartSubsample: true }).toFile(file)
+    }
+  }
+}
+
 // ---- main ----------------------------------------------------------------------------------
 export async function run({ rows, credits = {}, state = {}, force = false, only = null, candidates = [], sharp, log = console.log }) {
   const report = { picked: {}, missing: {}, rejected: {} }
@@ -207,7 +249,8 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
     const out = [], seen = new Set()
     const push = (name, named) => { const n = name.replace(/_/g, ' '); if (!seen.has(n)) { seen.add(n); out.push({ name: n, named }) } }
     for (const s of list) {
-      if (s.kind === 'f') push(s.value, true)
+      if (s.kind === 'o') { if (!seen.has(s.value)) { seen.add(s.value); out.push({ name: s.value, named: true, off: s }) } }
+      else if (s.kind === 'f') push(s.value, true)
       else if (s.kind === 'w') { const f = leads.get(s.lang + ':' + s.value); if (f) push(f, false) }
       else if (s.kind === 's') { try { for (const n of await search(s.value)) push(n, false) } catch (e) { log('search failed: ' + s.value + ' — ' + e.message) } }
     }
@@ -216,7 +259,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
   // 3. information on the first few candidates of every photo, in batches
   const info = new Map()
   const fetchInfo = async names => { const need = [...new Set(names)].filter(n => !info.has(n)); if (need.length) for (const [n, ii] of await infos(need)) info.set(n.replace(/_/g, ' '), ii) }
-  await fetchInfo([...cands.values()].flatMap(l => l.slice(0, 4).map(c => c.name)))
+  await fetchInfo([...cands.values()].flatMap(l => l.slice(0, 4).filter(c => !c.off).map(c => c.name)))
   // 4. per photo: the first candidate that passes, downloaded, still a colour photo → two WebP copies
   mkdirSync(join(OUT, 'm'), { recursive: true }); mkdirSync(join(OUT, 't'), { recursive: true })
   const reject = (key, name, why) => { (report.rejected[key] = report.rejected[key] || []).push(name + ' — ' + why) }
@@ -228,7 +271,30 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
       let done = false
       for (let i = 0; i < list.length && i < 12 && !done; i++) {
         const c = list[i]
-        if (!info.has(c.name)) await fetchInfo(list.slice(i, i + 4).map(x => x.name))
+        if (c.off) {
+          try {
+            // a product filed as "not food" lives on Open Products Facts (same people, same licence)
+            let im = null, host = null
+            for (const h of OFF_HOSTS) {
+              let j = null
+              try { j = await http(`https://world.${h}/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`) } catch { continue }   // 404: filed on the other one
+              const x = j && j.status === 1 && j.product && j.product.images && j.product.images[c.off.img]
+              if (x) { im = x; host = h; break }
+            }
+            if (!im) { reject(key, c.name, 'no such image on Open Food Facts'); continue }
+            const buf = await http(`https://images.${host}/images/products/${offPath(c.off.code)}/${c.off.img}.jpg`, { binary: true })
+            if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
+            await savePhoto(sharp, buf, key, parsed.get(key))
+            const file = (host === OFF_HOSTS[1] ? 'opf:' : OFF_FILE) + c.off.code + '/' + c.off.img
+            credits[key] = [file, offAuthor(im.uploader, host === OFF_HOSTS[1] ? 'Open Products Facts' : 'Open Food Facts'), OFF_LICENCE]
+            state[key] = src
+            used.set(file, key)
+            report.picked[key] = file
+            done = true
+          } catch (e) { reject(key, c.name, 'Open Food Facts: ' + e.message) }
+          continue
+        }
+        if (!info.has(c.name)) await fetchInfo(list.slice(i, i + 4).filter(x => !x.off).map(x => x.name))
         const ii = info.get(c.name)
         const why = rejectReason(c.name, ii, c.named)
         if (why) { reject(key, c.name, why); continue }
@@ -237,11 +303,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
         try {
           const buf = await http(ii.thumburl || ii.url, { binary: true })
           if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
-          const position = parsed.get(key).focus || sharp.strategy.attention
-          for (const [dir, [w, h, q]] of Object.entries(SIZE)) {
-            await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover', position })
-              .webp({ quality: q, effort: 6, smartSubsample: true }).toFile(join(OUT, dir, key + '.webp'))
-          }
+          await savePhoto(sharp, buf, key, parsed.get(key))
           const em = ii.extmetadata || {}
           credits[key] = [file, cleanAuthor(plain(em.Artist && em.Artist.value, 160) || plain(em.Credit && em.Credit.value, 160)).slice(0, 90), plain(em.LicenseShortName && em.LicenseShortName.value, 40)]
           state[key] = src
@@ -291,6 +353,44 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
   return { credits, state, report }
 }
 
+/** 16.0 — review sheets of products on Open Food Facts: every photo numbered, and what the database says. */
+export async function offReview(codes, { sharp, log = console.log } = {}) {
+  mkdirSync(REVIEW, { recursive: true })
+  for (const code of codes) {
+    let product = null, host = null
+    for (const h of ['world.openfoodfacts.org', 'world.openproductsfacts.org']) {
+      try {
+        const j = await http(`https://${h}/api/v2/product/${code}.json?fields=product_name,brands,quantity,categories,labels,ingredients_text,images,nutriments`)
+        if (j && j.status === 1 && j.product) { product = j.product; host = h; break }
+      } catch (e) { log('off-review ' + code + ' @' + h + ': ' + e.message) }
+    }
+    if (!product) { log('off-review: ' + code + ' not found'); continue }
+    const ids = Object.keys(product.images || {}).filter(k => /^\d+$/.test(k)).sort((a, b) => a - b).slice(0, 24)
+    const imgHost = host.includes('openproductsfacts') ? 'images.openproductsfacts.org' : 'images.openfoodfacts.org'
+    const tiles = []
+    for (const id of ids) {
+      try {
+        const b = await http(`https://${imgHost}/images/products/${offPath(code)}/${id}.400.jpg`, { binary: true })
+        const label = Buffer.from(`<svg width="200" height="26"><rect width="200" height="26" fill="#000" opacity=".7"/><text x="8" y="19" font-size="18" font-family="sans-serif" fill="#fff">#${id} ${String((product.images[id] || {}).uploader || '').replace(/[<&>]/g, '').slice(0, 14)}</text></svg>`)
+        tiles.push(await sharp(b, { failOn: 'none' }).rotate().resize(200, 260, { fit: 'cover' }).composite([{ input: label, top: 0, left: 0 }]).jpeg({ quality: 72 }).toBuffer())
+      } catch (e) { log('off-review image ' + code + '/' + id + ': ' + e.message) }
+    }
+    if (tiles.length) {
+      const cols = Math.min(6, tiles.length), rows = Math.ceil(tiles.length / cols)
+      await sharp({ create: { width: cols * 204, height: rows * 264, channels: 3, background: '#222' } })
+        .composite(tiles.map((t, i) => ({ input: t, left: (i % cols) * 204, top: Math.floor(i / cols) * 264 }))).jpeg({ quality: 74 }).toFile(join(REVIEW, 'off-' + code + '.jpg'))
+    }
+    const n = product.nutriments || {}
+    writeFileSync(join(REVIEW, 'off-' + code + '.txt'), [
+      'host: ' + host, 'name: ' + (product.product_name || ''), 'brands: ' + (product.brands || ''), 'quantity: ' + (product.quantity || ''),
+      'categories: ' + (product.categories || ''), 'labels: ' + (product.labels || ''), 'ingredients: ' + (product.ingredients_text || ''),
+      'per 100: kcal ' + (n['energy-kcal_100g'] ?? '?') + ' · sugars ' + (n.sugars_100g ?? '?') + ' · caffeine ' + (n.caffeine_100g ?? '?') + ' · sodium ' + (n.sodium_100g ?? '?'),
+      'images: ' + ids.join(' '),
+    ].join('\n') + '\n')
+    log('off-review: ' + code + ' — ' + tiles.length + ' photos')
+  }
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const sharp = createRequire(process.env.SHARP_FROM ? join(resolve(process.env.SHARP_FROM), 'x.js') : import.meta.url)('sharp')
   const { PHOTO_ROWS } = await import(pathToFileURL(join(front, 'src', 'lib', 'photos', 'manifest.js')).href)
@@ -305,6 +405,23 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const candidates = existsSync(cfile) ? readFileSync(cfile, 'utf8').split(/\s+/).map(s => s.trim()).filter(s => s && !s.startsWith('#')) : []
   const only = opt('--only') ? opt('--only').split(',') : null
   const { report } = await run({ rows: PHOTO_ROWS, credits, state, force: flag('--force'), only, candidates, sharp })
+  const ofile = join(here, 'off-review.txt')
+  if (existsSync(ofile)) {
+    const words = readFileSync(ofile, 'utf8').split(/\s+/).map(x => x.trim())
+    await offReview(words.filter(x => /^\d{8,14}$/.test(x)), { sharp })
+    // "<barcode>/<image>": that one photo big enough to read the can (review/off-<barcode>-<image>.jpg)
+    for (const w of words.filter(x => /^\d{8,14}\/\d{1,3}$/.test(x))) {
+      const [code, id] = w.split('/')
+      for (const host of ['images.openfoodfacts.org', 'images.openproductsfacts.org']) {
+        try {
+          const b = await http(`https://${host}/images/products/${offPath(code)}/${id}.jpg`, { binary: true })
+          await sharp(b, { failOn: 'none' }).rotate().resize(720, 960, { fit: 'inside' }).jpeg({ quality: 70 }).toFile(join(REVIEW, `off-${code}-${id}.jpg`))
+          console.log('off-review big: ' + w)
+          break
+        } catch (e) { console.log('off-review big ' + w + ' @' + host + ': ' + e.message) }
+      }
+    }
+  }
   const sorted = Object.fromEntries(Object.keys(credits).sort().map(k => [k, credits[k]]))
   const lines = o => '{\n' + Object.entries(o).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n'
   writeFileSync(CREDITS, lines(sorted))

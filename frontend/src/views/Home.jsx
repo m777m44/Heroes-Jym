@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, hasData } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW } from '../lib/history.js'
@@ -35,6 +35,8 @@ import { whatsNewSheet, WHATS_NEW } from '../components/WhatsNew.jsx'
 import { zonesSheet } from '../components/HrZonesSheet.jsx'
 import { normFasting, fastStatus, hmText } from '../lib/fasting.js'
 import { cloudMeta } from '../lib/cloud.js'
+// 16.0 — loaded on its own, so the drinks data stays out of the first screen's code
+const CaffeineCard = lazy(() => import('../components/CaffeineNow.jsx').then(m => ({ default: m.CaffeineCard })))
 
 // 13.0: the bell — how many reminders are still to ring today (counted in the background, once a
 // minute while the screen is on); a tap opens the notification panel (components/NotifPanel.jsx).
@@ -232,7 +234,8 @@ export default function Home() {
 
   const name = profileOf(S).name || (user && user.name) || ''
   const photo = MOBILE ? (cloudMeta().account || {}).photo : user && user.google && user.google.picture
-  const searchExtra = { zones: zonesSheet, whatsnew: whatsNewSheet, profile: profileSheet }
+  const searchExtra = { zones: zonesSheet, whatsnew: whatsNewSheet, profile: profileSheet,
+    caffeine: () => import('../components/CaffeineNow.jsx').then(m => m.caffeineSheet()) }   // 16.0
 
   return <div className="narrow">
     <div className="hdr home-hdr">
@@ -300,6 +303,8 @@ export default function Home() {
     {S.waterOn !== false && <WaterCard />}
 
     {S.foodOn !== false && <FoodCard />}
+    {/* 16.0 — only while there is caffeine in you, or some was logged today */}
+    {S.foodOn !== false && <Suspense fallback={null}><CaffeineCard /></Suspense>}
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>

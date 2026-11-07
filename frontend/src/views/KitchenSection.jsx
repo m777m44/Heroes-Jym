@@ -228,8 +228,9 @@ function Credits() {
   const list = nq ? rows.filter(r => (r.title + ' ' + r.v[1] + ' ' + r.v[2]).toLowerCase().includes(nq)) : rows
   const inc = useIncremental(list.length, 40, nq)
   return <div className="narrow kx">
-    <Header title={t('Photo credits')} sub={t('{0} real photos from Wikimedia Commons', n0(rows.length))} />
+    <Header title={t('Photo credits')} sub={t('{0} real photos from Wikimedia Commons and Open Food Facts', n0(rows.length))} />
     <p className="small muted kx-credits-p">{t('Every food and drink photo in the app is a real photograph from Wikimedia Commons, shared by its photographer under a free licence (Creative Commons or public domain). The photos were cropped and resized for the app; tap one for its file and licence.')}</p>
+    <p className="small muted kx-credits-p">{t('A few drinks show the product itself, photographed by the people who add products to Open Food Facts, the free food database (CC BY-SA 3.0).')}</p>
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} type="search" placeholder={t('Search photos or photographers')} aria-label={t('Search photos or photographers')} />
     <div className="kr-list">{list.slice(0, inc.n).map(r => <button key={r.k} type="button" className="kr" onClick={() => creditSheet(r.k, r.v)}>
       <Photo k={r.k} size="t" alt="" className="kr-ph" fallback={<span className="kr-ph kr-none"><Icon name="image" /></span>} />
