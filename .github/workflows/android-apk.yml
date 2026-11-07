@@ -69,7 +69,7 @@ jobs:
       # with no internet. Pinned to the same dataset commit as the CDN links (frontend/package.json).
       - name: Cache exercise media
         id: media
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/media
           key: exercise-media-7455efae41b330c265e7cd4b78dfa848e7ce5ebd
@@ -98,7 +98,7 @@ jobs:
       # build), else apt. The videos are cached with the converter's hash.
       - name: Cache exercise videos
         id: mp4
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/media/mp4
           key: exercise-mp4-7455efae41b330c265e7cd4b78dfa848e7ce5ebd-${{ hashFiles('frontend/scripts/convert-media.mjs') }}
