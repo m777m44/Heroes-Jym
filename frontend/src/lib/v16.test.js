@@ -6,7 +6,8 @@ import { SODAS, SODA_BY_ID, sodaNutrition, searchSodas, SODA_SWAP, caffeineLimit
 import { BRANDS, BRAND_BY_KEY, brandOf, brandSodas, brandWords, MADE_IN_IRAQ } from './brands.js'
 import { FOOD_BY_ID } from './foodDb.js'
 import { PHOTO_ROWS } from './photos/manifest.js'
-import { commonsUrl, isOffFile, fileLabel } from './photos/index.js'
+import credits from './photos/credits.json'
+import { commonsUrl, isOffFile, isOpfFile, fileLabel } from './photos/index.js'
 import {
   remaining, levelAt, caffeineDoses, caffeineNow, afterDrink, caffeineWeek, energyFreeDays, entryCaffeine, entryTime,
   nextBedtime, bedtimeOf, underAt, isoOf, SLEEP_OK_MG,
@@ -162,6 +163,14 @@ describe('16.0 — product photos from Open Food Facts', () => {
     const codes = { abujannalm: '0910', abujannagazoz: '0958', abujannaapple: '0934', abujannapassion: '0972', abujannacherry: '0989', abujannaberry: '0941' }
     for (const [id, c] of Object.entries(codes)) expect(rows[id][1], id).toMatch(new RegExp('^o:072992775' + c + '/'))
     expect(commonsUrl('opf:0729927750941/1')).toBe('https://world.openproductsfacts.org/product/0729927750941')
+    // the wild berry can is filed on Open Products Facts — its credit names that site, not Open Food Facts
+    expect(isOpfFile('opf:0729927750941/1')).toBe(true)
+    expect(isOpfFile('off:0729927750910/15')).toBe(false)
+    expect(fileLabel('opf:0729927750941/1')).toBe('Open Products Facts · 0729927750941')
+    expect(offAuthor('', 'Open Products Facts')).toBe('Open Products Facts contributors')
+    expect(offAuthor('ah40', 'Open Products Facts')).toBe('ah40 · Open Products Facts')
+    expect(credits.abujannaberry).toEqual(['opf:0729927750941/1', 'Open Products Facts contributors', 'CC BY-SA 3.0'])
+    for (const [k, c] of Object.entries(credits)) if (isOffFile(c[0])) expect(c[1], k).toMatch(isOpfFile(c[0]) ? /Open Products Facts/ : /Open Food Facts/)
     expect(offAuthor('smoothie-app')).toBe('Open Food Facts contributors')
     expect(isOffFile('off:0729927750910/15')).toBe(true)
     expect(commonsUrl('off:0729927750910/15')).toBe('https://world.openfoodfacts.org/product/0729927750910')

@@ -88,7 +88,7 @@ export const OFF_HOSTS = ['openfoodfacts.org', 'openproductsfacts.org']
 /** "0729927750910" → "072/992/775/0910" — how Open Food Facts files a product's images. */
 export const offPath = code => (code.length > 8 ? code.replace(/^(\d{3})(\d{3})(\d{3})(\d+)$/, '$1/$2/$3/$4') : code)
 /** The credit line's author: the uploader's name — unless it is only digits (a phone number) or an app's account. */
-export const offAuthor = uploader => (uploader && !/^[\d\s+-]+$/.test(uploader) && !/-app$/i.test(uploader) ? uploader + ' · Open Food Facts' : 'Open Food Facts contributors')
+export const offAuthor = (uploader, site = 'Open Food Facts') => (uploader && !/^[\d\s+-]+$/.test(uploader) && !/-app$/i.test(uploader) ? uploader + ' · ' + site : site + ' contributors')
 
 /** Plain text of an extmetadata HTML value. */
 export function plain(html, max = 90) {
@@ -286,7 +286,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
             if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
             await savePhoto(sharp, buf, key, parsed.get(key))
             const file = (host === OFF_HOSTS[1] ? 'opf:' : OFF_FILE) + c.off.code + '/' + c.off.img
-            credits[key] = [file, offAuthor(im.uploader), OFF_LICENCE]
+            credits[key] = [file, offAuthor(im.uploader, host === OFF_HOSTS[1] ? 'Open Products Facts' : 'Open Food Facts'), OFF_LICENCE]
             state[key] = src
             used.set(file, key)
             report.picked[key] = file

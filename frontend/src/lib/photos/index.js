@@ -46,5 +46,7 @@ const offCode = file => String(file).replace(/^(off|opf):/, '').split('/')[0]
 export const commonsUrl = file => (isOffFile(file)
   ? 'https://world.' + (/^opf:/.test(file) ? 'openproductsfacts' : 'openfoodfacts') + '.org/product/' + offCode(file)
   : 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(String(file || '').replace(/ /g, '_')))
-/** How the credits show a file: its Commons name, or "Open Food Facts · <barcode>". */
-export const fileLabel = file => (isOffFile(file) ? 'Open Food Facts · ' + offCode(file) : String(file || ''))
+/** 16.0 — 'opf:' photos are on Open Products Facts, Open Food Facts' sister database for products it doesn't file as food. */
+export const isOpfFile = file => /^opf:/.test(String(file || ''))
+/** How the credits show a file: its Commons name, or "Open Food Facts · <barcode>" ("Open Products Facts · …"). */
+export const fileLabel = file => (isOffFile(file) ? (isOpfFile(file) ? 'Open Products Facts · ' : 'Open Food Facts · ') + offCode(file) : String(file || ''))

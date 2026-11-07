@@ -107,4 +107,6 @@ Janna's soft drinks) show a photo of the product itself from **[Open Food Facts]
 the free food database, whose product images are under **CC BY-SA 3.0**. Their credit (`off:<barcode>/<image>`
 in `credits.json`) names the contributor who uploaded the photo — or "Open Food Facts contributors" — and links
 to the product's page; the photos were resized for the app (the big one keeps the whole picture on a blurred
-copy of itself) and are shared under the same licence.
+copy of itself) and are shared under the same licence. One of them (the wild berry can) is filed on Open Food
+Facts' sister database for other products, **[Open Products Facts](https://world.openproductsfacts.org/)**
+(`opf:<barcode>/<image>`, same licence), and is credited to it — "Open Products Facts contributors".
