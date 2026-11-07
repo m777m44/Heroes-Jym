@@ -10,6 +10,8 @@ import { Photo } from '../FoodPhoto.jsx'
 import Icon from '../Icon.jsx'
 import { SearchField } from '../ui.jsx'
 import { ItemRow, itemName, KIND_ICON } from './ItemCard.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const n1 = v => (Math.round((+v || 0) * 10) / 10).toLocaleString(dateLocale())
@@ -85,4 +87,4 @@ function Compare({ a: a0, b: b0 }) {
     <p className="small muted">{t('Per usual serving of each — the sizes differ, so look at the serving too.')}</p>
   </div>
 }
-export const compareSheet = (a = null, b = null) => useUI.getState().openSheet(() => <Compare a={a} b={b} />)
+export const compareSheet = (a = null, b = null) => useUI.getState().openSheet(() => <Compare a={a} b={b} />, PIN)

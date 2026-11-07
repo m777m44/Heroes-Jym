@@ -16,6 +16,8 @@ import { ACCENTS } from './format.js'
 
 /** The theme categories (2.12) — the tabs of the Themes screen. `mode` forces a light / dark filter. */
 export const CATEGORIES = [
+  // 15.0: the new look — the default theme (MAHDI Midnight) and nine more, made for this version
+  { id: 'luxe', name: '15.0 Elegant', icon: 'sparkle' },
   { id: 'golden', name: 'Golden', icon: 'trophy' },
   { id: 'royal', name: 'Royal', icon: 'crown' },
   { id: 'premium', name: 'Premium', icon: 'medal' },
@@ -285,6 +287,17 @@ export const FAMILIES = [
   { id: 'halabja', name: 'Halabja pomegranate', cat: 'iraq', h: 350, s: 55, acc: '#ff5c7a', accL: '#b0102f' },
   { id: 'qamar', name: 'Qamar al-din', cat: 'iraq', h: 30, s: 75, acc: '#ffad42', accL: '#9a5200' },
   { id: 'iraqflag', name: 'Iraq flag', cat: 'iraq', h: 140, s: 6, acc: '#ff4a5a', accL: '#b00d1f' },
+  // 15.0 — 15.0 Elegant (the first is the new default: deep midnight blue with an emerald accent)
+  { id: 'mahdi15', name: 'MAHDI Midnight', cat: 'luxe', h: 222, s: 42, acc: '#34e0a1', accL: '#0b8a5c' },
+  { id: 'lapisgold', name: 'Lapis & gold', cat: 'luxe', h: 226, s: 62, acc: '#f5c451', accL: '#8f6200' },
+  { id: 'emeraldvelvet', name: 'Emerald velvet', cat: 'luxe', h: 162, s: 48, acc: '#5be3b0', accL: '#0b7a52' },
+  { id: 'rosequartz', name: 'Rose quartz', cat: 'luxe', h: 352, s: 34, acc: '#f4a48c', accL: '#b04a33' },
+  { id: 'copperobsidian', name: 'Obsidian & copper', cat: 'luxe', h: 24, s: 16, acc: '#ee9a5c', accL: '#a34f17' },
+  { id: 'goldmist', name: 'Golden mist', cat: 'luxe', h: 40, s: 36, acc: '#e8c47c', accL: '#86600f' },
+  { id: 'nightsky', name: 'Night sky', cat: 'luxe', h: 244, s: 48, acc: '#9db0ff', accL: '#3a4bd0' },
+  { id: 'tigris15', name: 'Tigris at night', cat: 'luxe', h: 198, s: 58, acc: '#55cdf2', accL: '#06789f' },
+  { id: 'palmdates', name: 'Palms & dates', cat: 'luxe', h: 34, s: 30, acc: '#dcae55', accL: '#85580a' },
+  { id: 'moonpearl', name: 'Moonlight pearl', cat: 'luxe', h: 214, s: 14, acc: '#86a8ff', accL: '#2c58cf' },
 ]
 
 /** Lightness of bg / elevated / surface / surface-2 / surface-3, and how much of the hue's saturation. */
@@ -303,7 +316,8 @@ const OTHER = { dark: 'light', amoled: 'light', deep: 'soft', dusk: 'tint', ligh
 
 export const THEMES = FAMILIES.flatMap(f => VARIANTS.map(v => ({ id: f.id + '-' + v.id, family: f, variant: v, mode: v.mode })))
 export const THEME_IDX = Object.fromEntries(THEMES.map(x => [x.id, x]))
-export const DEFAULT_THEME = 'classic-dark'
+// 15.0: the new look — MAHDI Midnight (deep) for everyone who never picked a theme; Classic keeps the old one
+export const DEFAULT_THEME = 'mahdi15-deep'
 
 // ---- 2.12: the Theme Studio — 2,721,600 generated themes ------------------------------------
 // Every combination of background hue (360) × colour strength (10) × style (7 variants) ×

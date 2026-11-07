@@ -850,6 +850,17 @@ export function optionalKcal(d, id) {
   const r = (d.ing || []).find(x => x.id === id)
   return r ? r0(rowsTotals([{ ...r, opt: false }]).kcal / Math.max(1, d.sv || 1)) : 0
 }
+/** 15.0 — caffeine per gram of the ingredients that have it (brewed coffee per ml): USDA / EFSA averages. */
+export const CAF_PER_G = { coffee: 0.4, arabiccoffee: 0.3, instantcoffee: 39, blacktea: 20, greentea: 15, matcha: 32 }
+/** About how much caffeine (mg) a serving of a drink has. */
+export function drinkCaffeine(d, withOpt = []) {
+  let mg = 0
+  for (const r of drinkRows(d, withOpt)) {
+    const k = CAF_PER_G[r.id]
+    if (k) mg += gramsOf(DING_BY_ID[r.id], r.a, r.u) * k   // brewing draws out nearly all of it, whatever share of the calories stays behind
+  }
+  return Math.round(mg / Math.max(1, d.sv || 1))
+}
 /** "dairy" / "nuts" / "caffeine" — read off the ingredients. */
 export function drinkFlags(d, withOpt = []) {
   const fl = drinkRows(d, withOpt).map(r => (DING_BY_ID[r.id] || {}).fl || '').join('')

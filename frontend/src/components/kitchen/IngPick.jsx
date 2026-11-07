@@ -7,6 +7,8 @@ import { ING_CATS, searchIngredients } from '../../lib/kitchen.js'
 import { photoKey } from '../../lib/photos/index.js'
 import { Photo } from '../FoodPhoto.jsx'
 import Icon from '../Icon.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const n0 = v => Math.round(+v || 0).toLocaleString(dateLocale())
 const UNIT = {
@@ -48,4 +50,4 @@ function IngPick({ onPick, close, exclude = [] }) {
   </div>
 }
 
-export const ingPickSheet = (onPick, { exclude } = {}) => useUI.getState().openSheet(close => <IngPick onPick={onPick} exclude={exclude} close={close} />)
+export const ingPickSheet = (onPick, { exclude } = {}) => useUI.getState().openSheet(close => <IngPick onPick={onPick} exclude={exclude} close={close} />, PIN)

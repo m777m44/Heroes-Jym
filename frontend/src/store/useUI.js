@@ -20,15 +20,25 @@ let workDone = null
 /** How long a sheet's exit animation runs before it leaves the stack (matches index.css). */
 export const SHEET_OUT_MS = 220
 
+/**
+ * 15.0 — are pinned sheets on? The food and drink lists and cards (and the photo viewer) open
+ * `pinned`: no swipe, no tap outside, no Back button — only their ✕ closes them (S.pinSheets,
+ * on unless switched off in Settings).
+ */
+export const pinOn = () => { try { return useStore.getState().S.pinSheets !== false } catch { return true } }
+/** Is this sheet held in place right now? (pinned and the setting on; the photo viewer always counts as pinned). */
+export const isPinned = sh => !!sh && !sh.locked && (!!sh.pinned || sh.kind === 'full') && pinOn()
+
 export const useUI = create((set, get) => ({
-  sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center', locked }
+  sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center'|'full', locked, pinned }
+  nudge: 0,            // 15.0: bumps when a pinned sheet is asked to close another way — its ✕ wiggles
   toastMsg: '',
   timer: null,         // rest countdown between sets — { left, total, endsAt }
   work: null,          // work countdown DURING a timed set (issue #16) — { left, total, endsAt, label }
 
-  openSheet(render, { kind = 'sheet', locked = false } = {}) {
+  openSheet(render, { kind = 'sheet', locked = false, pinned = false } = {}) {
     const id = uid()
-    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked }] }))
+    set(s => ({ sheets: [...s.sheets, { id, render, kind, locked, pinned }] }))
     const close = () => get().closeSheet(id)
     return { id, close, lock: v => set(s => ({ sheets: s.sheets.map(x => x.id === id ? { ...x, locked: v } : x) })) }
   },
@@ -42,6 +52,8 @@ export const useUI = create((set, get) => ({
     setTimeout(() => set(s => ({ sheets: s.sheets.filter(x => x.id !== id) })), SHEET_OUT_MS)
   },
   closeAll() { set({ sheets: [] }) },
+  /** 15.0: a pinned sheet was swiped, tapped outside or got a Back press — point at its ✕. */
+  nudgeX() { set(s => ({ nudge: s.nudge + 1 })) },
 
   toast(msg) {
     set({ toastMsg: msg })

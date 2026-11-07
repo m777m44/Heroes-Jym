@@ -11,6 +11,11 @@ describe('the phone’s Back button (2.7.0)', () => {
     expect(decideBack({ sheets: [{}], path: '/home' })).toBe('close')
     expect(decideBack({ sheets: [{}, { locked: true }], path: '/plan' })).toBe('locked')
   })
+  it('15.0: a pinned food or drink list stays — only its ✕ closes it', () => {
+    expect(decideBack({ sheets: [{ pinned: true }], path: '/food' })).toBe('pinned')
+    expect(decideBack({ sheets: [{ pinned: true }, {}], path: '/food' })).toBe('close')   // a plain sheet on top still closes
+    expect(decideBack({ sheets: [{ pinned: true, locked: true }], path: '/food' })).toBe('locked')
+  })
   it('goes Home from a tab, back from a deeper screen (Home when there is no history)', () => {
     expect(decideBack({ path: '/plan', idx: 3 })).toBe('home')
     expect(decideBack({ path: '/stats/' })).toBe('home')

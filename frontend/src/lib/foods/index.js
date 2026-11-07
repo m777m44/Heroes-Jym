@@ -12,6 +12,7 @@ import { IRAQI_MORE, IRAQI_IDS } from './iraqi.js'
 import { MARKET, MARKET_OLD, MARKET_CATS, MARKET_TYPES } from './market.js'
 import { KITCHEN_14 } from './kitchen14.js'
 import { STREET_NEW, builtValues, hasBuild, STREET_IDS } from './street.js'
+import { IRAQ_15 } from './iraq15.js'
 
 export const NEW_CATS = [
   { key: 'noodles', name: 'Instant noodles', icon: 'noodles', color: 'var(--yellow)' },
@@ -24,7 +25,8 @@ export const NEW_CATS = [
 export const MOVED = { tunawater: 'canned', tunaoil: 'canned', sardines: 'canned' }
 
 // 14.0: the Kitchen's new dishes, gym meals and drinks (kitchen14.js) and the new street food (street.js)
-export const MORE_FOODS = [...INDOMIE_FOODS, ...DATE_CAKES, ...CANNED, ...SNACKS, ...IRAQI_MORE, ...MARKET, ...KITCHEN_14, ...STREET_NEW]
+// 15.0: Iraq city by city — Tal Afar, Mosul, Najaf, Basra, Kurdistan, Kirkuk, Anbar… — fish, ices and more (iraq15.js)
+export const MORE_FOODS = [...INDOMIE_FOODS, ...DATE_CAKES, ...CANNED, ...SNACKS, ...IRAQI_MORE, ...MARKET, ...KITCHEN_14, ...STREET_NEW, ...IRAQ_15]
 
 /**
  * 14.0 — a food that is built from parts (street.js BUILDS: sandwiches, burgers, wraps, pizza…) takes

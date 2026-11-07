@@ -8,25 +8,32 @@
 // Each opens its own sheet (the food card, the recipe, the drink, the soft drink, the nut) — the
 // views know which; this file is plain data and stays testable.
 //
+// 15.0: an item also has its place in Iraq (rg, lib/regions.js), a line about it (about) and its
+// caffeine (caf, mg); new sections for fish & seafood and for ice cream, moota & azbari.
+//
 // State (all optional): S.kitchenFav = [uids] (soft drinks, nuts, recipes — foods keep S.foodFav,
 // drinks S.drinkFavs), S.kitchenSeen = [uids] (recently opened, newest first).
 import { FOODS, MARKET_AISLES } from './foodDb.js'
 import { STREET_IDS, STREET_TOP } from './foods/street.js'
-import { DRINKS, drinkNutrition, DING_BY_ID } from './drinks.js'
+import { DRINKS, drinkNutrition, DING_BY_ID, drinkCaffeine } from './drinks.js'
 import { SODAS, sodaNutrition } from './sodas.js'
 import { NUTS, nutNutrition, usualGrams } from './nuts.js'
 import { RECIPES, recipeNutrition } from './kitchen.js'
 import { photoKey } from './photos/index.js'
 import { normalize, hasWord } from './food.js'
 import { isFit } from './foodDetails.js'
+import { FISH_IDS, FISH_RECIPES, ICE_IDS } from './foods/iraq15.js'
+import { RG_OF } from './regions.js'
+import { CAF_F } from './caffeine.js'
 
-export { isFit }
+export { isFit, CAF_F }
 
 // ---- which foods are drinks, and what kind ------------------------------------------------------
 const HOT_F = new Set(['teasugar', 'tea', 'arabiccoffee', 'coffeemilk', 'cappuccino', 'hotchocolate', 'noomibasra', 'sahlab', 'karkade', 'greentea',
   'nescafe3in1', 'latte', 'mocha', 'caramelmacchiato', 'karak', 'espresso', 'americano', 'flatwhite'])
 const MILK_F = new Set(['milk', 'lowfatmilk', 'laban', 'shinena', 'bananashake', 'datemilk', 'proteinshake', 'chocmilk', 'strawberrymilk', 'bananamilk',
-  'milkshakechoc', 'milkshakevanilla', 'milkshakestraw', 'falooda', 'frappuccino', 'icedlatte', 'spanishlatte', 'frappe', 'bubbletea', 'avocadojuice'])
+  'milkshakechoc', 'milkshakevanilla', 'milkshakestraw', 'falooda', 'frappuccino', 'icedlatte', 'spanishlatte', 'frappe', 'bubbletea', 'avocadojuice',
+  'smokedlaban'])
 const SOFT_F = new Set(['soda', 'dietsoda'])
 const ENERGY_F = new Set(['energydrink'])
 /** A food that is drunk (the drinks shelf, and the milks, coffees and shakes on other shelves). */
@@ -55,15 +62,19 @@ function build() {
       uid: 'F:' + f.id, kind: 'F', id: f.id, name: f.name, kcal: f.kcal, p: f.p, c: f.c, f: f.f, sug: f.sug, na: f.na, fib: f.fib,
       cat: f.cat, mk: f.mk || '', iq: !!f.iraqi, fit: isFit(f), drink: isDrinkFood(f), unit: f.unit, g: f.g, ml: !!f.ml, ph: photoKey('F', f.id),
       ...(f.built || f.indomie ? { bt: true } : null),   // 14.0: opens in a builder (the meal builder or the Indomie one)
+      ...(f.rg || RG_OF['F:' + f.id] ? { rg: f.rg || RG_OF['F:' + f.id] } : null), ...(f.about ? { about: f.about } : null),
+      ...(CAF_F[f.id] ? { caf: CAF_F[f.id] } : null),
     })
   }
   for (const r of RECIPES) {
     const n = recipeNutrition(r)
-    out.push({ uid: 'R:' + r.id, kind: 'R', id: r.id, name: r.name, kcal: n.kcal, p: n.p, c: n.c, f: n.f, meals: r.meals, min: r.min, iq: r.iq, fit: r.fit || isFit({ ...n, cat: 'dishes' }), ph: photoKey('R', r.id) })
+    out.push({ uid: 'R:' + r.id, kind: 'R', id: r.id, name: r.name, kcal: n.kcal, p: n.p, c: n.c, f: n.f, meals: r.meals, min: r.min, iq: r.iq, fit: r.fit || isFit({ ...n, cat: 'dishes' }), ph: photoKey('R', r.id),
+      ...(RG_OF['R:' + r.id] ? { rg: RG_OF['R:' + r.id] } : null) })
   }
   for (const d of DRINKS) {
-    const n = drinkNutrition(d)
-    out.push({ uid: 'D:' + d.id, kind: 'D', id: d.id, name: d.name, kcal: n.kcal, p: n.p, c: n.c, f: n.f, sug: n.s, hot: d.t === 'h', milky: milkyDrink(d), cats: d.cats, min: d.min, iq: d.cats.includes('iraqi'), ph: photoKey('D', d.id) })
+    const n = drinkNutrition(d), cf = drinkCaffeine(d)
+    out.push({ uid: 'D:' + d.id, kind: 'D', id: d.id, name: d.name, kcal: n.kcal, p: n.p, c: n.c, f: n.f, sug: n.s, hot: d.t === 'h', milky: milkyDrink(d), cats: d.cats, min: d.min, iq: d.cats.includes('iraqi'), ph: photoKey('D', d.id),
+      ...(RG_OF['D:' + d.id] ? { rg: RG_OF['D:' + d.id] } : null), ...(cf > 0 ? { caf: cf } : null) })
   }
   for (const s of SODAS) {
     const n = sodaNutrition(s, s.def.ml)
@@ -95,6 +106,9 @@ export const SECTIONS = [
   { key: 'iraqi', group: 'food', part: 'cook', name: 'Iraqi kitchen', icon: 'palm', color: 'var(--green)', ph: 'masgouf', test: x => x.iq && (x.kind === 'R' || (x.kind === 'F' && !x.drink)) },
   { key: 'dishes', group: 'food', part: 'cook', name: 'Home cooking', icon: 'fork', color: 'var(--orange)', ph: 'maqluba', test: x => F(x, 'dishes') },
   { key: 'breakfast', group: 'food', part: 'cook', name: 'Breakfast', icon: 'egg', color: 'var(--yellow)', ph: 'shakshuka', test: x => (x.kind === 'R' && x.meals.includes('b')) || (x.kind === 'F' && BREAKFAST_F.has(x.id)) },
+  // 15.0: Iraq's fish and seafood — masgouf, shabbout, bunni, gattan, zubaidi, sbour, shrimp — and its fish dishes
+  { key: 'fish', group: 'food', part: 'cook', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'masgouf',
+    test: x => (x.kind === 'F' && FISH_IDS.has(x.id)) || (x.kind === 'R' && FISH_RECIPES.has(x.id)) },
   { key: 'fit', group: 'food', part: 'cook', name: 'Gym & healthy meals', icon: 'dumbbell', color: 'var(--green)', ph: 'chickenveg', test: x => (x.kind === 'R' || (x.kind === 'F' && !x.drink)) && x.fit },
   // 14.0: street food — burgers, shawarma, falafel, kebab and tikka sandwiches, Iraqi laffat, pizza and
   // manakish, grills and street snacks; most of it opens in the meal builder (lib/foods/street.js)
@@ -106,6 +120,8 @@ export const SECTIONS = [
   { key: 'cakes', group: 'food', part: 'ready', name: 'Cakes & pastries', icon: 'cake', color: 'var(--brown, #a2845e)', ph: 'cake', test: x => F(x, 'cakes') },
   { key: 'snacks', group: 'food', part: 'ready', name: 'Chocolate, biscuits & chips', icon: 'chips', color: 'var(--pink)', ph: 'snickers', test: x => F(x, 'snacks') },
   { key: 'sweets', group: 'food', part: 'ready', name: 'Sweets & desserts', icon: 'candy', color: 'var(--indigo)', ph: 'baklava', test: x => F(x, 'sweets') },
+  // 15.0: moota (Iraqi ice cream), azbari (Baghdad's water ice) and the ice creams of the shops
+  { key: 'icecream', group: 'food', part: 'ready', name: 'Ice cream, moota & azbari', icon: 'icecream', color: 'var(--pink)', ph: 'moota', test: x => x.kind === 'F' && ICE_IDS.has(x.id) },
   { key: 'fruit', group: 'food', part: 'fresh', name: 'Fruit', icon: 'apple', color: 'var(--pink)', ph: 'strawberries', test: x => F(x, 'fruit') && !DATES.has(x.uid) },
   { key: 'dates', group: 'food', part: 'fresh', name: 'Dates', icon: 'palm', color: 'var(--brown, #a2845e)', ph: 'medjool', test: x => DATES.has(x.uid) },
   { key: 'veg', group: 'food', part: 'fresh', name: 'Vegetables & salads', icon: 'leafy', color: 'var(--green)', ph: 'salad', test: x => F(x, 'veg') },
@@ -133,10 +149,14 @@ export const FEATURED = [
   { key: 'drinks', name: 'Drinks', icon: 'coffee', color: 'var(--blue)', ph: 'orangejuice', tab: 'drinks', secs: ['hot', 'cold', 'milkdrinks', 'soft', 'energy'] },
   { key: 'sweets', name: 'Sweets', icon: 'cake', color: 'var(--pink)', ph: 'baklava', to: '/kitchen/s/sweets', secs: ['sweets', 'cakes'] },
   { key: 'iraqi', name: 'Iraqi food', icon: 'palm', color: 'var(--purple)', ph: 'masgouf', to: '/kitchen/s/iraqi', secs: ['iraqi'] },
+  // 15.0: Iraq city by city, and the fish
+  { key: 'cities', name: 'Iraq city by city', icon: 'location', color: 'var(--indigo)', ph: 'kubbamosul', to: '/kitchen/s/cities', secs: ['iraqi'], rg: true },
+  { key: 'fish', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'fish', to: '/kitchen/s/fish', secs: ['fish'] },
 ]
 /** How many different items are behind a featured door. */
 export function featuredCount(f) {
   if (f.key === 'indomie') return kitchenItems().filter(x => x.kind === 'F' && x.id.startsWith('indo-')).length
+  if (f.rg) return kitchenItems().filter(x => x.rg).length
   const tests = f.secs.map(k => SECTION_BY_KEY[k].test)
   let n = 0
   for (const x of kitchenItems()) if (tests.some(t => t(x))) n++

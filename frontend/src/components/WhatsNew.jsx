@@ -6,19 +6,19 @@ import { MOBILE } from '../lib/mobile.js'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 
-export const WHATS_NEW = '14.0'
+export const WHATS_NEW = '15.0'
 
-// 14.0
+// 15.0
 const ITEMS = [
-  { icon: 'fork', c: '#ff9f0a', title: 'The Kitchen', body: 'All the food, cooking and drinks in one place — Foods → Kitchen: Food, Drinks and Tools, six big doors (street food, make your Indomie, canned food & shops, drinks, sweets, Iraqi food), my own cooking, ready foods and fresh food.' },
-  { icon: 'image', c: '#ff375f', title: 'A real photo for every food', body: '780 real photographs from Wikimedia Commons — every food, dish, drink, soft drink, nut and ingredient — drifting slowly and smoothly, with who took each one.' },
-  { icon: 'sliders', c: '#ff6a3d', title: 'The meal builder', body: 'A burger, a shawarma, a falafel or kebab sandwich, a pizza or any recipe opens with what goes into it: change the grams, take out the mayonnaise, add cheese or a second patty — calories, protein, carbs, fat and salt follow live. Nothing counts until you add it.' },
-  { icon: 'bolt', c: '#bf5af2', title: 'Street food', body: '85+ street dishes — burgers, zinger, hot dog, shawarma arabi, tawook, liver and kubba laffat, falafel, pizza, manakish, dim sum, onion rings and more — 60 of them built from their ingredients.' },
-  { icon: 'noodles', c: '#ffd60a', title: 'Make your Indomie', body: 'What is in the pack and its calories, how long each way takes and how to make it — with a cooking timer, and the oil sachet in or out.' },
-  { icon: 'book', c: '#30d158', title: '100+ new dishes and 30 recipes', body: 'Iraqi, Arab, Turkish, Persian, Indian and gym meals with every detail: fibre, sodium, kilojoules, how filling, the walk that burns it and what it may contain.' },
-  { icon: 'pencil', c: '#ff9500', title: 'My own cooking', body: 'Your own dishes with your own photo, the ingredients by weight, the steps and the time — the calories work themselves out.' },
-  { icon: 'cube', c: '#0a84ff', title: 'Two apps side by side', body: 'MAHDI-JYM (blue OFF badge, everything inside) and MAHDI-JYM Online (green WEB badge, light) are now separate apps — install both, each with its own data.', mobile: true },
-  { icon: 'rocket', c: '#10b981', title: 'The online app updates itself', body: 'MAHDI-JYM Online downloads a new version inside the app and restarts into it — no new APK, your data stays. Settings → App & updates.', mobile: true },
+  { icon: 'palette', c: '#34e0a1', title: 'A new look', body: 'New colours and a cleaner, calmer design everywhere: the new MAHDI Midnight theme, softer cards, glowing buttons, a glass tab bar — and ten new elegant themes in Themes → 15.0 Elegant.' },
+  { icon: 'expand', c: '#0a84ff', title: 'Tap a photo for everything', body: 'Tap the photo of any food or drink and it opens big — zoom in with two fingers — with everything about it: where it comes from, the calories and protein / carbs / fat split, the full nutrition table per serving and per 100 g, your day, good to know, what is in it and a lighter choice.' },
+  { icon: 'xmark', c: '#5e5ce6', title: 'Lists that stay open', body: 'The food and drink lists and cards no longer close when you scroll or swipe — only the ✕ at the top right closes them. (Settings → Tools, if you want the swipe back.)' },
+  { icon: 'location', c: '#ff9f0a', title: 'Iraq city by city', body: 'The kitchens of Baghdad, Mosul, Tal Afar, Najaf & Karbala, Basra, Kurdistan, Kirkuk, Anbar and the south — 100 new dishes: zingil and ayran ashi, burda pilaf, tashreeb guss, Najaf dahina, masmouta, Erbil kebab, Fallujah kebab, dulaimiya and more.' },
+  { icon: 'fish', c: '#40c8e0', title: 'Iraq’s fish', body: 'A new Fish & seafood section: bunni, gattan, zubaidi, sbour, biyah, carp, tilapia and Fao shrimp — grilled, fried, in machboos or saloona — and “fish twice a week” to keep you on track.' },
+  { icon: 'icecream', c: '#ff375f', title: 'Moota and azbari', body: 'Iraqi moota (ice cream with cardamom and rose water) and azbari — Baghdad’s old raspberry water ice — in a new Ice cream section.' },
+  { icon: 'fork', c: '#ff6a3d', title: 'Liver, pacha and street food', body: 'Liver with bulgur, the meelaq grill (liver, heart, kidneys), the full pacha with kipayat, tongues and trotters, guss and falafel in stone-oven samoon and the big falafel wrap.' },
+  { icon: 'bolt', c: '#ffd60a', title: 'Iraq’s energy drinks', body: 'ASPI RASH, K9, 4U, Tiger, Red Strong, Winner, Lion and Hell — with their sugar and caffeine — and a Today card for your caffeine, sugar and salt from everything you logged.' },
+  { icon: 'dice', c: '#30d158', title: 'Surprise me and fits my day', body: '“Surprise me” picks a dish that fits the calories you have left; “Fits my day” filters any section to what still fits today.' },
 ]
 
 function WhatsNewSheet({ close }) {

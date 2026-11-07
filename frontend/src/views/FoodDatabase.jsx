@@ -33,6 +33,8 @@ import { listOf } from '../lib/recipeText.js'
 import { bodyKg } from '../lib/water.js'
 import Icon from '../components/Icon.jsx'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -110,7 +112,7 @@ const openFood = f => openFoodSheet(f)
 
 const FoodRow = memo(function FoodRow({ f, fav, onOpen }) {
   return <button type="button" className="fdb-row" onClick={() => onOpen(f)}>
-    <FoodBubble food={f} size={40} />
+    <FoodBubble food={f} size={40} spot />
     <span className="grow fdb-row-t">
       <b className="tt">{t(f.name)}{fav && <Icon name="starFill" className="fdb-fav" />}</b>
       <span className="ss">{servingText(f, U)}</span>
@@ -260,7 +262,7 @@ function FoodCard({ food, iso, meal: meal0, close, noBuild = false }) {
   }
   const ph = photoKey('F', food.id)
   return <div className="fdb-card">
-    <PhotoHero k={ph} alt={t(food.name)} />
+    <PhotoHero k={ph} alt={t(food.name)} uid={'F:' + food.id} opts={{ iso, meal }} />
     <div className="row" style={{ gap: 12, marginBottom: 12 }}>
       {!ph && <FoodBubble food={food} size={48} />}
       <div className="grow">
@@ -330,7 +332,7 @@ function FoodDetails({ food, q, p100, St }) {
     </div>
   </>
 }
-export const foodCardSheet = (food, { iso, meal, noBuild } = {}) => ui().openSheet(close => <FoodCard food={food} iso={iso} meal={meal} noBuild={noBuild} close={close} />)
+export const foodCardSheet = (food, { iso, meal, noBuild } = {}) => ui().openSheet(close => <FoodCard food={food} iso={iso} meal={meal} noBuild={noBuild} close={close} />, PIN)
 
 // ---- the Indomie builder --------------------------------------------------------------------
 const PRESET_BY_KEY = Object.fromEntries(INDOMIE_FOODS.map(f => [indomieKey(f.indomie), f]))
@@ -432,4 +434,4 @@ function IndomieBuilder({ cfg: cfg0, iso, meal: meal0, close }) {
     <Button variant="primary" icon="plus" onClick={add}>{t('Add to {0}', mealName(meal))}</Button>
   </div>
 }
-export const indomieSheet = ({ cfg, iso, meal } = {}) => ui().openSheet(close => <IndomieBuilder cfg={cfg} iso={iso} meal={meal} close={close} />)
+export const indomieSheet = ({ cfg, iso, meal } = {}) => ui().openSheet(close => <IndomieBuilder cfg={cfg} iso={iso} meal={meal} close={close} />, PIN)

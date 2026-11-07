@@ -132,14 +132,14 @@ test('the Kitchen: six doors, street food, a real photo and the meal builder', a
   await page.locator('.fk-hero').click()                                         // the Kitchen's door on the food log
   await expect(page.getByRole('heading', { name: 'Kitchen' })).toBeVisible()
   const doors = page.locator('.kf')
-  await expect(doors).toHaveCount(6)
+  await expect(doors).toHaveCount(8)                                              // 15.0: + Iraq city by city, fish
   await expect(doors.first()).toContainText('Street food')
   await doors.first().click()
   await expect(page.getByRole('heading', { name: 'Street food' })).toBeVisible()
   // every card shows its real photo once it is on screen
   await expect.poll(() => page.locator('.kc .ph.in img').count()).toBeGreaterThan(0)
   await page.getByRole('searchbox').fill('beef burger')
-  await page.locator('.kc', { hasText: 'Beef burger' }).first().click()
+  await page.locator('.kc', { hasText: 'Beef burger' }).first().locator('.kc-t').click()   // 15.0: the name opens it, the photo opens the viewer
   const mb = page.locator('.mb')
   await expect(mb.getByRole('heading', { name: 'Beef burger' })).toBeVisible()
   await expect(mb.locator('.mb-row')).toHaveCount(9)                               // bun, patty, lettuce, tomato, onion, pickles, ketchup, mayo, salt
@@ -174,6 +174,42 @@ test('the Kitchen: making Indomie, the drinks tab and a dish of my own', async (
   expect(errors).toEqual([])
 })
 
+test('15.0: a photo opens big with every detail; the food lists close only with their ✕', async ({ page }) => {
+  const errors = watchErrors(page)
+  await open(page, 'kitchen/s/fish')
+  await expect(page.getByRole('heading', { name: 'Fish & seafood' })).toBeVisible()
+  await expect(page.locator('.kx-fish')).toContainText('Fish this week')
+  await page.getByRole('searchbox').fill('zubaidi')
+  await page.locator('.kc', { hasText: 'Grilled zubaidi' }).first().locator('.kc-ph').click()
+  const spot = page.locator('.spot')
+  await expect(spot.getByRole('heading', { name: 'Grilled zubaidi (pomfret)' })).toBeVisible()
+  await expect(spot.locator('.spot-nut')).toContainText('Protein')
+  await expect(spot.locator('.spot-rg')).toContainText('Basra')
+  await expect(spot.locator('.spot-facts')).toContainText('Fish is good for the heart')
+  await page.locator('.fullv .spot-whole').click()                                  // the whole photo, on black
+  await expect(spot).toHaveClass(/whole/)
+  await page.locator('.fullv .spot-whole').click()
+  await page.locator('.fullv > .sheet-x').click()                                  // only the ✕ closes it
+  await expect(page.locator('.fullv')).toHaveCount(0)
+  // a food list: a tap outside doesn't close it, its ✕ does
+  await open(page, 'food')
+  await page.locator('.food-add-b').first().click()
+  const sheet = page.locator('.sheet.pinned')
+  await expect(sheet).toHaveCount(1)
+  await page.mouse.click(200, 30)                                                  // the dimmed page above the sheet
+  await page.waitForTimeout(400)
+  await expect(sheet).toHaveCount(1)
+  await sheet.locator('.sheet-x').click()
+  await expect(page.locator('.sheet')).toHaveCount(0)
+  // Iraq city by city
+  await open(page, 'kitchen/s/cities')
+  await expect(page.locator('.kcity-c')).toHaveCount(9)
+  await page.locator('.kcity-c', { hasText: 'Tal Afar' }).click()
+  await expect(page.getByRole('heading', { name: 'Tal Afar' })).toBeVisible()
+  await expect(page.locator('.kc', { hasText: 'Zingil' }).first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
 test.describe('in Arabic', () => {
   test.use({ locale: 'ar-IQ' })
   test('right to left, and the food database speaks Arabic', async ({ page }) => {
@@ -197,7 +233,7 @@ test.describe('in Arabic', () => {
     await expect(page.locator('.kf').first()).toContainText('أكلات الشوارع')
     await page.locator('.kf').first().click()
     await page.getByRole('searchbox').fill('شاورما')
-    await page.locator('.kc', { hasText: 'شاورما' }).first().click()
+    await page.locator('.kc', { hasText: 'شاورما' }).first().locator('.kc-t').click()
     await expect(page.locator('.mb')).toContainText('مكوّناتك')
     await expect(page.locator('.mb')).toContainText('ثومية')
     expect(errors).toEqual([])

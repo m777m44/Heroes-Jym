@@ -10,10 +10,12 @@ describe('themes', () => {
     expect(new Set(THEMES.map(x => x.id)).size).toBe(THEMES.length)
   })
   it('reads old saves and unknown values', () => {
-    expect(themeIdOf('dark')).toBe('classic-dark')
+    // 15.0: the default is MAHDI Midnight (deep); an old 'dark' save or an unknown id lands there too
+    expect(themeIdOf('dark')).toBe('mahdi15-deep')
     expect(themeIdOf('light')).toBe('classic-light')
-    expect(themeIdOf(undefined)).toBe('classic-dark')
-    expect(themeIdOf('nope')).toBe('classic-dark')
+    expect(themeIdOf(undefined)).toBe('mahdi15-deep')
+    expect(themeIdOf('nope')).toBe('mahdi15-deep')
+    expect(themeIdOf('classic-dark')).toBe('classic-dark')
     expect(themeIdOf('ocean-deep')).toBe('ocean-deep')
   })
   it('follows the phone by switching to the family’s light / dark counterpart', () => {
@@ -21,7 +23,8 @@ describe('themes', () => {
     expect(resolveTheme({ theme: 'ocean-deep' }, true).id).toBe('ocean-deep')
     expect(resolveTheme({ theme: 'rose-light' }, true).id).toBe('rose-dark')
     expect(resolveTheme({ theme: 'gold-amoled' }, false).id).toBe('gold-light')
-    expect(resolveTheme({ theme: 'dark' }, false).id).toBe('classic-light')       // a 2.x save, phone in light mode
+    expect(resolveTheme({ theme: 'dark' }, false).id).toBe('mahdi15-soft')        // a 2.x save, phone in light mode (15.0: the new look)
+    expect(resolveTheme({ theme: 'classic-dark' }, false).id).toBe('classic-light')
     expect(resolveTheme({ theme: 'ocean-deep', themeSystem: false }, false).id).toBe('ocean-deep')
     expect(resolveTheme({ theme: 'ocean-deep' }, null).id).toBe('ocean-deep')      // unknown phone setting
   })
@@ -165,10 +168,10 @@ describe('themes 4.0 — 56 more families, Signature and Coder classics', async 
   const T = await import('./themes.js')
   const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
   const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
-  it('has 206 families × 7 = 1,442 curated themes in 17 categories (11.0: Iraq)', () => {
-    expect(T.FAMILIES.length).toBe(206)
-    expect(T.THEMES.length).toBe(1442)
-    expect(T.CATEGORIES.length).toBe(17)
+  it('has 216 families × 7 = 1,512 curated themes in 18 categories (11.0: Iraq · 15.0: 15.0 Elegant)', () => {
+    expect(T.FAMILIES.length).toBe(216)
+    expect(T.THEMES.length).toBe(1512)
+    expect(T.CATEGORIES.length).toBe(18)
     expect(T.familiesOf('iraq').map(f => f.id)).toEqual(expect.arrayContaining(['tigris', 'euphrates', 'ishtar', 'baghdadnights', 'iraqflag']))
     expect(T.CATEGORIES.map(c => c.id)).toEqual(expect.arrayContaining(['signature', 'code']))
     expect(T.familiesOf('signature').map(f => f.id)).toContain('mahdi')
@@ -176,7 +179,7 @@ describe('themes 4.0 — 56 more families, Signature and Coder classics', async 
   })
   it('every new theme keeps its accent readable on its background (≥ 3:1)', () => {
     const fresh = T.THEMES.filter(th => T.FAMILIES.indexOf(th.family) >= 134)
-    expect(fresh.length).toBe(392 + 16 * 7)
+    expect(fresh.length).toBe(392 + 16 * 7 + 10 * 7)
     for (const th of fresh) {
       const tk = T.themeTokens(th)
       expect(ratio(tk.bg, tk.accent['--acc']), th.id).toBeGreaterThanOrEqual(3)

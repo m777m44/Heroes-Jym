@@ -3,6 +3,82 @@
 All notable changes to **MAHDI-JYM**. Versions follow [semver](https://semver.org/).
 History before 2.0.0 is the upstream openGym project's, kept below unchanged.
 
+## v15.0.0 — 2026-11-03
+
+**A new look; Iraq city by city — Tal Afar, Mosul, Najaf & Karbala, Baghdad, Basra, Kurdistan,
+Kirkuk, Anbar and the south — with 97 new dishes, Iraq’s fish, moota and azbari and the energy
+drinks of Iraq’s shops; every food and drink photo opens big with everything about it; and the
+food lists close only with their ✕.**
+*شكل جديد؛ والعراق مدينة مدينة — تلعفر والموصل والنجف وكربلاء وبغداد والبصرة وكردستان وكركوك والأنبار
+والجنوب — مع 97 أكلة جديدة وسمك العراق والموطة والازبري ومشروبات الطاقة اللي بمحلاتنا؛ وكل صورة أكلة أو
+مشروب تنفتح كبيرة مع كل تفاصيلها؛ وقوائم الأكل تنسد بزر ✕ فقط.*
+
+### 🎨 A new look
+- **MAHDI Midnight** (`mahdi15-deep`) is the new default theme: deep midnight blue with an emerald
+  accent and a soft glow; its light twin follows the phone. A profile still on the old default moves
+  to it once; **Classic** stays in Themes for anyone who wants it back.
+- **15.0 Elegant**, a new first category of ten themes: MAHDI Midnight, Lapis & gold, Emerald velvet,
+  Rose quartz, Obsidian & copper, Golden mist, Night sky, Tigris at night, Palms & dates and Moonlight
+  pearl — 216 families, 1,512 curated themes.
+- Everywhere: rounder cards with a hairline rim and a soft lift, rounder buttons with a gentle glow,
+  outlined chips with a gradient when on, a softer segmented control, a **floating glass tab bar**
+  with a glowing start button.
+
+### 🔍 Tap a photo for everything (the photo viewer)
+- The photo of any food or drink — on a card, a row, a chip, the big photo of its sheet, the food log
+  and the food lists — opens **over the whole screen**: the photo big (double-tap or pinch to zoom up
+  to 4×, drag to look around; the corner button shows it whole on black).
+- Under it, everything: what it is and **where in Iraq it comes from**, a line about it, the calories
+  in a ring with the **protein / carbs / fat split**, the **full nutrition table per serving and per
+  100 g** (calories, kJ, protein, carbs and sugars, fibre, fat, sodium and salt, caffeine), its
+  **share of your day**, **good to know** (salty, very sweet, caffeine, rich in protein, lean, fibre,
+  fish twice a week, fried, the walk that burns it), **what is in it** (the parts of a built dish, a
+  recipe’s or a drink’s ingredients), **a lighter choice** of the same kind (grilled for fried, the
+  sugar-free can), allergens and who took the photo.
+- **Add to my day**, favourite, compare and share. Opened from an item’s own sheet, “Back to the card”.
+
+### ✕ Lists that stay open
+- The food and drink lists and cards — add food, the food card, the meal builder, the Indomie builder,
+  recipes, drinks, soft drinks, nuts, the pickers — no longer close when you scroll, swipe down, tap
+  outside, press Escape or the phone’s Back button: **only the ✕ at the top right closes them**, and
+  the ✕ wiggles (with a hint on Back) when you try another way. Settings → Tools (and Kitchen →
+  Tools) switch it off.
+
+### 🗺️ Iraq city by city — 97 new dishes
+- **Kitchen → Iraq city by city**: nine places, each a big photo card — Baghdad, Mosul, **Tal Afar**,
+  Najaf & Karbala, Basra, Kurdistan, Kirkuk, Anbar, the south & the marshes — and the Iraqi kitchen
+  filters by place. 122 dishes and drinks carry their place.
+- **Tal Afar** (from a 2024 Kirkuk University study of its Turkmen kitchen): zingil, Tal Afar kubba,
+  ayran ashi, lollik, barley and corn breads, un halvasi, kawurga, kurut, kidiri, pakkuz avmasi, yarma
+  ashi, burghul ashi, dishlik, bilamach, otlu chorek.
+- **Mosul**: burda pilaf, qoulat, kishka, hasso, shondariya, qaysi, kubbat qaysi, zbeebiya, aybrag
+  mufallash, tashreeb hbeet, tashreeb guss, Mosul aroog, kubbat jareesh, Zain al-Abidin soup,
+  khfeefi, sooda. **Najaf & Karbala**: dahina with coconut, walnuts, pistachios or geymar, the amber
+  rice of Mishkhab. **Baghdad**: moota (plain, pistachio, chocolate) and azbari (raspberry, lemon).
+- **Basra & Iraq’s fish**: masmouta, mukashat, sbour and zubaidi (grilled or fried), biyah, Fao shrimp
+  (fried or grilled), shrimp machboos, stuffed fish, fish saloona, shibzi, qubbut, mufattah, daqqous,
+  bunni, gattan, carp and tilapia. **Kurdistan**: white dolma with yogurt, kulana, nan tiri, kutilk,
+  tarkhina, kashk with beans, Erbil kebab, kangar, shilla with brinj, Erbil smoked laban. **Kirkuk**:
+  sulu kebabi, imam bayildi, pacha with sumac, salq ashi, tawugh shorbasi, Kirkuk dolma. **Anbar**:
+  Fallujah kebab, dulaimiya. **The south**: tabag.
+- **All over Iraq**: liver with bulgur, the meelaq plate, chicken livers, kalawi, lamb heart, the full
+  pacha, kipayat, tongues, brain and trotters; guss in stone-oven samoon and the guss plate, falafel in
+  samoon and the big falafel wrap, fried fish in samoon — the sandwiches open in the meal builder.
+- New sections **Fish & seafood** (32) and **Ice cream, moota & azbari** (15); two new doors on the
+  Food tab; every new dish has its real photo (885 photographs in all), Arabic name and a line about it.
+
+### ⚡ Iraq’s energy drinks, and today’s caffeine
+- **ASPI RASH** (and Bubble Gum), **K9** (and Performance), **4U**, **Tiger**, **Red Strong**,
+  **Winner**, **Lion** and **Hell** — sugar, caffeine, the WHO sugar limit and a sugar-free swap.
+- **Today: caffeine, sugar and salt** on the Kitchen’s Drinks tab, from everything logged: soft and
+  energy drinks, coffees and teas on the food shelves, drink recipes (worked out from the coffee or tea
+  in them) and food.
+
+### 🎲 And
+- **Surprise me**: a dish with a photo that fits the calories you have left today, in the photo viewer.
+- **Fits my day · N kcal left**: a filter on every Kitchen section.
+- **Fish this week: N of 2** in Fish & seafood.
+
 ## v14.0.0 — 2026-10-30
 
 **The Kitchen (المطبخ): every food, dish, recipe and drink in one place, each with a real photograph

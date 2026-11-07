@@ -24,6 +24,8 @@ import Icon from '../components/Icon.jsx'
 import { PhotoHero } from '../components/kitchen/PhotoHero.jsx'
 import { photoKey } from '../lib/photos/index.js'
 import { BackButton, Button, Segmented, SearchField, Switch } from '../components/ui.jsx'
+// 15.0: the food and drink lists and cards close only with their ✕ (store/useUI.js pinOn)
+const PIN = { pinned: true }
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -111,7 +113,7 @@ function NutView({ id, iso: iso0, meal: meal0, close }) {
   }
   const ph = photoKey('N', n.id)
   return <div className="nt-view" style={{ '--c': n.col }}>
-    <PhotoHero k={ph} alt={nutName(n)} />
+    <PhotoHero k={ph} alt={nutName(n)} uid={'N:' + n.id} />
     <div className={'nt-hero' + (ph ? ' with-ph' : '')}>
       <div className="nt-hero-bg" aria-hidden="true" />
       {!ph && <NutArt nut={n} form={P.form} shell={P.shell} pile size={124} live label={nutName(n)} />}
@@ -157,7 +159,7 @@ function NutView({ id, iso: iso0, meal: meal0, close }) {
   </div>
 }
 /** The nut's sheet. opts: { iso, meal } to log to another day / meal. */
-export const nutSheet = (id, opts = {}) => ui().openSheet(close => <NutView id={id} iso={opts.iso} meal={opts.meal} close={close} />)
+export const nutSheet = (id, opts = {}) => ui().openSheet(close => <NutView id={id} iso={opts.iso} meal={opts.meal} close={close} />, PIN)
 
 // ---- choose nuts (day plan) -------------------------------------------------------------------------------
 function PickPortion({ n, onPick, back, close }) {
@@ -190,7 +192,7 @@ function Pick({ onPick, close }) {
     </div>
   </div>
 }
-export const pickNutSheet = onPick => ui().openSheet(close => <Pick onPick={onPick} close={close} />)
+export const pickNutSheet = onPick => ui().openSheet(close => <Pick onPick={onPick} close={close} />, PIN)
 
 // ---- the screen --------------------------------------------------------------------------------------------
 function NutCard({ n, i }) {

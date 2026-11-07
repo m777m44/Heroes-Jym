@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { useUI } from '../store/useUI.js'
+import { useUI, isPinned } from '../store/useUI.js'
+import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import Icon from './Icon.jsx'
 
@@ -22,8 +23,19 @@ export function swipeCloses(dy, ms) {
 //     or a quick flick closes it, anything less springs back
 //   · a tap outside it (and the phone's Back button, lib/backButton.js)
 // A `locked` sheet (a flow that must be answered) has no ✕ and doesn't move.
+// 15.0: a `pinned` sheet (the food and drink lists and cards) doesn't move either and ignores a tap
+// outside, Escape and the Back button — only its ✕ at the top right closes it, and the ✕ wiggles
+// when you try another way (S.pinSheets, on by default). The photo viewer (`kind: 'full'`) covers
+// the whole screen and is pinned the same way.
 function Sheet({ sheet, top }) {
   const closeSheet = useUI(s => s.closeSheet)
+  const nudge = useUI(s => s.nudge)
+  const nudge0 = useRef(nudge).current    // only nudges after this sheet opened wiggle its ✕
+  const nudgeX = useUI(s => s.nudgeX)
+  useStore(s => s.S.pinSheets)            // re-check when the setting changes
+  const pinned = isPinned(sheet)
+  const pinnedRef = useRef(pinned)
+  pinnedRef.current = pinned
   const ref = useRef(null)
   const backRef = useRef(null)
   const drag = useRef({ startY: null, delta: 0, t0: 0 })
@@ -31,7 +43,7 @@ function Sheet({ sheet, top }) {
   lockedRef.current = sheet.locked
 
   const close = () => closeSheet(sheet.id)
-  const dismiss = () => { if (!sheet.locked) close() }
+  const dismiss = () => { if (pinnedRef.current) nudgeX(); else if (!sheet.locked) close() }
 
   const setBack = v => { if (backRef.current) backRef.current.style.opacity = v }
 
@@ -39,7 +51,7 @@ function Sheet({ sheet, top }) {
     const el = ref.current
     // a gesture that begins on a slider (or opted-out control) belongs to that control,
     // not to the sheet's swipe-to-dismiss — so it keeps working while you drag
-    if (lockedRef.current || (e.target.closest && e.target.closest('input[type=range], [data-nodrag]'))) {
+    if (lockedRef.current || pinnedRef.current || (e.target.closest && e.target.closest('input[type=range], [data-nodrag]'))) {
       drag.current = { startY: null, delta: 0, t0: 0 }
       return
     }
@@ -88,12 +100,26 @@ function Sheet({ sheet, top }) {
   // Escape closes the top sheet on a keyboard (desktop browsers, tablets with a keyboard)
   useEffect(() => {
     if (!top || sheet.locked || sheet.closing) return
-    const onKey = e => { if (e.key === 'Escape') close() }
+    const onKey = e => { if (e.key === 'Escape') { if (pinnedRef.current) nudgeX(); else close() } }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [top, sheet.locked, sheet.closing])
 
+  const xBtn = <button type="button" key={top ? 'n' + nudge : 'x'} className={'sheet-x' + (pinned ? ' pin' : '') + (top && nudge > nudge0 ? ' nudge' : '')}
+    onClick={close} aria-label={t('Close')}><Icon name="xmark" /></button>
+
   const out = sheet.closing ? ' out' : ''
+  // 15.0: the photo viewer — the whole screen, its own ✕ at the top right
+  if (sheet.kind === 'full') {
+    return (
+      <div className={'mlayer' + out}>
+        <div className={'fullv' + out} role="dialog" aria-modal="true">
+          {xBtn}
+          {sheet.render(close)}
+        </div>
+      </div>
+    )
+  }
   if (sheet.kind === 'center') {
     return (
       <div className={'mlayer' + out}>
@@ -105,13 +131,11 @@ function Sheet({ sheet, top }) {
   return (
     <div className={'mlayer' + out}>
       <div className={'mback' + out} ref={backRef} onClick={dismiss} />
-      <div className={'sheet' + out + (sheet.locked ? ' locked' : '')} ref={ref} role="dialog" aria-modal="true"
+      <div className={'sheet' + out + (sheet.locked ? ' locked' : '') + (pinned ? ' pinned' : '')} ref={ref} role="dialog" aria-modal="true"
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
         <div className="sheet-head">
-          <div className="grab" />
-          {!sheet.locked && <button type="button" className="sheet-x" onClick={close} aria-label={t('Close')}>
-            <Icon name="xmark" />
-          </button>}
+          {!pinned && <div className="grab" />}
+          {!sheet.locked && xBtn}
         </div>
         {sheet.render(close)}
       </div>
