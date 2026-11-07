@@ -276,7 +276,8 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
             // a product filed as "not food" lives on Open Products Facts (same people, same licence)
             let im = null, host = null
             for (const h of OFF_HOSTS) {
-              const j = await http(`https://world.${h}/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`)
+              let j = null
+              try { j = await http(`https://world.${h}/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`) } catch { continue }   // 404: filed on the other one
               const x = j && j.status === 1 && j.product && j.product.images && j.product.images[c.off.img]
               if (x) { im = x; host = h; break }
             }
