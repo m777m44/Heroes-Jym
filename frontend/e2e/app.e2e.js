@@ -212,11 +212,11 @@ test('15.0: a photo opens big with every detail; the food lists close only with 
 
 test('16.0: Abu Janna’s drinks, Made in Iraq, and caffeine in your body before and after a can', async ({ page }) => {
   const errors = watchErrors(page)
-  // the Kitchen's door opens his page: 4U, Three Stars, his two soft drinks and his restaurant's fish
+  // the Kitchen's door opens his page: 4U, Three Stars, his soft drink in six flavours and his restaurant's fish
   await open(page, 'kitchen')
   await page.locator('.kf', { hasText: 'Abu Janna drinks' }).click()
   await expect(page.locator('.sd-bhead h2')).toHaveText('Abu Janna')
-  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(4)
+  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(8)
   await expect(page.locator('.sd-bfood').first()).toBeVisible()
   // Three Stars: what one can would do to today's caffeine and to bedtime, then log it
   await page.locator('.sd-card', { hasText: 'Three Stars' }).click()
@@ -242,7 +242,7 @@ test('16.0: Abu Janna’s drinks, Made in Iraq, and caffeine in your body before
   await expect.poll(() => page.locator('.sd-grid .sd-card').count()).toBeGreaterThan(15)
   await page.getByRole('button', { name: 'Made in Iraq' }).last().click()
   await page.getByRole('searchbox').fill('ابو جنه')
-  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(4)
+  await expect(page.locator('.sd-grid .sd-card')).toHaveCount(8)
   expect(errors).toEqual([])
 })
 

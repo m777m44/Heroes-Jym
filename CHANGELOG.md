@@ -15,11 +15,13 @@ bedtime; and an offline app less than half the size — about 70 MB instead of 1
 ### ⭐ Abu Janna (أبو جنة)
 - **His own page** — Soft drinks → *Made in Iraq* → Abu Janna, or Kitchen → *Abu Janna drinks*
   (`/sodas?brand=abujanna`): the **4U** energy drink, **Three Stars** (ثري ستارز, the energy drink
-  that came after it) and his **soft drink** in **lemon & mint** and in **mint** (330 ml cans), and
-  the masgouf, fried fish and mutabbaq of his Mosul fish restaurant.
-- The soft drinks show **real photos of the cans** from **Open Food Facts** (0729927750910,
-  0729927750958 — CC BY-SA 3.0); the lemon & mint label gives **11.5 g of sugar per 100 ml** (38 g a
-  can) and no caffeine. The energy drinks keep the usual values of their kind (the can’s label wins).
+  that came after it) and his **soft drink in six flavours** — **lemon & mint**, **gazoz** (mint &
+  gum), **green apple**, **passion fruit**, **cherry & vanilla** and **wild berry** (330 ml cans, made
+  for him in Mosul by Sahl Nineveh) — and the masgouf, fried fish and mutabbaq of his Mosul restaurant.
+- Every flavour shows **a real photo of its own can** from **Open Food Facts** (barcodes 0729927750910,
+  …0958, …0934, …0972, …0989, …0941 — CC BY-SA 3.0), with the labels’ numbers where they are
+  readable: lemon & mint 11.5 g sugar per 100 ml, gazoz 45.6 kcal / 11.5 g, passion fruit 51.5 kcal /
+  13 g, 8 mg sodium, no caffeine. The energy drinks keep the usual values of their kind (the label wins).
 - Every drink of his carries a ★ tag that opens his page.
 
 ### 🇮🇶 Made in Iraq

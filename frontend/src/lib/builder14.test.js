@@ -70,7 +70,7 @@ describe('14.0 — street food, built from parts', () => {
     expect(n.drinks).toBeGreaterThanOrEqual(80)
     expect(n.sweets).toBeGreaterThanOrEqual(35)
     expect(n.iraqi).toBeGreaterThanOrEqual(25)
-    expect(n.abujanna).toBe(4)   // 4U, Three Stars, the lemon & mint and the mint soft drink
+    expect(n.abujanna).toBe(8)   // 4U, Three Stars and his soft drink in six flavours
     for (const f of FEATURED) { expect(ar[f.name], f.name).toBeTruthy(); expect(f.to || f.tab).toBeTruthy() }
     expect(sectionCounts().street).toBe(sectionItems('street').length)
   })

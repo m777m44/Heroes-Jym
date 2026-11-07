@@ -11,7 +11,7 @@ export const WHATS_NEW = '16.0'
 
 // 16.0
 const ITEMS = [
-  { icon: 'starFill', c: '#f5b301', title: 'Abu Janna’s drinks', body: 'His own page in Soft drinks: 4U, Three Stars and his soft drink in lemon & mint and in mint — with real photos of the cans — and the masgouf, fried fish and mutabbaq of his Mosul restaurant. Kitchen → Abu Janna drinks.' },
+  { icon: 'starFill', c: '#f5b301', title: 'Abu Janna’s drinks', body: 'His own page in Soft drinks: 4U, Three Stars and his soft drink in six flavours — lemon & mint, gazoz, green apple, passion fruit, cherry & vanilla and wild berry — each with a real photo of its can, and the masgouf, fried fish and mutabbaq of his Mosul restaurant. Kitchen → Abu Janna drinks.' },
   { icon: 'flag', c: '#30d158', title: 'Made in Iraq', body: 'Iraq’s own drink makers — Abu Janna, Dijla (RC Cola, Wild Lion), Karwanchi (K9), ASPI RASH and Pepsi bottled in Erbil and Baghdad — and a Made in Iraq filter.' },
   { icon: 'bolt', c: '#ff9f0a', title: 'Caffeine in your body', body: 'How much caffeine is in you right now, hour by hour: when it drops under 50 mg, how much is left at your bedtime, today against the limit for your age, the last 7 days and your days in a row without an energy drink.' },
   { icon: 'alert', c: '#ff453a', title: 'Before you open a can', body: 'Every energy drink and cola now shows what it would do: your caffeine today with it, and what would still be in you at bedtime.' },

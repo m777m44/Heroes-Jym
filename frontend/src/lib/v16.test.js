@@ -20,16 +20,20 @@ const latin = s => /[A-Za-z]{2}/.test(String(s).replace(/\{\d\}/g, '').replace(/
 const H = 3600e3
 
 describe('16.0 — Abu Janna and Iraq’s drink makers', () => {
-  it('Abu Janna: 4U, Three Stars and his soft drink in lemon & mint and in mint, with his restaurant’s fish', () => {
+  it('Abu Janna: 4U, Three Stars and his soft drink in six flavours, with his restaurant’s fish', () => {
     const b = BRAND_BY_KEY.abujanna
     expect(b.featured).toBe(true)
     expect(BRANDS[0].key).toBe('abujanna')
-    expect(brandSodas('abujanna').map(s => s.id)).toEqual(['fouru', 'threestars', 'abujannalm', 'abujannamint'])
+    expect(brandSodas('abujanna').map(s => s.id)).toEqual(['fouru', 'threestars', 'abujannalm', 'abujannagazoz', 'abujannaapple', 'abujannapassion', 'abujannacherry', 'abujannaberry'])
     for (const id of b.foods) expect(FOOD_BY_ID[id], id).toBeTruthy()
     // the lemon & mint label (Open Food Facts 0729927750910): 11.5 g sugar per 100 ml, a 330 ml can, no caffeine
     const lm = SODA_BY_ID.abujannalm
     expect([lm.s100, lm.cf100, lm.def.pk, lm.def.ml]).toEqual([11.5, 0, 'can', 330])
     expect(sodaNutrition(lm, 330).sugar).toBeCloseTo(38, 0)
+    // the passion fruit and gazoz labels: 51.5 / 45.6 kcal, 13 / 11.5 g sugar and 8 mg sodium per 100 ml
+    expect([SODA_BY_ID.abujannapassion.k100, SODA_BY_ID.abujannapassion.s100, SODA_BY_ID.abujannapassion.na100]).toEqual([51.5, 13, 8])
+    expect([SODA_BY_ID.abujannagazoz.k100, SODA_BY_ID.abujannagazoz.s100]).toEqual([45.6, 11.5])
+    for (const s of brandSodas('abujanna').slice(2)) expect([s.cf100, s.def.ml], s.id).toEqual([0, 330])
     expect(SODA_BY_ID.threestars.energy && SODA_BY_ID.fouru.energy).toBe(true)
     expect(sodaNutrition(SODA_BY_ID.threestars, 250).caffeine).toBe(80)
   })
@@ -41,7 +45,7 @@ describe('16.0 — Abu Janna and Iraq’s drink makers', () => {
       expect(brandOf(b.sodas[0]).key).toBe(b.key)
     }
     expect(MADE_IN_IRAQ.size).toBe(seen.size)
-    for (const id of ['threestars', 'abujannalm', 'abujannamint', 'wildlion']) expect(SODA_BY_ID[SODA_SWAP[id]], id).toBeTruthy()
+    for (const id of [...BRAND_BY_KEY.abujanna.sodas, 'wildlion']) expect(SODA_BY_ID[SODA_SWAP[id]], id).toBeTruthy()
     expect(brandOf('coke')).toBe(null)
   })
   it('finds them however they are written: ابو جنه, أبو جنة, فور يو, ٣ ستارز, 3 stars, Abu Janna', () => {
@@ -50,17 +54,18 @@ describe('16.0 — Abu Janna and Iraq’s drink makers', () => {
       expect(ids, q).toContain('fouru')
       expect(ids, q).toContain('threestars')
     }
-    expect(searchSodas({ q: 'نعناع', words: brandWords }).map(s => s.id)).toContain('abujannamint')
+    expect(searchSodas({ q: 'كازوز', words: brandWords }).map(s => s.id)).toContain('abujannagazoz')
+    expect(searchSodas({ q: 'باشن فروت', words: brandWords }).map(s => s.id)).toContain('abujannapassion')
     expect(searchSodas({ only: MADE_IN_IRAQ }).length).toBe(MADE_IN_IRAQ.size)
   })
   it('the Kitchen has a door to Abu Janna’s drinks', () => {
     const f = FEATURED.find(x => x.key === 'abujanna')
     expect(f.to).toBe('/sodas?brand=abujanna')
-    expect(featuredCount(f)).toBe(4)
+    expect(featuredCount(f)).toBe(8)
   })
   it('everything new is in Arabic, with no runs of Latin letters', () => {
     const keys = [
-      ...BRANDS.flatMap(b => [b.name, b.place, b.about]), ...['threestars', 'abujannalm', 'abujannamint', 'wildlion'].map(id => SODA_BY_ID[id].name),
+      ...BRANDS.flatMap(b => [b.name, b.place, b.about]), ...[...BRAND_BY_KEY.abujanna.sodas, 'wildlion'].map(id => SODA_BY_ID[id].name),
       'Abu Janna drinks', 'Made in Iraq', 'Caffeine in your body', 'From his restaurant in Mosul', '{0} drinks',
     ]
     for (const k of keys) {
@@ -152,10 +157,12 @@ describe('16.0 — product photos from Open Food Facts', () => {
     expect(offAuthor('07811671071')).toBe('Open Food Facts contributors')   // a phone number is never shown
     expect(OFF_LICENCE).toBe('CC BY-SA 3.0')
   })
-  it('Abu Janna’s soft drinks show their own photos; the credit links to the product', () => {
+  it('each of Abu Janna’s soft drinks shows its own can; the credit links to the product', () => {
     const rows = Object.fromEntries(PHOTO_ROWS.map(r => [r[0], r]))
-    expect(rows.abujannalm[1]).toMatch(/^o:0729927750910\//)
-    expect(rows.abujannamint[1]).toMatch(/^o:0729927750958\//)
+    const codes = { abujannalm: '0910', abujannagazoz: '0958', abujannaapple: '0934', abujannapassion: '0972', abujannacherry: '0989', abujannaberry: '0941' }
+    for (const [id, c] of Object.entries(codes)) expect(rows[id][1], id).toMatch(new RegExp('^o:072992775' + c + '/'))
+    expect(commonsUrl('opf:0729927750941/1')).toBe('https://world.openproductsfacts.org/product/0729927750941')
+    expect(offAuthor('smoothie-app')).toBe('Open Food Facts contributors')
     expect(isOffFile('off:0729927750910/15')).toBe(true)
     expect(commonsUrl('off:0729927750910/15')).toBe('https://world.openfoodfacts.org/product/0729927750910')
     expect(fileLabel('off:0729927750910/15')).toBe('Open Food Facts · 0729927750910')

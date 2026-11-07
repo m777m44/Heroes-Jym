@@ -84,10 +84,11 @@ export function parseSources(spec) {
 // ---- Open Food Facts (16.0) ------------------------------------------------------------------
 export const OFF_FILE = 'off:'
 export const OFF_LICENCE = 'CC BY-SA 3.0'
+export const OFF_HOSTS = ['openfoodfacts.org', 'openproductsfacts.org']
 /** "0729927750910" → "072/992/775/0910" — how Open Food Facts files a product's images. */
 export const offPath = code => (code.length > 8 ? code.replace(/^(\d{3})(\d{3})(\d{3})(\d+)$/, '$1/$2/$3/$4') : code)
-/** The credit line's author: the uploader's name, unless it is only digits (a phone number). */
-export const offAuthor = uploader => (uploader && !/^[\d\s+-]+$/.test(uploader) ? uploader + ' · Open Food Facts' : 'Open Food Facts contributors')
+/** The credit line's author: the uploader's name — unless it is only digits (a phone number) or an app's account. */
+export const offAuthor = uploader => (uploader && !/^[\d\s+-]+$/.test(uploader) && !/-app$/i.test(uploader) ? uploader + ' · Open Food Facts' : 'Open Food Facts contributors')
 
 /** Plain text of an extmetadata HTML value. */
 export function plain(html, max = 90) {
@@ -272,16 +273,22 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
         const c = list[i]
         if (c.off) {
           try {
-            const j = await http(`https://world.openfoodfacts.org/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`)
-            const im = j && j.product && j.product.images && j.product.images[c.off.img]
+            // a product filed as "not food" lives on Open Products Facts (same people, same licence)
+            let im = null, host = null
+            for (const h of OFF_HOSTS) {
+              const j = await http(`https://world.${h}/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`)
+              const x = j && j.status === 1 && j.product && j.product.images && j.product.images[c.off.img]
+              if (x) { im = x; host = h; break }
+            }
             if (!im) { reject(key, c.name, 'no such image on Open Food Facts'); continue }
-            const buf = await http(`https://images.openfoodfacts.org/images/products/${offPath(c.off.code)}/${c.off.img}.jpg`, { binary: true })
+            const buf = await http(`https://images.${host}/images/products/${offPath(c.off.code)}/${c.off.img}.jpg`, { binary: true })
             if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
             await savePhoto(sharp, buf, key, parsed.get(key))
-            credits[key] = [c.name, offAuthor(im.uploader), OFF_LICENCE]
+            const file = (host === OFF_HOSTS[1] ? 'opf:' : OFF_FILE) + c.off.code + '/' + c.off.img
+            credits[key] = [file, offAuthor(im.uploader), OFF_LICENCE]
             state[key] = src
-            used.set(c.name, key)
-            report.picked[key] = c.name
+            used.set(file, key)
+            report.picked[key] = file
             done = true
           } catch (e) { reject(key, c.name, 'Open Food Facts: ' + e.message) }
           continue

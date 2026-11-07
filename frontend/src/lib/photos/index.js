@@ -39,11 +39,12 @@ export function loadCredits() {
   }
   return credits
 }
-/** 16.0 — a photo from Open Food Facts ('off:<barcode>/<image>') rather than Wikimedia Commons. */
-export const isOffFile = file => /^off:/.test(String(file || ''))
+/** 16.0 — a photo from Open Food Facts ('off:<barcode>/<image>', or 'opf:' — Open Products Facts) rather than Wikimedia Commons. */
+export const isOffFile = file => /^(off|opf):/.test(String(file || ''))
+const offCode = file => String(file).replace(/^(off|opf):/, '').split('/')[0]
 /** The page of a photo's file: on Wikimedia Commons, or the product's page on Open Food Facts. */
 export const commonsUrl = file => (isOffFile(file)
-  ? 'https://world.openfoodfacts.org/product/' + String(file).slice(4).split('/')[0]
+  ? 'https://world.' + (/^opf:/.test(file) ? 'openproductsfacts' : 'openfoodfacts') + '.org/product/' + offCode(file)
   : 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(String(file || '').replace(/ /g, '_')))
 /** How the credits show a file: its Commons name, or "Open Food Facts · <barcode>". */
-export const fileLabel = file => (isOffFile(file) ? 'Open Food Facts · ' + String(file).slice(4).split('/')[0] : String(file || ''))
+export const fileLabel = file => (isOffFile(file) ? 'Open Food Facts · ' + offCode(file) : String(file || ''))

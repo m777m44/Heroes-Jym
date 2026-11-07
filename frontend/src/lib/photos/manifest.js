@@ -924,9 +924,13 @@ export const PHOTO_ROWS = [
   ['winner', 's:canned drinks fridge|s:energy drinks cooler|s:drinks refrigerator', 'S:winner'],
   ['lionenergy', 's:energy drink gold can|s:energy drink tin', 'S:lion'],
   ['hell', 's:Hell energy drink|w:Hell Energy Drink', 'S:hell'],
-  // 16.0 — Abu Janna's drinks. His soft drink has its own photos on Open Food Facts (o: — the lemon & mint
-  // can 0729927750910, the mint one 0729927750958); Three Stars, a glass of energy drink. (Wild Lion: K9's glass.)
-  ['abujannalm', 'o:0729927750910/7@contain', 'S:abujannalm'],
-  ['abujannamint', 'o:0729927750958/2@contain', 'S:abujannamint'],
+  // 16.0 — Abu Janna's drinks. Each flavour of his soft drink shows its own can, photographed by the people who
+  // add products to Open Food Facts (o:<barcode>/<photo>); Three Stars, a glass of energy drink. (Wild Lion: K9's.)
+  ['abujannalm', 'o:0729927750910/8@contain', 'S:abujannalm'],
+  ['abujannagazoz', 'o:0729927750958/2@contain', 'S:abujannagazoz'],
+  ['abujannaapple', 'o:0729927750934/1@contain', 'S:abujannaapple'],
+  ['abujannapassion', 'o:0729927750972/2@contain', 'S:abujannapassion'],
+  ['abujannacherry', 'o:0729927750989/1@contain', 'S:abujannacherry'],
+  ['abujannaberry', 'o:0729927750941/1@contain', 'S:abujannaberry'],
   ['threestars', 'f:EnergyDrinkBubbles.jpg|s:energy drink glass bubbles', 'S:threestars'],
 ]

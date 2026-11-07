@@ -2,17 +2,17 @@
 // one everyone asks about — Abu Janna (أبو جنة) of Mosul. Pure data and lookups; the screen is the
 // soft drinks page (views/Sodas.jsx, /sodas?brand=abujanna).
 //
-// Only what is known: Abu Janna's 4U and Three Stars energy drinks and his soft drink (lemon & mint,
-// mint — Open Food Facts 0729927750910 / 0729927750958); Dijla's portfolio from its own site; the
-// rest from the makers' pages. The drinks keep the usual values of their kind where the label is not
+// Only what is known: Abu Janna's 4U and Three Stars energy drinks and his soft drink in six flavours, each
+// seen on its own can on Open Food Facts (barcodes 07299277509…, made by Sahl Nineveh in Bartella, Mosul);
+// Dijla's portfolio from its own site; the rest from the makers' pages. The drinks keep the usual values of their kind where the label is not
 // published — the soft drinks page says so.
 import { SODA_BY_ID } from './sodas.js'
 
 export const BRANDS = [
   {
     key: 'abujanna', name: 'Abu Janna', place: 'Mosul', color: '#f5b301', color2: '#0d1b4b', icon: 'star', featured: true,
-    about: 'Abu Janna runs Mosul’s famous fish restaurant — masgouf, fried fish and mutabbaq — and makes drinks: the 4U energy drink, Three Stars, the energy drink that came after it, and his soft drink in lemon & mint and in mint.',
-    sodas: ['fouru', 'threestars', 'abujannalm', 'abujannamint'],
+    about: 'Abu Janna runs Mosul’s famous fish restaurant — masgouf, fried fish and mutabbaq — and makes drinks: the 4U energy drink, Three Stars, the energy drink that came after it, and his soft drink in six flavours — lemon & mint, gazoz, green apple, passion fruit, cherry & vanilla and wild berry — made for him in Mosul by Sahl Nineveh.',
+    sodas: ['fouru', 'threestars', 'abujannalm', 'abujannagazoz', 'abujannaapple', 'abujannapassion', 'abujannacherry', 'abujannaberry'],
     foods: ['masgouf', 'masgoufplate', 'friedfish', 'carpfried', 'mutabbaqsamak'],
     words: 'abu janna abo jana abu jana ابو جنه ابو جنة أبو جنة ابوجنه مسكوف ابو جنة 4u for you فور يو فوريو three stars 3 stars 3stars ثري ستارز ثري ستار 3 ستارز',
   },

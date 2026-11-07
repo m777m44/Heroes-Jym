@@ -32,8 +32,9 @@ no subscription, no ads, no tracking. Just `docker compose up`.
 > ### ⭐ New in 16.0 — Abu Janna’s drinks, Made in Iraq, caffeine in your body, and an app less than half the size
 >
 > **Abu Janna’s drinks** get their own page (Soft drinks, or Kitchen → *Abu Janna drinks*): the **4U**
-> and **Three Stars** energy drinks and his **soft drink** in lemon & mint and in mint — with real photos
-> of the cans from Open Food Facts — and the masgouf, fried fish and mutabbaq of his Mosul restaurant.
+> and **Three Stars** energy drinks and his **soft drink in six flavours** (lemon & mint, gazoz, green
+> apple, passion fruit, cherry & vanilla, wild berry) — each with a real photo of its can from Open Food
+> Facts — and the masgouf, fried fish and mutabbaq of his Mosul restaurant.
 > **Made in Iraq**: Iraq’s drink makers — Abu Janna, Dijla (RC Cola, Wild Lion), Karwanchi (K9), ASPI
 > RASH, Pepsi bottled in Erbil and Baghdad — and a filter for them. **Caffeine in your body**: how much
 > is in you right now, hour by hour, when it drops under 50 mg, what is left at your bedtime, today
@@ -367,7 +368,7 @@ Exercise images/GIFs are fetched from the upstream dataset and keep their own te
 بمفاتيح المرور، يعمل دون إنترنت، بلا تتبّع ولا اشتراكات.
 
 **الجديد في الإصدار 16.0:** **مشروبات أبو جنة** بصفحة خاصة (المشروبات الغازية، أو المطبخ ← مشروبات أبو جنة):
-**فور يو** و**ثري ستارز** ومشروبه **الغازي** بنكهة الليمون والنعناع وبنكهة النعناع — بصور حقيقية للعلب — ووياها
+**فور يو** و**ثري ستارز** ومشروبه **الغازي بست نكهات** (ليمون ونعناع، كازوز، تفاح أخضر، باشن فروت، كرز وفانيلا، توت بري) — كل وحدة بصورة حقيقية لعلبتها — ووياها
 المسكوف والسمك المقلي والمطبّك من مطعمه بالموصل. **صناعة عراقية**: أبو جنة، دجلة (آر سي كولا ووايلد لايون)،
 كاروانچي (كي ناين)، اسبي رش، وبيبسي اللي تتعبّأ بأربيل وبغداد — مع فلتر خاص. **الكافيين بجسمك**: شكد بجسمك هسه
 وساعة بساعة، إيمتى ينزل تحت 50 ملغ، شكد يبقى وقت نومك، كافيين اليوم مقارنة بحد عمرك (حوالي 100 ملغ دون 18 سنة)،

@@ -154,7 +154,7 @@ export const FEATURED = [
   { key: 'cities', name: 'Iraq city by city', icon: 'location', color: 'var(--indigo)', ph: 'kubbamosul', to: '/kitchen/s/cities', secs: ['iraqi'], rg: true },
   { key: 'fish', name: 'Fish & seafood', icon: 'fish', color: 'var(--teal)', ph: 'fish', to: '/kitchen/s/fish', secs: ['fish'] },
   // 16.0: Abu Janna's drinks (and the fish of his Mosul restaurant) — the soft drinks page, his brand
-  { key: 'abujanna', name: 'Abu Janna drinks', icon: 'starFill', color: '#f5b301', ph: 'abujannalm', to: '/sodas?brand=abujanna', secs: [], brand: 'abujanna' },
+  { key: 'abujanna', name: 'Abu Janna drinks', icon: 'starFill', color: '#f5b301', ph: 'abujannapassion', to: '/sodas?brand=abujanna', secs: [], brand: 'abujanna' },
 ]
 /** How many different items are behind a featured door. */
 export function featuredCount(f) {

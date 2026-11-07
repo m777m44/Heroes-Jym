@@ -70,7 +70,8 @@ describe('14.0 — real photos', () => {
   })
   it('photos are real photographs: no drawings, logos or GFDL-only files, and two photos never share a file unless named on purpose', () => {
     const files = Object.values(credits).map(c => c[0])
-    for (const f of files) expect(/\.(jpe?g|png|webp|tiff?)$/i.test(f) && !/logo|\.svg$|illustration|drawing|clipart/i.test(f), f).toBe(true)
+    // 16.0: or a product's own photo on Open Food Facts / Open Products Facts ('off:<barcode>/<photo>')
+    for (const f of files) expect((/\.(jpe?g|png|webp|tiff?)$/i.test(f) || /^(off|opf):\d{8,14}\/\d{1,4}$/.test(f)) && !/logo|\.svg$|illustration|drawing|clipart/i.test(f), f).toBe(true)
     const dup = files.filter((f, i) => files.indexOf(f) !== i)
     expect(dup).toEqual([])
   })
