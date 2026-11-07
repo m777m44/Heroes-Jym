@@ -1,5 +1,70 @@
 {
- "picked": {},
- "missing": {},
- "rejected": {}
+ "picked": {
+  "skyr": "Skyr.is með vanillu.jpg",
+  "roobaghanam": "Iraqi Sheep Yogurt-Mosul.jpg",
+  "roobajamoos": "Buffalo curd.jpg",
+  "roobalowfat": "Yoghurt in bowl 011715.jpg",
+  "proteinyogurt": "Menchie's Blueberry Cheesecake and Pina Colada Froyo.jpg",
+  "kefirglass": "Kefir glass london feb 10.jpg",
+  "roobadibis": "Curd and treacle.jpg",
+  "roobathoum": "Dolma with garlic yogurt sauce.jpg",
+  "labaniyeh": "Yogurt soup (yayla çorba).jpg",
+  "roobakhubz": "Dahi and Paratha.jpg",
+  "badinjanrooba": "Eggplant borani at Naan Kabob in Toronto.jpg",
+  "doxawa": "آش دوغ.jpg",
+  "kubbalabaniyeh": "KibehwithYoghutSoup.jpg",
+  "spinachrooba": "Ispanaklı boranı.JPG",
+  "fattehdijaj": "فتّة باللوز و السّمن.jpg",
+  "shakriyeh": "MyPlate gov Cultural Food (20241025-USDA-FNS-UNK-0046).jpg",
+  "manti": "Kayseride bir restoranda Kayseri mantısı (cropped).jpg",
+  "raita": "Cucumber-raita.jpg",
+  "labnehballs": "Shanklish.jpg",
+  "frozenyogurt": "Blueberry frozen yoghurt (4937999312).jpg",
+  "yogurtcake": "Earl Grey Tea Greek Yogurt Cake.jpg",
+  "roobahome": "Homemade yogurt maker - 01.jpg",
+  "lassisweet": "Lassi 1.jpg",
+  "roobadates": "Smoothie bowl.jpg",
+  "bizrrihan": "Basil seed melon flavored drink - Massachusetts.jpg",
+  "zahourat": "Syrian flowers with packing.jpg",
+  "doppio": "Espresso Doppio.jpg",
+  "coldbrew": "Preparation of cold brew coffee 06.jpg",
+  "redeye": "Blue red eye (Pteroteinon laufella) male underside Kakum.jpg",
+  "dalgona": "Homemade Dalgona Coffee.jpg",
+  "affogato": "Vinoteca, Smithfield, London (4485849609).jpg",
+  "preworkout": "Adonis Men's Pre-workout.jpg",
+  "creatine": "Creatine monohydrate powder.jpg",
+  "bcaa": "Standard Präparate von BCAA (+ Vitamin B6) 2014-07-01 21-18.jpg",
+  "casein": "Ca 1940s CASCO casein glue by Swedish company AB Lauxein Casco.jpg",
+  "clearwhey": "ESN ISO Clear - Whey Protein.jpg",
+  "stingberry": "Sting Energy.jpg",
+  "primehydration": "Prime hydration ice pop two bottles.jpg",
+  "primeenergy": "Prime 18+.jpg",
+  "redbullblue": "Red Bull Special Editions.jpg",
+  "celsius": "Energy drink mix 200mg.jpg",
+  "holsten": "Moussy Ice Berry flavor nonalcoholic malt beverage in a styrofoam cup 2.jpg",
+  "bavaria": "Bavaria 0.0%.jpg",
+  "rani": "Calotropis gigantea.jpg",
+  "ranipeach": "Sex On The Beach.jpg",
+  "mogumogu": "Mogu Mogu (Botella grande).jpg",
+  "mogustraw": "Strawberry Mogu Cup with no nata de coco.jpg",
+  "tang": "GD 廣東 Guangdong 汕頭猛獅凱萊酒店 Shantou Menshine Gloria Plaza Hotel 餐廳 restaurant 早餐 breakfast buffet drink orange jucie cup December 2023 Red7 02.jpg",
+  "gainer": "Grady Gaines and The Texas Upsetters (21787070379).jpg",
+  "vimtocordial": "Vimto - ramadan drink.jpg",
+  "tangmango": "Japanese sword tang, both sides.png"
+ },
+ "missing": {
+  "laziza": "every candidate was rejected"
+ },
+ "rejected": {
+  "holsten": [
+   "Barbican pineapple flavour.jpg — already the photo of barbican"
+  ],
+  "laziza": [
+   "Barbican pineapple flavour.jpg — already the photo of barbican"
+  ],
+  "ranipeach": [
+   "The Ladies' home journal (1948) (14582366489).jpg — drawing/painting/poster by category",
+   "The Ladies' home journal (1948) (14580876737).jpg — drawing/painting/poster by category"
+  ]
+ }
 }
