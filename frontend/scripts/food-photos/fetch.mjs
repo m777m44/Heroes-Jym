@@ -398,7 +398,22 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const only = opt('--only') ? opt('--only').split(',') : null
   const { report } = await run({ rows: PHOTO_ROWS, credits, state, force: flag('--force'), only, candidates, sharp })
   const ofile = join(here, 'off-review.txt')
-  if (existsSync(ofile)) await offReview(readFileSync(ofile, 'utf8').split(/\s+/).map(x => x.trim()).filter(x => /^\d{8,14}$/.test(x)), { sharp })
+  if (existsSync(ofile)) {
+    const words = readFileSync(ofile, 'utf8').split(/\s+/).map(x => x.trim())
+    await offReview(words.filter(x => /^\d{8,14}$/.test(x)), { sharp })
+    // "<barcode>/<image>": that one photo big enough to read the can (review/off-<barcode>-<image>.jpg)
+    for (const w of words.filter(x => /^\d{8,14}\/\d{1,3}$/.test(x))) {
+      const [code, id] = w.split('/')
+      for (const host of ['images.openfoodfacts.org', 'images.openproductsfacts.org']) {
+        try {
+          const b = await http(`https://${host}/images/products/${offPath(code)}/${id}.jpg`, { binary: true })
+          await sharp(b, { failOn: 'none' }).rotate().resize(720, 960, { fit: 'inside' }).jpeg({ quality: 70 }).toFile(join(REVIEW, `off-${code}-${id}.jpg`))
+          console.log('off-review big: ' + w)
+          break
+        } catch (e) { console.log('off-review big ' + w + ' @' + host + ': ' + e.message) }
+      }
+    }
+  }
   const sorted = Object.fromEntries(Object.keys(credits).sort().map(k => [k, credits[k]]))
   const lines = o => '{\n' + Object.entries(o).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n') + '\n}\n'
   writeFileSync(CREDITS, lines(sorted))

@@ -1,9 +1,0 @@
-host: world.openproductsfacts.org
-name: الغازي سبيرش
-brands: 
-quantity: 
-categories: ar:شراب غازي بنكهة التوت البري
-labels: 
-ingredients: 
-per 100: kcal ? · sugars ? · caffeine ? · sodium ?
-images: 1 2

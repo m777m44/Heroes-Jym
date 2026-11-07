@@ -1,9 +1,0 @@
-host: world.openfoodfacts.org
-name: ابو جنه
-brands: ابو جنه
-quantity: 330
-categories: ar:07721947212, ar:عبوه-ابو-جنه
-labels: ar:ابو جنه
-ingredients: مياه غازيه نكهه النعناع
-per 100: kcal ? · sugars ? · caffeine ? · sodium ?
-images: 1 2 3 4 5

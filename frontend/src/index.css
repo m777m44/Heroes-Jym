@@ -4825,7 +4825,8 @@ html[data-motion=reduce] .kf{animation:none}
 .sd-bhead.star{color:#fff;background:linear-gradient(140deg,var(--bc2),color-mix(in srgb,var(--bc2) 72%,var(--bc)) 62%,var(--bc) 140%);box-shadow:inset 0 0 0 1px rgba(255,214,102,.4),0 22px 44px -28px var(--bc)}
 .sd-bhead-bg{position:absolute;inset:-60% -20% auto auto;width:280px;height:280px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,color-mix(in srgb,var(--bc) 50%,transparent),transparent 66%);opacity:.55}
 .sd-bhead-t{position:relative;display:flex;flex-direction:column;gap:4px}
-.sd-bhead-t h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.sd-bhead-t h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;color:inherit}
+.sd-bhead.star .sd-bhead-t h2{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.35)}
 .sd-bhead-p{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;opacity:.85}
 .sd-bhead-p .icn{width:13px;height:13px}
 .sd-bhead-t p{margin:4px 0 0;font-size:13.5px;line-height:1.55;opacity:.92}

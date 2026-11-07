@@ -1,9 +1,0 @@
-host: world.openfoodfacts.org
-name: 
-brands: 
-quantity: 
-categories: 
-labels: 
-ingredients: 
-per 100: kcal ? · sugars ? · caffeine ? · sodium ?
-images: 1
