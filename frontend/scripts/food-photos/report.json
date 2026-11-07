@@ -1,5 +1,17 @@
 {
- "picked": {},
- "missing": {},
- "rejected": {}
+ "picked": {
+  "abujannagazoz": "off:0729927750958/2",
+  "abujannaapple": "off:0729927750934/1",
+  "abujannapassion": "off:0729927750972/2",
+  "abujannacherry": "off:0729927750989/1",
+  "abujannalm": "off:0729927750910/8"
+ },
+ "missing": {
+  "abujannaberry": "every candidate was rejected"
+ },
+ "rejected": {
+  "abujannaberry": [
+   "off:0729927750941/1 — Open Food Facts: 404 https://world.openfoodfacts.org/api/v2/product/0729927750941.json?fields=images,product_name,brands"
+  ]
+ }
 }
