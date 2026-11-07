@@ -120,8 +120,8 @@ function Section({ k }) {
   const aisles = k === 'ready' ? MARKET_AISLES : []
   return <div className="narrow kx">
     <Header title={rg ? t(REGION_BY_KEY[rg].name) : t(sec.name)} sub={rg ? t('{0} dishes and drinks from {1}', n0(base.length), t(REGION_BY_KEY[rg].name)) : t('{0} items', n0(base.length))} />
-    {sec.ph && <div className="kx-banner" style={{ '--cc': sec.color }} aria-hidden="true">
-      <Photo k={sec.ph} size="m" live alt="" fallback={<span className="ks-none" />} />
+    {sec.ph && <div className="kx-banner" style={{ '--cc': rg ? REGION_BY_KEY[rg].color : sec.color }} aria-hidden="true">
+      <Photo k={rg ? REGION_BY_KEY[rg].ph : sec.ph} size="m" live alt="" fallback={<span className="ks-none" />} />
       <span className="ks-shade" />
       <span className="kx-banner-ic"><Icon name={sec.icon} /></span>
     </div>}
