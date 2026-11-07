@@ -1,7 +1,7 @@
 {
   "name": "mahdi-jym",
   "private": true,
-  "version": "15.0.0",
+  "version": "16.0.0",
   "mjNative": 1,
   "type": "module",
   "scripts": {
@@ -13,9 +13,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "VITE_DEMO=1 vite build --outDir dist-e2e && playwright test",
-    "build:mobile:offline": "VITE_MOBILE=1 VITE_OFFLINE_MEDIA=1 vite build && node scripts/bundle-media.mjs && cap sync",
+    "build:mobile:offline": "VITE_MOBILE=1 VITE_OFFLINE_MEDIA=1 VITE_EXV_BASE=mp4/ vite build && MEDIA_MP4=1 node scripts/bundle-media.mjs && cap sync",
     "build:webapp": "VITE_WEBAPP=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ vite build",
-    "build:demo": "VITE_DEMO=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ vite build"
+    "build:demo": "VITE_DEMO=1 VITE_IMG_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/ VITE_GIF_BASE=https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/ vite build",
+    "media:mp4": "node scripts/convert-media.mjs"
   },
   "license": "AGPL-3.0-or-later",
   "dependencies": {

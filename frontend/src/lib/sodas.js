@@ -168,6 +168,14 @@ const ROWS = [
   ['winner', 'energy', 'Winner Energy', 46, 11, 32, 40, '#f2d16b', '#2e7d32', '#c8e6c9', 'e'],
   ['lion', 'energy', 'Lion Energy', 46, 11, 32, 40, '#f5c542', '#8d6e63', '#ffe0b2', 'e'],
   ['hell', 'energy', 'Hell Energy', 46, 11, 32, 40, '#ffd54f', '#c62828', '#212121', 'e'],
+  // 16.0 — Abu Janna (أبو جنة, Mosul): Three Stars (ثري ستارز), the energy drink that came after 4U, and his
+  // soft drink in lemon & mint and in mint — 330 ml cans, 11.5 g of sugar per 100 ml on the lemon & mint
+  // label (Open Food Facts 0729927750910), no caffeine. Dijla (Baghdad): Wild Lion. The rest are the usual
+  // values of their kind — the can's label wins.
+  ['threestars', 'energy', 'Three Stars Energy', 46, 11, 32, 40, '#ffd54f', '#0d1b4b', '#ffc107', 'e'],
+  ['abujannalm', 'clear', 'Abu Janna Lemon & Mint', 46, 11.5, 0, 10, '#dff7b0', '#138a43', '#f4e04d', 'ml'],
+  ['abujannamint', 'clear', 'Abu Janna Mint', 46, 11.5, 0, 10, '#cdf5dc', '#0b6e45', '#eafff3', 'm'],
+  ['wildlion', 'energy', 'Wild Lion Energy', 46, 11, 32, 40, '#f5c542', '#3e2723', '#ff8f00', 'e'],
   ['mintlemon', 'home', 'Mint & lemon soda', 18, 4.5, 0, 8, '#d4f5a3', '#30d158', '#ffe14d', 'mli'],
   ['mojito', 'home', 'Virgin mojito', 35, 8.5, 0, 8, '#c8f08f', '#2fbf71', '#d6ff7a', 'mli'],
   ['mojitoblue', 'home', 'Blue mojito', 45, 11, 0, 8, '#36c5f0', '#1f8fe0', '#bff1ff', 'mli'],
@@ -233,6 +241,8 @@ export const SODA_SWAP = {
   // 15.0
   aspirash: 'redbullsf', aspirashgum: 'redbullsf', k9: 'redbullsf', k9perf: 'redbullsf', fouru: 'redbullsf', tiger: 'redbullsf', redstrong: 'redbullsf',
   winner: 'redbullsf', lion: 'redbullsf', hell: 'redbullsf',
+  // 16.0
+  threestars: 'redbullsf', wildlion: 'redbullsf', abujannalm: 'mintlemon', abujannamint: 'mintlemon',
   freshlime: 'mintlemon', tamarindsoda: 'noomisoda', pinklemonade: 'mintlemon', passionmojito: 'mintlemon', kiwimojito: 'mintlemon', pinemojito: 'mintlemon',
   liptonpeach: 'liptonzero', liptonlemon: 'liptonzero', liptonmango: 'liptonzero', liptongreen: 'liptonzero', fuzetea: 'liptonzero', fuzetealemon: 'liptonzero',
   arizona: 'icedteahome', gatorade: 'gatoradezero', gatoradeorange: 'gatoradezero', gatoradeblue: 'gatoradezero', powerade: 'poweradezero',
@@ -354,13 +364,22 @@ export function packDims(pk, ml, slim = false) {
 
 // ---- search & log ---------------------------------------------------------------------------------
 const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f\u064B-\u065F\u0670\u0640]/g, '')
-  .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').trim()
+  .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x660)).trim()
 
 /** Filter: q (in the app's language and English), cat, zero (sugar-free only), noCaf (no caffeine). */
-export function searchSodas({ q = '', cat = null, zero = false, noCaf = false, tr = s => s } = {}) {
+// 16.0 — the other ways people write a drink's name (Arabic letters, numbers as words)
+const ALIAS = {
+  fouru: 'for you foryou فور يو فوريو', threestars: '3 stars 3stars three star ثري ستارز ثري ستار 3 ستارز 3 ستار',
+  abujannalm: 'ابو جنه ليمون نعناع', abujannamint: 'ابو جنه نعناع', wildlion: 'وايلد لايون', k9: 'k 9', k9perf: 'k 9',
+}
+/**
+ * The soft drinks that match: a search (name in both languages, its kind, its other spellings and —
+ * 16.0 — `words(id)`, e.g. its maker), a kind, sugar-free, no caffeine, and `only` (a Set of ids).
+ */
+export function searchSodas({ q = '', cat = null, zero = false, noCaf = false, tr = s => s, words = null, only = null } = {}) {
   const Q = fold(q)
-  return SODAS.filter(s => (!cat || s.cat === cat) && (!zero || s.k100 < 5) && (!noCaf || !s.cf100)
-    && (!Q || fold(tr(s.name) + ' ' + s.name + ' ' + tr(SODA_CAT_BY_KEY[s.cat].name)).includes(Q)))
+  return SODAS.filter(s => (!only || only.has(s.id)) && (!cat || s.cat === cat) && (!zero || s.k100 < 5) && (!noCaf || !s.cf100)
+    && (!Q || fold(tr(s.name) + ' ' + s.name + ' ' + tr(SODA_CAT_BY_KEY[s.cat].name) + ' ' + (ALIAS[s.id] || '') + ' ' + (words ? words(s.id) : '')).includes(Q)))
 }
 
 /** A food-log entry for `count` packs (kcal / macros per pack, like every other entry). */

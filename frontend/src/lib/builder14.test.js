@@ -61,8 +61,8 @@ describe('14.0 — street food, built from parts', () => {
     expect(list.slice(0, 4).map(x => x.id)).toEqual(['burger', 'cheeseburger', 'doubleburger', 'zinger'])   // the classics first
     expect(SECTION_BY_KEY.fast).toBeUndefined()
   })
-  it('six big doors: street food, Indomie, canned & shops, drinks, sweets, Iraqi (15.0: + Iraq city by city and fish)', () => {
-    expect(FEATURED.map(f => f.key)).toEqual(['street', 'indomie', 'shops', 'drinks', 'sweets', 'iraqi', 'cities', 'fish'])
+  it('six big doors: street food, Indomie, canned & shops, drinks, sweets, Iraqi (15.0: + Iraq city by city and fish; 16.0: + Abu Janna)', () => {
+    expect(FEATURED.map(f => f.key)).toEqual(['street', 'indomie', 'shops', 'drinks', 'sweets', 'iraqi', 'cities', 'fish', 'abujanna'])
     const n = Object.fromEntries(FEATURED.map(f => [f.key, featuredCount(f)]))
     expect(n.street).toBeGreaterThanOrEqual(45)
     expect(n.indomie).toBeGreaterThanOrEqual(30)
@@ -70,6 +70,7 @@ describe('14.0 — street food, built from parts', () => {
     expect(n.drinks).toBeGreaterThanOrEqual(80)
     expect(n.sweets).toBeGreaterThanOrEqual(35)
     expect(n.iraqi).toBeGreaterThanOrEqual(25)
+    expect(n.abujanna).toBe(4)   // 4U, Three Stars, the lemon & mint and the mint soft drink
     for (const f of FEATURED) { expect(ar[f.name], f.name).toBeTruthy(); expect(f.to || f.tab).toBeTruthy() }
     expect(sectionCounts().street).toBe(sectionItems('street').length)
   })

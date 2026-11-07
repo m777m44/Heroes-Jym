@@ -9,6 +9,7 @@ import { routineLabel } from '../lib/routines.js'
 import { search } from '../lib/quickSearch.js'
 import { exerciseDetailSheet } from '../sheets.jsx'
 import { SODAS, SODA_CAT_BY_KEY } from '../lib/sodas.js'
+import { brandWords } from '../lib/brands.js'
 import { NUTS } from '../lib/nuts.js'
 import { DRINKS } from '../lib/drinks.js'
 import Icon from './Icon.jsx'
@@ -16,7 +17,7 @@ import Icon from './Icon.jsx'
 const KIND = { place: 'Screens & tools', routine: 'Your routines', soda: 'Soft drinks', nut: 'Nuts & seeds', drink: 'Drinks & juices', food: 'Food database', exercise: 'Exercises' }
 // 10.0: every soft drink, nut and drink can be found by name (in the app's language or English)
 const foodItems = () => [
-  ...SODAS.map(x => ({ kind: 'soda', id: x.id, title: t(x.name), en: x.name, kw: t(SODA_CAT_BY_KEY[x.cat].name), sub: t(SODA_CAT_BY_KEY[x.cat].name), icon: 'can', tint: x.br })),
+  ...SODAS.map(x => ({ kind: 'soda', id: x.id, title: t(x.name), en: x.name, kw: t(SODA_CAT_BY_KEY[x.cat].name) + ' ' + brandWords(x.id), sub: t(SODA_CAT_BY_KEY[x.cat].name), icon: 'can', tint: x.br })),
   ...NUTS.map(x => ({ kind: 'nut', id: x.id, title: t(x.name), en: x.name, sub: t('Nuts & seeds'), icon: 'nut', tint: x.col })),
   ...DRINKS.map(x => ({ kind: 'drink', id: x.id, title: t(x.name), en: x.name, sub: t('Drinks & juices'), icon: 'cup', tint: x.col || 'var(--green)' })),
 ]

@@ -79,6 +79,12 @@ The media files are not distributed in this repository; they are downloaded from
 source on first run. If you redistribute MAHDI-JYM with the media included, review the upstream
 license first.
 
+The exercise images and animations are **© Gym visual — https://gymvisual.com/**. The dataset
+redistributes them with the rights holder's permission at 180 × 180, provided this attribution is
+kept; the app shows it on every animation (16.0). The offline APK carries the animations as H.264
+MP4 videos made from the dataset's GIFs at the same 180 × 180 size
+(`frontend/scripts/convert-media.mjs`, run in CI) — the files are still not part of this repository.
+
 ## Food photographs (14.0)
 
 The kitchen's 780 food and drink photos (`frontend/public/food/m/*.webp`, `frontend/public/food/t/*.webp`)
@@ -95,3 +101,10 @@ logos and AI-generated images are excluded by `frontend/scripts/food-photos/fetc
 - **ShareAlike:** the cropped and resized versions of CC BY-SA photos are shared under the same licence as
   their originals. The photos are separate works aggregated with the app; they do not change the app's
   AGPL v3.0 licence, and the app's licence does not change theirs.
+
+**16.0 — product photos from Open Food Facts.** A few drinks that Wikimedia Commons has no photo of (Abu
+Janna's soft drinks) show a photo of the product itself from **[Open Food Facts](https://world.openfoodfacts.org/)**,
+the free food database, whose product images are under **CC BY-SA 3.0**. Their credit (`off:<barcode>/<image>`
+in `credits.json`) names the contributor who uploaded the photo — or "Open Food Facts contributors" — and links
+to the product's page; the photos were resized for the app (the big one keeps the whole picture on a blurred
+copy of itself) and are shared under the same licence.

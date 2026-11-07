@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useUI } from '../../store/useUI.js'
 import { t } from '../../lib/i18n.js'
-import { loadCredits, commonsUrl } from '../../lib/photos/index.js'
+import { loadCredits, commonsUrl, isOffFile, fileLabel } from '../../lib/photos/index.js'
 import { openLink } from '../../lib/updates.js'
 import { Photo } from '../FoodPhoto.jsx'
 import Icon from '../Icon.jsx'
@@ -27,6 +27,7 @@ export function useCredit(k) {
 
 function CreditSheet({ k, credit }) {
   const [file, author, lic] = credit
+  const off = isOffFile(file)   // 16.0: a product's own photo from Open Food Facts
   return <div className="ph-credit-sheet">
     <h3>{t('About this photo')}</h3>
     <div className="ph-credit-pic"><Photo k={k} size="m" alt="" /></div>
@@ -36,10 +37,12 @@ function CreditSheet({ k, credit }) {
       <div className="item"><span className="lrow-i" style={{ '--tint': 'var(--green)' }}><Icon name="shield" /></span>
         <div className="grow"><div className="ss">{t('Licence')}</div><div className="tt" dir="ltr">{lic}</div></div></div>
       <div className="item"><span className="lrow-i" style={{ '--tint': 'var(--orange)' }}><Icon name="image" /></span>
-        <div className="grow"><div className="ss">{t('File on Wikimedia Commons')}</div><div className="tt ph-credit-file" dir="auto">{file}</div></div></div>
+        <div className="grow"><div className="ss">{off ? t('Photo on Open Food Facts') : t('File on Wikimedia Commons')}</div><div className="tt ph-credit-file" dir="auto">{fileLabel(file)}</div></div></div>
     </div>
-    <p className="small muted">{t('A real photograph from Wikimedia Commons, shared under a free licence. It was cropped and resized for the app.')}</p>
-    <Button variant="tinted" icon="globe" onClick={() => openLink(commonsUrl(file))}>{t('Open on Wikimedia Commons')}</Button>
+    <p className="small muted">{off
+      ? t('A real photograph of the product itself from Open Food Facts, the free food database, shared under a free licence. It was resized for the app.')
+      : t('A real photograph from Wikimedia Commons, shared under a free licence. It was cropped and resized for the app.')}</p>
+    <Button variant="tinted" icon="globe" onClick={() => openLink(commonsUrl(file))}>{off ? t('Open on Open Food Facts') : t('Open on Wikimedia Commons')}</Button>
   </div>
 }
 export const creditSheet = (k, credit) => useUI.getState().openSheet(() => <CreditSheet k={k} credit={credit} />)

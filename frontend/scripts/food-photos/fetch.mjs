@@ -13,6 +13,10 @@
 //   candidates.txt (keys, one per line)             also writes review/<key>.jpg: the best six
 //                                                   search results side by side, to choose from
 //
+// 16.0 — o:<barcode>/<image number>: a product's own photo on Open Food Facts (the free food
+// database; product photos are CC BY-SA 3.0) — for drinks Commons has no photo of, e.g. Abu Janna's
+// soft drink. @contain keeps the whole picture (a tall can) on a soft blurred copy of itself.
+//
 // Needs internet and sharp (SHARP_FROM=a folder whose node_modules has it, or an installed one) —
 // the "Food photos" workflow runs it and commits what changed. Rejected on the way: drawings,
 // paintings, posters, logos, maps and icons (SVG/GIF, or such a name or category), black-and-white
@@ -51,7 +55,9 @@ const bigEnough = (ii, named = false) => Math.min(ii.width || 0, ii.height || 0)
 
 /** "w:ar:Title@top" → { kind: 'w', lang: 'ar', value: 'Title' }, focus 'top'. */
 export function parseSources(spec) {
-  let focus = null
+  let focus = null, contain = false
+  const c = /@contain$/.exec(spec)
+  if (c) { contain = true; spec = spec.slice(0, c.index) }
   const m = /@(top|bottom|left|right|centre|center)$/.exec(spec)
   if (m) { focus = m[1] === 'center' ? 'centre' : m[1]; spec = spec.slice(0, m.index) }
   const list = spec.split('|').map(s => s.trim()).filter(Boolean).map(s => {
@@ -62,10 +68,23 @@ export function parseSources(spec) {
     }
     if (k === 'f') return { kind: 'f', value: rest.replace(/^File:/i, '') }
     if (k === 's') return { kind: 's', value: rest }
+    if (k === 'o') {
+      const om = /^(\d{8,14})\/(\d{1,4})$/.exec(rest)
+      if (!om) throw new Error('Bad Open Food Facts source (o:<barcode>/<image number>): ' + s)
+      return { kind: 'o', code: om[1], img: om[2], value: OFF_FILE + om[1] + '/' + om[2] }
+    }
     throw new Error('Unknown source: ' + s)
   })
-  return { list, focus }
+  return { list, focus, contain }
 }
+
+// ---- Open Food Facts (16.0) ------------------------------------------------------------------
+export const OFF_FILE = 'off:'
+export const OFF_LICENCE = 'CC BY-SA 3.0'
+/** "0729927750910" → "072/992/775/0910" — how Open Food Facts files a product's images. */
+export const offPath = code => (code.length > 8 ? code.replace(/^(\d{3})(\d{3})(\d{3})(\d+)$/, '$1/$2/$3/$4') : code)
+/** The credit line's author: the uploader's name, unless it is only digits (a phone number). */
+export const offAuthor = uploader => (uploader && !/^[\d\s+-]+$/.test(uploader) ? uploader + ' · Open Food Facts' : 'Open Food Facts contributors')
 
 /** Plain text of an extmetadata HTML value. */
 export function plain(html, max = 90) {
@@ -185,6 +204,25 @@ async function infos(names) {
   return out
 }
 
+/**
+ * The two WebP copies of a photo. Cropped to fill (the focus, or the most interesting part); with
+ * @contain the big one keeps the whole picture, centred on a blurred, darker copy of itself.
+ */
+export async function savePhoto(sharp, buf, key, { focus = null, contain = false } = {}, out = OUT) {
+  const position = focus || sharp.strategy.attention
+  for (const [dir, [w, h, q]] of Object.entries(SIZE)) {
+    const file = join(out, dir, key + '.webp')
+    if (contain && dir === 'm') {
+      const bg = await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover' }).blur(28).modulate({ brightness: 0.62, saturation: 0.9 }).toBuffer()
+      const fg = await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'inside' }).toBuffer()
+      await sharp(bg).composite([{ input: fg, gravity: 'centre' }]).webp({ quality: q, effort: 6, smartSubsample: true }).toFile(file)
+    } else {
+      await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover', position })
+        .webp({ quality: q, effort: 6, smartSubsample: true }).toFile(file)
+    }
+  }
+}
+
 // ---- main ----------------------------------------------------------------------------------
 export async function run({ rows, credits = {}, state = {}, force = false, only = null, candidates = [], sharp, log = console.log }) {
   const report = { picked: {}, missing: {}, rejected: {} }
@@ -207,7 +245,8 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
     const out = [], seen = new Set()
     const push = (name, named) => { const n = name.replace(/_/g, ' '); if (!seen.has(n)) { seen.add(n); out.push({ name: n, named }) } }
     for (const s of list) {
-      if (s.kind === 'f') push(s.value, true)
+      if (s.kind === 'o') { if (!seen.has(s.value)) { seen.add(s.value); out.push({ name: s.value, named: true, off: s }) } }
+      else if (s.kind === 'f') push(s.value, true)
       else if (s.kind === 'w') { const f = leads.get(s.lang + ':' + s.value); if (f) push(f, false) }
       else if (s.kind === 's') { try { for (const n of await search(s.value)) push(n, false) } catch (e) { log('search failed: ' + s.value + ' — ' + e.message) } }
     }
@@ -216,7 +255,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
   // 3. information on the first few candidates of every photo, in batches
   const info = new Map()
   const fetchInfo = async names => { const need = [...new Set(names)].filter(n => !info.has(n)); if (need.length) for (const [n, ii] of await infos(need)) info.set(n.replace(/_/g, ' '), ii) }
-  await fetchInfo([...cands.values()].flatMap(l => l.slice(0, 4).map(c => c.name)))
+  await fetchInfo([...cands.values()].flatMap(l => l.slice(0, 4).filter(c => !c.off).map(c => c.name)))
   // 4. per photo: the first candidate that passes, downloaded, still a colour photo → two WebP copies
   mkdirSync(join(OUT, 'm'), { recursive: true }); mkdirSync(join(OUT, 't'), { recursive: true })
   const reject = (key, name, why) => { (report.rejected[key] = report.rejected[key] || []).push(name + ' — ' + why) }
@@ -228,7 +267,23 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
       let done = false
       for (let i = 0; i < list.length && i < 12 && !done; i++) {
         const c = list[i]
-        if (!info.has(c.name)) await fetchInfo(list.slice(i, i + 4).map(x => x.name))
+        if (c.off) {
+          try {
+            const j = await http(`https://world.openfoodfacts.org/api/v2/product/${c.off.code}.json?fields=images,product_name,brands`)
+            const im = j && j.product && j.product.images && j.product.images[c.off.img]
+            if (!im) { reject(key, c.name, 'no such image on Open Food Facts'); continue }
+            const buf = await http(`https://images.openfoodfacts.org/images/products/${offPath(c.off.code)}/${c.off.img}.jpg`, { binary: true })
+            if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
+            await savePhoto(sharp, buf, key, parsed.get(key))
+            credits[key] = [c.name, offAuthor(im.uploader), OFF_LICENCE]
+            state[key] = src
+            used.set(c.name, key)
+            report.picked[key] = c.name
+            done = true
+          } catch (e) { reject(key, c.name, 'Open Food Facts: ' + e.message) }
+          continue
+        }
+        if (!info.has(c.name)) await fetchInfo(list.slice(i, i + 4).filter(x => !x.off).map(x => x.name))
         const ii = info.get(c.name)
         const why = rejectReason(c.name, ii, c.named)
         if (why) { reject(key, c.name, why); continue }
@@ -237,11 +292,7 @@ export async function run({ rows, credits = {}, state = {}, force = false, only 
         try {
           const buf = await http(ii.thumburl || ii.url, { binary: true })
           if (!(await isColour(sharp, buf))) { reject(key, c.name, 'black and white'); continue }
-          const position = parsed.get(key).focus || sharp.strategy.attention
-          for (const [dir, [w, h, q]] of Object.entries(SIZE)) {
-            await sharp(buf, { failOn: 'none' }).rotate().resize(w, h, { fit: 'cover', position })
-              .webp({ quality: q, effort: 6, smartSubsample: true }).toFile(join(OUT, dir, key + '.webp'))
-          }
+          await savePhoto(sharp, buf, key, parsed.get(key))
           const em = ii.extmetadata || {}
           credits[key] = [file, cleanAuthor(plain(em.Artist && em.Artist.value, 160) || plain(em.Credit && em.Credit.value, 160)).slice(0, 90), plain(em.LicenseShortName && em.LicenseShortName.value, 40)]
           state[key] = src

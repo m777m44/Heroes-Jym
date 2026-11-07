@@ -10,8 +10,10 @@
 //              w:ar:Title   … of the Arabic Wikipedia
 //              f:Name.jpg   that file on Wikimedia Commons
 //              s:words      the best Wikimedia Commons search result (photos only)
+//              o:code/n     16.0: photo n of that product on Open Food Facts (CC BY-SA 3.0)
 //            then optionally @top | @bottom | @left | @right | @centre — where the crop keeps
-//            its focus (otherwise the most interesting part of the picture, found automatically)
+//            its focus (otherwise the most interesting part of the picture, found automatically);
+//            @contain (16.0) keeps the whole picture, on a blurred copy of itself
 //   items    what shows it — F food · D drink (recipe) · S soft drink · N nut, seed or dried fruit ·
 //            R kitchen recipe · I kitchen ingredient · J drink ingredient. Close variants share a
 //            photo (Indomie made 41 ways is one noodle dish in a few looks).
@@ -916,10 +918,16 @@ export const PHOTO_ROWS = [
   ['fishsandwich', 's:balık ekmek sandwich|s:fried fish sandwich bread|s:fish sandwich', 'F:fishsandwich'],
   ['aspirash', 's:energy drink glass|s:energy drink poured glass', 'S:aspirash S:aspirashgum'],
   ['k9', 's:energy drink can black|s:energy drink', 'S:k9 S:k9perf'],
-  ['fouru', 's:energy drinks shelf|s:energy drinks', 'S:fouru'],
+  ['fouru', 'f:Bebida energizante.jpg|s:energy drink can', 'S:fouru'],
   ['tiger', 's:Tiger energy drink|s:energy drink orange can', 'S:tiger'],
   ['redstrong', 's:energy drinks supermarket|s:energy drink shelf', 'S:redstrong'],
   ['winner', 's:canned drinks fridge|s:energy drinks cooler|s:drinks refrigerator', 'S:winner'],
   ['lionenergy', 's:energy drink gold can|s:energy drink tin', 'S:lion'],
   ['hell', 's:Hell energy drink|w:Hell Energy Drink', 'S:hell'],
+  // 16.0 — Abu Janna's drinks and Dijla's Wild Lion. His soft drink has its own photos on Open Food Facts
+  // (o: — the lemon & mint can 0729927750910, the mint one 0729927750958); the energy drinks, a glass of one.
+  ['abujannalm', 'o:0729927750910/15@contain', 'S:abujannalm'],
+  ['abujannamint', 'o:0729927750958/2@contain', 'S:abujannamint'],
+  ['threestars', 'f:EnergyDrinkBubbles.jpg|s:energy drink glass bubbles', 'S:threestars'],
+  ['wildlion', 'f:Coffein im Energy-Drink.jpg|s:energy drink can', 'S:wildlion'],
 ]

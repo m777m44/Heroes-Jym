@@ -6,6 +6,10 @@
 //   pickSodaSheet(onPick)       choose a soft drink and its size (the day plan)
 //   compareSheet(a, b)          12.0: two soft drinks side by side at the same size
 // 12.0 — the caffeine meter counts against about 100 mg a day under 18 (caffeineLimit).
+// 16.0 — Made in Iraq: the drinks by their Iraqi maker (lib/brands.js), Abu Janna first —
+// /sodas?brand=abujanna opens his page: 4U, Three Stars and his soft drinks, and the fish of his
+// Mosul restaurant. Each caffeinated drink shows what it would do to today's caffeine and to your
+// bedtime (lib/caffeineLive.js), and the page carries the caffeine-in-your-body card.
 // The data and maths live in lib/sodas.js; the art in components/SodaArt.jsx.
 import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore.js'
@@ -20,6 +24,13 @@ import {
   SODA_SWAP, caffeineLimit, compareSodas,
 } from '../lib/sodas.js'
 import { ageOf } from '../lib/idealBody.js'
+import { BRANDS, BRAND_BY_KEY, brandOf, brandSodas, brandWords, MADE_IN_IRAQ } from '../lib/brands.js'
+import { afterDrink, SLEEP_OK_MG } from '../lib/caffeineLive.js'
+import { FOOD_BY_ID } from '../lib/foodDb.js'
+import { CaffeineCard } from '../components/CaffeineNow.jsx'
+import { Photo } from '../components/FoodPhoto.jsx'
+import { nav } from '../lib/nav.js'
+import { useLocation } from 'react-router-dom'
 import { logWater } from '../components/water/WaterParts.jsx'
 import { burst, lastTap } from '../lib/motion.js'
 import SodaArt from '../components/SodaArt.jsx'
@@ -58,6 +69,27 @@ function Bar({ value, max, ideal, color, label }) {
 }
 
 // ---- the drink sheet -------------------------------------------------------------------------------------
+/** 16.0 — what this drink would do: today's caffeine with it, and what would be left at bedtime. */
+function AfterThis({ St, mg }) {
+  const a = afterDrink(St, mg, { age: ageOf(St) })
+  const bed = new Date(a.bed).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
+  return <div className={'sd-after' + (a.over ? ' over' : !a.sleepOk ? ' warn' : '')}>
+    <div className="sd-after-r"><Icon name="bolt" /><span className="grow">{t('With this one: {0} mg of caffeine today', n0(a.total))}</span>
+      <b>{a.over ? t('Over your {0} mg', n0(a.limit)) : t('of {0} mg', n0(a.limit))}</b></div>
+    <div className="sd-after-r"><Icon name={a.sleepOk ? 'moon' : 'bed'} /><span className="grow">{t('At bedtime ({0}) about {1} mg left', bed, n0(a.atBed))}</span>
+      <b>{a.sleepOk ? t('Fine for sleep') : t('Harder to sleep')}</b></div>
+  </div>
+}
+
+/** 16.0 — the drink's Iraqi maker, as a tag that opens its page. */
+function BrandTag({ s, close }) {
+  const b = brandOf(s.id)
+  if (!b) return null
+  return <button type="button" className="sd-tag sd-brandtag" style={{ '--bc': b.color }} onClick={() => { close(); nav('/sodas?brand=' + b.key) }}>
+    <Icon name={b.featured ? 'starFill' : 'flag'} />{t(b.name)} · {t(b.place)}
+  </button>
+}
+
 function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
   const St = useStore(s => s.S)
   const s = sodaOf(id)
@@ -98,6 +130,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
           <span className="sd-tag"><Icon name={cat.icon} />{t(cat.name)}</span>
           {s.zero && <span className="sd-tag good"><Icon name="check" />{t('Sugar-free')}</span>}
           {s.cf100 > 0 && <span className="sd-tag warn"><Icon name="bolt" />{t('Caffeine')}</span>}
+          <BrandTag s={s} close={close} />
         </div>
         <div className="sd-hero-k"><b><AnimatedNumber value={n.kcal} /></b><span>{U('kcal')}</span></div>
         <div className="small sd-hero-s">{packText(pk, ml)}{count !== 1 ? ' × ' + n1(count) : ''}</div>
@@ -150,6 +183,7 @@ function SodaView({ id, pk: pk0, ml: ml0, iso: iso0, meal: meal0, close }) {
     {n.tsp >= 0.5 && <Cubes tsp={n.tsp} />}
     <Bar value={n.sugar} max={SUGAR_MAX_G} ideal={SUGAR_IDEAL_G} color="var(--pink)" label={t('Of the daily sugar limit (WHO)')} />
     {n.caffeine > 0 && <Bar value={n.caffeine} max={cafMax} color="var(--orange)" label={cafMax < CAFFEINE_MAX_MG ? t('Of the daily caffeine limit for teens') : t('Of the caffeine limit for a day')} />}
+    {n.caffeine > 0 && (!iso0 || iso0 === todayISO()) && <AfterThis St={St} mg={n.caffeine} />}
     <div className="sd-mini">
       <span><Icon name="drop" />{t('Sodium')} <b>{n0(n.sodium)} {U('mg')}</b></span>
       <span><Icon name="fork" />{t('Carbs')} <b>{n1(n.c)} {U('g')}</b></span>
@@ -309,17 +343,67 @@ function SodaCard({ s, i }) {
     <span className="sd-card-m">{sizeText(s.def.ml, s.def.pk)}{n.tsp >= 0.5 ? <> · <Icon name="square" />{n1(n.tsp)}</> : null}</span>
     {s.zero && <span className="sd-card-z">{t('Sugar-free')}</span>}
     {s.cf100 > 0 && <span className="sd-card-c" title={t('Caffeine')}><Icon name="bolt" /></span>}
+    {MADE_IN_IRAQ.has(s.id) && <span className={'sd-card-iq' + (brandOf(s.id).featured ? ' star' : '')} title={t('Made in Iraq')}><Icon name={brandOf(s.id).featured ? 'starFill' : 'flag'} /></span>}
   </button>
+}
+
+// ---- 16.0: Made in Iraq ----------------------------------------------------------------------------------------
+const brandFromUrl = search => { const v = new URLSearchParams(search || '').get('brand'); return BRAND_BY_KEY[v] ? v : null }
+const openBrand = key => nav(key ? '/sodas?brand=' + key : '/sodas', { replace: true })
+
+/** The row of Iraqi makers on the soft drinks page — Abu Janna first, bigger. */
+function BrandStrip() {
+  return <>
+    <div className="dk-sec-t sd-iq-t"><Icon name="flag" />{t('Made in Iraq')}</div>
+    <div className="sd-brands scroll">
+      {BRANDS.map((b, i) => { const list = brandSodas(b.key); const top = list[0]; return <button key={b.key} type="button"
+        className={'sd-brand' + (b.featured ? ' star' : '')} style={{ '--bc': b.color, '--bc2': b.color2, '--i': i }} onClick={() => openBrand(b.key)}>
+        <span className="sd-brand-bg" aria-hidden="true" />
+        {b.featured && <span className="sd-brand-stars" aria-hidden="true"><Icon name="starFill" /><Icon name="starFill" /><Icon name="starFill" /></span>}
+        <span className="sd-brand-art" aria-hidden="true">{list.slice(0, b.featured ? 3 : 2).map(x => <SodaArt key={x.id} soda={x} pk={x.def.pk} ml={x.def.ml} size={b.featured ? 40 : 32} />)}</span>
+        <b className="sd-brand-n">{t(b.name)}</b>
+        <span className="sd-brand-p">{t(b.place)} · {t('{0} drinks', n0(list.length))}</span>
+        {b.featured && top && <span className="sd-brand-l">{list.map(x => sodaName(x)).join(' · ')}</span>}
+      </button> })}
+    </div>
+  </>
+}
+
+/** A maker's page head: who they are, and — Abu Janna — the fish of his Mosul restaurant. */
+function BrandHead({ b }) {
+  const foods = (b.foods || []).map(id => FOOD_BY_ID[id]).filter(Boolean)
+  return <div className={'card sd-bhead' + (b.featured ? ' star' : '')} style={{ '--bc': b.color, '--bc2': b.color2 }}>
+    <span className="sd-bhead-bg" aria-hidden="true" />
+    <div className="sd-bhead-t">
+      {b.featured && <span className="sd-brand-stars" aria-hidden="true"><Icon name="starFill" /><Icon name="starFill" /><Icon name="starFill" /></span>}
+      <h2>{t(b.name)}</h2>
+      <span className="sd-bhead-p"><Icon name="location" />{t(b.place)} · {t('{0} drinks', n0(b.sodas.filter(id => sodaOf(id)).length))}</span>
+      <p>{t(b.about)}</p>
+    </div>
+    {foods.length > 0 && <>
+      <div className="sd-bhead-s"><Icon name="fish" />{t('From his restaurant in Mosul')}</div>
+      <div className="sd-bfoods scroll">{foods.map(f => { const k = photoKey('F', f.id); return <button key={f.id} type="button" className="sd-bfood"
+        onClick={() => import('./FoodDatabase.jsx').then(m => m.openFoodSheet(f))}>
+        {k ? <Photo k={k} size="t" alt="" className="sd-bfood-ph" /> : <span className="sd-bfood-ph"><Icon name="fish" /></span>}
+        <b>{t(f.name)}</b><small>{n0(f.kcal)} {U('kcal')}</small>
+      </button> })}</div>
+    </>}
+  </div>
 }
 
 export default function Sodas() {
   const St = useStore(s => s.S)
+  const loc = useLocation()
   const [q, setQ] = useState('')
   const [cat, setCat] = useState(null)
   const [zero, setZero] = useState(false)
   const [noCaf, setNoCaf] = useState(false)
+  const [iraq, setIraq] = useState(false)
+  const brand = brandFromUrl(loc.search)
+  const b = brand && BRAND_BY_KEY[brand]
   const iso = todayISO()
-  const list = useMemo(() => searchSodas({ q, cat: q ? null : cat, zero, noCaf, tr: t }), [q, cat, zero, noCaf])
+  const only = b ? new Set(b.sodas) : iraq ? MADE_IN_IRAQ : null
+  const list = useMemo(() => searchSodas({ q, cat: q || b ? null : cat, zero, noCaf, tr: t, words: brandWords, only }), [q, cat, zero, noCaf, b, iraq])
   const day = useMemo(() => sodaDay(dayEntries(St, iso)), [St, iso])
   const recent = recentSodas(St, 21, 8)
   const c = cat && SODA_CAT_BY_KEY[cat]
@@ -332,7 +416,8 @@ export default function Sodas() {
       <button className="iconbtn" aria-label={t('Compare soft drinks')} title={t('Compare soft drinks')} onClick={() => compareSheet(hero.id)}><Icon name="compare" /></button>
     </div>
 
-    {!q && !cat && <div className="card sd-top" style={{ '--b': hero.br, '--b2': hero.br2, '--c': hero.col }}>
+    {b && <BrandHead b={b} />}
+    {!q && !cat && !b && <div className="card sd-top" style={{ '--b': hero.br, '--b2': hero.br2, '--c': hero.col }}>
       <span className="sd-top-bg" aria-hidden="true" />
       <button className="sd-top-art" onClick={() => sodaSheet(hero.id)} aria-label={sodaName(hero)}>
         <SodaArt soda={hero} pk="can" ml={330} size={84} live />
@@ -349,19 +434,26 @@ export default function Sodas() {
       </div>
     </div>}
 
+    <CaffeineCard />
+    {!q && !cat && !b && !iraq && <BrandStrip />}
+
     <SearchField value={q} onChange={e => setQ(e.target.value)} onClear={() => setQ('')} placeholder={t('Search soft drinks')} />
-    <div className="dk-chips scroll" role="tablist">
+    {b ? <div className="dk-chips scroll">
+      <button type="button" className="chip nocap on" onClick={() => openBrand(null)}><Icon name="xmark" />{t(b.name)}</button>
+      {BRANDS.filter(x => x.key !== b.key).map(x => <button key={x.key} type="button" className="chip nocap dk-chip" style={{ '--cc': x.color }} onClick={() => openBrand(x.key)}>{t(x.name)}</button>)}
+    </div> : <div className="dk-chips scroll" role="tablist">
       <button role="tab" aria-selected={!cat} className={'chip nocap' + (!cat ? ' on' : '')} onClick={() => setCat(null)}>{t('All')}</button>
       {SODA_CATS.map(k => <button key={k.key} role="tab" aria-selected={cat === k.key} className={'chip nocap dk-chip' + (cat === k.key ? ' on' : '')}
         style={{ '--cc': k.color }} onClick={() => setCat(k.key)}><Icon name={k.icon} />{t(k.name)}</button>)}
-    </div>
+    </div>}
     <div className="dk-filters">
+      {!b && <button className={'chip nocap' + (iraq ? ' on' : '')} aria-pressed={iraq} onClick={() => setIraq(v => !v)}><Icon name="flag" />{t('Made in Iraq')}</button>}
       <button className={'chip nocap' + (zero ? ' on' : '')} aria-pressed={zero} onClick={() => setZero(v => !v)}><Icon name="leafy" />{t('Sugar-free')}</button>
       <button className={'chip nocap' + (noCaf ? ' on' : '')} aria-pressed={noCaf} onClick={() => setNoCaf(v => !v)}><Icon name="moon" />{t('No caffeine')}</button>
     </div>
-    {c && <div className="dk-cat-h" style={{ '--cc': c.color }}><span className="dk-cat-ic"><Icon name={c.icon} /></span><div><b>{t(c.name)}</b><div className="small muted">{t(c.desc)}</div></div></div>}
+    {c && !b && <div className="dk-cat-h" style={{ '--cc': c.color }}><span className="dk-cat-ic"><Icon name={c.icon} /></span><div><b>{t(c.name)}</b><div className="small muted">{t(c.desc)}</div></div></div>}
 
-    {!q && !cat && recent.length > 0 && <>
+    {!q && !cat && !b && recent.length > 0 && <>
       <div className="dk-sec-t">{t('Recently')}</div>
       <div className="dk-recent scroll">
         {recent.map(r => { const s = sodaOf(r.id); return <button key={r.id} className="dk-rc sd-rc" onClick={() => sodaSheet(r.id, { pk: r.pk, ml: r.ml })}>
@@ -369,7 +461,7 @@ export default function Sodas() {
       </div>
     </>}
 
-    <div className="sd-grid" key={(cat || 'all') + (zero ? 'z' : '') + (noCaf ? 'n' : '')}>
+    <div className="sd-grid" key={(b ? b.key : cat || 'all') + (zero ? 'z' : '') + (noCaf ? 'n' : '') + (iraq ? 'i' : '')}>
       {list.map((s, i) => <SodaCard key={s.id} s={s} i={i} />)}
     </div>
     {!list.length && <div className="empty small"><div className="ico"><Icon name="can" /></div>{t('Nothing found')}</div>}

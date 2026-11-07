@@ -48,7 +48,7 @@ describe('14.0 — real photos', () => {
     const seen = new Set()
     for (const [key, src, items] of PHOTO_ROWS) {
       expect(/^[a-z0-9]+$/.test(key), key).toBe(true)
-      expect(src.split('|').every(x => /^(w|f|s):/.test(x)), key).toBe(true)
+      expect(src.split('|').every(x => /^(w|f|s|o):/.test(x)), key).toBe(true)   // 16.0: o: Open Food Facts
       for (const it of items.split(' ').filter(Boolean)) {
         expect(exists.has(it), key + ' → ' + it).toBe(true)
         expect(seen.has(it), 'twice: ' + it).toBe(false)

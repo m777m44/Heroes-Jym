@@ -46,10 +46,17 @@ npx cap open ios            # opens Xcode (Mac only) → set your signing team, 
 into both native projects — re-run it after every web-code change before building natively.
 
 `npm run build:mobile:offline` keeps the media paths relative and copies all 1,324 JPGs and
-1,324 GIFs (~138 MB) into `dist/img` + `dist/gif` before `cap sync`
-(`scripts/bundle-media.mjs` — it fails if any exercise has no file). The APK grows to about
-140 MB, and the exercise library then works with no connection at all. CI always builds this
-way (`.github/workflows/android-apk.yml` downloads the dataset at the pinned commit and caches it).
+the 1,324 animations into `dist/img` + `dist/mp4` before `cap sync`
+(`scripts/bundle-media.mjs` — it fails if any exercise has no file), and the exercise library
+then works with no connection at all. 16.0: the animations go in as small H.264 MP4 videos made
+from the GIFs by `scripts/convert-media.mjs` (`MEDIA_DIR=… FFMPEG=ffmpeg npm run media:mp4` —
+same 180 × 180 frames and timing, ≈ 126 MB of GIFs → ≈ 12 MB), so the offline APK is about
+70 MB instead of 181 MB; the app plays them in a `<video>` (`VITE_EXV_BASE=mp4/`) and falls back
+to the GIF from the CDN should one ever fail. CI always builds this way
+(`.github/workflows/android-apk.yml` downloads the dataset at the pinned commit, converts the
+animations and caches both — and fails if the offline APK grows past 110 MB). The media is
+© Gym visual (https://gymvisual.com/), shared by the dataset with permission at 180 × 180 —
+the app names its owner on every animation.
 
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
 > Run a plain `npm run build` again before deploying `dist` to a server.

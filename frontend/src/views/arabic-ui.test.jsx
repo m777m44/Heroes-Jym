@@ -78,8 +78,12 @@ it('the Arabic UI has no stray English', async () => {
     scanK(KSroute, '/kitchen/s/cities', 'KitchenSection:cities')
     scanK(KSroute, '/kitchen/s/iraqi?rg=mosul', 'KitchenSection:iraqi:mosul')
     scanK(KSroute, '/kitchen/s/fish', 'KitchenSection:fish')
+    // 16.0: every Iraqi maker's page (Abu Janna's with his restaurant's fish), the Made-in-Iraq filter, the Kitchen's Abu Janna door
+    const SDV0 = await import('./Sodas.jsx')
+    const BR0 = await import('../lib/brands.js')
+    for (const b of BR0.BRANDS) scanK(React.createElement(SDV0.default), '/sodas?brand=' + b.key, 'Sodas:' + b.key)
     const SP = await import('../components/kitchen/Spotlight.jsx')
-    for (const uid of ['F:zingil', 'F:masmouta', 'F:gusssamoon', 'F:moota', 'F:kibdaburghul', 'S:aspirash', 'S:k9', 'R:masgouf', 'D:iraqitea', 'N:pistachio']) {
+    for (const uid of ['F:zingil', 'F:masmouta', 'F:gusssamoon', 'F:moota', 'F:kibdaburghul', 'S:aspirash', 'S:k9', 'R:masgouf', 'D:iraqitea', 'N:pistachio', 'S:threestars', 'S:abujannalm']) {
       scanK(React.createElement(SP.SpotView, { uid0: uid, close: () => {} }), '/kitchen', 'Spotlight:' + uid)
     }
   }
@@ -174,6 +178,7 @@ it('the Arabic UI has no stray English', async () => {
   const KHB = await import('../lib/kitchenHub.js')
   const MB = await import('../components/kitchen/MealBuilder.jsx')
   const STR = await import('../lib/foods/street.js')
+  const CAF = await import('../components/CaffeineNow.jsx')
   const w0 = st.workouts[st.workouts.length - 1]
   const ex0 = EXDB.find(e => e.n === 'barbell bench press')
   const calls = {
@@ -233,6 +238,10 @@ it('the Arabic UI has no stray English', async () => {
     foodEntryBuilt: () => FS.entrySheet(isoToday, { id: 'mb1', f: null, n: 'x', kcal: 480, p: 30, c: 40, fat: 20, q: 1, m: 'l',
       mb: { n: 'Beef burger', x: [['-', 'Mayonnaise'], ['+', 'Processed cheese slice'], ['^', 'Onions'], ['v', 'Ketchup'], ['-', 'Salt']] } }),
     foodAmountBuilt: () => FS.amountSheet({ food: FOOD_BY_ID.shawarmachicken, iso: isoToday, meal: 'd' }),
+    // 16.0: caffeine in your body — after a 4U and a coffee today (late, so the bedtime warning shows too)
+    caffeine: () => { const d0 = new Date().toISOString().slice(0, 10); useStore.getState().update(x => { x.food = { ...(x.food || {}), [d0]: [...((x.food || {})[d0] || []).filter(e => e.id !== 'cf1' && e.id !== 'cf2'),
+      { id: 'cf1', f: null, sd: 'fouru', pk: 'can', ml: 250, n: '4U Energy', kcal: 115, p: 0, c: 28, fat: 0, q: 2, m: 's', t: Date.now() - 3600e3 },
+      { id: 'cf2', f: 'americano', kcal: 10, p: 0, c: 1, fat: 0, q: 1, m: 'b', t: Date.now() - 5 * 3600e3 }] } }); return CAF.caffeineSheet() },
   }
   // 14.0: one of my own dishes (My cooking) — its steps in Arabic, a time on one of them
   useStore.getState().update(x => { x.customFoods = [...(x.customFoods || []).filter(f => f.id !== 'cf14'), { id: 'cf14', n: 'دولمة أمي', kcal: 420, p: 14, c: 50, f: 18, unit: 'serving', g: 300, custom: true, cat: 'mine', items: [{ id: 'rice', g: 300 }, { id: 'minced', g: 200 }, { id: 'vineleaves', g: 120 }], servings: 4, steps: ['اطبخها على نار هادئة ٦٠ دقيقة'], min: 90, note: 'من وصفة أمي', meal: 'l' }] })
@@ -272,7 +281,8 @@ it('the Arabic UI has no stray English', async () => {
   }
   // 8.0: Google's own product names stay Latin in Arabic too (as on the account screens)
   // 14.0: a photo's credit names its photographer, licence and file as Wikimedia Commons has them
-  const ALLOWED = [{ test: l => [...found[l]].every(w => w === 'sheet:photoCredit') },/MAHDI-JYM/, /^English$/, /FitNotes/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
+  // 16.0: the exercise media's owner, written as the dataset's licence asks (© Gym visual)
+  const ALLOWED = [{ test: l => [...found[l]].every(w => w === 'sheet:photoCredit') },/MAHDI-JYM/, /^English$/, /FitNotes/, /^© Gym visual$/, { test: l => !/[A-Za-z]{2,}/.test(l.replace(/\b(Google|Drive)\b/g, '')) }]
   const stray = Object.entries(found).filter(([l]) => !ALLOWED.some(r => r.test(l))).map(([l, s]) => `${[...s].join(',')}\t${l}`).sort()
   expect(stray).toEqual([])
 }, 60000)   // 12.0: it renders every screen with ~400 drinks and nuts drawn — give slow CI machines time
